@@ -1,0 +1,198 @@
+"""Automated Test Suite for Phase 2 of SemanticDFL Protocol Simulator.
+
+Verifies:
+1. VRF Leader Election & R-hop spatial dispersion guarantee
+2. TTL-Bounded First-Wins Zone Probing & Deterministic S_Z Cardinality Splitting
+3. Global-P Consensus via Binary Search and Quantile Retention
+4. FastAPI Step Endpoints Pipeline (/step/vrf, /step/zones, /step/global-p)
+"""
+
+import numpy as np
+import pytest
+from fastapi.testclient import TestClient
+
+from backend.engine import SemanticDFLEngine
+from backend.main import app, session_store
+
+
+def test_vrf_leader_dispersion():
+    """Verify that VRF leader election guarantees spatial dispersion:
+
+    No two elected INITIATORS can be within R physical hops of each other.
+    """
+    engine = SemanticDFLEngine(seed=123)
+    r_hops = 2
+    topology = engine.generate_topology(N=40, D_limit=0.35)
+    nodes = topology["nodes"]
+    adj = topology["adjacency_list"]
+
+    result = engine.run_vrf_election(nodes=nodes, adjacency_list=adj, r_hops=r_hops)
+    initiators = result["initiators"]
+
+    assert len(initiators) >= 1, "At least one initiator must be elected"
+    assert len(result["logs"]) > 0
+
+    # Verify dispersion: Check pairwise hop distance between all initiators
+    # using BFS to ensure hop_distance(init_a, init_b) > r_hops
+    for i in range(len(initiators)):
+        init_a = initiators[i]
+        # BFS from init_a up to r_hops
+        visited_r_hops = set(engine.get_r_hop_neighborhood(init_a, adj, r_hops))
+
+        for j in range(i + 1, len(initiators)):
+            init_b = initiators[j]
+            assert init_b not in visited_r_hops, (
+                f"Dispersion violation: Initiator {init_a} and Initiator {init_b} "
+                f"are within {r_hops} physical hops of each other!"
+            )
+
+
+def test_zone_first_wins_and_cap():
+    """Verify TTL first-wins zone probing, boundary detection, and S_Z splitting cap."""
+    engine = SemanticDFLEngine(seed=456)
+    r_hops = 2
+    max_zone_size = 8
+    N = 45
+
+    topology = engine.generate_topology(N=N, D_limit=0.35)
+    nodes = topology["nodes"]
+    adj = topology["adjacency_list"]
+
+    # 1. Run VRF election
+    engine.run_vrf_election(nodes=nodes, adjacency_list=adj, r_hops=r_hops)
+
+    # 2. Run Zone Formation
+    zone_res = engine.run_zone_formation(
+        nodes=nodes,
+        adjacency_list=adj,
+        r_hops=r_hops,
+        max_zone_size=max_zone_size,
+    )
+
+    updated_nodes = zone_res["nodes"]
+    zones = zone_res["zones"]
+    boundaries = zone_res["boundaries"]
+    packet_hops = zone_res["packet_hops"]
+
+    # Assertion 1: All nodes have a single valid assigned zone_id
+    for node in updated_nodes:
+        assert node["state"] == "ASSIGNED", f"Node {node['id']} should be ASSIGNED"
+        assert node["zone_id"] is not None, f"Node {node['id']} has null zone_id"
+        assert isinstance(node["zone_id"], int), f"Node {node['id']} zone_id must be integer"
+        assert node["zone_id"] in zones, f"Node {node['id']} zone_id not found in zones registry"
+
+    # Assertion 2: Strict S_Z cardinality cap - no zone has size > max_zone_size
+    for zid, members in zones.items():
+        assert len(members) <= max_zone_size, (
+            f"Cardinality violation: Zone {zid} has {len(members)} nodes, exceeding S_Z={max_zone_size}"
+        )
+
+    # Total members across all zones must equal N
+    total_members = sum(len(m) for m in zones.values())
+    assert total_members == N, f"Expected {N} total zone members, found {total_members}"
+
+    # Assertion 3: Boundary events are detected between neighboring zones
+    assert len(packet_hops) > 0, "Packet hops must be recorded for trajectory analysis"
+    assert len(boundaries) > 0, "Inter-zone boundary events should be detected in connected topology"
+    for b in boundaries:
+        assert b["zone_a"] != b["zone_b"], f"Boundary detected inside the same zone: {b}"
+
+
+def test_global_p_binary_search():
+    """Verify decentralized binary search for local P_i^{min} and quantile consensus."""
+    engine = SemanticDFLEngine(seed=789)
+    N = 30
+    theta = 0.70
+    q = 0.20
+
+    topology = engine.generate_topology(N=N, D_limit=0.35)
+    nodes = topology["nodes"]
+
+    gp_res = engine.calculate_global_p_consensus(nodes=nodes, theta=theta, q=q)
+
+    local_p = gp_res["local_p"]
+    directional_sims = gp_res["directional_similarities"]
+    global_p = gp_res["global_p"]
+    exact_q = gp_res["exact_quantile"]
+
+    # Assertion 1: For each node, pruned signature with size P_i^{min} meets >= theta similarity
+    for node in nodes:
+        nid = node["id"]
+        p_val = local_p[nid]
+        assert 1 <= p_val <= 50, f"Node {nid} local P={p_val} outside [1, 50]"
+
+        # Validate directional cosine similarity independently
+        w = np.asarray(node["weights"], dtype=np.float64)
+        full_norm = float(np.linalg.norm(w))
+        sorted_indices = np.argsort(-np.abs(w))
+        retained_sq = sum(w[sorted_indices[:p_val]] ** 2)
+        computed_sim = np.sqrt(retained_sq) / full_norm
+
+        assert computed_sim >= theta - 1e-6, (
+            f"Node {nid} similarity {computed_sim:.4f} with P={p_val} does not satisfy theta={theta}"
+        )
+        assert directional_sims[nid] >= theta - 1e-4
+
+        # Minimality check: P_i^{min} - 1 must fail the theta threshold (if p_val > 1)
+        if p_val > 1:
+            smaller_retained_sq = sum(w[sorted_indices[:p_val - 1]] ** 2)
+            smaller_sim = np.sqrt(smaller_retained_sq) / full_norm
+            assert smaller_sim < theta, (
+                f"P={p_val} is not minimal for node {nid}: P-1 yields similarity {smaller_sim:.4f} >= {theta}"
+            )
+
+    # Assertion 2: Verify global_p matches exact q-quantile
+    p_values = [local_p[n["id"]] for n in nodes]
+    expected_quantile = float(np.quantile(p_values, q))
+    assert np.isclose(exact_q, expected_quantile)
+    assert global_p == int(np.round(expected_quantile))
+
+
+def test_phase2_endpoints():
+    """Verify FastAPI step endpoints sequentially: /init -> /step/vrf -> /step/zones -> /step/global-p."""
+    client = TestClient(app)
+
+    # Step 0: Initialize simulation session
+    init_payload = {
+        "num_nodes": 20,
+        "d_limit": 0.35,
+        "r_hops": 2,
+        "max_zone_size": 6,
+        "theta": 0.75,
+        "q": 0.25,
+    }
+    init_resp = client.post("/api/v1/init", json=init_payload)
+    assert init_resp.status_code == 200
+    session_id = init_resp.json()["session_id"]
+
+    # Step 1: Execute VRF election step
+    vrf_resp = client.post("/api/v1/step/vrf", json={"session_id": session_id})
+    assert vrf_resp.status_code == 200
+    vrf_data = vrf_resp.json()
+    assert "initiators" in vrf_data
+    assert len(vrf_data["initiators"]) >= 1
+    assert any(n["role"] == "INITIATOR" for n in vrf_data["nodes"])
+
+    # Step 2: Execute Zone formation step
+    zones_resp = client.post("/api/v1/step/zones", json={"session_id": session_id})
+    assert zones_resp.status_code == 200
+    zones_data = zones_resp.json()
+    assert "zones" in zones_data
+    assert "boundaries" in zones_data
+    assert "packet_hops" in zones_data
+    assert all(len(members) <= 6 for members in zones_data["zones"].values())
+
+    # Step 3: Execute Global-P consensus step
+    gp_resp = client.post("/api/v1/step/global-p", json={"session_id": session_id})
+    assert gp_resp.status_code == 200
+    gp_data = gp_resp.json()
+    assert "global_p" in gp_data
+    assert 1 <= gp_data["global_p"] <= 50
+    assert "local_p" in gp_data
+    assert len(gp_data["local_p"]) == 20
+    assert gp_data["theta"] == 0.75
+    assert gp_data["q"] == 0.25
+
+    # Step 4: Verify error handling on non-existent session
+    bad_resp = client.post("/api/v1/step/vrf", json={"session_id": "non-existent-session-id"})
+    assert bad_resp.status_code == 404

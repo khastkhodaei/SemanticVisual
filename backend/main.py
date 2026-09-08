@@ -138,3 +138,117 @@ def init_simulation(req: SimulationInitRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to initialize simulation: {str(e)}",
         )
+
+
+class VRFStepRequest(BaseModel):
+    session_id: str
+    r_hops: Optional[int] = Field(default=None, ge=1, le=10)
+
+
+class ZonesStepRequest(BaseModel):
+    session_id: str
+    r_hops: Optional[int] = Field(default=None, ge=1, le=10)
+    max_zone_size: Optional[int] = Field(default=None, ge=2, le=100)
+
+
+class GlobalPStepRequest(BaseModel):
+    session_id: str
+    theta: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    q: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+
+
+@app.post("/api/v1/step/vrf", status_code=status.HTTP_200_OK, tags=["Simulation"])
+def step_vrf_election(req: VRFStepRequest):
+    """Execute VRF leader election step on the current simulation session."""
+    session = session_store.get_session(req.session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {req.session_id} not found")
+
+    engine = SemanticDFLEngine()
+    r_hops = req.r_hops if req.r_hops is not None else session["params"].get("r_hops", 2)
+
+    result = engine.run_vrf_election(
+        nodes=session["nodes"],
+        adjacency_list=session["adjacency_list"],
+        r_hops=r_hops,
+    )
+
+    session["nodes"] = result["nodes"]
+    session["logs"].extend(result["logs"])
+
+    return {
+        "session_id": req.session_id,
+        "initiators": result["initiators"],
+        "nodes": result["nodes"],
+        "logs": result["logs"],
+    }
+
+
+@app.post("/api/v1/step/zones", status_code=status.HTTP_200_OK, tags=["Simulation"])
+def step_zone_formation(req: ZonesStepRequest):
+    """Execute TTL-bounded zone probing and deterministic splitting step."""
+    session = session_store.get_session(req.session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {req.session_id} not found")
+
+    engine = SemanticDFLEngine()
+    r_hops = req.r_hops if req.r_hops is not None else session["params"].get("r_hops", 2)
+    max_zone_size = req.max_zone_size if req.max_zone_size is not None else session["params"].get("max_zone_size", 10)
+
+    result = engine.run_zone_formation(
+        nodes=session["nodes"],
+        adjacency_list=session["adjacency_list"],
+        r_hops=r_hops,
+        max_zone_size=max_zone_size,
+    )
+
+    session["nodes"] = result["nodes"]
+    session["zones"] = result["zones"]
+    session["boundaries"] = result["boundaries"]
+    session["packet_hops"] = result["packet_hops"]
+    session["logs"].extend(result["logs"])
+
+    return {
+        "session_id": req.session_id,
+        "zones": result["zones"],
+        "boundaries": result["boundaries"],
+        "packet_hops": result["packet_hops"],
+        "nodes": result["nodes"],
+        "logs": result["logs"],
+    }
+
+
+@app.post("/api/v1/step/global-p", status_code=status.HTTP_200_OK, tags=["Simulation"])
+def step_global_p_consensus(req: GlobalPStepRequest):
+    """Execute Global-P binary search and quantile consensus step."""
+    session = session_store.get_session(req.session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {req.session_id} not found")
+
+    engine = SemanticDFLEngine()
+    theta = req.theta if req.theta is not None else session["params"].get("theta", 0.70)
+    q = req.q if req.q is not None else session["params"].get("q", 0.20)
+
+    result = engine.calculate_global_p_consensus(
+        nodes=session["nodes"],
+        theta=theta,
+        q=q,
+    )
+
+    session["global_p"] = result["global_p"]
+    session["exact_quantile"] = result["exact_quantile"]
+    session["local_p"] = result["local_p"]
+    session["directional_similarities"] = result["directional_similarities"]
+    session["logs"].extend(result["logs"])
+
+    return {
+        "session_id": req.session_id,
+        "global_p": result["global_p"],
+        "exact_quantile": result["exact_quantile"],
+        "local_p": result["local_p"],
+        "directional_similarities": result["directional_similarities"],
+        "theta": result["theta"],
+        "q": result["q"],
+        "logs": result["logs"],
+    }
+
