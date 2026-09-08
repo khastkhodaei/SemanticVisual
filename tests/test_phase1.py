@@ -154,3 +154,46 @@ def test_init_api_endpoint():
     assert saved_session is not None
     assert saved_session["session_id"] == session_id
     assert len(saved_session["nodes"]) == 24
+
+
+def test_benchmark_homogeneous_models_and_non_iid_partitions():
+    """Verify that all nodes share a homogeneous model family while possessing
+
+    cluster-aligned Non-IID label partitions, and verify benchmark switching.
+    """
+    engine = SemanticDFLEngine(seed=777)
+    client = TestClient(app)
+
+    benchmarks = ["FMNIST (CNN)", "Tiny ImageNet (ResNet-18)", "Google Speech (ResNet-18)"]
+
+    for bench in benchmarks:
+        topo = engine.generate_topology(N=18, D_limit=0.35, benchmark=bench)
+        nodes = topo["nodes"]
+        meta = topo["metadata"]
+
+        assert meta["benchmark"] == bench
+        expected_arch = meta["model_architecture"]
+
+        # 1. Homogeneous model family across all nodes
+        for node in nodes:
+            assert node["benchmark"] == bench
+            assert node["model_architecture"] == expected_arch
+            assert "Cluster" in node["category_name"]
+            assert len(node["weights"]) == 50
+
+        # 2. Test API initialization with this benchmark preset
+        resp = client.post("/api/v1/init", json={
+            "benchmark": bench,
+            "num_nodes": 12,
+            "d_limit": 0.35,
+            "r_hops": 2,
+            "max_zone_size": 6,
+            "theta": 0.70,
+            "q": 0.20,
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["metadata"]["benchmark"] == bench
+        assert data["metadata"]["model_architecture"] == expected_arch
+        assert all(n["model_architecture"] == expected_arch for n in data["nodes"])
+

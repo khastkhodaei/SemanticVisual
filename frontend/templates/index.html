@@ -80,10 +80,40 @@
         </h2>
 
         <div class="space-y-3 text-xs">
+          <!-- Benchmark Task Selector -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-slate-300 font-mono text-[11px] flex items-center">
+                Benchmark Task:
+                <span class="has-tooltip ml-1.5" tabindex="0">
+                  <span class="info-badge">i</span>
+                  <span class="tooltip-content">
+                    <span class="tooltip-title">Benchmark Task</span>
+                    Homogeneous model architecture family shared by all peers with Non-IID label skew across clusters (ACM 2026 Sec 5.1).
+                  </span>
+                </span>
+              </span>
+            </div>
+            <select id="param_benchmark" class="w-full bg-slate-900 border border-cyan-500/30 text-cyan-300 rounded px-2 py-1 text-xs font-mono focus:border-cyan-400 focus:outline-none">
+              <option value="FMNIST (CNN)">FMNIST (CNN)</option>
+              <option value="Tiny ImageNet (ResNet-18)">Tiny ImageNet (ResNet-18)</option>
+              <option value="Google Speech (ResNet-18)">Google Speech (ResNet-18)</option>
+            </select>
+          </div>
+
           <!-- Peers N -->
           <div>
             <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300">Nodes (N):</span>
+              <span class="text-slate-300 flex items-center">
+                Nodes (N):
+                <span class="has-tooltip ml-1.5" tabindex="0">
+                  <span class="info-badge">i</span>
+                  <span class="tooltip-content">
+                    <span class="tooltip-title">Peers (N)</span>
+                    Total number of participating decentralized edge clients (10 &le; N &le; 80).
+                  </span>
+                </span>
+              </span>
               <span id="val_n" class="text-cyan-400 font-bold">30</span>
             </div>
             <input id="param_n" type="range" min="15" max="90" value="30" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
@@ -92,7 +122,16 @@
           <!-- Radius D_limit -->
           <div>
             <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300">Comm Radius (D_limit):</span>
+              <span class="text-slate-300 flex items-center">
+                Comm Radius (D_limit):
+                <span class="has-tooltip ml-1.5" tabindex="0">
+                  <span class="info-badge">i</span>
+                  <span class="tooltip-content">
+                    <span class="tooltip-title">Connectivity (D_limit)</span>
+                    Maximum physical Euclidean distance threshold for ad-hoc wireless/P2P link establishment.
+                  </span>
+                </span>
+              </span>
               <span id="val_dlimit" class="text-cyan-400 font-bold">0.35</span>
             </div>
             <input id="param_dlimit" type="range" min="0.20" max="0.55" step="0.01" value="0.35" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
@@ -101,7 +140,16 @@
           <!-- R-Hops -->
           <div>
             <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300">Probing Radius (R-Hops):</span>
+              <span class="text-slate-300 flex items-center">
+                Probing Radius (R-Hops):
+                <span class="has-tooltip ml-1.5" tabindex="0">
+                  <span class="info-badge">i</span>
+                  <span class="tooltip-content">
+                    <span class="tooltip-title">Radius (R hops)</span>
+                    Time-To-Live (TTL) search boundary for decentralized VRF leader election and zone scoping.
+                  </span>
+                </span>
+              </span>
               <span id="val_rhops" class="text-cyan-400 font-bold">2</span>
             </div>
             <input id="param_rhops" type="range" min="1" max="4" value="2" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
@@ -110,7 +158,16 @@
           <!-- Max Zone Size S_Z -->
           <div>
             <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300">Max Zone Cap (S_Z):</span>
+              <span class="text-slate-300 flex items-center">
+                Max Zone Cap (S_Z):
+                <span class="has-tooltip ml-1.5" tabindex="0">
+                  <span class="info-badge">i</span>
+                  <span class="tooltip-content">
+                    <span class="tooltip-title">Max Zone Size (S_Z)</span>
+                    Maximum peer capacity per zone; exceeding this triggers deterministic zone splitting.
+                  </span>
+                </span>
+              </span>
               <span id="val_sz" class="text-cyan-400 font-bold">8</span>
             </div>
             <input id="param_sz" type="range" min="4" max="16" value="8" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
@@ -119,7 +176,16 @@
           <!-- Quantile q -->
           <div>
             <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300">Quantile Target (q):</span>
+              <span class="text-slate-300 flex items-center">
+                Quantile Target (q):
+                <span class="has-tooltip ml-1.5" tabindex="0">
+                  <span class="info-badge">i</span>
+                  <span class="tooltip-content">
+                    <span class="tooltip-title">Sparsity Quantile (q)</span>
+                    Quantile of local P_min values selected during gossip consensus to establish the uniform global P.
+                  </span>
+                </span>
+              </span>
               <span id="val_q" class="text-cyan-400 font-bold">0.20</span>
             </div>
             <input id="param_q" type="range" min="0.05" max="0.50" step="0.05" value="0.20" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
@@ -128,7 +194,16 @@
           <!-- Sparsity Target theta -->
           <div>
             <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300">Sparsity Target (θ):</span>
+              <span class="text-slate-300 flex items-center">
+                Sparsity Target (θ):
+                <span class="has-tooltip ml-1.5" tabindex="0">
+                  <span class="info-badge">i</span>
+                  <span class="tooltip-content">
+                    <span class="tooltip-title">Target Cosine (&theta;)</span>
+                    Directional cosine threshold used in binary search to prune weights into sparse signatures.
+                  </span>
+                </span>
+              </span>
               <span id="val_theta" class="text-cyan-400 font-bold">0.70</span>
             </div>
             <input id="param_theta" type="range" min="0.50" max="0.90" step="0.05" value="0.70" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
@@ -137,12 +212,22 @@
           <!-- Softmax Temperature kappa -->
           <div>
             <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300">Softmax Temp (κ):</span>
+              <span class="text-slate-300 flex items-center">
+                Softmax Temp (κ):
+                <span class="has-tooltip ml-1.5" tabindex="0">
+                  <span class="info-badge">i</span>
+                  <span class="tooltip-content">
+                    <span class="tooltip-title">Softmax Temperature (&kappa;)</span>
+                    Temperature parameter controlling the sharp vs. smooth exponential weighting of pulled Top-K neighbor models.
+                  </span>
+                </span>
+              </span>
               <span id="val_kappa" class="text-cyan-400 font-bold">0.50</span>
             </div>
             <input id="param_kappa" type="range" min="0.10" max="2.00" step="0.10" value="0.50" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
           </div>
         </div>
+
 
         <!-- Action Buttons -->
         <div class="pt-2 space-y-2">

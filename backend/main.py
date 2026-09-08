@@ -22,12 +22,14 @@ from backend.engine import SemanticDFLEngine
 
 
 class SimulationInitRequest(BaseModel):
+    benchmark: str = Field(default="FMNIST (CNN)", description="Homogeneous model family and Non-IID benchmark task")
     num_nodes: int = Field(default=30, ge=2, le=500, description="Number of participating nodes")
     d_limit: float = Field(default=0.35, gt=0.0, le=1.0, description="Physical Euclidean distance communication cutoff / 900")
     r_hops: int = Field(default=2, ge=1, le=10, description="R-hop neighborhood exploration limit")
     max_zone_size: int = Field(default=10, ge=2, le=100, description="Maximum number of nodes in a semantic zone")
     theta: float = Field(default=0.70, ge=0.0, le=1.0, description="Semantic similarity clustering threshold")
     q: float = Field(default=0.20, ge=0.0, le=1.0, description="Byzantine / Sybil adversary fraction")
+
 
 
 class SimulationLogEntry(BaseModel):
@@ -105,15 +107,25 @@ def init_simulation(req: SimulationInitRequest):
                 "message": msg,
             })
 
-        log_event("INFO", f"Initializing simulation session {session_id} with N={req.num_nodes}, D_limit={req.d_limit}")
+        log_event("INFO", f"Initializing simulation session {session_id} with Benchmark='{req.benchmark}', N={req.num_nodes}, D_limit={req.d_limit}")
 
         engine = SemanticDFLEngine()
-        topology = engine.generate_topology(N=req.num_nodes, D_limit=req.d_limit, maintain_connectivity=True)
+        topology = engine.generate_topology(
+            N=req.num_nodes,
+            D_limit=req.d_limit,
+            maintain_connectivity=True,
+            benchmark=req.benchmark,
+        )
 
         num_edges = len(topology["edges"])
         avg_deg = topology["metadata"]["avg_degree"]
+        model_arch = topology["metadata"]["model_architecture"]
         log_event("INFO", f"RGG topology generated: {req.num_nodes} nodes, {num_edges} physical edges (avg degree: {avg_deg})")
+
+        log_event("INFO", f"Model Family: {model_arch} | Non-IID Skew: 3 partition clusters | Benchmark: {req.benchmark}")
         log_event("INFO", f"Configured parameters: r_hops={req.r_hops}, max_zone_size={req.max_zone_size}, theta={req.theta}, q={req.q}")
+
+
 
         session_data = {
             "session_id": session_id,

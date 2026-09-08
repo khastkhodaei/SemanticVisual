@@ -157,10 +157,11 @@ function initCytoscape() {
     document.getElementById('cardRole').textContent = n.role || n.type || 'CLIENT';
     document.getElementById('cardZone').textContent = n.zone !== undefined ? `Zone ${n.zone}` : 'None';
     document.getElementById('cardVRF').textContent = n.vrf !== undefined ? Number(n.vrf).toFixed(4) : '-';
-    document.getElementById('cardClass').textContent = n.category || 'Unknown';
+    document.getElementById('cardClass').textContent = n.category || 'Non-IID Partition';
     document.getElementById('cardStatus').textContent = n.isDead ? 'OFFLINE (CHURN)' : 'ONLINE';
     card.classList.remove('hidden');
   });
+
 
   cy.on('mouseout', 'node', () => {
     const card = document.getElementById('nodeInfoCard');
@@ -296,6 +297,7 @@ function bindActionButtons() {
 // 5. Simulation Lifecycle Orchestration
 async function bootstrapSimulation() {
   const payload = {
+    benchmark: document.getElementById('param_benchmark')?.value || 'FMNIST (CNN)',
     num_nodes: parseInt(document.getElementById('param_n').value),
     d_limit: parseFloat(document.getElementById('param_dlimit').value),
     r_hops: parseInt(document.getElementById('param_rhops').value),
@@ -304,7 +306,8 @@ async function bootstrapSimulation() {
     q: parseFloat(document.getElementById('param_q').value),
   };
 
-  logToTerminal('INIT', `Bootstrapping RGG topology with N=${payload.num_nodes}, D_limit=${payload.d_limit}...`);
+  logToTerminal('INIT', `Bootstrapping Benchmark: ${payload.benchmark} | Model Family: Homogeneous | N=${payload.num_nodes}, D_limit=${payload.d_limit}...`);
+
 
   try {
     const res = await fetch('/api/v1/init', {
@@ -536,6 +539,8 @@ function renderCytoscapeMesh() {
         zone: node.zone_id,
         vrf: node.vrf_score,
         category: node.category_name,
+        model_arch: node.model_architecture,
+        benchmark: node.benchmark,
         peer_id: node.id
       },
       position: { x: node.coords.x, y: node.coords.y }
@@ -625,8 +630,9 @@ function populateSandboxSelects(nodes) {
   selB.innerHTML = '';
 
   nodes.forEach((n, idx) => {
-    const optA = new Option(`Node ${n.id} (${n.category_name.split('_')[0]})`, n.id);
-    const optB = new Option(`Node ${n.id} (${n.category_name.split('_')[0]})`, n.id);
+    const shortLabel = n.category_name.includes('(') ? n.category_name.split('(')[0].trim() : n.category_name;
+    const optA = new Option(`Node ${n.id} [${shortLabel}]`, n.id);
+    const optB = new Option(`Node ${n.id} [${shortLabel}]`, n.id);
     selA.add(optA);
     selB.add(optB);
   });
@@ -648,12 +654,16 @@ function updateSignatureSandbox() {
   const wA = nodeA.weights;
   const wB = nodeB.weights;
 
+  const labelA = nodeA.category_name.includes('(') ? nodeA.category_name.split('(')[0].trim() : nodeA.category_name;
+  const labelB = nodeB.category_name.includes('(') ? nodeB.category_name.split('(')[0].trim() : nodeB.category_name;
+
   // Chart datasets
-  chartSignatures.data.datasets[0].label = `Node ${idA} (${nodeA.category_name.split('_')[0]})`;
+  chartSignatures.data.datasets[0].label = `Node ${idA} (${labelA})`;
   chartSignatures.data.datasets[0].data = wA;
-  chartSignatures.data.datasets[1].label = `Node ${idB} (${nodeB.category_name.split('_')[0]})`;
+  chartSignatures.data.datasets[1].label = `Node ${idB} (${labelB})`;
   chartSignatures.data.datasets[1].data = wB;
   chartSignatures.update();
+
 
   // KaTeX Math Calculation
   let dot = 0;

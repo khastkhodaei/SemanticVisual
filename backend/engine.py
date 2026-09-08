@@ -11,11 +11,34 @@ from sklearn.cluster import AffinityPropagation
 
 
 
-SEMANTIC_CLASSES = {
-    0: "Cat_Classifier",
-    1: "Car_Classifier",
-    2: "Audio_Classifier",
+BENCHMARK_CONFIGS = {
+    "FMNIST (CNN)": {
+        "model_family": "CNN (2-Layer ConvNet)",
+        "categories": {
+            0: "Cluster A (Labels 0-2: T-shirt/Trouser/Pullover)",
+            1: "Cluster B (Labels 3-5: Dress/Coat/Sandal)",
+            2: "Cluster C (Labels 6-8: Shirt/Sneaker/Bag)",
+        }
+    },
+    "Tiny ImageNet (ResNet-18)": {
+        "model_family": "ResNet-18",
+        "categories": {
+            0: "Cluster A (Classes 0-66: Living/Animals)",
+            1: "Cluster B (Classes 67-133: Vehicles/Machines)",
+            2: "Cluster C (Classes 134-199: Objects/Structures)",
+        }
+    },
+    "Google Speech (ResNet-18)": {
+        "model_family": "1D-ResNet-18",
+        "categories": {
+            0: "Cluster A (Commands: Yes/No/Up)",
+            1: "Cluster B (Commands: Down/Left/Right)",
+            2: "Cluster C (Commands: On/Off/Stop)",
+        }
+    }
 }
+DEFAULT_BENCHMARK = "FMNIST (CNN)"
+SEMANTIC_CLASSES = BENCHMARK_CONFIGS[DEFAULT_BENCHMARK]["categories"]
 
 BOOST_SLICES = {
     0: (0, 18),
@@ -52,25 +75,28 @@ class SemanticDFLEngine:
         N: int,
         D_limit: float = 0.35,
         maintain_connectivity: bool = True,
+        benchmark: str = DEFAULT_BENCHMARK,
     ) -> Dict[str, Any]:
-        """Generate Random Geometric Graph (RGG) physical topology and node models.
+        """Generate Random Geometric Graph (RGG) physical topology and homogeneous node models.
 
         Args:
             N: Number of nodes to generate.
             D_limit: Normalized distance threshold for communication (distance / 900.0 <= D_limit).
             maintain_connectivity: Whether to detect singletons and guarantee degree >= 1.
+            benchmark: Homogeneous model family and Non-IID benchmark task.
 
         Returns:
-            Dictionary containing:
-                - nodes: list of node objects
-                - edges: list of undirected edges with Euclidean and normalized distances
-                - adjacency_list: dict mapping node ID to list of neighbor IDs
-                - metadata: topology parameters and generation stats
+            Dictionary containing nodes, edges, adjacency_list, and metadata.
         """
         if N <= 0:
             raise ValueError("Number of nodes N must be greater than 0.")
         if D_limit <= 0.0:
             raise ValueError("D_limit must be strictly positive.")
+
+        bench_cfg = BENCHMARK_CONFIGS.get(benchmark, BENCHMARK_CONFIGS[DEFAULT_BENCHMARK])
+        model_family = bench_cfg["model_family"]
+        category_names = bench_cfg["categories"]
+
 
         # Coordinate space: x in [50, 850], y in [50, 550]
         x_coords = self.rng.uniform(50.0, 850.0, size=N)
@@ -162,7 +188,9 @@ class SemanticDFLEngine:
                     "y": round(float(coords[i, 1]), 2),
                 },
                 "category": cat,
-                "category_name": SEMANTIC_CLASSES[cat],
+                "category_name": category_names[cat],
+                "benchmark": benchmark,
+                "model_architecture": model_family,
                 "weights": weights,
                 "vrf_score": round(vrf_score, 6),
                 "role": "CLIENT",
@@ -181,6 +209,8 @@ class SemanticDFLEngine:
                 "num_edges": len(edges_list),
                 "d_limit": D_limit,
                 "avg_degree": round(float(2 * len(edges_list) / N), 2) if N > 0 else 0.0,
+                "benchmark": benchmark,
+                "model_architecture": model_family,
             },
         }
 
