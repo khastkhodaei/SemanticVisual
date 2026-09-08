@@ -252,3 +252,150 @@ def step_global_p_consensus(req: GlobalPStepRequest):
         "logs": result["logs"],
     }
 
+
+class SignaturesStepRequest(BaseModel):
+    session_id: str
+    global_p: Optional[int] = Field(default=None, ge=1, le=50)
+
+
+class ClusteringStepRequest(BaseModel):
+    session_id: str
+    replication_factor: int = Field(default=2, ge=1, le=10)
+
+
+class HierarchyStepRequest(BaseModel):
+    session_id: str
+    max_fanout: int = Field(default=4, ge=2, le=20)
+
+
+@app.post("/api/v1/step/signatures", status_code=status.HTTP_200_OK, tags=["Simulation"])
+def step_extract_signatures(req: SignaturesStepRequest):
+    """Extract Top-P compact signatures for all nodes in the simulation session."""
+    session = session_store.get_session(req.session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {req.session_id} not found")
+
+    engine = SemanticDFLEngine()
+    global_p = req.global_p if req.global_p is not None else session.get("global_p", 15)
+
+    sig_res = engine.extract_compact_signatures(nodes=session["nodes"], global_p=global_p)
+    session["signatures"] = sig_res["signatures"]
+    session["global_p"] = global_p
+
+    # Compute a few sample pairwise sparse cosine similarities for dashboard display
+    nodes = session["nodes"]
+    sample_similarities = []
+    if len(nodes) >= 2:
+        for i in range(min(5, len(nodes))):
+            for j in range(i + 1, min(6, len(nodes))):
+                sim = engine.sparse_cosine_similarity(nodes[i]["signature"], nodes[j]["signature"])
+                sample_similarities.append({
+                    "node_a": nodes[i]["id"],
+                    "cat_a": nodes[i].get("category_name"),
+                    "node_b": nodes[j]["id"],
+                    "cat_b": nodes[j].get("category_name"),
+                    "sparse_cosine": round(sim, 4),
+                })
+
+    logs = [{
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "level": "SUCCESS",
+        "message": f"Extracted Top-{global_p} compact signatures for {len(nodes)} nodes with sparse representations.",
+    }]
+    session["logs"].extend(logs)
+
+    return {
+        "session_id": req.session_id,
+        "global_p": global_p,
+        "signatures": sig_res["signatures"],
+        "sample_similarities": sample_similarities,
+        "logs": logs,
+    }
+
+
+@app.post("/api/v1/step/clustering", status_code=status.HTTP_200_OK, tags=["Simulation"])
+def step_intra_zone_clustering(req: ClusteringStepRequest):
+    """Execute intra-zone Affinity Propagation clustering, electing Super-Peers and Replica sets."""
+    session = session_store.get_session(req.session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {req.session_id} not found")
+
+    engine = SemanticDFLEngine()
+    global_p = session.get("global_p", 15)
+    zones = session.get("zones", {})
+
+    if not zones:
+        # If zones step not run explicitly, group by existing zone_id or single zone
+        zones_map: Dict[int, List[int]] = {}
+        for n in session["nodes"]:
+            zid = n.get("zone_id", 0) or 0
+            zones_map.setdefault(zid, []).append(n["id"])
+        zones = zones_map
+        session["zones"] = zones
+
+    all_clusters = []
+    node_map = {n["id"]: n for n in session["nodes"]}
+
+    for zid, member_ids in zones.items():
+        z_nodes = [node_map[mid] for mid in member_ids]
+        c_res = engine.cluster_intra_zone(z_nodes, global_p=global_p, replication_factor=req.replication_factor)
+        all_clusters.extend(c_res["clusters"])
+
+    super_peers = [c["super_peer_id"] for c in all_clusters]
+    session["clusters"] = all_clusters
+
+    logs = [{
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "level": "SUCCESS",
+        "message": f"Intra-zone AP clustering complete: {len(all_clusters)} clusters and Super-Peers formed across {len(zones)} zones.",
+    }]
+    session["logs"].extend(logs)
+
+    return {
+        "session_id": req.session_id,
+        "clusters": all_clusters,
+        "super_peers": super_peers,
+        "nodes": session["nodes"],
+        "logs": logs,
+    }
+
+
+@app.post("/api/v1/step/son-hierarchy", status_code=status.HTTP_200_OK, tags=["Simulation"])
+def step_son_hierarchy(req: HierarchyStepRequest):
+    """Construct multi-level Hierarchical Semantic Overlay Network (SON) tree."""
+    session = session_store.get_session(req.session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {req.session_id} not found")
+
+    engine = SemanticDFLEngine()
+    global_p = session.get("global_p", 15)
+    zones = session.get("zones", {})
+
+    if not zones:
+        zones_map: Dict[int, List[int]] = {}
+        for n in session["nodes"]:
+            zid = n.get("zone_id", 0) or 0
+            zones_map.setdefault(zid, []).append(n["id"])
+        zones = zones_map
+        session["zones"] = zones
+
+    tree_result = engine.build_hierarchical_son(
+        nodes=session["nodes"],
+        zones=zones,
+        global_p=global_p,
+        max_fanout=req.max_fanout,
+    )
+
+    session["son_tree"] = tree_result
+    session["logs"].extend(tree_result["logs"])
+
+    return {
+        "session_id": req.session_id,
+        "depth": tree_result["depth"],
+        "tree_nodes": tree_result["tree_nodes"],
+        "tree_edges": tree_result["tree_edges"],
+        "level_1_clusters": tree_result["level_1_clusters"],
+        "logs": tree_result["logs"],
+    }
+
+

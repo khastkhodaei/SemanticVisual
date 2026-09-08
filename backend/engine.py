@@ -7,6 +7,8 @@ connectivity guarantees, and 50-dimensional heterogeneous semantic weight modeli
 from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 from scipy.spatial.distance import cdist
+from sklearn.cluster import AffinityPropagation
+
 
 
 SEMANTIC_CLASSES = {
@@ -569,4 +571,398 @@ class SemanticDFLEngine:
             "q": q,
             "logs": logs,
         }
+
+    def extract_compact_signatures(
+        self,
+        nodes: List[Dict[str, Any]],
+        global_p: int,
+    ) -> Dict[str, Any]:
+        """Extract Top-P compact model signatures for all nodes.
+
+        Ranks parameter coordinates by magnitude: I_i = TopP(|w_{i, r}|) with |I_i| = global_p.
+        Stores sparse format: {'indices': list[int], 'values': list[float], 'norm': float}.
+        """
+        signatures: Dict[int, Dict[str, Any]] = {}
+        for node in nodes:
+            w = np.asarray(node["weights"], dtype=np.float64)
+            # Top-P coordinates by absolute magnitude
+            sorted_indices = np.argsort(-np.abs(w))[:global_p].tolist()
+            values = [round(float(w[idx]), 6) for idx in sorted_indices]
+            norm = float(np.sqrt(sum(v ** 2 for v in values)))
+
+            sig = {
+                "indices": sorted_indices,
+                "values": values,
+                "norm": norm,
+            }
+            node["signature"] = sig
+            signatures[node["id"]] = sig
+
+        return {
+            "global_p": global_p,
+            "signatures": signatures,
+            "nodes": nodes,
+        }
+
+    @staticmethod
+    def sparse_cosine_similarity(sig_a: Dict[str, Any], sig_b: Dict[str, Any]) -> float:
+        r"""Compute cosine similarity over sparse masked vectors in O(P) time via index intersection.
+
+        sim(u_i, u_j) = (sum_{r in I_i \cap I_j} w_{i, r} w_{j, r}) / (||u_i||_2 * ||u_j||_2)
+        """
+
+        norm_a = sig_a.get("norm", 0.0)
+        norm_b = sig_b.get("norm", 0.0)
+        if norm_a == 0.0 or norm_b == 0.0:
+            return 0.0
+
+        map_a = dict(zip(sig_a["indices"], sig_a["values"]))
+        dot = 0.0
+        for idx, val in zip(sig_b["indices"], sig_b["values"]):
+            if idx in map_a:
+                dot += val * map_a[idx]
+
+        cos_sim = float(dot / (norm_a * norm_b))
+        return float(np.clip(cos_sim, -1.0, 1.0))
+
+    def cluster_intra_zone(
+        self,
+        zone_nodes: List[Dict[str, Any]],
+        global_p: int,
+        replication_factor: int = 2,
+    ) -> Dict[str, Any]:
+        """Perform intra-zone dynamic Affinity Propagation clustering over sparse signatures.
+
+        Discovers dynamic clusters, exemplars, computes prototype vectors,
+        and elects Super-Peers and Replica Sets (r >= 2).
+        """
+        K = len(zone_nodes)
+        if K == 0:
+            return {"clusters": [], "nodes": [], "logs": []}
+
+        # Ensure all nodes have signatures
+        for n in zone_nodes:
+            if "signature" not in n or len(n["signature"].get("indices", [])) != global_p:
+                w = np.asarray(n["weights"], dtype=np.float64)
+                idx = np.argsort(-np.abs(w))[:global_p].tolist()
+                vals = [round(float(w[i]), 6) for i in idx]
+                n["signature"] = {
+                    "indices": idx,
+                    "values": vals,
+                    "norm": float(np.sqrt(sum(v ** 2 for v in vals))),
+                }
+
+        # Compute pairwise sparse similarity matrix
+        S = np.zeros((K, K), dtype=np.float64)
+        for i in range(K):
+            for j in range(K):
+                if i == j:
+                    continue
+                S[i, j] = self.sparse_cosine_similarity(zone_nodes[i]["signature"], zone_nodes[j]["signature"])
+
+        # Diagonal preferences: median of off-diagonal similarities
+        off_diag = [S[i, j] for i in range(K) for j in range(K) if i != j]
+        pref = float(np.median(off_diag)) if off_diag else 0.5
+        np.fill_diagonal(S, pref)
+
+        labels = None
+        exemplar_indices = []
+
+        if K == 1:
+            labels = np.array([0])
+            exemplar_indices = [0]
+        else:
+            try:
+                ap = AffinityPropagation(affinity="precomputed", damping=0.8, random_state=42, max_iter=300)
+                labels = ap.fit_predict(S)
+                exemplar_indices = list(ap.cluster_centers_indices_)
+            except Exception:
+                labels = None
+
+        if labels is None or len(exemplar_indices) == 0:
+            # Fallback if AP did not converge
+            labels = np.zeros(K, dtype=int)
+            exemplar_indices = [0]
+
+        cluster_descriptors = []
+        zone_id = zone_nodes[0].get("zone_id", 0)
+
+        unique_labels = sorted(list(set(labels)))
+        for c_idx, label in enumerate(unique_labels):
+            member_indices = [i for i in range(K) if labels[i] == label]
+            members = [zone_nodes[i] for i in member_indices]
+
+            # Exemplar
+            if c_idx < len(exemplar_indices):
+                exemplar_local_idx = exemplar_indices[c_idx]
+                exemplar_node = zone_nodes[exemplar_local_idx]
+            else:
+                exemplar_node = members[0]
+
+            exemplar_id = exemplar_node["id"]
+
+            # Compute prototype signature: average across members in full 50D, then Top-P
+            dim = 50
+            avg_w = np.zeros(dim, dtype=np.float64)
+            for m in members:
+                for idx, val in zip(m["signature"]["indices"], m["signature"]["values"]):
+                    avg_w[idx] += val / len(members)
+
+            top_proto_idx = np.argsort(-np.abs(avg_w))[:global_p].tolist()
+            top_proto_vals = [round(float(avg_w[idx]), 6) for idx in top_proto_idx]
+            proto_norm = float(np.sqrt(sum(v ** 2 for v in top_proto_vals)))
+            prototype_sig = {
+                "indices": top_proto_idx,
+                "values": top_proto_vals,
+                "norm": proto_norm,
+            }
+
+            # Replica set election: sort members by similarity to prototype
+            sims_to_proto = []
+            for m in members:
+                sim = self.sparse_cosine_similarity(m["signature"], prototype_sig)
+                sims_to_proto.append((sim, m["id"]))
+            sims_to_proto.sort(key=lambda x: x[0], reverse=True)
+
+            # Elect replicas
+            replicas = []
+            for sim, mid in sims_to_proto:
+                if mid != exemplar_id:
+                    replicas.append(mid)
+                if len(replicas) >= replication_factor:
+                    break
+            if not replicas:
+                replicas = [exemplar_id]
+
+            # Update member node roles
+            for m in members:
+                mid = m["id"]
+                if mid == exemplar_id:
+                    m["role"] = "SUPER_PEER"
+                elif mid in replicas:
+                    m["role"] = "REPLICA"
+                else:
+                    m["role"] = "CLIENT"
+                m["cluster_id"] = f"Z{zone_id}_C{c_idx}"
+
+            cluster_desc = {
+                "cluster_id": f"Z{zone_id}_C{c_idx}",
+                "exemplar_id": exemplar_id,
+                "super_peer_id": exemplar_id,
+                "prototype": prototype_sig,
+                "replica_set": replicas,
+                "members": [m["id"] for m in members],
+                "zone_id": zone_id,
+                "size": len(members),
+            }
+            cluster_descriptors.append(cluster_desc)
+
+        return {
+            "clusters": cluster_descriptors,
+            "nodes": zone_nodes,
+        }
+
+    def build_hierarchical_son(
+        self,
+        nodes: List[Dict[str, Any]],
+        zones: Dict[int, List[int]],
+        global_p: int,
+        max_fanout: int = 4,
+    ) -> Dict[str, Any]:
+        """Build Hierarchical Semantic Overlay Network (SON) with Cytoscape-compatible tree.
+
+        Level 1: Intra-zone dynamic AP clustering discovers Super-Peers & Cluster Descriptors.
+        Level l > 1: Inter-zone recursive prototype clustering builds O(log N) tree DAG.
+        """
+        node_map = {n["id"]: n for n in nodes}
+        # Ensure signatures are extracted
+        self.extract_compact_signatures(nodes, global_p)
+
+        level_1_descriptors = []
+        # Run intra-zone clustering across each physical zone
+        for zid, member_ids in zones.items():
+            z_nodes = [node_map[mid] for mid in member_ids]
+            c_res = self.cluster_intra_zone(z_nodes, global_p=global_p, replication_factor=2)
+            level_1_descriptors.extend(c_res["clusters"])
+
+        tree_nodes: List[Dict[str, Any]] = []
+        tree_edges: List[Dict[str, Any]] = []
+        seen_node_ids = set()
+
+        def add_tree_node(node_dict: Dict[str, Any]):
+            if node_dict["id"] not in seen_node_ids:
+                seen_node_ids.add(node_dict["id"])
+                tree_nodes.append(node_dict)
+
+        # Level 0 (Leaves): Add all client and replica nodes
+        for cd in level_1_descriptors:
+            sp_id = cd["super_peer_id"]
+            sp_tree_id = f"sp_lvl1_{sp_id}"
+
+            # Level 1 Super-Peer node
+            sp_node_info = node_map[sp_id]
+            add_tree_node({
+                "id": sp_tree_id,
+                "label": f"Super-Peer {sp_id}",
+                "level": 1,
+                "type": "super_peer",
+                "category": sp_node_info.get("category_name", "Unknown"),
+                "cluster_id": cd["cluster_id"],
+                "peer_id": sp_id,
+            })
+
+            # Add member leaf nodes and hierarchy edges to level 1 super-peer
+            for mid in cd["members"]:
+                m_info = node_map[mid]
+                leaf_id = f"node_{mid}"
+                m_type = "super_peer" if mid == sp_id else ("replica" if mid in cd["replica_set"] else "client")
+                add_tree_node({
+                    "id": leaf_id,
+                    "label": f"Node {mid}",
+                    "level": 0,
+                    "type": m_type,
+                    "category": m_info.get("category_name", "Unknown"),
+                    "peer_id": mid,
+                })
+
+                # Hierarchy edge: Leaf node points to parent Super-Peer
+                if mid != sp_id:
+                    tree_edges.append({
+                        "id": f"edge_{leaf_id}_{sp_tree_id}",
+                        "source": leaf_id,
+                        "target": sp_tree_id,
+                        "type": "hierarchy",
+                    })
+
+        # Inter-zone Recursive Clustering: Level l > 1
+        current_level = 1
+        current_descriptors = level_1_descriptors
+
+        while len(current_descriptors) > max_fanout:
+            next_level = current_level + 1
+            num_sp = len(current_descriptors)
+
+            # Pairwise cosine similarity matrix of prototypes
+            proto_sims = np.zeros((num_sp, num_sp), dtype=np.float64)
+            for i in range(num_sp):
+                for j in range(num_sp):
+                    if i == j:
+                        continue
+                    proto_sims[i, j] = self.sparse_cosine_similarity(
+                        current_descriptors[i]["prototype"],
+                        current_descriptors[j]["prototype"],
+                    )
+
+            off_diag = [proto_sims[i, j] for i in range(num_sp) for j in range(num_sp) if i != j]
+            pref = float(np.median(off_diag)) if off_diag else 0.5
+            np.fill_diagonal(proto_sims, pref)
+
+            try:
+                ap = AffinityPropagation(affinity="precomputed", damping=0.8, random_state=42, max_iter=300)
+                meta_labels = ap.fit_predict(proto_sims)
+                meta_exemplars = list(ap.cluster_centers_indices_)
+            except Exception:
+                meta_labels = np.zeros(num_sp, dtype=int)
+                meta_exemplars = [0]
+
+            if len(meta_exemplars) == 0:
+                meta_labels = np.zeros(num_sp, dtype=int)
+                meta_exemplars = [0]
+
+            next_descriptors = []
+            for m_idx, exemplar_idx in enumerate(meta_exemplars):
+                children_indices = [i for i in range(num_sp) if meta_labels[i] == m_idx]
+                if not children_indices:
+                    continue
+
+                meta_sp_id = current_descriptors[exemplar_idx]["super_peer_id"]
+                meta_tree_id = f"sp_lvl{next_level}_{meta_sp_id}"
+                meta_node_info = node_map[meta_sp_id]
+
+                add_tree_node({
+                    "id": meta_tree_id,
+                    "label": f"Meta-SP {meta_sp_id} (L{next_level})",
+                    "level": next_level,
+                    "type": "super_peer",
+                    "category": meta_node_info.get("category_name", "Unknown"),
+                    "peer_id": meta_sp_id,
+                })
+
+                # Connect child super-peers to this meta-super-peer
+                for ch_idx in children_indices:
+                    child_sp_id = current_descriptors[ch_idx]["super_peer_id"]
+                    child_tree_id = f"sp_lvl{current_level}_{child_sp_id}"
+                    tree_edges.append({
+                        "id": f"edge_{child_tree_id}_{meta_tree_id}",
+                        "source": child_tree_id,
+                        "target": meta_tree_id,
+                        "type": "hierarchy",
+                    })
+
+                # Prototype of meta-cluster: average child prototypes
+                avg_meta_w = np.zeros(50, dtype=np.float64)
+                for ch_idx in children_indices:
+                    ch_p = current_descriptors[ch_idx]["prototype"]
+                    for idx, val in zip(ch_p["indices"], ch_p["values"]):
+                        avg_meta_w[idx] += val / len(children_indices)
+
+                top_meta_idx = np.argsort(-np.abs(avg_meta_w))[:global_p].tolist()
+                top_meta_vals = [round(float(avg_meta_w[idx]), 6) for idx in top_meta_idx]
+                meta_proto = {
+                    "indices": top_meta_idx,
+                    "values": top_meta_vals,
+                    "norm": float(np.sqrt(sum(v ** 2 for v in top_meta_vals))),
+                }
+
+                next_descriptors.append({
+                    "cluster_id": f"Meta_L{next_level}_C{m_idx}",
+                    "super_peer_id": meta_sp_id,
+                    "prototype": meta_proto,
+                })
+
+            current_descriptors = next_descriptors
+            current_level = next_level
+
+        # Add single root coordinator if multiple top-level super-peers remain
+        root_level = current_level + 1
+        root_tree_id = "son_root"
+        add_tree_node({
+            "id": root_tree_id,
+            "label": "Global SON Root",
+            "level": root_level,
+            "type": "root",
+            "category": "GLOBAL",
+        })
+
+        for cd in current_descriptors:
+            sp_id = cd["super_peer_id"]
+            sp_tree_id = f"sp_lvl{current_level}_{sp_id}"
+            tree_edges.append({
+                "id": f"edge_{sp_tree_id}_{root_tree_id}",
+                "source": sp_tree_id,
+                "target": root_tree_id,
+                "type": "hierarchy",
+            })
+
+        total_depth = root_level
+
+        logs = [
+            {
+                "level": "INFO",
+                "message": f"Hierarchical SON constructed: {len(level_1_descriptors)} Level-1 clusters across {len(zones)} zones.",
+            },
+            {
+                "level": "SUCCESS",
+                "message": f"Global SON tree finalized with depth H={total_depth}, {len(tree_nodes)} tree nodes, and {len(tree_edges)} hierarchy edges.",
+            },
+        ]
+
+        return {
+            "depth": total_depth,
+            "tree_nodes": tree_nodes,
+            "tree_edges": tree_edges,
+            "level_1_clusters": level_1_descriptors,
+            "logs": logs,
+        }
+
 
