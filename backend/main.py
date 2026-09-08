@@ -5,15 +5,20 @@ and in-memory session state management.
 """
 
 from datetime import datetime, timezone
+import os
+from pathlib import Path
 import threading
 from typing import Any, Dict, List, Optional
 import uuid
 
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend.engine import SemanticDFLEngine
+
 
 
 class SimulationInitRequest(BaseModel):
@@ -397,5 +402,128 @@ def step_son_hierarchy(req: HierarchyStepRequest):
         "level_1_clusters": tree_result["level_1_clusters"],
         "logs": tree_result["logs"],
     }
+
+
+class FLStepRequest(BaseModel):
+    session_id: str
+    k_pull: Optional[int] = Field(default=3, ge=1, le=20)
+    kappa: Optional[float] = Field(default=0.5, gt=0.0, le=5.0)
+    alpha: Optional[float] = Field(default=0.6, ge=0.0, le=1.0)
+
+
+class FLChurnRequest(BaseModel):
+    session_id: str
+    node_id: int
+    k_pull: Optional[int] = Field(default=3, ge=1, le=20)
+    kappa: Optional[float] = Field(default=0.5, gt=0.0, le=5.0)
+    alpha: Optional[float] = Field(default=0.6, ge=0.0, le=1.0)
+
+
+@app.post("/api/v1/fl/step", status_code=status.HTTP_200_OK, tags=["Federated Learning"])
+def step_fl_round(req: FLStepRequest):
+    """Execute one round of Personalized Federated Learning."""
+    session = session_store.get_session(req.session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {req.session_id} not found")
+
+    engine = SemanticDFLEngine()
+    current_round = session.get("current_round", 0) + 1
+    session["current_round"] = current_round
+
+    k_pull = req.k_pull if req.k_pull is not None else 3
+    kappa = req.kappa if req.kappa is not None else 0.5
+    alpha = req.alpha if req.alpha is not None else 0.6
+    global_p = session.get("global_p", 15)
+
+    result = engine.simulate_fl_round(
+        nodes=session["nodes"],
+        round_num=current_round,
+        k_pull=k_pull,
+        kappa=kappa,
+        alpha=alpha,
+        churn_node_id=None,
+        clusters=session.get("clusters"),
+        global_p=global_p,
+    )
+
+    session["nodes"] = result["nodes"]
+    session.setdefault("accuracy_history", []).append(result["metrics"])
+    session["logs"].extend(result["logs"])
+
+    return {
+        "session_id": req.session_id,
+        "round": current_round,
+        "active_clients": result["active_clients"],
+        "total_clients": result["total_clients"],
+        "metrics": result["metrics"],
+        "history": session["accuracy_history"],
+        "nodes": session["nodes"],
+        "replica_takeover": result["replica_takeover"],
+        "logs": result["logs"],
+    }
+
+
+@app.post("/api/v1/fl/churn", status_code=status.HTTP_200_OK, tags=["Federated Learning"])
+def step_fl_churn(req: FLChurnRequest):
+    """Inject node churn failure and execute instant replica failover."""
+    session = session_store.get_session(req.session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {req.session_id} not found")
+
+    engine = SemanticDFLEngine()
+    current_round = session.get("current_round", 0) + 1
+    session["current_round"] = current_round
+
+    k_pull = req.k_pull if req.k_pull is not None else 3
+    kappa = req.kappa if req.kappa is not None else 0.5
+    alpha = req.alpha if req.alpha is not None else 0.6
+    global_p = session.get("global_p", 15)
+
+    result = engine.simulate_fl_round(
+        nodes=session["nodes"],
+        round_num=current_round,
+        k_pull=k_pull,
+        kappa=kappa,
+        alpha=alpha,
+        churn_node_id=req.node_id,
+        clusters=session.get("clusters"),
+        global_p=global_p,
+    )
+
+    session["nodes"] = result["nodes"]
+    session.setdefault("accuracy_history", []).append(result["metrics"])
+    session["logs"].extend(result["logs"])
+
+    return {
+        "session_id": req.session_id,
+        "round": current_round,
+        "churn_node_id": req.node_id,
+        "active_clients": result["active_clients"],
+        "total_clients": result["total_clients"],
+        "metrics": result["metrics"],
+        "history": session["accuracy_history"],
+        "nodes": session["nodes"],
+        "replica_takeover": result["replica_takeover"],
+        "logs": result["logs"],
+    }
+
+
+# Frontend static files and dashboard routes
+frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+static_dir = frontend_dir / "static"
+templates_dir = frontend_dir / "templates"
+
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+
+@app.get("/", tags=["UI"])
+def serve_dashboard():
+    """Serve the Cyberpunk Interactive Simulation Dashboard."""
+    index_path = templates_dir / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    return HTMLResponse("<h1>SemanticDFL Simulation Dashboard</h1><p>Frontend template not found.</p>")
+
 
 
