@@ -27,18 +27,51 @@ const CIFAR10_CLASSES = {
 };
 
 // 10 Distinct Palettes for the 10 Proximity Zones (Sheet 3)
+// High-contrast, distinct hues: Cyan, Green, Purple, Orange, Pink, Teal, Blue, Yellow, Indigo, Lime
 const ZONE_PALETTES = {
-  "زون C1": { fill: "#3b82f6", border: "#1d4ed8", text: "#1e3a8a", name: "Zone C1 (Blue)" },
-  "زون C6": { fill: "#10b981", border: "#047857", text: "#064e3b", name: "Zone C6 (Emerald)" },
-  "زون C11": { fill: "#f59e0b", border: "#b45309", text: "#78350f", name: "Zone C11 (Amber)" },
-  "زون C16": { fill: "#ef4444", border: "#b91c1c", text: "#7f1d1d", name: "Zone C16 (Red)" },
-  "زون C21": { fill: "#8b5cf6", border: "#6d28d9", text: "#4c1d95", name: "Zone C21 (Purple)" },
-  "زون C26": { fill: "#06b6d4", border: "#0e7490", text: "#164e63", name: "Zone C26 (Cyan)" },
-  "زون C31": { fill: "#ec4899", border: "#be185d", text: "#831843", name: "Zone C31 (Pink)" },
-  "زون C36": { fill: "#14b8a6", border: "#0f766e", text: "#134e4a", name: "Zone C36 (Teal)" },
-  "زون C41": { fill: "#f97316", border: "#c2410c", text: "#7c2d12", name: "Zone C41 (Orange)" },
-  "زون C46": { fill: "#6366f1", border: "#4338ca", text: "#312e81", name: "Zone C46 (Indigo)" },
+  "زون C1": { fill: "#06b6d4", border: "#0891b2", text: "#164e63", name: "Zone C1 (Cyan)" },
+  "زون C6": { fill: "#10b981", border: "#059669", text: "#064e3b", name: "Zone C6 (Green)" },
+  "زون C11": { fill: "#8b5cf6", border: "#7c3aed", text: "#4c1d95", name: "Zone C11 (Purple)" },
+  "زون C16": { fill: "#f97316", border: "#ea580c", text: "#7c2d12", name: "Zone C16 (Orange)" },
+  "زون C21": { fill: "#ec4899", border: "#db2777", text: "#831843", name: "Zone C21 (Pink)" },
+  "زون C26": { fill: "#14b8a6", border: "#0d9488", text: "#134e4a", name: "Zone C26 (Teal)" },
+  "زون C31": { fill: "#2563eb", border: "#1d4ed8", text: "#1e3a8a", name: "Zone C31 (Blue)" },
+  "زون C36": { fill: "#eab308", border: "#ca8a04", text: "#713f12", name: "Zone C36 (Yellow)" },
+  "زون C41": { fill: "#6366f1", border: "#4f46e5", text: "#312e81", name: "Zone C41 (Indigo)" },
+  "زون C46": { fill: "#84cc16", border: "#65a30d", text: "#365314", name: "Zone C46 (Lime)" },
 };
+
+const ZONE_COLOR_MAP = {
+  1: "#06b6d4",   // C1: Cyan
+  6: "#10b981",   // C6: Green
+  11: "#8b5cf6",  // C11: Purple
+  16: "#f97316",  // C16: Orange
+  21: "#ec4899",  // C21: Pink
+  26: "#14b8a6",  // C26: Teal
+  31: "#2563eb",  // C31: Blue
+  36: "#eab308",  // C36: Yellow
+  41: "#6366f1",  // C41: Indigo
+  46: "#84cc16",  // C46: Lime
+};
+
+function getZoneColor(zone) {
+  if (zone === null || zone === undefined) return "#2563eb";
+  if (typeof zone === "number") {
+    if (ZONE_COLOR_MAP[zone]) return ZONE_COLOR_MAP[zone];
+  }
+  const str = String(zone).trim();
+  if (ZONE_PALETTES[str]) {
+    return ZONE_PALETTES[str].fill;
+  }
+  // Try matching numeric id: "زون C1", "Zone C1", "C1", "1"
+  const m = str.match(/(\d+)/);
+  if (m) {
+    const num = parseInt(m[1], 10);
+    if (ZONE_COLOR_MAP[num]) return ZONE_COLOR_MAP[num];
+  }
+  return "#2563eb";
+}
+
 
 document.addEventListener("DOMContentLoaded", async () => {
   initCytoscape();
@@ -192,6 +225,29 @@ function initCytoscape() {
     minZoom: 0.4,
     maxZoom: 2.5
   });
+
+  // Transparent lookup wrapper for cy.getElementById supporting String(id), numeric id, and "node_" + id
+  const origGetById = cy.getElementById.bind(cy);
+  cy.getElementById = function(id) {
+    let res = origGetById(id);
+    if (res && res.length > 0) return res;
+    const s = String(id);
+    if (s.startsWith("node_")) {
+      res = origGetById(s.replace("node_", ""));
+      if (res && res.length > 0) return res;
+    } else {
+      res = origGetById(`node_${s}`);
+      if (res && res.length > 0) return res;
+    }
+    const num = s.replace(/\D/g, "");
+    if (num && num !== s) {
+      res = origGetById(num);
+      if (res && res.length > 0) return res;
+      res = origGetById(`node_${num}`);
+      if (res && res.length > 0) return res;
+    }
+    return res;
+  };
 
   // Click-to-Toggle Node Modal Interaction & Slow-Mo Focus
   cy.on("tap", "node", (evt) => {
@@ -506,9 +562,64 @@ function renderStep3(data) {
 }
 
 // 8. STEP 4: Zone Formation, First-Wins & Probe Conflicts (Algorithm 3)
-// - Start Step 4 with non-initiators in neutral blue (like Step 3), while Initiators have their distinct zone colors
-// - Nodes morph dynamically upon probe arrival wave-by-wave
-// - Delayed competing probes dropped, edges dashed red (#f87171), and reverse boundary alerts emitted
+// Direct Cytoscape Node Color Override exactly matching Algorithm 3 & Sheet 3 specifications
+function applyNodeZoneColor(nodeElOrId, nodeData) {
+  if (!cy) return;
+  let cyNode = null;
+  if (typeof nodeElOrId === "object" && nodeElOrId !== null && nodeElOrId.isNode && nodeElOrId.isNode()) {
+    cyNode = nodeElOrId;
+  } else {
+    cyNode = cy.getElementById(String(nodeData ? nodeData.id : nodeElOrId));
+  }
+  if (!cyNode || !cyNode.isNode || !cyNode.isNode()) return;
+
+  const data = nodeData || cyNode.data() || {};
+  const zoneColor = getZoneColor(data.assigned_zone || data.zone_id || data.winner_initiator_id);
+  const isInit = !!data.is_initiator;
+  const isBnd = !!data.is_boundary;
+  const borderColor = isInit ? '#d97706' : (isBnd ? '#f87171' : '#ffffff');
+  const borderWidth = isInit ? 4 : (isBnd ? 2.5 : 1.5);
+
+  // Update Cytoscape element data attributes
+  cyNode.data("bg_color", zoneColor);
+  cyNode.data("border_color", borderColor);
+  cyNode.data("border_width", borderWidth);
+
+  // Direct Cytoscape background color override
+  cyNode.style({
+    'background-color': zoneColor,
+    'border-color': borderColor,
+    'border-width': borderWidth
+  });
+}
+
+// Enforce that all 50 nodes are permanently in their assigned zone colors
+function applyAllStep4FinalZoneColors(nodes) {
+  const list = nodes || currentStepData?.nodes || [];
+  list.forEach(nodeData => {
+    const el = cy.getElementById(String(nodeData.id));
+    if (el && el.isNode()) {
+      applyNodeZoneColor(el, nodeData);
+    }
+  });
+
+  if (cy) {
+    cy.edges().forEach(e => {
+      if (e.data("is_inter_zone")) {
+        e.addClass("boundary-edge");
+        e.style({
+          "line-style": "dashed",
+          "line-color": "#f87171",
+          "line-dash-pattern": [6, 4],
+          "width": 2.4,
+          "opacity": 0.95
+        });
+      }
+    });
+  }
+}
+
+// 8. Storyboard Step 4: Zone Formation, First-Wins & Probe Conflicts (Algorithm 3)
 function renderStep4(data) {
   renderSidebarFormula(
     "Zone Formation (Alg. 3)",
@@ -541,9 +652,18 @@ function renderStep4(data) {
     showBoundaryEdges: false
   });
 
-  // Launch the 3-wave PROBE packet animation with dynamic state-change morphing
+  // Ensure 10 Initiators have their exact zone colors and gold borders directly applied
+  data.nodes.forEach(nodeData => {
+    if (nodeData.is_initiator) {
+      applyNodeZoneColor(nodeData.id, nodeData);
+    }
+  });
+
+  // Launch the 3-wave PROBE packet animation with sequential wave color morphing
   if (data.waves) {
     animateProbeFloodingWaves(data.waves, data.nodes);
+  } else {
+    applyAllStep4FinalZoneColors(data.nodes);
   }
 }
 
@@ -642,32 +762,40 @@ function animateProbeFloodingWaves(waves, allNodes) {
       const nodeMap = new Map((allNodes || []).map(n => [n.id, n]));
 
       activePackets.forEach(pkt => {
-        const tgtNode = cy.getElementById(`node_${pkt.target}`);
+        const tgtNode = cy.getElementById(String(pkt.target));
         const p2 = tgtNode && tgtNode.isNode() ? tgtNode.renderedPosition() : null;
         if (!p2) return;
 
         if (pkt.is_first_wins && !morphedNodes.has(pkt.target)) {
           morphedNodes.add(pkt.target);
-          const pal = ZONE_PALETTES[`زون C${pkt.initiator}`];
-          if (pal) {
+          const targetNodeData = nodeMap.get(pkt.target);
+          if (targetNodeData) {
+            applyNodeZoneColor(tgtNode, targetNodeData);
+          } else {
+            const zColor = getZoneColor(pkt.initiator);
+            tgtNode.data("bg_color", zColor);
             tgtNode.style({
-              "background-color": pal.fill,
-              "border-color": pal.border
+              'background-color': zColor,
+              'border-color': '#ffffff',
+              'border-width': 1.5
             });
-            tgtNode.data("status", `ASSIGNED (Zone C${pkt.initiator})`);
-            ripples.push({
-              x: p2.x,
-              y: p2.y,
-              radius: 10,
-              maxRadius: 36,
-              color: pal.fill,
-              alpha: 0.95
-            });
-            if (currentWaveIndex === 1) {
-              logToTerminal("SUCCESS", `[HOP 1 ACCEPT] C${pkt.target} adopted Zone C${pkt.initiator} via First-Wins.`);
-            } else {
-              logToTerminal("SUCCESS", `[HOP ${currentWaveIndex} ACCEPT] C${pkt.target} accepted PROBE from C${pkt.initiator} at Hop ${currentWaveIndex}. Status: ASSIGNED to Zone C${pkt.initiator}.`);
-            }
+          }
+          tgtNode.data("status", `ASSIGNED (Zone C${pkt.initiator})`);
+
+          const zColor = getZoneColor(pkt.initiator);
+          ripples.push({
+            x: p2.x,
+            y: p2.y,
+            radius: 10,
+            maxRadius: 36,
+            color: zColor,
+            alpha: 0.95
+          });
+
+          if (currentWaveIndex === 1) {
+            logToTerminal("SUCCESS", `[HOP 1 ACCEPT] C${pkt.target} adopted Zone C${pkt.initiator} via First-Wins.`);
+          } else {
+            logToTerminal("SUCCESS", `[HOP ${currentWaveIndex} ACCEPT] C${pkt.target} accepted PROBE from C${pkt.initiator} at Hop ${currentWaveIndex}. Status: ASSIGNED to Zone C${pkt.initiator}.`);
           }
         } else if (pkt.is_conflict) {
           const edgeId = pkt.edge_id || `e${Math.min(pkt.source, pkt.target)}_${Math.max(pkt.source, pkt.target)}`;
@@ -825,39 +953,29 @@ function animateProbeFloodingWaves(waves, allNodes) {
     } else {
       // Advance to next wave
       if (currentWaveIndex === 1 && wave2Packets.length > 0) {
+        // Enforce all 1-hop receivers visually adopted zone colors
+        allNodes.filter(n => n.hops_to_initiator === 1).forEach(n => {
+          applyNodeZoneColor(n.id, n);
+        });
         currentWaveIndex = 2;
         waveStartTime = performance.now();
         logWaveTransition(2);
         activeAnimationId = requestAnimationFrame(runWaveFrame);
       } else if (currentWaveIndex === 2 && wave3Packets.length > 0) {
+        // Enforce all 2-hop receivers visually adopted zone colors
+        allNodes.filter(n => n.hops_to_initiator <= 2).forEach(n => {
+          applyNodeZoneColor(n.id, n);
+        });
         currentWaveIndex = 3;
         waveStartTime = performance.now();
         logWaveTransition(3);
         activeAnimationId = requestAnimationFrame(runWaveFrame);
       } else {
-        // Animation finished
+        // Animation finished: Ensure all 50 nodes and boundary edges reflect final state
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         activeAnimationId = null;
 
-        // Ensure all nodes and boundary edges reflect final state
-        (allNodes || []).forEach(n => {
-          const cyNode = cy.getElementById(`node_${n.id}`);
-          if (cyNode && cyNode.isNode() && n.assigned_zone) {
-            const pal = ZONE_PALETTES[n.assigned_zone];
-            const isInit = n.is_initiator;
-            if (pal) {
-              cyNode.style({
-                "background-color": pal.fill,
-                "border-color": isInit ? "#b45309" : pal.border
-              });
-            }
-          }
-        });
-        cy.edges().forEach(e => {
-          if (e.data("is_inter_zone")) {
-            e.addClass("boundary-edge");
-          }
-        });
+        applyAllStep4FinalZoneColors(allNodes);
 
         const statLeaders = document.getElementById("statLeaders");
         if (statLeaders) {
@@ -891,22 +1009,14 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
     let borderColor = "#1d4ed8";
 
     if (options.useZoneColors && n.assigned_zone) {
-      const pal = ZONE_PALETTES[n.assigned_zone];
-      if (pal) {
-        bgColor = pal.fill;
-        borderColor = isInit ? "#b45309" : pal.border;
-      } else if (n.zone_color) {
-        bgColor = n.zone_color;
-        borderColor = isInit ? "#b45309" : n.zone_color;
-      }
+      bgColor = getZoneColor(n.assigned_zone || n.zone_id || n.winner_initiator_id);
+      borderColor = isInit ? "#d97706" : (n.is_boundary ? "#f87171" : "#ffffff");
     } else if (isInit && options.initiatorColorSeeds) {
-      // Step 3 initiator seeds: 10 distinct hues for the 10 initiators
-      const pal = ZONE_PALETTES[`زون C${n.id}`];
-      bgColor = pal ? pal.fill : (n.initiator_color || n.zone_color || "#f59e0b");
-      borderColor = "#b45309";
+      bgColor = getZoneColor(n.id);
+      borderColor = "#d97706";
     } else if (isInit) {
-      bgColor = "#f59e0b";
-      borderColor = "#b45309";
+      bgColor = getZoneColor(n.id);
+      borderColor = "#d97706";
     }
 
     elements.push({
@@ -982,6 +1092,20 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   cy.add(elements);
   cy.layout({ name: "preset" }).run();
   cy.fit(undefined, 35);
+
+  if (options.useZoneColors) {
+    nodes.forEach(n => {
+      if (n.assigned_zone) {
+        applyNodeZoneColor(n.id, n);
+      }
+    });
+  } else if (options.initiatorColorSeeds) {
+    nodes.forEach(n => {
+      if (n.is_initiator) {
+        applyNodeZoneColor(n.id, n);
+      }
+    });
+  }
 }
 
 // 10. Click-to-Toggle Node Details Modal

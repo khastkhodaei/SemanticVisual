@@ -181,18 +181,18 @@ class ExcelDataLoader:
         self.zones: Dict[str, List[int]] = {}
         self.node_to_initiator: Dict[int, int] = {}
 
-        # 10 zone colors
+        # 10 distinct, high-contrast zone colors (Cyan, Green, Purple, Orange, Pink, Teal, Blue, Yellow, Indigo, Lime)
         zone_color_map = {
-            "زون C1": "#3b82f6",   # Blue
-            "زون C6": "#10b981",   # Emerald
-            "زون C11": "#f59e0b",  # Amber
-            "زون C16": "#ef4444",  # Red
-            "زون C21": "#8b5cf6",  # Purple
-            "زون C26": "#06b6d4",  # Cyan
-            "زون C31": "#ec4899",  # Pink
-            "زون C36": "#14b8a6",  # Teal
-            "زون C41": "#f97316",  # Orange
-            "زون C46": "#6366f1",  # Indigo
+            "زون C1": "#06b6d4",   # Cyan
+            "زون C6": "#10b981",   # Green
+            "زون C11": "#8b5cf6",  # Purple
+            "زون C16": "#f97316",  # Orange
+            "زون C21": "#ec4899",  # Pink
+            "زون C26": "#14b8a6",  # Teal
+            "زون C31": "#2563eb",  # Blue
+            "زون C36": "#eab308",  # Yellow
+            "زون C41": "#6366f1",  # Indigo
+            "زون C46": "#84cc16",  # Lime
         }
 
         for r in range(3, 53):
