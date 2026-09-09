@@ -64,66 +64,58 @@ def test_storyboard_step3_data_exact_vrf_scores():
         assert n["vrf_score"] == EXPECTED_VRF_SCORES[nid]
 
 
-def test_storyboard_step3_1hop_neighbor_scores_match_edges():
-    """Verify received 1-hop scores match exact physical neighbor lists across the 18 links."""
+def test_storyboard_step3_local_scores_and_step2_vectors():
+    """Verify Step 3 preserves Step 2 10D normalized vectors and contains local VRF scores only."""
     data = get_10node_step_data(3)
     nodes = {n["id"]: n for n in data["nodes"]}
 
-    for nid, expected_nbrs in STORYBOARD_10_ADJACENCY.items():
+    for nid in range(1, 11):
         node = nodes[nid]
-        neighbor_scores = node["neighbor_scores"]
-        neighbor_scores_str = node["neighbor_scores_str"]
-        neighbor_scoreboard = node["neighbor_scoreboard"]
-
-        # Assert neighbor IDs match
-        assert sorted(neighbor_scores.keys()) == sorted(expected_nbrs)
-        assert sorted(neighbor_scores_str.keys()) == sorted([f"C{nb}" for nb in expected_nbrs])
-        assert len(neighbor_scoreboard) == len(expected_nbrs)
-
-        # Assert scores match each neighbor's VRF score
-        for nb in expected_nbrs:
-            assert neighbor_scores[nb] == EXPECTED_VRF_SCORES[nb]
-            assert neighbor_scores_str[f"C{nb}"] == EXPECTED_VRF_SCORES[nb]
+        # Step 2 vector preserved
+        assert "vector_10d" in node
+        assert len(node["vector_10d"]) == 10
+        assert sum(node["vector_10d"]) == pytest.approx(1.0, abs=1e-3)
+        assert "weights" in node
+        # Local VRF score present
+        assert node["vrf_score"] == EXPECTED_VRF_SCORES[nid]
+        # Neighbor scores are NOT received in Step 3
+        assert node["neighbor_scores"] == {}
+        assert node["neighbor_scores_str"] == {}
+        assert node["neighbor_scoreboard"] == []
 
 
 def test_storyboard_step3_no_initiators_declared():
-    """Assert no node is marked as INITIATOR in Step 3 (role=CLIENT, is_initiator=False)."""
+    """Assert no node is marked as INITIATOR in Step 3 (role=CLIENT, is_initiator=False, status=VRF_COMPUTED)."""
     data = get_10node_step_data(3)
     assert data["active_leaders"] == []
 
     for n in data["nodes"]:
         assert n["is_initiator"] is False, f"Node {n['id']} unexpectedly marked as initiator in Step 3"
         assert n["role"] == "CLIENT"
-        assert n["status"] == "NOT_ASSIGNED"
+        assert n["status"] == "VRF_COMPUTED"
         assert n["zone_id"] is None
 
 
-def test_storyboard_step3_packet_exchanges():
-    """Verify Step 3 produces mutual score exchange packets along the physical links."""
+def test_storyboard_step3_packet_exchanges_empty():
+    """Verify Step 3 does not produce packet exchanges (transmissions deferred to Step 4)."""
     data = get_10node_step_data(3)
-    packets = data["packet_exchanges"]
-    num_edges = len(data["edges"])
-    assert len(packets) == num_edges * 2, f"Expected {num_edges * 2} directed transmissions ({num_edges} edges x 2), got {len(packets)}"
-
-    for pkt in packets:
-        assert pkt["type"] == "VRF_SCORE"
-        src = pkt["from"]
-        tgt = pkt["to"]
-        assert pkt["score"] == EXPECTED_VRF_SCORES[src]
-        assert tgt in STORYBOARD_10_ADJACENCY[src]
+    assert data["packet_exchanges"] == []
 
 
 def test_get_step3_api_endpoint(client):
-    """Assert GET /api/v1/storyboard/step/3 returns HTTP 200 with complete Step 3 payload."""
+    """Assert GET /api/v1/storyboard/step/3 returns HTTP 200 with local VRF score and vectors, without transmissions."""
     res = client.get("/api/v1/storyboard/step/3")
     assert res.status_code == 200
     body = res.json()
     assert body["step"] == 3
     assert len(body["nodes"]) == 10
     assert len(body["edges"]) in [17, 18]
-    assert len(body["packet_exchanges"]) == len(body["edges"]) * 2
-    assert body["nodes"][1]["vrf_score"] == 0.0837  # Node 2
-    assert body["nodes"][1]["neighbor_scores"]["1"] == 0.1543 or body["nodes"][1]["neighbor_scores"].get(1) == 0.1543
+    assert body["packet_exchanges"] == []
+    node2 = body["nodes"][1]
+    assert node2["vrf_score"] == 0.0837  # Node 2
+    assert node2["neighbor_scores"] == {}
+    assert "vector_10d" in node2
+    assert len(node2["vector_10d"]) == 10
 
 
 def test_post_step3_api_endpoint(client):
@@ -133,3 +125,5 @@ def test_post_step3_api_endpoint(client):
     body = res.json()
     assert body["step"] == 3
     assert len(body["nodes"]) == 10
+    assert body["packet_exchanges"] == []
+

@@ -269,34 +269,59 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "terminal_logs": terminal_logs,
         }
     elif step_number == 3:
-        # Step 3: Local VRF Generation & 1-Hop Neighbor Score Exchange
+        # Step 3: Local VRF Score Calculation (No score transmission, retains Step 2 node info)
         step3_nodes = []
         for n in nodes:
             nid = n["id"]
             n_copy = dict(n)
             vrf = STORYBOARD_10_VRF_SCORES[nid]
-            nbrs = n["neighbors"]
-            neighbor_scores = {nb: STORYBOARD_10_VRF_SCORES[nb] for nb in nbrs}
-            neighbor_scores_str = {f"C{nb}": STORYBOARD_10_VRF_SCORES[nb] for nb in nbrs}
-            neighbor_scoreboard = [
-                {
-                    "neighbor_id": nb,
-                    "label": f"C{nb}",
-                    "vrf_score": STORYBOARD_10_VRF_SCORES[nb],
-                }
-                for nb in nbrs
-            ]
 
-            n_copy["status"] = "NOT_ASSIGNED"
+            # Retain Step 2 vector information
+            n_copy["vector"] = STORYBOARD_10_VECTORS[nid]
+            n_copy["vector_10d"] = STORYBOARD_10_VECTORS[nid]
+            n_copy["normalized_vector"] = STORYBOARD_10_VECTORS[nid]
+            n_copy["weights"] = STORYBOARD_10_VECTORS[nid]
+
+            n_copy["status"] = "VRF_COMPUTED"
             n_copy["role"] = "CLIENT"
             n_copy["is_initiator"] = False
             n_copy["zone_id"] = None
             n_copy["is_boundary"] = False
             n_copy["vrf_score"] = vrf
-            n_copy["neighbor_scores"] = neighbor_scores
-            n_copy["neighbor_scores_str"] = neighbor_scores_str
-            n_copy["neighbor_scoreboard"] = neighbor_scoreboard
+            # In Step 3, scores are not received from neighbors
+            n_copy["neighbor_scores"] = {}
+            n_copy["neighbor_scores_str"] = {}
+            n_copy["neighbor_scoreboard"] = []
             step3_nodes.append(n_copy)
+
+        terminal_logs = [
+            f"[VRF GENERATION] Node C{nid} computed local VRF seed score: {STORYBOARD_10_VRF_SCORES[nid]}"
+            for nid in range(1, 11)
+        ]
+        terminal_logs.append("[STATUS] All 10 nodes completed local VRF score calculation. Scores remain local.")
+
+        return {
+            "step": 3,
+            "title": "Step 3: Local VRF Score Calculation",
+            "phase_badge": "Step 3: Local VRF",
+            "description": "Each peer independently calculates its local VRF score σ_p = VRF(seed_{e-1}) using its private key. Scores are not transmitted to neighbors in this step.",
+            "formula": "\\sigma_p = \\text{VRF}_{sk_p}(\\text{seed}_{e-1})",
+            "formula_desc": "Each peer calculates its local VRF score from the previous epoch seed. Scores remain local.",
+            "nodes": step3_nodes,
+            "edges": edges,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [],
+            "packet_exchanges": [],
+            "terminal_logs": terminal_logs,
+        }
+    elif step_number == 4:
+        # Step 4: 1-Hop Neighbor Score Exchange, VRF Comparison & Initiator Election
+        step4_nodes = []
+        initiators = [2, 4, 8]
 
         # 36 mutual 1-hop score packet transmission events along the 18 physical links
         packet_exchanges = []
@@ -322,40 +347,6 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 "msg": f"C{v} sends VRF score {STORYBOARD_10_VRF_SCORES[v]} to 1-hop neighbor C{u}",
             })
 
-        terminal_logs = [
-            f"[VRF GENERATION] Node C{nid} computed local VRF seed score: {STORYBOARD_10_VRF_SCORES[nid]}"
-            for nid in range(1, 11)
-        ]
-        unique_undirected = sorted({(min(e['source_num'], e['target_num']), max(e['source_num'], e['target_num'])) for e in edges})
-        terminal_logs.extend([
-            f"[VRF EXCHANGE] Node C{u} <-> Node C{v} exchanged 1-hop VRF scores ({STORYBOARD_10_VRF_SCORES[u]} vs {STORYBOARD_10_VRF_SCORES[v]})"
-            for u, v in unique_undirected
-        ])
-        terminal_logs.append("[STATUS] All 10 nodes completed 1-hop score exchange. Local neighborhood scoreboards populated.")
-
-        return {
-            "step": 3,
-            "title": "Step 3: VRF Generation & 1-Hop Neighbor Score Exchange",
-            "phase_badge": "Step 3: VRF Exchange",
-            "description": "Each peer calculates its local VRF score and exchanges it with direct 1-hop physical neighbors.",
-            "formula": "\\sigma_p = \\text{VRF}_{sk_p}(\\text{seed}_{e-1}), \\quad \\text{Exchange with } q \\in \\mathcal{N}_1(p)",
-            "formula_desc": "Each peer calculates its local VRF score and exchanges it with direct 1-hop physical neighbors.",
-            "nodes": step3_nodes,
-            "edges": edges,
-            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
-            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
-            "total_nodes": 10,
-            "total_edges": 18,
-            "unique_edges": len(edges),
-            "active_leaders": [],
-            "packet_exchanges": packet_exchanges,
-            "terminal_logs": terminal_logs,
-        }
-    elif step_number == 4:
-        # Step 4: VRF Score Comparison & Initiator Election
-        step4_nodes = []
-        initiators = [2, 4, 8]
-
         # Evaluation details for each node (closed 1-hop ball minimum)
         eval_details = {
             1: {"min_id": 4, "neighbors": [2, 4]},
@@ -377,6 +368,12 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             winner_id = eval_details[nid]["min_id"]
             min_score = STORYBOARD_10_VRF_SCORES[winner_id]
             is_init = (nid in initiators)
+
+            # Retain Step 2 vector information
+            n_copy["vector"] = STORYBOARD_10_VECTORS[nid]
+            n_copy["vector_10d"] = STORYBOARD_10_VECTORS[nid]
+            n_copy["normalized_vector"] = STORYBOARD_10_VECTORS[nid]
+            n_copy["weights"] = STORYBOARD_10_VECTORS[nid]
 
             n_copy["vrf_score"] = self_score
             n_copy["role"] = "INITIATOR" if is_init else "CLIENT"
@@ -403,13 +400,18 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                     "is_min": (nb_id == winner_id),
                 })
             n_copy["neighbor_scoreboard"] = neighbor_scoreboard
-            n_copy["neighbor_scores"] = {f"C{item['neighbor_id']}": item["vrf_score"] for item in neighbor_scoreboard}
+            n_copy["neighbor_scores"] = {item['neighbor_id']: item["vrf_score"] for item in neighbor_scoreboard}
+            n_copy["neighbor_scores_str"] = {f"C{item['neighbor_id']}": item["vrf_score"] for item in neighbor_scoreboard}
             n_copy["self_is_min"] = is_init
             step4_nodes.append(n_copy)
 
+        unique_undirected = sorted({(min(e['source_num'], e['target_num']), max(e['source_num'], e['target_num'])) for e in edges})
         terminal_logs = [
-            "[ELECTION] Evaluating 1-hop neighborhood minimums: m_p = min_{q in N_1(p) U {p}} (sigma_q, id_q)."
+            f"[VRF EXCHANGE] Node C{u} <-> Node C{v} exchanged 1-hop VRF scores ({STORYBOARD_10_VRF_SCORES[u]} vs {STORYBOARD_10_VRF_SCORES[v]})"
+            for u, v in unique_undirected
         ]
+        terminal_logs.append("[EXCHANGE COMPLETE] 1-hop scoreboards populated across all direct physical neighbors.")
+        terminal_logs.append("[ELECTION] Evaluating 1-hop neighborhood minimums: m_p = min_{q in N_1(p) U {p}} (sigma_q, id_q).")
         for nid in range(1, 11):
             s = STORYBOARD_10_VRF_SCORES[nid]
             nbr_str = ", ".join(f"C{q}: {STORYBOARD_10_VRF_SCORES[q]:.4f}" for q in eval_details[nid]["neighbors"])
@@ -427,9 +429,9 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
 
         return {
             "step": 4,
-            "title": "Step 4: VRF Score Comparison & Initiator Election",
+            "title": "Step 4: 1-Hop Neighbor Score Exchange & Initiator Election",
             "phase_badge": "Step 4: Initiator Election",
-            "description": "Each node evaluates the minimum VRF score in its closed 1-hop neighborhood. Nodes 2, 4, and 8 hold the minimum score in their respective 1-hop balls and elect themselves as Initiators.",
+            "description": "Clients exchange VRF scores with 1-hop neighbors and evaluate closed-ball minimums. Nodes 2, 4, and 8 hold the minimum score in their respective 1-hop balls and elect themselves as Initiators.",
             "formula": "m_p = \\min_{q \\in \\mathcal{N}_1(p) \\cup \\{p\\}} (\\sigma_q, id_q)",
             "formula_desc": "If (sigma_p, id_p) == m_p, node p elects itself as an Initiator. Otherwise, it remains a Candidate Member.",
             "nodes": step4_nodes,
@@ -440,6 +442,7 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "total_edges": 18,
             "unique_edges": len(edges),
             "active_leaders": [2, 4, 8],
+            "packet_exchanges": packet_exchanges,
             "terminal_logs": terminal_logs,
         }
     else:

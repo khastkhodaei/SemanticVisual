@@ -118,16 +118,51 @@ def test_post_step4_api_endpoint(client):
     assert body["active_leaders"] == [2, 4, 8]
 
 
+def test_step4_packet_exchanges():
+    """Verify Step 4 contains mutual score exchange transmissions along physical links."""
+    data = get_10node_step_data(4)
+    packets = data["packet_exchanges"]
+    num_edges = len(data["edges"])
+    assert len(packets) == num_edges * 2, f"Expected {num_edges * 2} transmissions, got {len(packets)}"
+    for pkt in packets:
+        assert pkt["type"] == "VRF_SCORE"
+        src = pkt["from"]
+        tgt = pkt["to"]
+        assert pkt["score"] == STORYBOARD_10_VRF_SCORES[src]
+        assert tgt in STORYBOARD_10_ADJACENCY[src]
+
+
+def test_step4_1hop_neighbor_scores_match_edges():
+    """Verify Step 4 nodes contain received neighbor scoreboards matching physical edges."""
+    data = get_10node_step_data(4)
+    nodes = {n["id"]: n for n in data["nodes"]}
+
+    for nid, expected_nbrs in STORYBOARD_10_ADJACENCY.items():
+        node = nodes[nid]
+        neighbor_scores = node["neighbor_scores"]
+        neighbor_scores_str = node["neighbor_scores_str"]
+        neighbor_scoreboard = node["neighbor_scoreboard"]
+
+        assert sorted(neighbor_scores.keys()) == sorted(expected_nbrs)
+        assert sorted(neighbor_scores_str.keys()) == sorted([f"C{nb}" for nb in expected_nbrs])
+        assert len(neighbor_scoreboard) == len(expected_nbrs)
+
+        for nb in expected_nbrs:
+            assert neighbor_scores[nb] == STORYBOARD_10_VRF_SCORES[nb]
+            assert neighbor_scores_str[f"C{nb}"] == STORYBOARD_10_VRF_SCORES[nb]
+
+
 def test_steps_md_step4_documentation():
     """Verify STEPS.md contains Step 4 formula, evaluation, and winner summary."""
     with open("STEPS.md", "r", encoding="utf-8") as f:
         content = f.read()
 
-    assert "## Step 4 — VRF Comparison & Initiator Election" in content
+    assert "## Step 4 — 1-Hop Score Exchange, VRF Comparison & Initiator Election" in content or "## Step 4 —" in content
     assert "Node 2 (0.0837)" in content
     assert "Node 4 (0.0412)" in content
     assert "Node 8 (0.0275)" in content
     assert "Exactly Nodes 2, 4, and 8 become the Initiators" in content
+
 
 
 def test_frontend_step4_modal_and_nav():

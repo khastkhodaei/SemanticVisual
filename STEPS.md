@@ -69,7 +69,7 @@ Node 10 → [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.12, 0.43, 0.33, 0.12]
 Each vector contains 10 values, where each value corresponds to one CIFAR-10 class.
 The values are normalized from percentages to the range [0, 1] and rounded to two decimal places.
 
-## Step 3 — VRF Generation & 1-Hop Neighbor Score Exchange
+## Step 3 — Local VRF Score Calculation
 
 The paper defines the initiator selection seed score using:
 $$\sigma_p = \text{VRF}_p(\text{seed}_{e-1})$$
@@ -86,11 +86,13 @@ Each node generates its local deterministic VRF score:
 - Node 9: 0.2947
 - Node 10: 0.4126
 
+Each node computes its local VRF score independently. Scores are not transmitted or received in this step.
+
+## Step 4 — 1-Hop Score Exchange, VRF Comparison & Initiator Election
+
 Each node broadcasts its VRF score strictly to its direct 1-hop physical neighbors and collects their received scores into a local neighborhood scoreboard.
 
-## Step 4 — VRF Comparison & Initiator Election
-
-Each node evaluates:
+Then each node evaluates:
 $$m_p = \min_{q \in \mathcal{N}_1(p) \cup \{p\}} (\sigma_q, id_q)$$
 
 If $(\sigma_p, id_p) == m_p$, node $p$ elects itself as an **Initiator**.

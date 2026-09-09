@@ -654,20 +654,20 @@ function updateUIHeaders(data) {
     if (stepDesc) stepDesc.textContent = "Each client trains on local CIFAR-10 data, outputting a normalized 10-dimensional vector representing class proportions.";
   } else if (step === 3) {
     if (activeBadge) {
-      activeBadge.textContent = "Step 3: VRF Exchange";
+      activeBadge.textContent = "Step 3: Local VRF";
       activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200";
     }
-    if (stepTag) stepTag.textContent = "STEP 3 / VRF GENERATION & 1-HOP EXCHANGE";
-    if (stepTitle) stepTitle.textContent = "Step 3: Local VRF Generation & 1-Hop Neighbor Score Exchange";
-    if (stepDesc) stepDesc.textContent = "Each peer calculates its local VRF score and exchanges it with direct 1-hop physical neighbors.";
+    if (stepTag) stepTag.textContent = "STEP 3 / LOCAL VRF GENERATION";
+    if (stepTitle) stepTitle.textContent = "Step 3: Local VRF Score Calculation";
+    if (stepDesc) stepDesc.textContent = "Each peer independently calculates its local VRF score σ_p = VRF(seed_{e-1}) using its private key. Scores are not transmitted or received in this step.";
   } else if (step === 4) {
     if (activeBadge) {
       activeBadge.textContent = "Step 4: Initiator Election";
       activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-300";
     }
-    if (stepTag) stepTag.textContent = "STEP 4 / VRF COMPARISON & INITIATOR ELECTION";
-    if (stepTitle) stepTitle.textContent = "Step 4: VRF Score Comparison & Initiator Election";
-    if (stepDesc) stepDesc.textContent = "Nodes compare local VRF scores against 1-hop physical neighbors. Nodes 2, 4, and 8 hold the minimum score in their 1-hop ball and elect themselves as Initiators.";
+    if (stepTag) stepTag.textContent = "STEP 4 / 1-HOP EXCHANGE & INITIATOR ELECTION";
+    if (stepTitle) stepTitle.textContent = "Step 4: 1-Hop Neighbor Score Exchange & Initiator Election";
+    if (stepDesc) stepDesc.textContent = "Clients exchange VRF scores with direct 1-hop physical neighbors and elect closed-ball minimums. Nodes 2, 4, and 8 are crowned as Initiators.";
   }
 }
 
@@ -733,20 +733,21 @@ function renderStep2(data) {
   });
 }
 
-// 7. STEP 3: Local VRF Generation & 1-Hop Neighbor Score Exchange
+// 7. STEP 3: Local VRF Score Calculation (No score transmission)
 function renderStep3(data) {
   stopCurrentPacketAnimation();
 
   renderSidebarFormula(
-    "VRF Generation & 1-Hop Exchange",
-    "\\sigma_p = \\text{VRF}_{sk_p}(\\text{seed}_{e-1}), \\quad \\text{Exchange with } q \\in \\mathcal{N}_1(p)",
-    "Each peer calculates its local VRF score and exchanges it with direct 1-hop physical neighbors.",
-    "Step 3: VRF Exchange",
-    false
+    "Local VRF Score Calculation",
+    "\\sigma_p = \\text{VRF}_{sk_p}(\\text{seed}_{e-1})",
+    "Each client calculates its local deterministic VRF score independently. Scores are not transmitted or received from neighbors in this step.",
+    "Step 3: Local VRF",
+    false,
+    "amber"
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "Step 3: Local VRF Generation & 1-Hop Neighbor Score Exchange (10 Nodes, 18 Links)";
+  if (canvasLabel) canvasLabel.textContent = "Step 3: Local VRF Score Calculation (10 Clients, Independent Scores)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
   if (leaderLegend) leaderLegend.classList.add("hidden");
@@ -755,7 +756,7 @@ function renderStep3(data) {
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.textContent = "0 Initiators (Step 3: VRF Exchange)";
+    statLeaders.textContent = "0 Initiators (Step 3: Local VRF)";
     statLeaders.className = "text-xs font-bold text-slate-500";
   }
 
@@ -765,9 +766,6 @@ function renderStep3(data) {
     useZoneColors: false,
     showBoundaryEdges: false
   });
-
-  // Animate 1-hop score packet exchanges along edges
-  animateVrfScoreExchangePackets(data.packet_exchanges, data.nodes);
 }
 
 // 8. STEP 4: Zone Formation, First-Wins & Probe Conflicts (Algorithm 3)
@@ -828,21 +826,21 @@ function applyAllStep4FinalZoneColors(nodes) {
   }
 }
 
-// 8. Storyboard Step 4: VRF Score Comparison & Initiator Election
+// 8. Storyboard Step 4: 1-Hop Neighbor Score Exchange & Initiator Election
 function renderStep4(data) {
   stopCurrentPacketAnimation();
 
   renderSidebarFormula(
-    "VRF Comparison & Initiator Election",
+    "1-Hop Exchange & Initiator Election",
     "m_p = \\min_{q \\in \\mathcal{N}_1(p) \\cup \\{p\\}} (\\sigma_q, id_q), \\quad (\\sigma_p, id_p) == m_p \\rightarrow \\text{Initiator}",
-    "Each node evaluates the minimum VRF score in its closed 1-hop neighborhood. Nodes 2, 4, and 8 hold the minimum score in their respective 1-hop balls and elect themselves as Initiators.",
+    "Direct 1-hop physical neighbors exchange their VRF scores. Each peer evaluates the closed-ball minimum. Nodes 2, 4, and 8 hold the minimum score in their respective 1-hop balls and elect themselves as Initiators.",
     "Step 4: Election",
     false,
     "amber"
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "Step 4: VRF Score Comparison & Initiator Election (10 Nodes, 3 Initiators: C2, C4, C8)";
+  if (canvasLabel) canvasLabel.textContent = "Step 4: 1-Hop Neighbor Score Exchange & Initiator Election (10 Nodes, 3 Initiators: C2, C4, C8)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
   if (leaderLegend) leaderLegend.classList.remove("hidden");
@@ -861,6 +859,11 @@ function renderStep4(data) {
     useZoneColors: false,
     showBoundaryEdges: false
   });
+
+  // Animate 1-hop score packet exchanges along edges exclusively in Step 4
+  if (data.packet_exchanges && data.packet_exchanges.length > 0) {
+    animateVrfScoreExchangePackets(data.packet_exchanges, data.nodes);
+  }
 }
 
 // Draw an elegant floating pill badge on HTML5 Canvas
@@ -1411,9 +1414,9 @@ function showNodeModal(nodeData) {
   }
 
   // Local Data Distribution: Clean percentage table showing ONLY classes this client actually holds
-  // In Step 2, remove redundant data percentage from node information box to free up space (Issue #1)
+  // In Steps 2, 3, and 4, remove redundant data percentage from node information box to free up space (Issue #1)
   const distSection = document.getElementById("cardDataDistributionSection");
-  if (currentStep === 2) {
+  if (currentStep >= 2) {
     if (distSection) distSection.classList.add("hidden");
   } else {
     if (distSection) distSection.classList.remove("hidden");
@@ -1442,13 +1445,13 @@ function showNodeModal(nodeData) {
     }
   }
 
-  // Step 2: Normalized 10D Semantic Vector (w_i)
+  // Step 2 & Step 3: Normalized 10D Semantic Vector (w_i) - Kept in Step 3 per Issue #2
   const vectorSection = document.getElementById("cardVectorSection");
   const vectorArrayEl = document.getElementById("cardVectorArray");
   const vectorBreakdownBody = document.getElementById("cardVectorBreakdownBody");
 
-  if (currentStep === 2) {
-    if (cardStatusBadge) {
+  if (currentStep === 2 || currentStep === 3) {
+    if (cardStatusBadge && currentStep === 2) {
       cardStatusBadge.textContent = "LOCAL_TRAINED";
       cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-cyan-50 text-cyan-800 border border-cyan-300";
     }
@@ -1491,6 +1494,7 @@ function showNodeModal(nodeData) {
   // Step 3 & Step 4: Local VRF Score & 1-Hop Neighborhood Scoreboard / Initiator Election
   const vrfSection = document.getElementById("cardVrfSection");
   const vrfBadge = document.getElementById("cardVrfScoreBadge");
+  const scoreboardContainer = document.getElementById("cardNeighborhoodScoreboardContainer");
   const scoreboardBody = document.getElementById("cardNeighborhoodScoreboardBody");
   const electionBanner = document.getElementById("cardElectionBanner");
   const scoreboardTitle = document.getElementById("cardScoreboardTitle");
@@ -1509,32 +1513,17 @@ function showNodeModal(nodeData) {
     }
 
     if (currentStep === 3) {
+      // Step 3: Only local score calculation. Keep Step 2 node info + local VRF score.
+      // Remove Received Scores section (Issue #2)
       if (cardStatusBadge) {
-        cardStatusBadge.textContent = "Scores Exchanged (Awaiting Decision)";
+        cardStatusBadge.textContent = "VRF_COMPUTED";
         cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300";
       }
       if (electionBanner) electionBanner.classList.add("hidden");
-      if (scoreboardTitle) scoreboardTitle.textContent = "1-Hop Scoreboard:";
-      if (scoreboardSubtitle) scoreboardSubtitle.textContent = "Received Scores";
-
-      if (scoreboardBody) {
-        scoreboardBody.innerHTML = "";
-        const scoreboard = nodeData.neighbor_scoreboard || [];
-        if (scoreboard.length > 0) {
-          scoreboard.forEach(item => {
-            const tr = document.createElement("tr");
-            tr.className = "hover:bg-slate-50 transition-colors";
-            tr.innerHTML = `
-              <td class="py-1 px-2 font-bold text-blue-700 font-mono">${item.label || ('C' + item.neighbor_id)}</td>
-              <td class="py-1 px-2 text-right font-mono font-bold text-slate-800">
-                <span class="inline-block px-1.5 py-0.2 rounded bg-slate-100 border border-slate-200">${Number(item.vrf_score).toFixed(4)}</span>
-              </td>
-            `;
-            scoreboardBody.appendChild(tr);
-          });
-        }
-      }
+      if (scoreboardContainer) scoreboardContainer.classList.add("hidden");
     } else if (currentStep === 4) {
+      // Step 4: 1-Hop Neighbor Score Exchange & Election
+      if (scoreboardContainer) scoreboardContainer.classList.remove("hidden");
       const isInitiator = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
       const winnerId = nodeData.winner_id || (idNum === 1 ? 4 : idNum === 2 ? 2 : idNum === 3 ? 2 : idNum === 4 ? 4 : idNum === 5 ? 4 : idNum === 6 ? 8 : idNum === 7 ? 4 : idNum === 8 ? 8 : idNum === 9 ? 8 : 8);
       const minScore = (nodeData.min_score !== undefined && nodeData.min_score !== null)
