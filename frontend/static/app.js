@@ -1,7 +1,7 @@
 // ==========================================================================
-// SemanticDFL Storyboard Simulator - Decoupled Algorithm 2 & 3 Controller
-// Precomputed Ground-Truth from 'semantic_dfl_simulation_data.xlsx'
-// ACM 2026 Reference Implementation - Steps 1 to 4
+// SemanticDFL Storyboard Simulator - 10-Node CIFAR-10 Network
+// Ground-Truth Specification from 'backend/scenario_data.json'
+// ACM 2026 Reference Implementation
 // ==========================================================================
 
 let currentStep = 1;
@@ -37,32 +37,18 @@ function getCifarClass(keyOrId) {
   return CIFAR10_CLASSES[num] || { id: num, name: `Class ${num}`, icon: "📦", code: `C${num}` };
 }
 
-// 10 Distinct Palettes for the 10 Proximity Zones (Sheet 3)
-// High-contrast, distinct hues: Cyan, Green, Purple, Orange, Pink, Teal, Blue, Yellow, Indigo, Lime
-const ZONE_PALETTES = {
-  "زون C1": { fill: "#06b6d4", border: "#0891b2", text: "#164e63", name: "Zone C1 (Cyan)" },
-  "زون C6": { fill: "#10b981", border: "#059669", text: "#064e3b", name: "Zone C6 (Green)" },
-  "زون C11": { fill: "#8b5cf6", border: "#7c3aed", text: "#4c1d95", name: "Zone C11 (Purple)" },
-  "زون C16": { fill: "#f97316", border: "#ea580c", text: "#7c2d12", name: "Zone C16 (Orange)" },
-  "زون C21": { fill: "#ec4899", border: "#db2777", text: "#831843", name: "Zone C21 (Pink)" },
-  "زون C26": { fill: "#14b8a6", border: "#0d9488", text: "#134e4a", name: "Zone C26 (Teal)" },
-  "زون C31": { fill: "#2563eb", border: "#1d4ed8", text: "#1e3a8a", name: "Zone C31 (Blue)" },
-  "زون C36": { fill: "#eab308", border: "#ca8a04", text: "#713f12", name: "Zone C36 (Yellow)" },
-  "زون C41": { fill: "#6366f1", border: "#4f46e5", text: "#312e81", name: "Zone C41 (Indigo)" },
-  "زون C46": { fill: "#84cc16", border: "#65a30d", text: "#365314", name: "Zone C46 (Lime)" },
-};
-
+// 10 Distinct Zone Colors for the 10 Nodes
 const ZONE_COLOR_MAP = {
   1: "#06b6d4",   // C1: Cyan
-  6: "#10b981",   // C6: Green
-  11: "#8b5cf6",  // C11: Purple
-  16: "#f97316",  // C16: Orange
-  21: "#ec4899",  // C21: Pink
-  26: "#14b8a6",  // C26: Teal
-  31: "#2563eb",  // C31: Blue
-  36: "#eab308",  // C36: Yellow
-  41: "#6366f1",  // C41: Indigo
-  46: "#84cc16",  // C46: Lime
+  2: "#10b981",   // C2: Green
+  3: "#8b5cf6",   // C3: Purple
+  4: "#f97316",   // C4: Orange
+  5: "#ec4899",   // C5: Pink
+  6: "#14b8a6",   // C6: Teal
+  7: "#2563eb",   // C7: Blue
+  8: "#eab308",   // C8: Yellow
+  9: "#6366f1",   // C9: Indigo
+  10: "#84cc16",  // C10: Lime
 };
 
 function getZoneColor(zone) {
@@ -71,10 +57,6 @@ function getZoneColor(zone) {
     if (ZONE_COLOR_MAP[zone]) return ZONE_COLOR_MAP[zone];
   }
   const str = String(zone).trim();
-  if (ZONE_PALETTES[str]) {
-    return ZONE_PALETTES[str].fill;
-  }
-  // Try matching numeric id: "زون C1", "Zone C1", "C1", "1"
   const m = str.match(/(\d+)/);
   if (m) {
     const num = parseInt(m[1], 10);
@@ -350,21 +332,8 @@ async function loadGlobalConfig() {
 }
 
 // Render Dataset Class Legend in Left Sidebar
-// Active Dataset Class Filter State & Signature Colors
+// Active Dataset Class Filter State
 let activeClassFilterId = null;
-
-const CIFAR10_SIGNATURE_COLORS = {
-  0: "#0284c7", // C1 Airplane (Sky Blue)
-  1: "#dc2626", // C2 Automobile (Red)
-  2: "#16a34a", // C3 Bird (Green)
-  3: "#d97706", // C4 Cat (Amber/Orange)
-  4: "#854d0e", // C5 Deer (Olive/Brown)
-  5: "#ea580c", // C6 Dog (Orange-Red)
-  6: "#10b981", // C7 Frog (Emerald)
-  7: "#9333ea", // C8 Horse (Purple)
-  8: "#2563eb", // C9 Ship (Royal Blue)
-  9: "#475569", // C10 Truck (Slate)
-};
 
 // Render Dataset Class Legend in Left Sidebar
 function renderDatasetClasses(classes) {

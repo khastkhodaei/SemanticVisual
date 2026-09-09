@@ -18,7 +18,6 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend.engine import SemanticDFLEngine, load_step1_data
-from backend.excel_loader import ExcelDataLoader
 from backend.storyboard_10nodes import (
     get_10node_config,
     get_10node_nodes,
