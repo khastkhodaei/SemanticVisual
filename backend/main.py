@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend.engine import SemanticDFLEngine
+from backend.excel_loader import ExcelDataLoader
 
 
 
@@ -91,6 +92,37 @@ def health_check():
         "version": "1.0.0",
         "active_sessions": len(session_store.list_sessions()),
     }
+
+
+@app.get("/api/v1/storyboard/config", tags=["Storyboard"])
+def get_storyboard_config():
+    """Returns global network configuration and CIFAR-10 class metrics from Sheet 1."""
+    loader = ExcelDataLoader.get_instance()
+    return loader.get_config()
+
+
+@app.get("/api/v1/storyboard/nodes", tags=["Storyboard"])
+def get_storyboard_nodes():
+    """Returns 50 nodes with fixed coordinates, CIFAR-10 data from Sheet 2, and 90 physical edges."""
+    loader = ExcelDataLoader.get_instance()
+    return {
+        "nodes": loader.get_all_nodes(),
+        "edges": loader.get_all_edges(),
+        "total_nodes": 50,
+        "total_edges": 90,
+    }
+
+
+@app.get("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
+def get_storyboard_step(step_number: int):
+    """Returns deterministic data for Storyboard Step (1 to 4) parsed from Excel."""
+    if step_number not in [1, 2, 3, 4]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid step number {step_number}. Must be between 1 and 4.",
+        )
+    loader = ExcelDataLoader.get_instance()
+    return loader.get_step_data(step_number)
 
 
 @app.post("/api/v1/init", status_code=status.HTTP_200_OK, tags=["Simulation"])

@@ -1,83 +1,53 @@
 // ==========================================================================
-// SemanticDFL Storyboard Simulator - Step 1, Step 2, Step 3 & Step 4 Controller
-// ACM 2026 Reference Implementation - Algorithm 3 (ZONEFORMATION PROTOCOL)
+// SemanticDFL Storyboard Simulator - Excel Integration Controller
+// Precomputed Ground-Truth from 'semantic_dfl_simulation_data.xlsx'
+// ACM 2026 Reference Implementation - Steps 1 to 4
 // ==========================================================================
 
 let currentStep = 1;
-let currentSession = null;
-let simulationData = {};
-let step1Topology = null;
-let step2Data = null;
-let step3Data = null;
-let step4Data = null;
+let currentConfig = null;
+let currentStepData = null;
 let cy = null;
 let activeSelectedNodeId = null;
+let activeAnimationId = null;
 
-const DATASET_CLASSES = {
-  0: { name: "Cat", icon: "🐱", slice: [0, 4] },
-  1: { name: "Car", icon: "🚗", slice: [5, 9] },
-  2: { name: "Airplane", icon: "✈️", slice: [10, 14] },
-  3: { name: "Dog", icon: "🐶", slice: [15, 19] },
-  4: { name: "Frog", icon: "🐸", slice: [20, 24] },
-  5: { name: "Horse", icon: "🐴", slice: [25, 29] },
-  6: { name: "Ship", icon: "🚢", slice: [30, 34] },
-  7: { name: "Truck", icon: "🚚", slice: [35, 39] },
-  8: { name: "Bird", icon: "🐦", slice: [40, 44] },
-  9: { name: "Deer", icon: "🦌", slice: [45, 49] },
+// CIFAR-10 Fallback / Cache
+const CIFAR10_CLASSES = {
+  0: { name: "هواپیما (Airplane)", english: "Airplane", icon: "✈️" },
+  1: { name: "اتومبیل (Automobile)", english: "Automobile", icon: "🚗" },
+  2: { name: "پرنده (Bird)", english: "Bird", icon: "🐦" },
+  3: { name: "گربه (Cat)", english: "Cat", icon: "🐱" },
+  4: { name: "آهو (Deer)", english: "Deer", icon: "🦌" },
+  5: { name: "سگ (Dog)", english: "Dog", icon: "🐶" },
+  6: { name: "قورباغه (Frog)", english: "Frog", icon: "🐸" },
+  7: { name: "اسب (Horse)", english: "Horse", icon: "🐎" },
+  8: { name: "کشتی (Ship)", english: "Ship", icon: "🚢" },
+  9: { name: "کامیون (Truck)", english: "Truck", icon: "🚚" },
 };
 
-// Elegant, distinct pastel/neon color palette for physical zones
-const ZONE_PALETTE = [
-  { fill: "#38bdf8", border: "#0284c7", text: "#0369a1", bgLight: "#f0f9ff", name: "Soft Cyan" },
-  { fill: "#34d399", border: "#059669", text: "#065f46", bgLight: "#ecfdf5", name: "Emerald Green" },
-  { fill: "#a78bfa", border: "#7c3aed", text: "#5b21b6", bgLight: "#f5f3ff", name: "Royal Purple" },
-  { fill: "#fb923c", border: "#ea580c", text: "#9a3412", bgLight: "#fff7ed", name: "Coral Amber" },
-  { fill: "#fb7185", border: "#e11d48", text: "#9f1239", bgLight: "#fff1f2", name: "Rose Crimson" },
-  { fill: "#818cf8", border: "#4f46e5", text: "#3730a3", bgLight: "#eef2ff", name: "Indigo Blue" },
-  { fill: "#2dd4bf", border: "#0d9488", text: "#115e59", bgLight: "#f0fdfa", name: "Teal" },
-  { fill: "#e879f9", border: "#c026d3", text: "#86198f", bgLight: "#fdf4ff", name: "Fuchsia" },
-  { fill: "#facc15", border: "#ca8a04", text: "#854d0e", bgLight: "#fefce8", name: "Golden Amber" },
-  { fill: "#a3e635", border: "#65a30d", text: "#3f6212", bgLight: "#f7fee7", name: "Lime Green" },
-];
+// 10 Distinct Palettes for the 10 Proximity Zones (Sheet 3)
+const ZONE_PALETTES = {
+  "زون C1": { fill: "#3b82f6", border: "#1d4ed8", text: "#1e3a8a", name: "Zone C1 (Blue)" },
+  "زون C6": { fill: "#10b981", border: "#047857", text: "#064e3b", name: "Zone C6 (Emerald)" },
+  "زون C11": { fill: "#f59e0b", border: "#b45309", text: "#78350f", name: "Zone C11 (Amber)" },
+  "زون C16": { fill: "#ef4444", border: "#b91c1c", text: "#7f1d1d", name: "Zone C16 (Red)" },
+  "زون C21": { fill: "#8b5cf6", border: "#6d28d9", text: "#4c1d95", name: "Zone C21 (Purple)" },
+  "زون C26": { fill: "#06b6d4", border: "#0e7490", text: "#164e63", name: "Zone C26 (Cyan)" },
+  "زون C31": { fill: "#ec4899", border: "#be185d", text: "#831843", name: "Zone C31 (Pink)" },
+  "زون C36": { fill: "#14b8a6", border: "#0f766e", text: "#134e4a", name: "Zone C36 (Teal)" },
+  "زون C41": { fill: "#f97316", border: "#c2410c", text: "#7c2d12", name: "Zone C41 (Orange)" },
+  "زون C46": { fill: "#6366f1", border: "#4338ca", text: "#312e81", name: "Zone C46 (Indigo)" },
+};
 
-document.addEventListener("DOMContentLoaded", () => {
-  renderClassLegend();
+document.addEventListener("DOMContentLoaded", async () => {
   initCytoscape();
   bindActionButtons();
-  // Auto-initialize Step 1
-  initializeNetwork();
+  setupPacketCanvas();
+  await loadGlobalConfig();
+  await loadStep(1);
 });
 
-// Render the 10 Dataset Classes in the Left Panel
-function renderClassLegend() {
-  const container = document.getElementById("classList");
-  if (!container) return;
-
-  container.innerHTML = "";
-  for (let cid = 0; cid < 10; cid++) {
-    const cls = DATASET_CLASSES[cid];
-    const item = document.createElement("div");
-    item.className = "class-chip text-slate-700";
-    item.dataset.classId = cid;
-
-    item.innerHTML = `
-      <div class="flex items-center space-x-1.5">
-        <span class="text-sm">${cls.icon}</span>
-        <span class="font-bold text-[11px] text-slate-800">${cls.name}</span>
-        <span class="text-[9px] text-slate-400 font-mono">(C${cid})</span>
-      </div>
-      <div class="text-[9px] font-mono px-1 py-0.5 rounded bg-slate-100 border border-slate-200 text-blue-700 font-semibold">
-        [${cls.slice[0]}-${cls.slice[1]}]
-      </div>
-    `;
-
-    item.addEventListener("mouseenter", () => highlightClassNodes(cid));
-    item.addEventListener("mouseleave", () => resetNodeHighlights());
-    container.appendChild(item);
-  }
-}
-
-// 1. Initialize Cytoscape Canvas strictly with preset layout & Click-to-Toggle
+// 1. Initialize Cytoscape.js with strict preset coordinates
 function initCytoscape() {
   cy = cytoscape({
     container: document.getElementById("cy"),
@@ -93,8 +63,8 @@ function initCytoscape() {
           "font-weight": "bold",
           "text-valign": "bottom",
           "text-margin-y": 4,
-          "text-background-color": "rgba(255, 255, 255, 0.90)",
-          "text-background-opacity": 0.92,
+          "text-background-color": "rgba(255, 255, 255, 0.92)",
+          "text-background-opacity": 0.95,
           "text-background-padding": 2,
           "text-background-shape": "roundrectangle",
           "background-color": "data(bg_color)",
@@ -102,27 +72,22 @@ function initCytoscape() {
           "border-width": 2,
           "width": 26,
           "height": 26,
-          "transition-property": "background-color, border-color, width, height, border-width, opacity",
-          "transition-duration": "0.2s"
-        }
-      },
-      {
-        selector: "node.boundary-node",
-        style: {
-          "border-style": "dashed",
-          "border-width": 2.8,
+          "transition-property": "background-color, border-color, width, height, border-width, opacity, shadow-blur, shadow-opacity",
+          "transition-duration": "0.25s"
         }
       },
       {
         selector: "node.initiator-node",
         style: {
           "border-color": "#b45309",
-          "border-width": 4,
-          "border-style": "solid",
-          "width": 34,
-          "height": 34,
-          "color": "#92400e",
-          "font-size": "10.5px",
+          "border-width": 4.5,
+          "width": 36,
+          "height": 36,
+          "color": "#78350f",
+          "font-size": "11px",
+          "shadow-blur": 18,
+          "shadow-color": "#f59e0b",
+          "shadow-opacity": 0.85,
           "z-index": 90
         }
       },
@@ -130,16 +95,6 @@ function initCytoscape() {
         selector: "node.selected-node",
         style: {
           "border-color": "#0284c7",
-          "border-width": 4.5,
-          "width": 36,
-          "height": 36,
-          "z-index": 100
-        }
-      },
-      {
-        selector: "node.initiator-node.selected-node",
-        style: {
-          "border-color": "#92400e",
           "border-width": 5,
           "width": 38,
           "height": 38,
@@ -151,25 +106,25 @@ function initCytoscape() {
         style: {
           "background-color": "#0284c7",
           "border-color": "#0369a1",
-          "border-width": 3.5,
-          "width": 32,
-          "height": 32,
-          "z-index": 99
+          "border-width": 4,
+          "width": 34,
+          "height": 34,
+          "z-index": 95
         }
       },
       {
         selector: "node.dimmed",
         style: {
-          "opacity": 0.20
+          "opacity": 0.22
         }
       },
       {
         selector: "edge",
         style: {
           "width": 1.5,
-          "line-color": "#64748b", // Clear slate physical links
+          "line-color": "#94a3b8", // High-contrast clean physical link
           "curve-style": "straight",
-          "opacity": 0.50,
+          "opacity": 0.65,
           "transition-property": "line-color, width, opacity",
           "transition-duration": "0.2s"
         }
@@ -180,7 +135,7 @@ function initCytoscape() {
           "line-style": "dashed",
           "line-color": "#f87171",
           "line-dash-pattern": [6, 4],
-          "width": 2.4,
+          "width": 2.2,
           "opacity": 0.95,
           "z-index": 60
         }
@@ -191,14 +146,23 @@ function initCytoscape() {
           "line-style": "solid",
           "line-color": "#94a3b8",
           "width": 1.5,
-          "opacity": 0.38
+          "opacity": 0.45
+        }
+      },
+      {
+        selector: "edge.wave-active",
+        style: {
+          "line-color": "#38bdf8",
+          "width": 2.8,
+          "opacity": 1.0,
+          "z-index": 80
         }
       },
       {
         selector: "edge.highlighted",
         style: {
           "line-color": "#2563eb",
-          "width": 2.2,
+          "width": 2.4,
           "opacity": 0.95,
           "z-index": 50
         }
@@ -206,7 +170,7 @@ function initCytoscape() {
       {
         selector: "edge.dimmed",
         style: {
-          "opacity": 0.12
+          "opacity": 0.15
         }
       }
     ],
@@ -221,13 +185,11 @@ function initCytoscape() {
   // Click-to-Toggle Node Modal Interaction
   cy.on("tap", "node", (evt) => {
     const node = evt.target;
-    const nid = node.data("peer_id");
+    const nid = node.data("node_id_num");
 
     if (activeSelectedNodeId === nid) {
-      // Toggle off if clicking the already open node
       hideNodeModal();
     } else {
-      // Select and pin details modal
       showNodeModal(node.data());
       cy.nodes().removeClass("selected-node");
       node.addClass("selected-node");
@@ -247,190 +209,616 @@ function initCytoscape() {
   if (btnCloseModal) {
     btnCloseModal.addEventListener("click", hideNodeModal);
   }
+
+  // Handle resize & pan for packet overlay canvas
+  cy.on("pan zoom resize", () => {
+    syncPacketCanvasSize();
+  });
 }
 
-// Show Pinned Node Modal
+// 2. Setup Packet Animation Overlay Canvas
+function setupPacketCanvas() {
+  window.addEventListener("resize", syncPacketCanvasSize);
+  syncPacketCanvasSize();
+}
+
+function syncPacketCanvasSize() {
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const container = cy.container();
+  const rect = container.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+}
+
+function stopCurrentPacketAnimation() {
+  if (activeAnimationId) {
+    cancelAnimationFrame(activeAnimationId);
+    activeAnimationId = null;
+  }
+  const canvas = document.getElementById("packetCanvas");
+  if (canvas) {
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  if (cy) {
+    cy.edges().removeClass("wave-active");
+  }
+}
+
+// 3. Load Global Network Configuration (Sheet 1)
+async function loadGlobalConfig() {
+  try {
+    const res = await fetch("/api/v1/storyboard/config");
+    if (!res.ok) throw new Error("Failed to load config");
+    const data = await res.json();
+    currentConfig = data;
+    renderDatasetClassLegend(data.classes || []);
+
+    const statNodes = document.getElementById("statNodes");
+    if (statNodes) statNodes.textContent = data.num_nodes || 50;
+    const statDegree = document.getElementById("statDegree");
+    if (statDegree) statDegree.textContent = `${data.avg_degree || 3.6} (${data.total_edges} edges)`;
+
+    const sessionVal = document.getElementById("sessionVal");
+    if (sessionVal) sessionVal.textContent = "Excel Ground-Truth";
+  } catch (err) {
+    console.error("Config Load Error:", err);
+    logToTerminal("ERROR", `Failed to load network configuration: ${err.message}`);
+  }
+}
+
+// Render Dataset Class Legend in Left Sidebar
+function renderDatasetClassLegend(classes) {
+  const container = document.getElementById("classList");
+  if (!container) return;
+  container.innerHTML = "";
+
+  classes.forEach(c => {
+    const item = document.createElement("div");
+    item.className = "class-chip text-slate-700";
+    item.dataset.classId = c.class_id;
+
+    item.innerHTML = `
+      <div class="flex items-center space-x-1.5">
+        <span class="text-sm">${c.icon}</span>
+        <span class="font-bold text-[11px] text-slate-800">${c.english_name || c.name}</span>
+        <span class="text-[9px] text-slate-400 font-mono">(C${c.class_id})</span>
+      </div>
+      <div class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-blue-700 font-semibold">
+        ${c.count} nodes
+      </div>
+    `;
+
+    item.addEventListener("mouseenter", () => highlightClassNodes(c.class_id));
+    item.addEventListener("mouseleave", () => resetNodeHighlights());
+    container.appendChild(item);
+  });
+}
+
+function highlightClassNodes(classId) {
+  if (!cy) return;
+  cy.nodes().forEach(n => {
+    if (n.data("class_id") === classId) {
+      n.removeClass("dimmed").addClass("highlighted");
+    } else {
+      n.removeClass("highlighted").addClass("dimmed");
+    }
+  });
+}
+
+function resetNodeHighlights() {
+  if (!cy) return;
+  cy.nodes().removeClass("highlighted dimmed");
+}
+
+// 4. Main Step Loading Function (Steps 1 to 4)
+async function loadStep(stepNumber) {
+  if (stepNumber < 1 || stepNumber > 4) return;
+  setNavButtonsDisabled(true);
+  hideNodeModal();
+  stopCurrentPacketAnimation();
+
+  try {
+    const res = await fetch(`/api/v1/storyboard/step/${stepNumber}`);
+    if (!res.ok) throw new Error(`Step ${stepNumber} fetch failed: ${res.statusText}`);
+    const data = await res.json();
+    currentStep = stepNumber;
+    currentStepData = data;
+
+    updateUIHeaders(data);
+    updateStepper(stepNumber);
+    updateNavButtons(stepNumber);
+
+    if (stepNumber === 1) {
+      renderStep1(data);
+    } else if (stepNumber === 2) {
+      renderStep2(data);
+    } else if (stepNumber === 3) {
+      renderStep3(data);
+    } else if (stepNumber === 4) {
+      renderStep4(data);
+    }
+
+    // Stream terminal logs
+    if (data.terminal_logs && Array.isArray(data.terminal_logs)) {
+      data.terminal_logs.forEach(log => {
+        let lvl = "INFO";
+        if (log.startsWith("[Topology]")) lvl = "TOPOLOGY";
+        else if (log.startsWith("[VRF]")) lvl = "VRF";
+        else if (log.startsWith("[Wave") || log.startsWith("[Propagation")) lvl = "WAVE";
+        else if (log.startsWith("[Election]") || log.startsWith("[Zone")) lvl = "ZONE";
+        logToTerminal(lvl, log);
+      });
+    }
+
+  } catch (err) {
+    console.error(`Step ${stepNumber} Error:`, err);
+    logToTerminal("ERROR", `Failed loading step ${stepNumber}: ${err.message}`);
+  } finally {
+    setNavButtonsDisabled(false);
+  }
+}
+
+// Update Top Headers and Narrative Cards
+function updateUIHeaders(data) {
+  const activeBadge = document.getElementById("activeStepBadge");
+  if (activeBadge) {
+    activeBadge.textContent = data.phase_badge || `Step ${data.step}`;
+    if (data.step === 1) {
+      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200";
+    } else if (data.step === 2) {
+      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-sky-50 text-sky-700 border border-sky-300";
+    } else if (data.step === 3) {
+      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-700 border border-purple-300";
+    } else if (data.step === 4) {
+      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-300";
+    }
+  }
+
+  const stepTag = document.getElementById("stepTag");
+  if (stepTag) stepTag.textContent = `STEP ${data.step} / SHEET ${data.step === 1 ? '2' : '3'}`;
+  const stepTitle = document.getElementById("stepTitle");
+  if (stepTitle) stepTitle.textContent = data.title;
+  const stepDesc = document.getElementById("stepDescription");
+  if (stepDesc) stepDesc.textContent = data.description;
+}
+
+// 5. STEP 1: Base Physical Topology
+function renderStep1(data) {
+  renderSidebarFormula(
+    "Physical Network Topology",
+    "G = (V, E), \\quad |V|=50, \\quad |E|=90",
+    "Base physical ad-hoc network loaded from Sheet 2. 50 mobile edge devices with 90 physical communication links. No overlays or zones.",
+    "Topology",
+    false
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Physical Ad-Hoc Topology (50 Nodes, 90 Edges)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.textContent = "0 Initiators";
+    statLeaders.className = "text-xs font-bold text-slate-400";
+  }
+
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: false,
+    useZoneColors: false,
+    showBoundaryEdges: false
+  });
+}
+
+// 6. STEP 2: Local VRF Score Computation
+function renderStep2(data) {
+  renderSidebarFormula(
+    "Local VRF Score Computation",
+    "\\sigma_p = \\text{VRF}_{sk_p}(\\text{seed}_{e-1}) \\in [0, 1)",
+    "Each peer computes a verifiable pseudorandom score using its private key sk and global seed_e0. Zero network communication.",
+    "Local VRF",
+    false
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Local VRF Evaluation (50 Peers, All Roles = CLIENT)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.textContent = "0 Initiators (Unexchanged)";
+    statLeaders.className = "text-xs font-bold text-slate-500";
+  }
+
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: false,
+    useZoneColors: false,
+    showBoundaryEdges: false
+  });
+}
+
+// 7. STEP 3: TTL=3 Packet Wave Propagation
+function renderStep3(data) {
+  renderSidebarFormula(
+    "TTL=3 Wave Propagation",
+    "\\text{PROBE}(p, \\text{TTL}=3) \\xrightarrow{\\text{multi-hop}} \\mathcal{N}_3(p)",
+    "Initiators flood discovery probes across physical links up to TTL=3 hops: Wave 1 (1-hop), Wave 2 (2-hop), Wave 3 (3-hop).",
+    "TTL = 3 Waves",
+    false,
+    "purple"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "TTL=3 Multi-Hop Wave Propagation (Waves 1, 2, 3 Animated)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.textContent = "10 Probing Nodes";
+    statLeaders.className = "text-xs font-bold text-purple-700";
+  }
+
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: false,
+    useZoneColors: false,
+    showBoundaryEdges: false
+  });
+
+  // Launch sequential wave animations
+  if (data.waves) {
+    animateThreeWaves(data.waves);
+  }
+}
+
+// Animate the 3 Sequential Waves on the Packet Overlay Canvas
+function animateThreeWaves(waves) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const wave1Packets = waves.wave1 || [];
+  const wave2Packets = waves.wave2 || [];
+  const wave3Packets = waves.wave3 || [];
+
+  const waveDuration = 1200; // ms per wave
+  let currentWaveIndex = 1;
+  let waveStartTime = performance.now();
+
+  function runWaveFrame(now) {
+    const elapsed = now - waveStartTime;
+    const progress = Math.min(elapsed / waveDuration, 1.0);
+    const easeProgress = easeInOutQuad(progress);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    let activePackets = [];
+    let packetColor = "#38bdf8";
+
+    if (currentWaveIndex === 1) {
+      activePackets = wave1Packets;
+      packetColor = "#38bdf8"; // Sky cyan
+    } else if (currentWaveIndex === 2) {
+      activePackets = wave2Packets;
+      packetColor = "#8b5cf6"; // Violet purple
+    } else if (currentWaveIndex === 3) {
+      activePackets = wave3Packets;
+      packetColor = "#f59e0b"; // Amber gold
+    }
+
+    // Render traveling packet dots
+    activePackets.forEach(pkt => {
+      const srcNode = cy.getElementById(`node_${pkt.source}`);
+      const tgtNode = cy.getElementById(`node_${pkt.target}`);
+      if (!srcNode || !tgtNode || !srcNode.isNode() || !tgtNode.isNode()) return;
+
+      const p1 = srcNode.renderedPosition();
+      const p2 = tgtNode.renderedPosition();
+
+      const curX = p1.x + (p2.x - p1.x) * easeProgress;
+      const curY = p1.y + (p2.y - p1.y) * easeProgress;
+
+      // Draw packet outer glow
+      ctx.beginPath();
+      ctx.arc(curX, curY, 7, 0, Math.PI * 2);
+      ctx.fillStyle = packetColor;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = packetColor;
+      ctx.fill();
+
+      // Draw packet core
+      ctx.beginPath();
+      ctx.arc(curX, curY, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowBlur = 0;
+      ctx.fill();
+    });
+
+    if (progress < 1.0) {
+      activeAnimationId = requestAnimationFrame(runWaveFrame);
+    } else {
+      // Wave transition
+      if (currentWaveIndex === 1 && wave2Packets.length > 0) {
+        currentWaveIndex = 2;
+        waveStartTime = performance.now();
+        activeAnimationId = requestAnimationFrame(runWaveFrame);
+      } else if (currentWaveIndex === 2 && wave3Packets.length > 0) {
+        currentWaveIndex = 3;
+        waveStartTime = performance.now();
+        activeAnimationId = requestAnimationFrame(runWaveFrame);
+      } else {
+        // Animation finished: clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        activeAnimationId = null;
+      }
+    }
+  }
+
+  activeAnimationId = requestAnimationFrame(runWaveFrame);
+}
+
+function easeInOutQuad(t) {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
+
+// 8. STEP 4: Initiator Election & Zone Formation
+function renderStep4(data) {
+  renderSidebarFormula(
+    "Zone Formation & Initiators",
+    "Z_I = \\{ q \\mid \\text{dist}(I, q) \\le 3 \\land I = \\arg\\min \\sigma \\}",
+    "10 Initiators elected (👑 C1, C6, C11, C16, C21, C26, C31, C36, C41, C46). 50 nodes partitioned into 10 physical zones with 29 boundary bridge links.",
+    "10 Zones Formed",
+    true
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "10 Proximity Zones Formed (10 Initiators 👑 & Boundary Edges)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.textContent = "10 Initiators 👑";
+    statLeaders.className = "text-xs font-bold text-amber-600";
+  }
+
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useZoneColors: true,
+    showBoundaryEdges: true
+  });
+}
+
+// 9. Core Cytoscape Rendering Pipeline
+function renderCytoscapeGraph(nodes, edges, options = {}) {
+  if (!cy) return;
+
+  const elements = [];
+
+  nodes.forEach(n => {
+    const isInit = options.showInitiators && n.is_initiator;
+    const label = isInit ? `👑 C${n.id} ${n.class_icon}` : `C${n.id} ${n.class_icon}`;
+
+    let bgColor = "#2563eb";
+    let borderColor = "#1d4ed8";
+
+    if (options.useZoneColors && n.assigned_zone) {
+      const pal = ZONE_PALETTES[n.assigned_zone];
+      if (pal) {
+        bgColor = pal.fill;
+        borderColor = isInit ? "#b45309" : pal.border;
+      } else if (n.zone_color) {
+        bgColor = n.zone_color;
+        borderColor = isInit ? "#b45309" : n.zone_color;
+      }
+    } else if (isInit) {
+      bgColor = "#f59e0b";
+      borderColor = "#b45309";
+    }
+
+    elements.push({
+      group: "nodes",
+      classes: isInit ? "initiator-node" : "",
+      data: {
+        id: `node_${n.id}`,
+        node_id_num: n.id,
+        node_id_str: n.node_id || `C${n.id}`,
+        label: label,
+        role: isInit ? "👑 Initiator" : (n.role || "Member"),
+        status: n.status || "NOT_ASSIGNED",
+        bg_color: bgColor,
+        border_color: borderColor,
+        class_id: n.class_id,
+        class_title: n.class_title,
+        class_icon: n.class_icon,
+        sk: n.sk,
+        vrf_formula: n.vrf_formula,
+        vrf_score: n.vrf_score,
+        is_initiator: n.is_initiator,
+        assigned_zone: n.assigned_zone,
+        hops_to_initiator: n.hops_to_initiator,
+        hops_label: n.hops_label,
+        neighbors: n.neighbors || [],
+        neighbors_str: n.neighbors_str || [],
+        wave1_reach: n.wave1_reach || [],
+        wave2_reach: n.wave2_reach || [],
+        wave3_reach: n.wave3_reach || [],
+      },
+      position: {
+        x: n.x,
+        y: n.y
+      }
+    });
+  });
+
+  edges.forEach((e, idx) => {
+    const isBoundary = options.showBoundaryEdges && !!e.is_inter_zone;
+    elements.push({
+      group: "edges",
+      classes: isBoundary ? "boundary-edge" : "intra-zone-edge",
+      data: {
+        id: e.id || `edge_${idx}`,
+        source: `node_${e.source_num || parseInt(e.source.replace('C', ''))}`,
+        target: `node_${e.target_num || parseInt(e.target.replace('C', ''))}`,
+        is_inter_zone: isBoundary,
+      }
+    });
+  });
+
+  cy.elements().remove();
+  cy.add(elements);
+  cy.layout({ name: "preset" }).run();
+  cy.fit(undefined, 35);
+}
+
+// 10. Click-to-Toggle Node Details Modal
 function showNodeModal(nodeData) {
   const card = document.getElementById("nodeInfoCard");
   if (!card) return;
 
-  const isInitiator = (nodeData.role === "INITIATOR" || nodeData.status === "ASSIGNED");
+  const isInitiator = nodeData.is_initiator;
   const cardNodeId = document.getElementById("cardNodeId");
   const cardStatusBadge = document.getElementById("cardStatusBadge");
+  const cardRole = document.getElementById("cardRole");
+  const cardClass = document.getElementById("cardClass");
+  const cardVrfScore = document.getElementById("cardVrfScore");
+  const cardVrfScoreRow = document.getElementById("cardVrfScoreRow");
+  const cardVrfDetailsRow = document.getElementById("cardVrfDetailsRow");
+  const cardSk = document.getElementById("cardSk");
+  const cardFormula = document.getElementById("cardFormula");
+  const cardZone = document.getElementById("cardZone");
+  const cardZoneRow = document.getElementById("cardZoneRow");
+  const cardHops = document.getElementById("cardHops");
+  const cardHopsRow = document.getElementById("cardHopsRow");
+  const cardDegree = document.getElementById("cardDegree");
+  const cardNeighbors = document.getElementById("cardNeighbors");
+  const cardWaveReachRow = document.getElementById("cardWaveReachRow");
 
-  cardNodeId.textContent = `NODE #C${nodeData.peer_id || nodeData.id}`;
-
-  if (currentStep === 4) {
-    const isInit = (nodeData.role === "INITIATOR" || nodeData.peer_id === nodeData.initiator_id || nodeData.id === nodeData.initiator_id);
-    if (isInit) {
-      cardNodeId.innerHTML = `<span class="text-amber-700">👑 NODE #C${nodeData.peer_id || nodeData.id}</span>`;
-      cardStatusBadge.textContent = "ASSIGNED (INITIATOR)";
-      cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300";
+  // Title: Node ID & CIFAR-10 Class (Title + Emoji)
+  if (cardNodeId) {
+    if (currentStep === 4 && isInitiator) {
+      cardNodeId.innerHTML = `<span class="text-amber-800">👑 C${nodeData.node_id_num} ${nodeData.class_icon}</span>`;
     } else {
-      cardStatusBadge.textContent = "ASSIGNED";
-      cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
+      cardNodeId.innerHTML = `<span class="text-blue-700">C${nodeData.node_id_num} ${nodeData.class_icon}</span>`;
     }
-    if (roleElem) {
-      roleElem.textContent = isInit ? "INITIATOR (Zone Root)" : (nodeData.role || "CLIENT");
-      roleElem.className = isInit ? "text-amber-800 font-mono font-bold" : "text-slate-800 font-mono font-bold";
-    }
-  } else if (currentStep === 3 && isInitiator) {
-    cardNodeId.innerHTML = `<span class="text-amber-700">👑 NODE #C${nodeData.peer_id || nodeData.id}</span>`;
-    cardStatusBadge.textContent = "ASSIGNED (INITIATOR)";
-    cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300";
-  } else if (currentStep >= 2 && nodeData.vrf_score !== null) {
-    cardStatusBadge.textContent = currentStep === 3 ? "CLIENT (Peer)" : "COMPUTED (Awaiting Exchange)";
-    cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200";
-  } else {
-    cardStatusBadge.textContent = nodeData.status || "NOT_ASSIGNED";
-    cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200";
   }
 
-  const roleElem = document.getElementById("cardRole");
-  if (roleElem && currentStep !== 4) {
-    roleElem.textContent = isInitiator && currentStep === 3 ? "INITIATOR (Zone Root)" : (nodeData.role || "CLIENT");
-    roleElem.className = isInitiator && currentStep === 3 ? "text-amber-800 font-mono font-bold" : "text-slate-800 font-mono font-bold";
-  }
-
-  const classId = nodeData.class_id !== undefined ? nodeData.class_id : (nodeData.category_id || 0);
-  const cls = DATASET_CLASSES[classId] || { name: "Class", icon: "📦", slice: [0, 4] };
-
-  document.getElementById("cardClass").textContent = `${cls.name} ${cls.icon} (Class ${classId})`;
-  document.getElementById("cardDegree").textContent = `${nodeData.degree || 0} neighbors`;
-
-  const x = nodeData.coords ? Math.round(nodeData.coords.x) : (nodeData.x ? Math.round(nodeData.x) : "-");
-  const y = nodeData.coords ? Math.round(nodeData.coords.y) : (nodeData.y ? Math.round(nodeData.y) : "-");
-  const cardCoords = document.getElementById("cardCoords");
-  if (cardCoords) cardCoords.textContent = `(${x}, ${y})`;
-
-  // Step 2 VRF Section
-  const vrfLocalSec = document.getElementById("cardVrfLocalSection");
-  const vrfLocalScore = document.getElementById("cardLocalScoreVal");
-  if (currentStep === 2 && nodeData.vrf_score !== null) {
-    vrfLocalSec.classList.remove("hidden");
-    vrfLocalScore.textContent = Number(nodeData.vrf_score).toFixed(4);
-  } else {
-    vrfLocalSec.classList.add("hidden");
-  }
-
-  // Step 3 Neighborhood Scoreboard Section (Radius R = 3 hops)
-  const exchangeSec = document.getElementById("cardVrfExchangeSection");
-  const selfScoreVal = document.getElementById("cardSelfScoreVal");
-  const winnerBadge = document.getElementById("cardWinnerBadge");
-  const coverageCountEl = document.getElementById("cardCoverageCount");
-  const nbrListContainer = document.getElementById("cardNbrScoresList");
-
-  if (currentStep === 3 && nodeData.neighborhood_scores && nodeData.neighborhood_scores.length) {
-    exchangeSec.classList.remove("hidden");
-    selfScoreVal.textContent = Number(nodeData.vrf_score).toFixed(4);
-
-    if (isInitiator) {
-      winnerBadge.textContent = "🏆 Self-Elected Initiator";
-      winnerBadge.className = "text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
+  // Status Badge
+  if (cardStatusBadge) {
+    if (currentStep === 4) {
+      cardStatusBadge.textContent = isInitiator ? "👑 INITIATOR" : "ASSIGNED";
+      cardStatusBadge.className = isInitiator
+        ? "text-[9px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300"
+        : "text-[9px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
+    } else if (currentStep >= 2) {
+      cardStatusBadge.textContent = "VRF COMPUTED";
+      cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-sky-100 text-sky-800 border border-sky-300";
     } else {
-      winnerBadge.textContent = `Root: C${nodeData.min_peer_id}`;
-      winnerBadge.className = "text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200";
+      cardStatusBadge.textContent = "NOT_ASSIGNED";
+      cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200";
     }
-
-    if (coverageCountEl) {
-      coverageCountEl.textContent = `${nodeData.neighborhood_scores.length} peers covered`;
-    }
-
-    // Group scores by hop distance: Hop 1, Hop 2, Hop 3
-    nbrListContainer.innerHTML = "";
-    
-    // Group items by hop (excluding hop 0 self from peers list, or display self prominently)
-    const hops = [1, 2, 3];
-    hops.forEach(h => {
-      const hopPeers = nodeData.neighborhood_scores.filter(item => item.hop === h);
-      if (hopPeers.length === 0) return;
-
-      const groupHeader = document.createElement("div");
-      groupHeader.className = "text-[9px] font-bold font-mono tracking-wider pt-1.5 pb-0.5 flex items-center justify-between text-slate-500 border-b border-slate-100";
-      groupHeader.innerHTML = `
-        <span class="flex items-center gap-1">
-          <span class="px-1 py-0.2 rounded text-[8px] hop-badge-${h}">Hop ${h}</span>
-          <span>${h === 1 ? "Direct Neighbors" : (h === 2 ? "2 Hops Away" : "3 Hops Away")}</span>
-        </span>
-        <span class="text-[8px] text-slate-400">(${hopPeers.length} peers)</span>
-      `;
-      nbrListContainer.appendChild(groupHeader);
-
-      hopPeers.forEach(item => {
-        const row = document.createElement("div");
-        const isWinner = item.is_min;
-
-        row.className = isWinner
-          ? "winner-score-row px-2 py-1 flex items-center justify-between my-0.5"
-          : "px-2 py-0.5 bg-slate-50 border border-slate-200/80 rounded flex items-center justify-between text-slate-700 my-0.5";
-
-        row.innerHTML = `
-          <span class="flex items-center gap-1 font-mono">
-            ${isWinner ? "<span>👑</span>" : ""}
-            <span class="${isWinner ? "font-bold text-amber-950" : "font-medium"}">Peer C${item.id}</span>
-          </span>
-          <span class="flex items-center gap-1.5 font-mono">
-            <span class="${isWinner ? "text-amber-900 font-extrabold" : "text-slate-800"}">σ=${Number(item.score).toFixed(4)}</span>
-            ${isWinner ? '<span class="text-[8px] px-1 py-0.2 rounded bg-amber-200 text-amber-950 font-bold border border-amber-400">★ Winner</span>' : ""}
-          </span>
-        `;
-        nbrListContainer.appendChild(row);
-      });
-    });
-
-  } else {
-    exchangeSec.classList.add("hidden");
   }
 
-  // Step 4 Zone Details Section (Algorithm 3)
-  const zoneSec = document.getElementById("cardZoneSection");
-  if (currentStep === 4 && nodeData.zone_id !== undefined && nodeData.zone_id !== null) {
-    if (zoneSec) zoneSec.classList.remove("hidden");
-    const zoneId = nodeData.zone_id;
-    const initId = (nodeData.initiator_id !== undefined && nodeData.initiator_id !== null) ? nodeData.initiator_id : zoneId;
-    const hopDist = (nodeData.hop_distance !== undefined && nodeData.hop_distance !== null) ? nodeData.hop_distance : 0;
-    const probeSender = (nodeData.parent_probe_sender !== undefined && nodeData.parent_probe_sender !== null) ? nodeData.parent_probe_sender : initId;
-
-    const cardZoneId = document.getElementById("cardZoneId");
-    const cardZoneBadge = document.getElementById("cardZoneBadge");
-    const cardZoneInitiator = document.getElementById("cardZoneInitiator");
-    const cardHopDistance = document.getElementById("cardHopDistance");
-    const cardProbeSender = document.getElementById("cardProbeSender");
-    const cardBoundaryTag = document.getElementById("cardBoundaryTag");
-    const cardBoundaryNeighborsRow = document.getElementById("cardBoundaryNeighborsRow");
-    const cardBoundaryNeighborsList = document.getElementById("cardBoundaryNeighborsList");
-
-    if (cardZoneId) cardZoneId.textContent = `Zone ${zoneId}`;
-    if (cardZoneBadge) cardZoneBadge.textContent = `Zone ${zoneId}`;
-    if (cardZoneInitiator) cardZoneInitiator.textContent = `C${initId} 👑`;
-    if (cardHopDistance) cardHopDistance.textContent = `${hopDist} / 3`;
-    if (cardProbeSender) cardProbeSender.textContent = `C${probeSender}`;
-
-    if (cardBoundaryTag) {
-      if (nodeData.is_boundary) {
-        cardBoundaryTag.innerHTML = `⚡ Boundary Interface`;
-        cardBoundaryTag.className = "text-[9px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 font-bold border border-rose-300";
-        if (cardBoundaryNeighborsRow && cardBoundaryNeighborsList && nodeData.boundary_neighbors && nodeData.boundary_neighbors.length) {
-          cardBoundaryNeighborsRow.classList.remove("hidden");
-          cardBoundaryNeighborsList.innerHTML = nodeData.boundary_neighbors.map(nbId => {
-            return `<span class="inline-block px-1.5 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-700 font-mono mr-1 mb-0.5">Peer C${nbId}</span>`;
-          }).join("");
-        } else if (cardBoundaryNeighborsRow) {
-          cardBoundaryNeighborsRow.classList.add("hidden");
-        }
-      } else {
-        cardBoundaryTag.textContent = `Internal Core`;
-        cardBoundaryTag.className = "text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold border border-slate-200";
-        if (cardBoundaryNeighborsRow) cardBoundaryNeighborsRow.classList.add("hidden");
-      }
+  // Role: 👑 Initiator or Member
+  if (cardRole) {
+    if (currentStep === 4) {
+      cardRole.textContent = isInitiator ? "👑 Initiator (Zone Root)" : "Member";
+      cardRole.className = isInitiator ? "text-amber-800 font-mono font-bold" : "text-slate-800 font-mono font-bold";
+    } else {
+      cardRole.textContent = "CLIENT";
+      cardRole.className = "text-slate-700 font-mono font-bold";
     }
-  } else if (zoneSec) {
-    zoneSec.classList.add("hidden");
   }
 
-  // Draw 50D parameter vector preview
-  const isLeaderForChart = (currentStep === 4 && (nodeData.role === "INITIATOR" || nodeData.id === nodeData.initiator_id)) || (currentStep === 3 && isInitiator);
-  renderTooltipVectorPreview(nodeData.weights || [], classId, isLeaderForChart);
+  // CIFAR-10 Class (Title + Emoji)
+  if (cardClass) {
+    cardClass.textContent = `${nodeData.class_title} ${nodeData.class_icon} (Class ${nodeData.class_id})`;
+  }
+
+  // Exact VRF Score from Sheet 3
+  if (cardVrfScore && cardVrfScoreRow) {
+    if (currentStep >= 2 && nodeData.vrf_score !== null && nodeData.vrf_score !== undefined) {
+      cardVrfScoreRow.classList.remove("hidden");
+      cardVrfScore.textContent = Number(nodeData.vrf_score).toFixed(4);
+    } else {
+      cardVrfScoreRow.classList.add("hidden");
+    }
+  }
+
+  // VRF Formula and Key details (Step 2+)
+  if (cardVrfDetailsRow) {
+    if (currentStep >= 2 && nodeData.sk) {
+      cardVrfDetailsRow.classList.remove("hidden");
+      if (cardSk) cardSk.textContent = nodeData.sk;
+      if (cardFormula) cardFormula.textContent = nodeData.vrf_formula || "((100+ID)*sk+1337)%10000";
+    } else {
+      cardVrfDetailsRow.classList.add("hidden");
+    }
+  }
+
+  // Assigned Zone
+  if (cardZone && cardZoneRow) {
+    if (currentStep === 4 && nodeData.assigned_zone) {
+      cardZoneRow.classList.remove("hidden");
+      cardZone.textContent = nodeData.assigned_zone;
+    } else {
+      cardZoneRow.classList.add("hidden");
+    }
+  }
+
+  // Distance to Initiator (Hops)
+  if (cardHops && cardHopsRow) {
+    if (currentStep === 4 && nodeData.hops_label) {
+      cardHopsRow.classList.remove("hidden");
+      cardHops.textContent = nodeData.hops_label;
+    } else {
+      cardHopsRow.classList.add("hidden");
+    }
+  }
+
+  // List of Direct Physical Neighbors from Sheet 2
+  if (cardDegree) {
+    cardDegree.textContent = `${(nodeData.neighbors || []).length} neighbors`;
+  }
+  if (cardNeighbors) {
+    const neighList = (nodeData.neighbors_str && nodeData.neighbors_str.length)
+      ? nodeData.neighbors_str.join(", ")
+      : (nodeData.neighbors || []).map(x => `C${x}`).join(", ");
+    cardNeighbors.textContent = neighList || "None";
+  }
+
+  // Wave Reach (Step 3)
+  if (cardWaveReachRow) {
+    if (currentStep === 3) {
+      cardWaveReachRow.classList.remove("hidden");
+      const w1 = document.getElementById("cardWave1Reach");
+      if (w1) w1.textContent = `${(nodeData.wave1_reach || []).length} nodes`;
+      const w2 = document.getElementById("cardWave2Reach");
+      if (w2) w2.textContent = `${(nodeData.wave2_reach || []).length} nodes`;
+      const w3 = document.getElementById("cardWave3Reach");
+      if (w3) w3.textContent = `${(nodeData.wave3_reach || []).length} nodes`;
+    } else {
+      cardWaveReachRow.classList.add("hidden");
+    }
+  }
 
   card.classList.remove("hidden");
 }
@@ -442,516 +830,7 @@ function hideNodeModal() {
   activeSelectedNodeId = null;
 }
 
-// Render Mini 50-Dimension Vector Bar Chart Preview
-function renderTooltipVectorPreview(weights, classId, isLeader = false) {
-  const canvas = document.getElementById("tooltipVectorCanvas");
-  if (!canvas) return;
-
-  const ctx = canvas.getContext("2d");
-  const width = canvas.width;
-  const height = canvas.height;
-
-  ctx.clearRect(0, 0, width, height);
-
-  ctx.strokeStyle = "rgba(203, 213, 225, 0.8)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(0, height - 3);
-  ctx.lineTo(width, height - 3);
-  ctx.stroke();
-
-  const numBars = 50;
-  const barGap = 1;
-  const totalBarWidth = (width - (numBars - 1) * barGap) / numBars;
-  const activeStart = classId * 5;
-  const activeEnd = activeStart + 5;
-
-  for (let i = 0; i < numBars; i++) {
-    const x = i * (totalBarWidth + barGap);
-    const val = weights[i] !== undefined ? Math.abs(weights[i]) : 0;
-    const isActive = (i >= activeStart && i < activeEnd);
-
-    const barHeight = Math.max(2, Math.min(height - 5, val * (height - 5)));
-    const y = (height - 3) - barHeight;
-
-    if (isActive) {
-      ctx.fillStyle = isLeader ? "#f59e0b" : "#2563eb";
-      ctx.fillRect(x, y, totalBarWidth, barHeight);
-      ctx.fillStyle = isLeader ? "#fef3c7" : "#dbeafe";
-      ctx.fillRect(x, y, totalBarWidth, 1);
-    } else {
-      ctx.fillStyle = "#cbd5e1";
-      ctx.fillRect(x, y, totalBarWidth, barHeight);
-    }
-  }
-}
-
-// Highlight nodes with specific class
-function highlightClassNodes(classId) {
-  if (!cy) return;
-  cy.batch(() => {
-    cy.nodes().forEach(node => {
-      const nid = node.data("class_id");
-      if (nid === classId) {
-        node.addClass("highlighted").removeClass("dimmed");
-      } else {
-        node.addClass("dimmed").removeClass("highlighted");
-      }
-    });
-    cy.edges().addClass("dimmed");
-  });
-}
-
-function resetNodeHighlights() {
-  if (!cy) return;
-  cy.batch(() => {
-    cy.nodes().removeClass("highlighted").removeClass("dimmed");
-    cy.edges().removeClass("highlighted").removeClass("dimmed");
-  });
-}
-
-// 2. Action Buttons & Navigation Event Bindings
-function bindActionButtons() {
-  const btnReset = document.getElementById("btnReset");
-  if (btnReset) {
-    btnReset.addEventListener("click", resetToStep1);
-  }
-
-  const btnPrev = document.getElementById("btnPrev");
-  if (btnPrev) {
-    btnPrev.addEventListener("click", () => {
-      if (currentStep === 4) {
-        revertToStep3();
-      } else if (currentStep === 3) {
-        revertToStep2();
-      } else if (currentStep === 2) {
-        revertToStep1();
-      }
-    });
-  }
-
-  const btnNext = document.getElementById("btnNext");
-  if (btnNext) {
-    btnNext.addEventListener("click", () => {
-      if (currentStep === 1) {
-        executeStep2VRF();
-      } else if (currentStep === 2) {
-        executeStep3Exchange();
-      } else if (currentStep === 3) {
-        executeStep4ZoneProbing();
-      }
-    });
-  }
-
-  const btnClearLogs = document.getElementById("btnClearLogs");
-  if (btnClearLogs) {
-    btnClearLogs.addEventListener("click", () => {
-      const logs = document.getElementById("terminalLogs");
-      if (logs) logs.innerHTML = '<div class="text-slate-400">[SYSTEM] Terminal logs cleared.</div>';
-    });
-  }
-}
-
-// 3. API Call: Initialize 50-Node Storyboard Network (Step 1)
-async function initializeNetwork() {
-  setNavButtonsDisabled(true);
-  hideNodeModal();
-  logToTerminal("INIT", "Deploying 50-node uniform dispersed mesh (Poisson rejection sampling >= 65px)...");
-
-  try {
-    const payload = {
-      benchmark: "Non-IID 10-Class Storyboard",
-      num_nodes: 50,
-      d_limit: 0.35,
-      r_hops: 3,
-      max_zone_size: 10,
-      theta: 0.70,
-      q: 0.20
-    };
-
-    const res = await fetch("/api/v1/init", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) {
-      throw new Error(`Failed to initialize network: ${res.statusText}`);
-    }
-
-    const data = await res.json();
-    currentSession = data.session_id;
-    simulationData = data;
-    step1Topology = JSON.parse(JSON.stringify(data));
-    step2Data = null;
-    step3Data = null;
-
-    applyStep1UI(data);
-
-    logToTerminal("SUCCESS", `Step 1 Deployed: 50 naturally dispersed peers, ${data.edges.length} physical links (deg 3-6).`);
-    logToTerminal("INFO", "Uniform spatial layout: Minimum distance >= 65px enforced across [70, 840] x [60, 520].");
-    logToTerminal("INFO", "Non-IID 10-class distribution: 5 peers per class, homogeneous 50D model vectors.");
-
-  } catch (err) {
-    logToTerminal("ERROR", `Initialization failure: ${err.message}`);
-    console.error("Initialization Error:", err);
-  } finally {
-    setNavButtonsDisabled(false);
-  }
-}
-
-// Apply Step 1 UI State
-function applyStep1UI(data) {
-  currentStep = 1;
-  hideNodeModal();
-
-  const sessionVal = document.getElementById("sessionVal");
-  if (sessionVal) {
-    sessionVal.textContent = currentSession ? currentSession.substring(0, 8) + "..." : "Active";
-  }
-
-  updateStepper(1);
-
-  const activeBadge = document.getElementById("activeStepBadge");
-  if (activeBadge) {
-    activeBadge.textContent = "Step 1: Physical Mesh Setup";
-    activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200";
-  }
-
-  const btnPrev = document.getElementById("btnPrev");
-  if (btnPrev) {
-    btnPrev.disabled = true;
-    btnPrev.innerHTML = `<span>◀️</span><span>Previous Step</span>`;
-  }
-
-  const btnNext = document.getElementById("btnNext");
-  if (btnNext) {
-    btnNext.disabled = false;
-    btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 shadow-sm transition-colors";
-    btnNext.innerHTML = `<span>Next Step (Step 2: VRF Compute)</span><span>▶️</span>`;
-  }
-
-  document.getElementById("stepTag").textContent = "STEP 1 / FIGURE 3(a)";
-  document.getElementById("stepTag").className = "px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide rounded bg-blue-100 text-blue-800";
-  document.getElementById("stepTitle").textContent = "Physical Ad-Hoc Network Topology & Non-IID Data Distribution";
-  document.getElementById("stepDescription").textContent = "50 decentralized clients in a naturally dispersed ad-hoc mesh. Each client holds local data from 1 dataset class. VRF scores are uncomputed.";
-
-  renderSidebarFormula(
-    "Network Topology Model",
-    "G = (V, E), \\quad \\mathbf{w}_i \in \\mathbb{R}^{50}",
-    "Overlay-free physical ad-hoc network. Each peer holds local dataset samples and a 50-dimensional parameter vector.",
-    "Topology",
-    false
-  );
-
-  document.getElementById("statNodes").textContent = data.nodes ? data.nodes.length : 50;
-  if (data.metadata) {
-    document.getElementById("statDegree").textContent = `${data.metadata.avg_degree || 3.8} (3-6)`;
-  }
-  document.getElementById("statLeaders").textContent = "0 Initiators";
-  document.getElementById("statLeaders").className = "text-xs font-bold text-slate-400";
-
-  document.getElementById("canvasViewLabel").textContent = `Physical Ad-Hoc Mesh (50 Dispersed Nodes, ${data.edges.length} Edges)`;
-
-  const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.add("hidden");
-
-  // Render Mesh: clean labels C{id} {icon}, all royal blue
-  renderMesh(data.nodes, data.edges, false);
-}
-
-// 4. API Call: Execute Step 2 (Pure Local VRF Computation)
-async function executeStep2VRF() {
-  if (!currentSession) {
-    await initializeNetwork();
-  }
-
-  setNavButtonsDisabled(true);
-  hideNodeModal();
-  logToTerminal("VRF", "Executing Step 2: Local Verifiable Random Function (VRF) score evaluation...");
-
-  try {
-    const res = await fetch("/api/v1/step/vrf-compute", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: currentSession })
-    });
-
-    if (!res.ok) {
-      throw new Error(`VRF compute step failed: ${res.statusText}`);
-    }
-
-    const data = await res.json();
-    step2Data = data;
-    simulationData = data;
-
-    applyStep2UI(data);
-
-    if (data.logs && Array.isArray(data.logs)) {
-      data.logs.forEach(l => logToTerminal("VRF", l.message));
-    }
-
-    logToTerminal("SUCCESS", "Step 2 Complete: All 50 peers evaluated local VRF scores σ_p ∈ [0, 1).");
-    logToTerminal("INFO", "Local computation only: Click on any node to view its local score σ_p.");
-
-  } catch (err) {
-    logToTerminal("ERROR", `Step 2 execution failure: ${err.message}`);
-    console.error("VRF Compute Error:", err);
-  } finally {
-    setNavButtonsDisabled(false);
-  }
-}
-
-// Apply Step 2 UI State (Pure Local Computation)
-function applyStep2UI(data) {
-  currentStep = 2;
-  hideNodeModal();
-
-  updateStepper(2);
-
-  const activeBadge = document.getElementById("activeStepBadge");
-  if (activeBadge) {
-    activeBadge.textContent = "Step 2: VRF Local Calculation";
-    activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-800 border border-blue-300";
-  }
-
-  const btnPrev = document.getElementById("btnPrev");
-  if (btnPrev) {
-    btnPrev.disabled = false;
-    btnPrev.innerHTML = `<span>◀️</span><span>Previous Step (Step 1)</span>`;
-  }
-
-  const btnNext = document.getElementById("btnNext");
-  if (btnNext) {
-    btnNext.disabled = false;
-    btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 shadow-sm transition-colors";
-    btnNext.innerHTML = `<span>Next Step (Step 3: VRF Exchange)</span><span>▶️</span>`;
-  }
-
-  document.getElementById("stepTag").textContent = "STEP 2 / LOCAL COMPUTATION";
-  document.getElementById("stepTag").className = "px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide rounded bg-blue-100 text-blue-800";
-  document.getElementById("stepTitle").textContent = "Local Verifiable Random Function (VRF) Score Calculation";
-  document.getElementById("stepDescription").textContent = "Each peer locally computes its verifiable score σ_p using its secret key and epoch seed. Click on any node to view its local score.";
-
-  renderSidebarFormula(
-    "VRF Local Score (Eq. 1)",
-    "\\sigma_p = \\text{VRF}_{sk_p}(\\text{seed}_{e-1}) \\in [0, 1)",
-    "Peers locally compute a verifiable pseudorandom score using their private key and epoch seed. No messages are sent yet.",
-    "Local Score",
-    false
-  );
-
-  document.getElementById("statLeaders").textContent = "0 Initiators (Unexchanged)";
-  document.getElementById("statLeaders").className = "text-xs font-bold text-slate-500";
-
-  document.getElementById("canvasViewLabel").textContent = "VRF Local Calculation (50 Peers, All Roles = CLIENT)";
-
-  const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.add("hidden");
-
-  renderMesh(data.nodes, step1Topology ? step1Topology.edges : [], false);
-}
-
-// 5. API Call: Execute Step 3 (Algorithm 2: R=3 Hop Neighborhood Exchange & Initiator Selection)
-async function executeStep3Exchange() {
-  if (!currentSession) {
-    await initializeNetwork();
-  }
-
-  setNavButtonsDisabled(true);
-  hideNodeModal();
-  logToTerminal("VRF", "Executing Step 3: Algorithm 2 (SELECTINITIATORS) with R = 3 hops...");
-
-  try {
-    const res = await fetch("/api/v1/step/vrf-exchange", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: currentSession, r_hops: 3 })
-    });
-
-    if (!res.ok) {
-      throw new Error(`VRF exchange step failed: ${res.statusText}`);
-    }
-
-    const data = await res.json();
-    step3Data = data;
-    simulationData = data;
-
-    applyStep3UI(data);
-
-    if (data.logs && Array.isArray(data.logs)) {
-      data.logs.forEach(l => logToTerminal(l.level === "SUCCESS" ? "LEADER" : "VRF", l.message));
-    }
-
-    logToTerminal("SUCCESS", `Step 3 Complete: ${data.initiators.length} Initiators elected (R=3 hops): ${data.initiators.map(id => "C" + id).join(", ")}.`);
-    logToTerminal("INFO", "Click on any node to view its 3-hop neighborhood scoreboard (Hop 1, Hop 2, Hop 3) and winner.");
-
-  } catch (err) {
-    logToTerminal("ERROR", `Step 3 execution failure: ${err.message}`);
-    console.error("VRF Exchange Error:", err);
-  } finally {
-    setNavButtonsDisabled(false);
-  }
-}
-
-// Apply Step 3 UI State (Initiators Elected with R=3)
-function applyStep3UI(data) {
-  currentStep = 3;
-  hideNodeModal();
-
-  updateStepper(3);
-
-  const activeBadge = document.getElementById("activeStepBadge");
-  if (activeBadge) {
-    activeBadge.textContent = "Step 3: VRF Initiators (R=3)";
-    activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 border border-amber-300";
-  }
-
-  const btnPrev = document.getElementById("btnPrev");
-  if (btnPrev) {
-    btnPrev.disabled = false;
-    btnPrev.innerHTML = `<span>◀️</span><span>Previous Step (Step 2)</span>`;
-  }
-
-  const btnNext = document.getElementById("btnNext");
-  if (btnNext) {
-    btnNext.disabled = false;
-    btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 shadow-sm transition-colors";
-    btnNext.innerHTML = `<span>Next Step (Step 4: Zone Formation)</span><span>▶️</span>`;
-  }
-
-  document.getElementById("stepTag").textContent = "STEP 3 / ALGORITHM 2 (R=3)";
-  document.getElementById("stepTag").className = "px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide rounded bg-amber-100 text-amber-800";
-  document.getElementById("stepTitle").textContent = "3-Hop Neighborhood VRF Exchange & Initiator Selection";
-  document.getElementById("stepDescription").textContent = "Peers explore their 3-hop neighborhood (Hop 1, Hop 2, Hop 3). The peer holding the minimal score in its 3-hop ball elects itself as Initiator.";
-
-  renderSidebarFormula(
-    "VRF Initiator Election (Alg. 2)",
-    "m_p = \\min_{q \\in \\mathcal{N}_3(p)} (\\sigma_q, id_q)",
-    "Peers explore their 3-hop physical neighborhood. The peer holding the minimal score in its 3-hop ball elects itself as Initiator.",
-    "R = 3 Hops",
-    true
-  );
-
-  const leaderCount = data.initiators ? data.initiators.length : 0;
-  document.getElementById("statLeaders").textContent = `${leaderCount} Initiators (R=3)`;
-  document.getElementById("statLeaders").className = "text-xs font-bold text-amber-600";
-
-  document.getElementById("canvasViewLabel").textContent = `VRF Leaders Elected (${leaderCount} Initiators in Amber, ${50 - leaderCount} Clients)`;
-
-  const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
-  const boundaryLegend = document.getElementById("boundaryLegendItem");
-  if (boundaryLegend) boundaryLegend.classList.add("hidden");
-
-  // Render Mesh: Initiators in Amber, others in Blue, clean labels
-  renderMesh(data.nodes, step1Topology ? step1Topology.edges : [], true);
-}
-
-// 6. API Call: Execute Step 4 (Algorithm 3: TTL=3 Zone Formation, First-Wins & Boundary Detection)
-async function executeStep4ZoneProbing() {
-  if (!currentSession) {
-    await initializeNetwork();
-  }
-
-  setNavButtonsDisabled(true);
-  hideNodeModal();
-  logToTerminal("ZONE", "Executing Step 4: Algorithm 3 (ZONEFORMATION) with TTL = 3 and S_Z = 8 cap...");
-
-  try {
-    const res = await fetch("/api/v1/step/zone-probing", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: currentSession, ttl: 3, max_zone_size: 8 })
-    });
-
-    if (!res.ok) {
-      throw new Error(`Zone probing step failed: ${res.statusText}`);
-    }
-
-    const data = await res.json();
-    step4Data = data;
-    simulationData = data;
-
-    applyStep4UI(data);
-
-    if (data.logs && Array.isArray(data.logs)) {
-      data.logs.forEach(l => {
-        const level = l.level === "SUCCESS" ? "ZONE" : (l.level === "WARN" ? "WARN" : "INFO");
-        logToTerminal(level, l.message);
-      });
-    }
-
-    const zoneCount = Object.keys(data.zones || {}).length;
-    const boundaryCount = (data.boundary_edges || []).length;
-    logToTerminal("SUCCESS", `Step 4 Complete: ${zoneCount} balanced zones formed (|Z_I| <= 8). Detected ${boundaryCount} boundary interfaces.`);
-    logToTerminal("INFO", "Click on any node to view its assigned zone, initiator root, hop distance, and boundary interface status.");
-
-  } catch (err) {
-    logToTerminal("ERROR", `Step 4 execution failure: ${err.message}`);
-    console.error("Zone Probing Error:", err);
-  } finally {
-    setNavButtonsDisabled(false);
-  }
-}
-
-// Apply Step 4 UI State (Zones Formed & Boundary Edges Highlighted)
-function applyStep4UI(data) {
-  currentStep = 4;
-  hideNodeModal();
-
-  updateStepper(4);
-
-  const activeBadge = document.getElementById("activeStepBadge");
-  if (activeBadge) {
-    activeBadge.textContent = "Step 4: TTL=3 Zone Formation";
-    activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-800 border border-purple-300";
-  }
-
-  const btnPrev = document.getElementById("btnPrev");
-  if (btnPrev) {
-    btnPrev.disabled = false;
-    btnPrev.innerHTML = `<span>◀️</span><span>Previous Step (Step 3: VRF Scoreboard)</span>`;
-  }
-
-  const btnNext = document.getElementById("btnNext");
-  if (btnNext) {
-    btnNext.disabled = true; // Disabled until Step 5 (Semantic Overlay) is implemented
-    btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-    btnNext.innerHTML = `<span>Next Step (Step 5: Semantic Overlay)</span><span>▶️</span>`;
-  }
-
-  document.getElementById("stepTag").textContent = "STEP 4 / ALGORITHM 3 (ACM 2026)";
-  document.getElementById("stepTag").className = "px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide rounded bg-purple-100 text-purple-800";
-  document.getElementById("stepTitle").textContent = "TTL=3 Zone Probing, First-Wins Adoption & Boundary Detection";
-  document.getElementById("stepDescription").textContent = "Initiators flood PROBE packets with TTL=3. Peers adopt the first arriving probe (First-Wins). Boundary peers detect adjacent zones.";
-
-  renderSidebarFormula(
-    "Zone Formation (Alg. 3)",
-    "\\text{PROBE}(p, \\text{TTL}=3) \\xrightarrow{\\text{first-wins}} \\text{ASSIGNED}(Z_I), \\quad |Z_I| \\le S_Z",
-    "Initiators flood PROBE packets with TTL=3. Peers adopt the first arriving probe (First-Wins). Boundary peers detect adjacent zones.",
-    "TTL = 3, S_Z = 8",
-    false,
-    "purple"
-  );
-
-  const zoneCount = data.zones ? Object.keys(data.zones).length : 0;
-  const boundaryCount = data.boundary_edges ? data.boundary_edges.length : 0;
-  document.getElementById("statLeaders").textContent = `${zoneCount} Zones (S_Z ≤ 8)`;
-  document.getElementById("statLeaders").className = "text-xs font-bold text-purple-700";
-
-  document.getElementById("canvasViewLabel").textContent = `TTL=3 Zone Formation (${zoneCount} Physical Zones, ${boundaryCount} Boundary Edges)`;
-
-  const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
-  const boundaryLegend = document.getElementById("boundaryLegendItem");
-  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
-
-  // Render Mesh: colored by Zone with dashed red boundary edges
-  renderZoneMesh(data.nodes, step1Topology ? step1Topology.edges : [], data.boundary_edges || [], data.zones || {});
-}
-
-// Render KaTeX Formula inside the Sidebar Formula Card
+// 11. Render KaTeX Math Formula in Sidebar HUD
 function renderSidebarFormula(title, texStr, description, badgeText, isAmber = false, theme = null) {
   const cardEl = document.getElementById("sidebarFormulaCard");
   if (cardEl) {
@@ -994,9 +873,9 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
   }
 }
 
-// Stepper Navigation Indicator update
+// 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 5; s++) {
+  for (let s = 1; s <= 4; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -1006,40 +885,43 @@ function updateStepper(step) {
     } else if (s === step) {
       item.classList.add("active");
       if (step === 3) {
-        item.classList.add("step-amber");
-      } else if (step === 4) {
         item.classList.add("step-purple");
+      } else if (step === 4) {
+        item.classList.add("step-amber");
       }
     }
   }
 }
 
-// Revert back smoothly
-function revertToStep3() {
-  if (step3Data) {
-    applyStep3UI(step3Data);
-    logToTerminal("INFO", "Reverted to Step 3: VRF Initiator Election view.");
-  }
-}
+function updateNavButtons(step) {
+  const btnPrev = document.getElementById("btnPrev");
+  const btnNext = document.getElementById("btnNext");
 
-function revertToStep2() {
-  if (step2Data) {
-    applyStep2UI(step2Data);
-    logToTerminal("INFO", "Reverted to Step 2: VRF Local Calculation view.");
+  if (btnPrev) {
+    btnPrev.disabled = (step === 1);
+    if (step === 1) {
+      btnPrev.innerHTML = `<span>◀️</span><span>Previous Step</span>`;
+    } else {
+      btnPrev.innerHTML = `<span>◀️</span><span>Previous Step (Step ${step - 1})</span>`;
+    }
   }
-}
 
-function revertToStep1() {
-  if (!step1Topology) {
-    initializeNetwork();
-    return;
+  if (btnNext) {
+    if (step === 4) {
+      btnNext.disabled = true;
+      btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
+      btnNext.innerHTML = `<span>Simulation Complete</span><span>✓</span>`;
+    } else {
+      btnNext.disabled = false;
+      btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 shadow-sm transition-colors";
+      const nextNames = {
+        1: "Step 2: VRF Compute",
+        2: "Step 3: TTL=3 Waves",
+        3: "Step 4: Zone Formation",
+      };
+      btnNext.innerHTML = `<span>Next Step (${nextNames[step]})</span><span>▶️</span>`;
+    }
   }
-  applyStep1UI(step1Topology);
-  logToTerminal("INFO", "Reverted to Step 1: Physical Ad-Hoc Mesh view.");
-}
-
-function resetToStep1() {
-  initializeNetwork();
 }
 
 function setNavButtonsDisabled(disabled) {
@@ -1052,166 +934,38 @@ function setNavButtonsDisabled(disabled) {
   if (btnNext && currentStep < 4) btnNext.disabled = disabled;
 }
 
-// 7. Render Mesh in Cytoscape for Steps 1, 2, 3
-// STRICT RULE: Canvas labels are ONLY "C{id} {emoji}". VRF scores are never placed on canvas!
-function renderMesh(nodes, edges, showLeaders = false) {
-  if (!cy) return;
-
-  const elements = [];
-
-  nodes.forEach(n => {
-    const isInitiator = showLeaders && (n.role === "INITIATOR" || n.status === "ASSIGNED");
-    const classId = n.class_id !== undefined ? n.class_id : (n.category_id !== undefined ? n.category_id : (n.category || 0));
-    const cls = DATASET_CLASSES[classId] || { name: "Node", icon: "📦" };
-
-    // Canvas label is clean: "C{id} {icon}" or "👑 C{id} {icon}" for elected leaders
-    const label = isInitiator ? `👑 C${n.id} ${cls.icon}` : `C${n.id} ${cls.icon}`;
-
-    elements.push({
-      group: "nodes",
-      classes: isInitiator ? "initiator-node" : "",
-      data: {
-        id: `node_${n.id}`,
-        peer_id: n.id,
-        label: label,
-        status: isInitiator ? "ASSIGNED" : (n.status || "NOT_ASSIGNED"),
-        role: isInitiator ? "INITIATOR" : (n.role || "CLIENT"),
-        bg_color: isInitiator ? "#f59e0b" : "#2563eb",
-        border_color: isInitiator ? "#b45309" : "#1d4ed8",
-        class_id: classId,
-        category_id: classId,
-        class_name: cls.name,
-        category_name: cls.name,
-        emoji: cls.icon,
-        degree: n.degree || 0,
-        vrf_score: n.vrf_score !== undefined ? n.vrf_score : null,
-        min_score: n.min_score !== undefined ? n.min_score : null,
-        min_peer_id: n.min_peer_id !== undefined ? n.min_peer_id : null,
-        neighborhood_scores: n.neighborhood_scores || [],
-        hops_covered: n.hops_covered || 0,
-        coords: n.coords,
-        weights: n.weights || []
-      },
-      position: {
-        x: n.coords ? n.coords.x : 100,
-        y: n.coords ? n.coords.y : 100
-      }
+function bindActionButtons() {
+  const btnReset = document.getElementById("btnReset");
+  if (btnReset) {
+    btnReset.addEventListener("click", () => {
+      loadStep(1);
     });
-  });
+  }
 
-  edges.forEach((e, idx) => {
-    elements.push({
-      group: "edges",
-      data: {
-        id: `edge_${idx}`,
-        source: `node_${e.source}`,
-        target: `node_${e.target}`,
-        distance: e.distance,
-        distance_norm: e.distance_norm
-      }
+  const btnPrev = document.getElementById("btnPrev");
+  if (btnPrev) {
+    btnPrev.addEventListener("click", () => {
+      if (currentStep > 1) loadStep(currentStep - 1);
     });
-  });
+  }
 
-  cy.elements().remove();
-  cy.add(elements);
-  cy.layout({ name: "preset" }).run();
-  cy.fit(undefined, 30);
+  const btnNext = document.getElementById("btnNext");
+  if (btnNext) {
+    btnNext.addEventListener("click", () => {
+      if (currentStep < 4) loadStep(currentStep + 1);
+    });
+  }
+
+  const btnClearLogs = document.getElementById("btnClearLogs");
+  if (btnClearLogs) {
+    btnClearLogs.addEventListener("click", () => {
+      const logs = document.getElementById("terminalLogs");
+      if (logs) logs.innerHTML = '<div class="text-slate-400">[SYSTEM] Terminal logs cleared.</div>';
+    });
+  }
 }
 
-// 8. Render Zone Mesh in Cytoscape for Step 4
-// Color-coded by physical zone, boundary edges dashed red/amber, boundary nodes dashed border
-function renderZoneMesh(nodes, edges, boundaryEdges, zones) {
-  if (!cy) return;
-
-  // Build sorted zone index mapping for deterministic color assignment
-  const sortedZoneIds = zones ? Object.keys(zones).map(Number).sort((a, b) => a - b) : [];
-  const zoneColorMap = {};
-  sortedZoneIds.forEach((zid, idx) => {
-    zoneColorMap[zid] = ZONE_PALETTE[idx % ZONE_PALETTE.length];
-  });
-
-  // Map boundary edge pairs for quick O(1) lookup
-  const boundaryLookup = new Set();
-  (boundaryEdges || []).forEach(be => {
-    boundaryLookup.add(`${be.source}_${be.target}`);
-    boundaryLookup.add(`${be.target}_${be.source}`);
-  });
-
-  const elements = [];
-
-  nodes.forEach(n => {
-    const isInitiator = (n.role === "INITIATOR" || n.id === n.initiator_id || n.id === n.zone_id);
-    const classId = n.class_id !== undefined ? n.class_id : (n.category_id !== undefined ? n.category_id : (n.category || 0));
-    const cls = DATASET_CLASSES[classId] || { name: "Node", icon: "📦" };
-    const palette = zoneColorMap[n.zone_id] || ZONE_PALETTE[0];
-
-    const label = isInitiator ? `👑 C${n.id} ${cls.icon}` : `C${n.id} ${cls.icon}`;
-
-    let classNames = [];
-    if (isInitiator) classNames.push("initiator-node");
-    if (n.is_boundary) classNames.push("boundary-node");
-
-    elements.push({
-      group: "nodes",
-      classes: classNames.join(" "),
-      data: {
-        id: `node_${n.id}`,
-        peer_id: n.id,
-        label: label,
-        status: n.status || "ASSIGNED",
-        role: isInitiator ? "INITIATOR" : (n.role || "CLIENT"),
-        zone_id: n.zone_id,
-        initiator_id: n.initiator_id || n.zone_id,
-        hop_distance: n.hop_distance !== undefined ? n.hop_distance : 0,
-        parent_probe_sender: n.parent_probe_sender || n.initiator_id || n.id,
-        is_boundary: !!n.is_boundary,
-        boundary_neighbors: n.boundary_neighbors || [],
-        bg_color: palette.fill,
-        border_color: isInitiator ? "#b45309" : palette.border,
-        class_id: classId,
-        category_id: classId,
-        class_name: cls.name,
-        category_name: cls.name,
-        emoji: cls.icon,
-        degree: n.degree || 0,
-        vrf_score: n.vrf_score !== undefined ? n.vrf_score : null,
-        min_score: n.min_score !== undefined ? n.min_score : null,
-        min_peer_id: n.min_peer_id !== undefined ? n.min_peer_id : null,
-        neighborhood_scores: n.neighborhood_scores || [],
-        hops_covered: n.hops_covered || 0,
-        coords: n.coords,
-        weights: n.weights || []
-      },
-      position: {
-        x: n.coords ? n.coords.x : 100,
-        y: n.coords ? n.coords.y : 100
-      }
-    });
-  });
-
-  edges.forEach((e, idx) => {
-    const isBoundary = boundaryLookup.has(`${e.source}_${e.target}`);
-    elements.push({
-      group: "edges",
-      classes: isBoundary ? "boundary-edge" : "intra-zone-edge",
-      data: {
-        id: `edge_${idx}`,
-        source: `node_${e.source}`,
-        target: `node_${e.target}`,
-        distance: e.distance,
-        distance_norm: e.distance_norm,
-        is_boundary: isBoundary
-      }
-    });
-  });
-
-  cy.elements().remove();
-  cy.add(elements);
-  cy.layout({ name: "preset" }).run();
-  cy.fit(undefined, 30);
-}
-
-// 9. Console Terminal Logger Helper
+// 13. Terminal Console Logger
 function logToTerminal(level, message) {
   const terminal = document.getElementById("terminalLogs");
   if (!terminal) return;
@@ -1225,8 +979,10 @@ function logToTerminal(level, message) {
   if (level === "ERROR") badgeColor = "text-rose-400";
   else if (level === "SUCCESS") badgeColor = "text-emerald-400";
   else if (level === "WARN") badgeColor = "text-amber-400";
-  else if (level === "LEADER") badgeColor = "text-amber-400";
+  else if (level === "ZONE") badgeColor = "text-amber-400";
   else if (level === "VRF") badgeColor = "text-sky-400";
+  else if (level === "WAVE") badgeColor = "text-purple-400";
+  else if (level === "TOPOLOGY") badgeColor = "text-blue-400";
 
   row.innerHTML = `
     <span class="text-slate-500 select-none">[${timeStr}]</span>
