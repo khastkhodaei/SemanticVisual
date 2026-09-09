@@ -159,11 +159,11 @@ function initCytoscape() {
       {
         selector: "node.highlighted",
         style: {
-          "background-color": "#0284c7",
-          "border-color": "#0369a1",
+          "background-color": "#2563eb",
+          "border-color": "#38bdf8",
           "border-width": 4,
-          "width": 42,
-          "height": 42,
+          "width": 38,
+          "height": 38,
           "z-index": 95
         }
       },
@@ -487,15 +487,6 @@ function highlightNodesByClass(classId, forceReapply = false) {
     }
   });
 
-  let classNum;
-  if (typeof classId === "string") {
-    classNum = parseInt(classId.replace(/[^0-9]/g, ""), 10);
-  } else {
-    classNum = Number(classId);
-  }
-  const zeroIdx = classNum === 0 ? 0 : classNum - 1;
-  const sigColor = CIFAR10_SIGNATURE_COLORS[zeroIdx] || CIFAR10_SIGNATURE_COLORS[zeroIdx % 10] || "#0284c7";
-
   // Find matching nodes holding this class
   const matchingNodes = [];
   const nonMatchingNodes = [];
@@ -508,29 +499,31 @@ function highlightNodesByClass(classId, forceReapply = false) {
     }
   });
 
-  // Highlight matching nodes: opacity 1.0, pulsing border with class's signature color, bring to front
+  // Highlight matching nodes: opacity 1.0, maintain default blue background & sky-blue highlight ring
   matchingNodes.forEach(n => {
     n.removeClass("dimmed").addClass("highlighted");
     n.style({
       "opacity": 1.0,
-      "border-color": sigColor,
-      "border-width": 5,
+      "background-color": "#2563eb",
+      "border-color": "#38bdf8",
+      "border-width": 4,
       "z-index": 100
     });
   });
 
-  // Dim non-matching nodes strictly to opacity 0.25
+  // Dim non-matching nodes strictly to opacity 0.25, keeping default blue background
   nonMatchingNodes.forEach(n => {
     n.removeClass("highlighted").addClass("dimmed");
     n.style({
       "opacity": 0.25,
+      "background-color": "#2563eb",
       "border-color": "#94a3b8",
       "border-width": 1.5,
       "z-index": 1
     });
   });
 
-  // Update edges: keep connecting matching nodes, dim others strictly to 0.25
+  // Update edges: keep connecting matching nodes with network blue, dim others strictly to 0.25
   cy.edges().forEach(e => {
     const src = e.source();
     const tgt = e.target();
@@ -540,8 +533,8 @@ function highlightNodesByClass(classId, forceReapply = false) {
     if (srcMatch && tgtMatch) {
       e.removeClass("dimmed").addClass("highlighted");
       e.style({
-        "opacity": 0.9,
-        "line-color": sigColor,
+        "opacity": 0.95,
+        "line-color": "#3b82f6",
         "width": 2.6,
         "z-index": 50
       });
