@@ -115,6 +115,12 @@ def get_10node_nodes() -> List[Dict[str, Any]]:
         nbrs = sorted(STORYBOARD_10_ADJACENCY[nid])
         coord = STORYBOARD_10_COORDINATES[nid]
 
+        vec_10d = list(STORYBOARD_10_VECTORS[nid])
+        assigned_classes = [i for i, val in enumerate(vec_10d) if val > 0.0]
+        class_distribution_0idx = {
+            int(k.replace("C", "")) - 1: v for k, v in dist.items()
+        }
+
         nodes.append({
             "id": nid,
             "node_id": f"C{nid}",
@@ -131,14 +137,17 @@ def get_10node_nodes() -> List[Dict[str, Any]]:
             "dominant_class_id": dom["class_id"],
             "dominant_class_name": dom["name"],
             "dominant_class_icon": dom["icon"],
+            "assigned_classes": assigned_classes,
+            "class_distribution": class_distribution_0idx,
+            "vector_10d": vec_10d,
             "class_id": dom["class_id"],
             "class_title": dom["name"],
             "class_icon": dom["icon"],
             "data_distribution": dist,
             "distribution": dist,
-            "vector": STORYBOARD_10_VECTORS[nid],
-            "normalized_vector": STORYBOARD_10_VECTORS[nid],
-            "weights": STORYBOARD_10_VECTORS[nid],
+            "vector": vec_10d,
+            "normalized_vector": vec_10d,
+            "weights": vec_10d,
             "x": coord[0],
             "y": coord[1],
             "coords": {"x": coord[0], "y": coord[1]},
@@ -152,20 +161,26 @@ def get_10node_config() -> Dict[str, Any]:
     nodes = get_10node_nodes()
     edges = get_10node_edges()
 
-    class_counts = {cid: 0 for cid in range(1, 11)}
+    class_holding_counts = {idx: 0 for idx in range(10)}
+    class_holding_clients = {idx: [] for idx in range(10)}
     for n in nodes:
-        class_counts[n["dominant_class_id"]] += 1
+        for cidx in n["assigned_classes"]:
+            class_holding_counts[cidx] += 1
+            class_holding_clients[cidx].append(f"C{n['id']}")
 
     classes_list = []
-    for cid in range(1, 11):
+    for idx in range(10):
+        cid = idx + 1
         cinfo = CIFAR10_CLASSES[cid]
         classes_list.append({
-            "class_id": cid,
+            "class_id": idx,
+            "class_num": cid,
             "name": cinfo["name"],
             "english_name": cinfo["english_name"],
             "icon": cinfo["icon"],
             "code": cinfo["code"],
-            "count": class_counts[cid],
+            "count": class_holding_counts[idx],
+            "clients": class_holding_clients[idx],
         })
 
     return {
@@ -213,6 +228,7 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             n_copy["vector"] = STORYBOARD_10_VECTORS[n["id"]]
             n_copy["normalized_vector"] = STORYBOARD_10_VECTORS[n["id"]]
             n_copy["weights"] = STORYBOARD_10_VECTORS[n["id"]]
+            n_copy["vector_10d"] = STORYBOARD_10_VECTORS[n["id"]]
             step2_nodes.append(n_copy)
 
         terminal_logs = [

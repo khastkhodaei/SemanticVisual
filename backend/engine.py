@@ -320,6 +320,10 @@ class SemanticDFLEngine:
                     "x": coords_map[nid][0],
                     "y": coords_map[nid][1],
                 },
+                "assigned_classes": [class_id],
+                "class_distribution": {class_id: 100},
+                "dominant_class": f"C{class_id + 1}",
+                "vector_10d": [1.0 if i == class_id else 0.0 for i in range(10)],
                 "alive": True,
                 "degree": len(adjacency[nid]),
             })

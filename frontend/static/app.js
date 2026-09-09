@@ -357,6 +357,23 @@ async function loadGlobalConfig() {
 }
 
 // Render Dataset Class Legend in Left Sidebar
+// Active Dataset Class Filter State & Signature Colors
+let activeClassFilterId = null;
+
+const CIFAR10_SIGNATURE_COLORS = {
+  0: "#0284c7", // C1 Airplane (Sky Blue)
+  1: "#dc2626", // C2 Automobile (Red)
+  2: "#16a34a", // C3 Bird (Green)
+  3: "#d97706", // C4 Cat (Amber/Orange)
+  4: "#854d0e", // C5 Deer (Olive/Brown)
+  5: "#ea580c", // C6 Dog (Orange-Red)
+  6: "#10b981", // C7 Frog (Emerald)
+  7: "#9333ea", // C8 Horse (Purple)
+  8: "#2563eb", // C9 Ship (Royal Blue)
+  9: "#475569", // C10 Truck (Slate)
+};
+
+// Render Dataset Class Legend in Left Sidebar
 function renderDatasetClassLegend(classes) {
   const container = document.getElementById("classList");
   if (!container) return;
@@ -364,40 +381,217 @@ function renderDatasetClassLegend(classes) {
 
   classes.forEach(c => {
     const item = document.createElement("div");
-    item.className = "class-chip text-slate-700";
+    item.className = "class-chip class-item text-slate-700 cursor-pointer select-none transition-all";
+    item.setAttribute("data-class-id", c.class_id);
     item.dataset.classId = c.class_id;
 
+    const displayCode = c.code || `C${c.class_id + 1}`;
     item.innerHTML = `
       <div class="flex items-center space-x-1.5">
         <span class="text-sm">${c.icon}</span>
         <span class="font-bold text-[11px] text-slate-800">${c.english_name || c.name}</span>
-        <span class="text-[9px] text-slate-400 font-mono">(C${c.class_id})</span>
+        <span class="text-[9px] text-slate-400 font-mono">(${displayCode})</span>
       </div>
       <div class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-blue-700 font-semibold">
         ${c.count} nodes
       </div>
     `;
 
-    item.addEventListener("mouseenter", () => highlightClassNodes(c.class_id));
-    item.addEventListener("mouseleave", () => resetNodeHighlights());
     container.appendChild(item);
   });
+
+  setupClassFilterEvents();
 }
 
-function highlightClassNodes(classId) {
-  if (!cy) return;
-  cy.nodes().forEach(n => {
-    if (n.data("class_id") === classId) {
-      n.removeClass("dimmed").addClass("highlighted");
-    } else {
-      n.removeClass("highlighted").addClass("dimmed");
-    }
+// 1. Event Listener for Class Items
+function setupClassFilterEvents() {
+  document.querySelectorAll(".class-item, [data-class-id]").forEach(item => {
+    if (item._filterAttached) return;
+    item._filterAttached = true;
+
+    item.addEventListener("click", (e) => {
+      const target = e.currentTarget;
+      const classId = parseInt(target.getAttribute("data-class-id"), 10);
+      highlightNodesByClass(classId);
+    });
   });
 }
 
-function resetNodeHighlights() {
+// Check if a Cytoscape node holds the given class
+function isNodeHoldingClass(n, classId) {
+  const d = n.data();
+
+  // 1. 10D Vector checks
+  const vec = d.vector_10d || d.vector || d.normalized_vector || (Array.isArray(d.weights) ? d.weights : null);
+  if (Array.isArray(vec)) {
+    if (classId >= 0 && classId < vec.length && Number(vec[classId]) > 0.001) return true;
+    if (classId >= 1 && classId <= vec.length && Number(vec[classId - 1]) > 0.001) return true;
+  }
+
+  // 2. assigned_classes array checks
+  const assigned = d.assigned_classes;
+  if (Array.isArray(assigned)) {
+    if (assigned.includes(classId)) return true;
+    if (classId >= 1 && assigned.includes(classId - 1)) return true;
+    if (assigned.includes(classId + 1)) return true;
+  }
+
+  // 3. class_distribution dictionary checks
+  const cdist = d.class_distribution;
+  if (cdist && typeof cdist === "object") {
+    if (cdist[classId] > 0 || cdist[String(classId)] > 0) return true;
+    if (classId >= 1 && (cdist[classId - 1] > 0 || cdist[String(classId - 1)] > 0)) return true;
+  }
+
+  // 4. distribution / data_distribution checks
+  const dist = d.data_distribution || d.distribution;
+  if (dist && typeof dist === "object") {
+    const code0 = `C${classId + 1}`;
+    const code1 = `C${classId}`;
+    if (dist[code0] > 0 || dist[code1] > 0) return true;
+  }
+
+  // 5. dominant class checks
+  if (d.class_id === classId || d.class_id === classId + 1) return true;
+  if (d.dominant_class_id === classId || d.dominant_class_id === classId + 1) return true;
+  return false;
+}
+
+// 2. Highlight / Filter Implementation (highlightNodesByClass)
+function highlightNodesByClass(classId, forceReapply = false) {
   if (!cy) return;
-  cy.nodes().removeClass("highlighted dimmed");
+
+  // Check if already selected -> if so, clear selection and reset all nodes and edges to default opacity (1.0)
+  if (!forceReapply && activeClassFilterId === classId) {
+    clearClassFilter();
+    return;
+  }
+
+  activeClassFilterId = classId;
+
+  // Toggle .active-class-filter on the clicked row in the sidebar
+  document.querySelectorAll(".class-item, [data-class-id]").forEach(item => {
+    const cid = parseInt(item.getAttribute("data-class-id"), 10);
+    if (cid === classId) {
+      item.classList.add("active-class-filter", "active-filter");
+    } else {
+      item.classList.remove("active-class-filter", "active-filter");
+    }
+  });
+
+  const sigColor = CIFAR10_SIGNATURE_COLORS[classId] || CIFAR10_SIGNATURE_COLORS[(classId - 1) % 10] || "#0284c7";
+
+  // Find matching nodes holding this class
+  const matchingNodes = [];
+  const nonMatchingNodes = [];
+
+  cy.nodes().forEach(n => {
+    if (isNodeHoldingClass(n, classId)) {
+      matchingNodes.push(n);
+    } else {
+      nonMatchingNodes.push(n);
+    }
+  });
+
+  // Highlight matching nodes: opacity 1.0, pulsing border with class's signature color, bring to front
+  matchingNodes.forEach(n => {
+    n.removeClass("dimmed").addClass("highlighted");
+    n.style({
+      "opacity": 1.0,
+      "border-color": sigColor,
+      "border-width": 5,
+      "z-index": 100
+    });
+  });
+
+  // Dim non-matching nodes to opacity 0.2 and set border to neutral
+  nonMatchingNodes.forEach(n => {
+    n.removeClass("highlighted").addClass("dimmed");
+    n.style({
+      "opacity": 0.2,
+      "border-color": "#94a3b8",
+      "border-width": 1.5,
+      "z-index": 1
+    });
+  });
+
+  // Update edges: keep connecting matching nodes, dim others to 0.15
+  cy.edges().forEach(e => {
+    const src = e.source();
+    const tgt = e.target();
+    const srcMatch = isNodeHoldingClass(src, classId);
+    const tgtMatch = isNodeHoldingClass(tgt, classId);
+
+    if (srcMatch && tgtMatch) {
+      e.removeClass("dimmed").addClass("highlighted");
+      e.style({
+        "opacity": 0.9,
+        "line-color": sigColor,
+        "width": 2.6,
+        "z-index": 50
+      });
+    } else {
+      e.removeClass("highlighted").addClass("dimmed");
+      e.style({
+        "opacity": 0.15,
+        "line-color": "#cbd5e1",
+        "width": 1.5,
+        "z-index": 1
+      });
+    }
+  });
+
+  // Zoom / pan slightly to center matching nodes
+  if (matchingNodes.length > 0) {
+    const coll = cy.collection(matchingNodes);
+    cy.animate({
+      fit: { eles: coll, padding: 80 },
+      duration: 350
+    });
+  }
+
+  logToTerminal("TOPOLOGY", `Filtered by class (ID: ${classId}). ${matchingNodes.length} nodes highlighted.`);
+}
+
+function clearClassFilter() {
+  activeClassFilterId = null;
+
+  // Clear sidebar chip highlights
+  document.querySelectorAll(".class-item, [data-class-id]").forEach(item => {
+    item.classList.remove("active-class-filter", "active-filter");
+  });
+
+  if (!cy) return;
+
+  // Reset all nodes and edges to default opacity (1.0)
+  cy.elements().removeClass("highlighted dimmed");
+  cy.nodes().forEach(n => {
+    const nd = n.data();
+    n.style({
+      "opacity": 1.0,
+      "border-color": nd.border_color || (nd.is_initiator ? "#d97706" : "#ffffff"),
+      "border-width": nd.is_initiator ? 4 : (nd.is_boundary ? 2.5 : 2),
+      "background-color": nd.bg_color || "#2563eb",
+      "z-index": nd.is_initiator ? 80 : 10
+    });
+  });
+
+  cy.edges().forEach(e => {
+    const ed = e.data();
+    e.style({
+      "opacity": 0.85,
+      "line-color": ed.is_boundary ? "#f87171" : "#475569",
+      "width": ed.is_boundary ? 2.6 : 2.2,
+      "z-index": ed.is_boundary ? 60 : 20
+    });
+  });
+
+  cy.animate({
+    fit: { padding: 40 },
+    duration: 300
+  });
+
+  logToTerminal("INFO", "Cleared class filter. All 10 nodes restored to normal opacity.");
 }
 
 // 4. Main Step Loading Function (Steps 1 to 4)
@@ -406,6 +600,7 @@ async function loadStep(stepNumber) {
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
+  clearClassFilter();
 
   try {
     const res = await fetch(`/api/v1/storyboard/step/${stepNumber}`);
@@ -1052,10 +1247,13 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
         dominant_class: n.dominant_class,
         dominant_class_id: n.dominant_class_id,
         dominant_class_name: domName,
+        assigned_classes: n.assigned_classes || [],
+        class_distribution: n.class_distribution || {},
+        vector_10d: n.vector_10d || n.vector || n.normalized_vector || (Array.isArray(n.weights) ? n.weights : []),
         data_distribution: n.data_distribution || n.distribution || {},
         distribution: n.distribution || n.data_distribution || {},
-        vector: n.vector || n.normalized_vector || (Array.isArray(n.weights) ? n.weights : null),
-        normalized_vector: n.normalized_vector || n.vector || (Array.isArray(n.weights) ? n.weights : null),
+        vector: n.vector || n.vector_10d || n.normalized_vector || (Array.isArray(n.weights) ? n.weights : null),
+        normalized_vector: n.normalized_vector || n.vector_10d || n.vector || (Array.isArray(n.weights) ? n.weights : null),
         sk: n.sk,
         vrf_formula: n.vrf_formula,
         vrf_score: n.vrf_score,
@@ -1582,7 +1780,30 @@ function hideNodeModal() {
   const card = document.getElementById("nodeInfoCard");
   if (card) card.classList.add("hidden");
   if (cy) {
-    cy.elements().removeClass("dimmed highlighted selected-node");
+    if (activeClassFilterId !== null) {
+      highlightNodesByClass(activeClassFilterId, true);
+    } else {
+      cy.elements().removeClass("dimmed highlighted selected-node");
+      cy.nodes().forEach(n => {
+        const nd = n.data();
+        n.style({
+          "opacity": 1.0,
+          "border-color": nd.border_color || (nd.is_initiator ? "#d97706" : "#ffffff"),
+          "border-width": nd.is_initiator ? 4 : (nd.is_boundary ? 2.5 : 2),
+          "background-color": nd.bg_color || "#2563eb",
+          "z-index": nd.is_initiator ? 80 : 10
+        });
+      });
+      cy.edges().forEach(e => {
+        const ed = e.data();
+        e.style({
+          "opacity": 0.85,
+          "line-color": ed.is_boundary ? "#f87171" : "#475569",
+          "width": ed.is_boundary ? 2.6 : 2.2,
+          "z-index": ed.is_boundary ? 60 : 20
+        });
+      });
+    }
   }
   activeSelectedNodeId = null;
   activeSelectedNodeData = null;

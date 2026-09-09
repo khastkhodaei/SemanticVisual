@@ -141,3 +141,50 @@ def test_get_step2_api(client):
     assert body["step"] == 2
     assert len(body["nodes"]) == 10
     assert body["nodes"][0]["vector"] == EXPECTED_EXACT_VECTORS[1]
+
+
+def test_node_payload_normalized_class_attributes(client):
+    """Verify nodes include assigned_classes, class_distribution, dominant_class, and vector_10d."""
+    res = client.get("/api/v1/storyboard/nodes")
+    assert res.status_code == 200
+    nodes = res.json()["nodes"]
+    assert len(nodes) == 10
+
+    for n in nodes:
+        nid = n["id"]
+        assert "assigned_classes" in n
+        assert "class_distribution" in n
+        assert "dominant_class" in n
+        assert "vector_10d" in n
+        assert n["vector_10d"] == EXPECTED_EXACT_VECTORS[nid]
+
+    # Node 1 exact checks
+    n1 = nodes[0]
+    assert n1["assigned_classes"] == [0, 1, 2]
+    assert n1["dominant_class"] == "C1"
+    assert n1["class_distribution"]["0"] == 46 or n1["class_distribution"].get(0) == 46
+
+
+def test_class_filter_logic():
+    """Verify class filtering logic finds exact expected nodes for each class."""
+    nodes = get_10node_nodes()
+
+    def filter_class(class_id):
+        return [
+            n["id"]
+            for n in nodes
+            if class_id in n["assigned_classes"] or (n["vector_10d"][class_id] > 0.0)
+        ]
+
+    # Airplane (C1, 0-indexed: 0) -> Nodes 1, 2, 9
+    airplane_nodes = filter_class(0)
+    assert sorted(airplane_nodes) == [1, 2, 9]
+
+    # Cat (C4, 0-indexed: 3) -> Nodes 3, 4, 5, 8
+    cat_nodes = filter_class(3)
+    assert sorted(cat_nodes) == [3, 4, 5, 8]
+
+    # Frog (C7, 0-indexed: 6) -> Nodes 6, 7, 10
+    frog_nodes = filter_class(6)
+    assert sorted(frog_nodes) == [6, 7, 10]
+

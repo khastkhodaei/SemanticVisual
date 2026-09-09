@@ -222,10 +222,14 @@ body {
   transform: translateX(2px);
 }
 
-.class-chip.active-filter {
-  background: #bae6fd;
-  border-color: #0284c7;
-  font-weight: 600;
+.class-chip.active-class-filter,
+.class-chip.active-filter,
+.active-class-filter {
+  background: #e0f2fe !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.4), 0 2px 4px rgba(0, 0, 0, 0.06);
+  font-weight: 700;
+  transform: translateX(3px);
 }
 
 /* Floating Pinned Node Modal */
