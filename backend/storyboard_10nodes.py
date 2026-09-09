@@ -937,8 +937,10 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "Zone 4 (Leader: C4 👑): Members [C5, C6, C7] morphed to Zone 4 Pastel Palette (#fb923c).",
             "Zone 8 (Leader: C8 👑): Members [C9, C10] morphed to Zone 8 Pastel Palette (#a78bfa).",
             "[BOUNDARY NOTIFICATIONS] Frontier peers dispatch dual announcements (Algorithm 3, L17-L20):",
-            "Node C1 (Frontier Z2 ∩ Z4): Dispatched dual notifications -> C2 learns C4, C4 learns C2.",
-            "Node C6 (Frontier Z4 ∩ Z8): Dispatched dual notifications -> C4 learns C8, C8 learns C4.",
+            "[DISCOVERY NOTICE] Frontier C1 dispatched NEIGHBOR(C4) to Initiator C2.",
+            "[DISCOVERY NOTICE] Frontier C1 dispatched NEIGHBOR(C2) to Initiator C4.",
+            "[DISCOVERY NOTICE] Frontier C6 dispatched NEIGHBOR(C8) to Initiator C4.",
+            "[DISCOVERY NOTICE] Frontier C6 dispatched NEIGHBOR(C4) to Initiator C8.",
             "[DISCOVERY COMPLETE] Initiator C2 discovered: [C4]. Initiator C4 discovered: [C2, C8]. Initiator C8 discovered: [C4].",
             "[STATUS] Inter-zone boundary overlay established. All 10 peers ready for semantic aggregation.",
         ]

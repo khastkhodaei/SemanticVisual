@@ -1349,8 +1349,10 @@ function renderStep6(data) {
   logToTerminal("ZONE", "Zone 4 (Leader C4 👑): C5, C6, C7 adopt pastel coral tone (#fb923c).");
   logToTerminal("ZONE", "Zone 8 (Leader C8 👑): C9, C10 adopt pastel violet tone (#a78bfa).");
   logToTerminal("BOUNDARY", "[DUAL NOTIFICATIONS] Frontier peers dispatch reverse boundary announcements (Algorithm 3, L17-L20):");
-  logToTerminal("BOUNDARY", "• Node C1: Notifies Initiator C2 of adjacent Initiator C4, and notifies C4 of C2.");
-  logToTerminal("BOUNDARY", "• Node C6: Notifies Initiator C4 of adjacent Initiator C8, and notifies C8 of C4.");
+  logToTerminal("BOUNDARY", "[DISCOVERY NOTICE] Frontier C1 dispatched NEIGHBOR(C4) to Initiator C2.");
+  logToTerminal("BOUNDARY", "[DISCOVERY NOTICE] Frontier C1 dispatched NEIGHBOR(C2) to Initiator C4.");
+  logToTerminal("BOUNDARY", "[DISCOVERY NOTICE] Frontier C6 dispatched NEIGHBOR(C8) to Initiator C4.");
+  logToTerminal("BOUNDARY", "[DISCOVERY NOTICE] Frontier C6 dispatched NEIGHBOR(C4) to Initiator C8.");
   logToTerminal("SUCCESS", "[INITIATOR DISCOVERY] Initiator C2 learned: [C4]. Initiator C4 learned: [C2, C8]. Initiator C8 learned: [C4].");
 
   const packets = data.packet_events || data.packet_exchanges || [];
@@ -1371,6 +1373,7 @@ function animateStep6BoundaryPackets(packets, allNodes) {
   const duration = 2600; // ms
   const startTime = performance.now();
   const activeList = packets || [];
+  let arrivalPulseTriggered = false;
 
   function runFrame(now) {
     const elapsed = now - startTime;
@@ -1378,6 +1381,14 @@ function animateStep6BoundaryPackets(packets, allNodes) {
     const ease = easeInOutQuad(progress);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Calculate fade multiplier as packet nears destination (fades out completely between 88% and 100%)
+    let badgeAlpha = 1.0;
+    if (progress < 0.1) {
+      badgeAlpha = progress / 0.1;
+    } else if (progress > 0.85) {
+      badgeAlpha = Math.max(0, (1.0 - progress) / 0.15);
+    }
 
     activeList.forEach(pkt => {
       const srcId = pkt.source_num || pkt.source;
@@ -1393,22 +1404,77 @@ function animateStep6BoundaryPackets(packets, allNodes) {
       const curY = p1.y + (p2.y - p1.y) * ease;
 
       const pktColor = pkt.color || "#8b5cf6";
-      const badgeBg = "rgba(255, 255, 255, 0.96)";
-      const badgeText = "#1e1b4b";
 
+      // Animated traveling packet particle
       ctx.save();
+      ctx.globalAlpha = Math.min(1.0, badgeAlpha + 0.2);
       ctx.beginPath();
       ctx.arc(curX, curY, 5.0, 0, Math.PI * 2);
       ctx.fillStyle = pktColor;
       ctx.shadowBlur = 9;
       ctx.shadowColor = pktColor;
       ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(curX, curY, 2.0, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
       ctx.restore();
+
+      // Explicit floating pill badge moving synchronously with the particle dot
+      if (badgeAlpha > 0.05) {
+        const introNbr = pkt.introduced_neighbor || (pkt.label ? pkt.label.replace(/[^0-9C]/g, "") : "");
+        const badgeLabel = `NEIGHBOR (${introNbr})`;
+        const badgeBg = `rgba(15, 23, 42, ${0.88 * badgeAlpha})`;
+        const textColor = "#fbbf24"; // Amber/gold for high contrast
+        const borderColor = `rgba(245, 158, 11, ${0.75 * badgeAlpha})`;
+
+        ctx.save();
+        ctx.globalAlpha = badgeAlpha;
+        drawCanvasFloatingBadge(
+          ctx,
+          badgeLabel,
+          curX,
+          curY - 15,
+          badgeBg,
+          textColor,
+          borderColor
+        );
+        ctx.restore();
+      }
     });
+
+    // When packets arrive (progress near 1.0), briefly pulse target initiator nodes in golden yellow
+    if (progress >= 0.92) {
+      const pulseProg = (progress - 0.92) / 0.08;
+      const pulseAlpha = Math.sin(pulseProg * Math.PI) * 0.85;
+      const targetInitiatorIds = [2, 4, 8];
+
+      ctx.save();
+      targetInitiatorIds.forEach(id => {
+        const nodeEl = getNodeElement(id);
+        if (nodeEl) {
+          const pos = nodeEl.renderedPosition();
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 26 + pulseProg * 10, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(245, 158, 11, ${pulseAlpha})`;
+          ctx.lineWidth = 3.5;
+          ctx.shadowColor = "#f59e0b";
+          ctx.shadowBlur = 12;
+          ctx.stroke();
+        }
+      });
+      ctx.restore();
+
+      if (!arrivalPulseTriggered) {
+        arrivalPulseTriggered = true;
+      }
+    }
 
     if (progress < 1.0) {
       activeAnimationId = requestAnimationFrame(runFrame);
     } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       setTimeout(() => {
         if (currentStep === 6) {
           animateStep6BoundaryPackets(packets, allNodes);

@@ -196,3 +196,9 @@ As a result of these notifications:
 - **Initiator C4** discovers neighbor initiators: **C2** and **C8**.
 - **Initiator C8** discovers neighbor initiator: **C4**.
 
+### 4. Animated Packet Visualizations & Adjacency Notice Badges
+- Floating particle dots travel from frontier peers back to respective zone initiators.
+- Each particle dot carries a synchronous floating label (`NEIGHBOR (C4)`, `NEIGHBOR (C2)`, `NEIGHBOR (C8)`).
+- Upon arrival at the destination initiator node, the floating label smoothly fades away and a subtle golden pulse flashes on the initiator node.
+- All physical communication links remain clean, solid slate lines throughout the visualization.
+
