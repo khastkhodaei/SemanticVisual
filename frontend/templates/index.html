@@ -322,6 +322,12 @@
                 <span id="cardZoneStatusTag" class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-300">ASSIGNED</span>
               </div>
 
+              <!-- Replay Node Packets Button (Slow-Mo Focus) -->
+              <button id="btnReplayNodePackets" class="w-full py-1.5 px-3 rounded-lg text-[11px] font-bold font-mono bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 transition-colors flex items-center justify-center gap-1.5 shadow-sm">
+                <span>Replay Node Packets</span>
+                <span>🔁</span>
+              </button>
+
               <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 font-mono text-[10px] space-y-1">
                 <div class="flex justify-between">
                   <span class="text-slate-500">Assigned Zone:</span>
@@ -336,21 +342,46 @@
                   <span id="cardFirstWinsText" class="font-bold text-emerald-700">Probe arrived FIRST at Hop 1</span>
                 </div>
 
+                <!-- Accepted Probe Details -->
+                <div id="cardAcceptedProbeRow" class="pt-1 border-t border-slate-200 text-[9px]">
+                  <div class="flex justify-between text-emerald-800 font-bold mb-0.5">
+                    <span>✓ Accepted (First-Wins):</span>
+                    <span id="cardAcceptedWaveBadge" class="px-1.5 py-0.2 rounded bg-emerald-100 border border-emerald-300">Hop 1</span>
+                  </div>
+                  <div id="cardAcceptedProbeDetail" class="text-slate-700 font-mono text-[9px] bg-white p-1 rounded border border-slate-200">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+
                 <!-- Competing Probes Rejected -->
                 <div class="pt-1 border-t border-slate-200">
                   <div class="flex justify-between text-[9px] text-slate-600 font-bold">
-                    <span class="text-rose-600">Competing Probes Rejected:</span>
-                    <span id="cardRejectedCount" class="text-slate-500 font-normal">3 probes</span>
+                    <span class="text-rose-600">✕ Dropped Competing Probes:</span>
+                    <span id="cardRejectedCount" class="text-slate-500 font-normal">0 probes</span>
                   </div>
                   <div id="cardRejectedProbesList" class="font-mono text-slate-800 text-[9px] mt-0.5 max-h-20 overflow-y-auto space-y-0.5">
                     <!-- Populated dynamically -->
                   </div>
                 </div>
 
-                <!-- Boundary Neighbors if any -->
+                <!-- Outgoing Forwarded Probes -->
+                <div id="cardForwardedRow" class="pt-1 border-t border-slate-200 text-[9px]">
+                  <div class="flex justify-between text-slate-600 font-bold mb-0.5">
+                    <span class="text-blue-700">Outgoing PROBE Forwards:</span>
+                    <span id="cardForwardedCount" class="text-slate-500 font-normal">0 peers</span>
+                  </div>
+                  <div id="cardForwardedList" class="font-mono text-slate-800 text-[9px] mt-0.5 max-h-16 overflow-y-auto space-y-0.5">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+
+                <!-- Boundary Neighbors & Reverse Alerts (Alg 3 L17-L19) -->
                 <div id="cardBoundaryNeighborsRow" class="hidden pt-1 border-t border-slate-200 text-[9px]">
-                  <span class="text-rose-600 font-bold">Adjacent Foreign Zone Neighbors:</span>
-                  <div id="cardBoundaryNeighborsList" class="font-mono text-slate-800 text-[9px] mt-0.5"></div>
+                  <div class="flex justify-between text-rose-600 font-bold">
+                    <span>⚡ Boundary Neighbors (Alg 3 L17-19):</span>
+                    <span id="cardBoundaryAlertCount" class="text-slate-500 font-normal">0</span>
+                  </div>
+                  <div id="cardBoundaryNeighborsList" class="font-mono text-slate-800 text-[9px] mt-0.5 space-y-0.5"></div>
                 </div>
               </div>
             </div>

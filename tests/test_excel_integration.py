@@ -154,6 +154,12 @@ def test_api_storyboard_step_progression(client):
     assert len(c1_sb["hop_2"]) > 0
     assert len(c1_sb["hop_3"]) > 0
 
+    # In Step 3, all 10 Initiators have their distinct assigned zone color seeds
+    init_colors = {nodes_s3[init_id]["zone_color"] for init_id in [1, 6, 11, 16, 21, 26, 31, 36, 41, 46]}
+    assert len(init_colors) == 10, "Expected 10 distinct initiator seed colors"
+    for non_init_id in [2, 3, 4, 5, 7, 8, 9, 10]:
+        assert nodes_s3[non_init_id]["zone_color"] == "#2563eb"
+
     # Step 4: Zone Formation, First-Wins & Probe Conflicts (Algorithm 3)
     s4 = client.get("/api/v1/storyboard/step/4")
     assert s4.status_code == 200
@@ -165,13 +171,33 @@ def test_api_storyboard_step_progression(client):
     assert "PROBE" in d4["formula"]
     assert "waves" in d4
     assert len(d4["waves"]["wave1"]) > 0
+    assert "boundary_alerts" in d4["waves"]
+    assert len(d4["waves"]["boundary_alerts"]) > 0
 
-    # In Step 4, all nodes adopt the first-arriving probe and form 10 zones
+    # In Step 4, all nodes have granular packet tracing fields
     nodes_s4 = {n["id"]: n for n in d4["nodes"]}
     for nid, node in nodes_s4.items():
         assert node["assigned_zone"] is not None
         assert "FIRST" in node["first_wins_text"]
         assert "winner_initiator" in node
+        assert "accepted_probe" in node
+        assert "rejected_probes" in node
+        assert "forwarded_to" in node
+        assert "boundary_notifications_emitted" in node
+
+        # Verify accepted_probe structure
+        acc = node["accepted_probe"]
+        assert "from_initiator" in acc
+        assert "sender" in acc
+        assert "hop" in acc
+        assert "arrival_wave" in acc
+
+        if node["is_initiator"]:
+            assert acc["hop"] == 0
+            assert acc["sender"] is None
+        else:
+            assert acc["hop"] >= 1
+            assert acc["sender"] is not None
 
     # Invalid Step
     s_err = client.get("/api/v1/storyboard/step/5")

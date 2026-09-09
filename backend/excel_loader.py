@@ -381,8 +381,112 @@ class ExcelDataLoader:
                 boundary_nodes_set.add(u)
                 boundary_nodes_set.add(v)
 
-        # For each node, calculate competing probes rejected
+        # Granular traces per user requirements:
+        # accepted_probe: { from_initiator, sender, hop, arrival_wave }
+        # rejected_probes: [{ competing_initiator, sender, hop, arrival_wave, competing_zone }]
+        # forwarded_to: [{ target, hop, wave }]
+        # boundary_notifications_emitted: [{ to_initiator, adjacent_zone, frontier_peer }]
+        self.node_accepted_probe: Dict[int, Dict[str, Any]] = {}
         self.node_rejected_probes: Dict[int, List[Dict[str, Any]]] = {i: [] for i in range(1, 51)}
+        self.node_forwarded_to: Dict[int, List[Dict[str, Any]]] = {i: [] for i in range(1, 51)}
+        self.node_boundary_notifications: Dict[int, List[Dict[str, Any]]] = {i: [] for i in range(1, 51)}
+
+        # 1. Compute accepted probe for all nodes
+        for nid in range(1, 51):
+            init = self.node_to_initiator[nid]
+            hop = self.node_vrf[nid]["hops_to_initiator"]
+            is_init = self.node_vrf[nid]["is_initiator"]
+            if is_init:
+                self.node_accepted_probe[nid] = {
+                    "from_initiator": f"C{nid}",
+                    "from_initiator_id": nid,
+                    "sender": None,
+                    "sender_id": None,
+                    "hop": 0,
+                    "arrival_wave": 0,
+                }
+            elif hop == 1:
+                self.node_accepted_probe[nid] = {
+                    "from_initiator": f"C{init}",
+                    "from_initiator_id": init,
+                    "sender": f"C{init}",
+                    "sender_id": init,
+                    "hop": 1,
+                    "arrival_wave": 1,
+                }
+            elif hop == 2:
+                cand_senders = [
+                    v for v in self.node_vrf[init]["wave1_reach"]
+                    if v in neighbors_map[nid] and self.node_to_initiator[v] == init
+                ]
+                if not cand_senders:
+                    cand_senders = [v for v in self.node_vrf[init]["wave1_reach"] if v in neighbors_map[nid]]
+                snd = cand_senders[0]
+                self.node_accepted_probe[nid] = {
+                    "from_initiator": f"C{init}",
+                    "from_initiator_id": init,
+                    "sender": f"C{snd}",
+                    "sender_id": snd,
+                    "hop": 2,
+                    "arrival_wave": 2,
+                }
+            elif hop == 3:
+                cand_senders = [
+                    v for v in self.node_vrf[init]["wave2_reach"]
+                    if v in neighbors_map[nid] and self.node_to_initiator[v] == init
+                ]
+                if not cand_senders:
+                    cand_senders = [v for v in self.node_vrf[init]["wave2_reach"] if v in neighbors_map[nid]]
+                snd = cand_senders[0]
+                self.node_accepted_probe[nid] = {
+                    "from_initiator": f"C{init}",
+                    "from_initiator_id": init,
+                    "sender": f"C{snd}",
+                    "sender_id": snd,
+                    "hop": 3,
+                    "arrival_wave": 3,
+                }
+
+        # 2. Compute forwarded_to
+        for nid in range(1, 51):
+            init = self.node_to_initiator[nid]
+            is_init = self.node_vrf[nid]["is_initiator"]
+            if is_init:
+                for v in sorted(self.node_vrf[init]["wave1_reach"]):
+                    if self.node_to_initiator[v] == init:
+                        self.node_forwarded_to[nid].append({
+                            "target": f"C{v}",
+                            "target_id": v,
+                            "hop": 1,
+                            "wave": 1,
+                        })
+            else:
+                for v in range(1, 51):
+                    if v != nid and self.node_to_initiator[v] == init:
+                        acc = self.node_accepted_probe[v]
+                        if acc.get("sender_id") == nid:
+                            self.node_forwarded_to[nid].append({
+                                "target": f"C{v}",
+                                "target_id": v,
+                                "hop": acc["hop"],
+                                "wave": acc["arrival_wave"],
+                            })
+
+        # 3. Compute boundary notifications emitted (Algorithm 3 L17-L19)
+        for nid in range(1, 51):
+            init = self.node_to_initiator[nid]
+            own_zone = self.node_vrf[nid]["assigned_zone"]
+            for nb in sorted(neighbors_map[nid]):
+                foreign_zone = self.node_vrf[nb]["assigned_zone"]
+                if foreign_zone != own_zone:
+                    self.node_boundary_notifications[nid].append({
+                        "to_initiator": f"C{init}",
+                        "to_initiator_id": init,
+                        "adjacent_zone": foreign_zone,
+                        "frontier_peer": f"C{nb}",
+                        "frontier_peer_id": nb,
+                    })
+
         self.first_wins_transmissions: List[Dict[str, Any]] = []
         self.conflict_transmissions: List[Dict[str, Any]] = []
 
@@ -403,6 +507,8 @@ class ExcelDataLoader:
                     "target": target,
                     "source_id": f"C{init_id}",
                     "target_id": f"C{target}",
+                    "sender": f"C{init_id}",
+                    "sender_id": init_id,
                     "initiator": init_id,
                     "initiator_id": f"C{init_id}",
                     "ttl_remaining": 2,
@@ -420,10 +526,13 @@ class ExcelDataLoader:
                 else:
                     self.conflict_transmissions.append(item)
                     self.node_rejected_probes[target].append({
-                        "initiator": f"C{init_id}",
-                        "initiator_id": init_id,
-                        "arrived_hop": 1,
-                        "zone": f"زون C{init_id}",
+                        "competing_initiator": f"C{init_id}",
+                        "competing_initiator_id": init_id,
+                        "sender": f"C{init_id}",
+                        "sender_id": init_id,
+                        "hop": 1,
+                        "arrival_wave": 1,
+                        "competing_zone": f"زون C{init_id}",
                     })
                     curr_zone = self.node_vrf[target]["assigned_zone"]
                     step4_logs.append(
@@ -447,6 +556,8 @@ class ExcelDataLoader:
                         "target": target,
                         "source_id": f"C{sender}",
                         "target_id": f"C{target}",
+                        "sender": f"C{sender}",
+                        "sender_id": sender,
                         "initiator": init_id,
                         "initiator_id": f"C{init_id}",
                         "ttl_remaining": 1,
@@ -464,10 +575,13 @@ class ExcelDataLoader:
                     else:
                         self.conflict_transmissions.append(item)
                         self.node_rejected_probes[target].append({
-                            "initiator": f"C{init_id}",
-                            "initiator_id": init_id,
-                            "arrived_hop": 2,
-                            "zone": f"زون C{init_id}",
+                            "competing_initiator": f"C{init_id}",
+                            "competing_initiator_id": init_id,
+                            "sender": f"C{sender}",
+                            "sender_id": sender,
+                            "hop": 2,
+                            "arrival_wave": 2,
+                            "competing_zone": f"زون C{init_id}",
                         })
                         curr_zone = self.node_vrf[target]["assigned_zone"]
                         step4_logs.append(
@@ -488,6 +602,8 @@ class ExcelDataLoader:
                         "target": target,
                         "source_id": f"C{sender}",
                         "target_id": f"C{target}",
+                        "sender": f"C{sender}",
+                        "sender_id": sender,
                         "initiator": init_id,
                         "initiator_id": f"C{init_id}",
                         "ttl_remaining": 0,
@@ -498,23 +614,46 @@ class ExcelDataLoader:
                     wave3_list.append(item)
                     self.conflict_transmissions.append(item)
                     self.node_rejected_probes[target].append({
-                        "initiator": f"C{init_id}",
-                        "initiator_id": init_id,
-                        "arrived_hop": 3,
-                        "zone": f"زون C{init_id}",
+                        "competing_initiator": f"C{init_id}",
+                        "competing_initiator_id": init_id,
+                        "sender": f"C{sender}",
+                        "sender_id": sender,
+                        "hop": 3,
+                        "arrival_wave": 3,
+                        "competing_zone": f"زون C{init_id}",
                     })
                     curr_zone = self.node_vrf[target]["assigned_zone"]
                     step4_logs.append(
                         f"[CONFLICT/BOUNDARY] C{target} (already in {curr_zone}) received delayed PROBE from Zone C{init_id}. Packet dropped! Boundary recorded."
                     )
 
+        # Reverse boundary alert notifications back to initiators (Algorithm 3 L17-L19)
+        reverse_alerts: List[Dict[str, Any]] = []
+        for nid, notifs in self.node_boundary_notifications.items():
+            acc = self.node_accepted_probe[nid]
+            parent_hop = acc.get("sender_id") or nid
+            for notif in notifs:
+                reverse_alerts.append({
+                    "from_node": nid,
+                    "from_node_id": f"C{nid}",
+                    "to_initiator": notif["to_initiator"],
+                    "to_initiator_id": notif["to_initiator_id"],
+                    "via_node": parent_hop,
+                    "via_node_id": f"C{parent_hop}",
+                    "adjacent_zone": notif["adjacent_zone"],
+                    "frontier_peer": notif["frontier_peer"],
+                    "edge_id": f"e{min(nid, parent_hop)}_{max(nid, parent_hop)}" if nid != parent_hop else None,
+                })
+
         step4_logs.append("[Zone Formation Complete] 50 nodes successfully assigned to 10 physical zones.")
         step4_logs.append(f"[Boundary Interfaces] Identified {len(self.edges_list) - 61} inter-zone boundary bridges.")
+        step4_logs.append("[Algorithm 3 L17-L19] Reverse boundary neighbor alerts emitted to zone initiators.")
 
         self.step4_waves = {
             "wave1": wave1_list,
             "wave2": wave2_list,
             "wave3": wave3_list,
+            "boundary_alerts": reverse_alerts,
         }
         self.step4_logs = step4_logs
         self.boundary_nodes_set = boundary_nodes_set
@@ -687,7 +826,9 @@ class ExcelDataLoader:
                     "vrf_formula": n["vrf_formula"],
                     "vrf_score": n["vrf_score"],
                     "is_initiator": is_init,
-                    "assigned_zone": None,  # No zone colors in Step 3
+                    "assigned_zone": None,  # No zone overlays formed yet in Step 3
+                    "zone_color": n["zone_color"] if is_init else "#2563eb",
+                    "initiator_color": n["zone_color"] if is_init else None,
                     "hops_to_initiator": None,
                     "scoreboard_3hop": sb,
                     "decision_result": sb["decision_result"],
@@ -756,7 +897,11 @@ class ExcelDataLoader:
                     "winner_initiator_id": init_id,
                     "first_wins_hop": n["hops_to_initiator"],
                     "first_wins_text": f"Probe arrived FIRST at Hop {n['hops_to_initiator']}",
+                    "accepted_probe": self.node_accepted_probe.get(nid),
+                    "rejected_probes": self.node_rejected_probes.get(nid, []),
                     "competing_probes_rejected": self.node_rejected_probes.get(nid, []),
+                    "forwarded_to": self.node_forwarded_to.get(nid, []),
+                    "boundary_notifications_emitted": self.node_boundary_notifications.get(nid, []),
                     "is_boundary": is_bnd,
                     "boundary_neighbors": bnd_neighbors,
                     "status_tag": "⚡ ZONE FRONTIER / BOUNDARY" if is_bnd else "ASSIGNED",

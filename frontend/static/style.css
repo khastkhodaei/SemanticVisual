@@ -318,3 +318,26 @@ body {
   font-size: 9px;
   font-family: ui-monospace, monospace;
 }
+
+.forwarded-chip {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 9px;
+  font-family: ui-monospace, monospace;
+}
+
+.boundary-alert-chip {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: #faf5ff;
+  border: 1px solid #e9d5ff;
+  color: #7e22ce;
+  font-size: 9px;
+  font-family: ui-monospace, monospace;
+}
+

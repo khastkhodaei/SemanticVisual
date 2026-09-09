@@ -9,6 +9,7 @@ let currentConfig = null;
 let currentStepData = null;
 let cy = null;
 let activeSelectedNodeId = null;
+let activeSelectedNodeData = null;
 let activeAnimationId = null;
 
 // CIFAR-10 Fallback / Cache
@@ -192,7 +193,7 @@ function initCytoscape() {
     maxZoom: 2.5
   });
 
-  // Click-to-Toggle Node Modal Interaction
+  // Click-to-Toggle Node Modal Interaction & Slow-Mo Focus
   cy.on("tap", "node", (evt) => {
     const node = evt.target;
     const nid = node.data("node_id_num");
@@ -200,14 +201,24 @@ function initCytoscape() {
     if (activeSelectedNodeId === nid) {
       hideNodeModal();
     } else {
-      showNodeModal(node.data());
-      cy.nodes().removeClass("selected-node");
-      node.addClass("selected-node");
       activeSelectedNodeId = nid;
+      activeSelectedNodeData = node.data();
+      showNodeModal(node.data());
+
+      // Darken/dim all unrelated nodes and edges on canvas (opacity 0.2)
+      cy.elements().addClass("dimmed");
+      node.removeClass("dimmed").addClass("selected-node");
+      node.connectedEdges().removeClass("dimmed").addClass("highlighted");
+      node.neighborhood().nodes().removeClass("dimmed");
+
+      // In Step 4, automatically launch slow-mo packet tracer for this clicked node
+      if (currentStep === 4) {
+        replaySlowMoNodeTrace(node.data());
+      }
     }
   });
 
-  // Tap on background to dismiss modal
+  // Tap on background to dismiss modal and restore full canvas opacity
   cy.on("tap", (evt) => {
     if (evt.target === cy) {
       hideNodeModal();
@@ -459,9 +470,9 @@ function renderStep2(data) {
 }
 
 // 7. STEP 3: VRF Comparison & Local Initiator Deciding (Algorithm 2)
-// - Nodes remain neutral blue, except elected Initiators (C1, C6, etc.) which have gold crown 👑 and glowing amber border.
-// - No zone colors applied to non-initiators yet.
-// - Clicking a node displays the 3-hop decision table and scoreboard.
+// - 10 Initiators receive their distinct assigned Zone Palette color seed with gold crown 👑
+// - Non-initiators stay in neutral blue (#2563eb)
+// - Clicking a node displays the 3-hop decision table and scoreboard
 function renderStep3(data) {
   renderSidebarFormula(
     "VRF Initiator Election (Alg. 2)",
@@ -472,7 +483,7 @@ function renderStep3(data) {
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "VRF Comparison (10 Initiators 👑 Elected, 40 Candidates)";
+  if (canvasLabel) canvasLabel.textContent = "VRF Comparison (10 Initiator Color Seeds 👑, 40 Candidates)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
   if (leaderLegend) leaderLegend.classList.remove("hidden");
@@ -485,19 +496,19 @@ function renderStep3(data) {
     statLeaders.className = "text-xs font-bold text-amber-600";
   }
 
-  // Render nodes: Initiators in amber with crown, non-initiators in neutral blue, no zone colors
+  // Render nodes: 10 Initiators receive their distinct Zone Palette color seeds with crown, non-initiators in neutral blue
   renderCytoscapeGraph(data.nodes, data.edges, {
     showInitiators: true,
+    initiatorColorSeeds: true,
     useZoneColors: false,
     showBoundaryEdges: false
   });
 }
 
 // 8. STEP 4: Zone Formation, First-Wins & Probe Conflicts (Algorithm 3)
-// - Formula: PROBE(p, TTL=3) -> ASSIGNED(Z_I), delayed -> BOUNDARY
-// - Packets travel in 3 waves along physical edges.
-// - First-Wins accepted probes adopt zone color.
-// - Delayed competing probes dropped and marked as dashed boundary links.
+// - Start Step 4 with non-initiators in neutral blue (like Step 3), while Initiators have their distinct zone colors
+// - Nodes morph dynamically upon probe arrival wave-by-wave
+// - Delayed competing probes dropped, edges dashed red (#f87171), and reverse boundary alerts emitted
 function renderStep4(data) {
   renderSidebarFormula(
     "Zone Formation (Alg. 3)",
@@ -509,7 +520,7 @@ function renderStep4(data) {
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "Zone PROBE Flooding & First-Wins Conflict Resolution (10 Zones Formed)";
+  if (canvasLabel) canvasLabel.textContent = "Zone PROBE Flooding & First-Wins Dynamic Color Morphing";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
   if (leaderLegend) leaderLegend.classList.remove("hidden");
@@ -518,25 +529,70 @@ function renderStep4(data) {
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.textContent = "10 Zones Formed";
+    statLeaders.textContent = "10 Zones Forming...";
     statLeaders.className = "text-xs font-bold text-purple-700";
   }
 
-  // Render Cytoscape graph with 10 Zone Colors and dashed boundary edges
+  // Step 4 starts with non-initiators in neutral blue; morphing happens dynamically on packet impact
   renderCytoscapeGraph(data.nodes, data.edges, {
     showInitiators: true,
-    useZoneColors: true,
-    showBoundaryEdges: true
+    initiatorColorSeeds: true,
+    useZoneColors: false,
+    showBoundaryEdges: false
   });
 
-  // Launch the 3-wave PROBE packet animation with real-time streaming
+  // Launch the 3-wave PROBE packet animation with dynamic state-change morphing
   if (data.waves) {
-    animateProbeFloodingWaves(data.waves);
+    animateProbeFloodingWaves(data.waves, data.nodes);
   }
 }
 
-// Animate PROBE packet flooding in Step 4 across 3 waves with real-time logs
-function animateProbeFloodingWaves(waves) {
+// Draw an elegant floating pill badge on HTML5 Canvas
+function drawCanvasFloatingBadge(ctx, text, x, y, bgColor, textColor, borderColor) {
+  ctx.save();
+  ctx.font = "bold 9.5px ui-monospace, monospace";
+  const metrics = ctx.measureText(text);
+  const paddingX = 6;
+  const paddingY = 3.5;
+  const w = metrics.width + paddingX * 2;
+  const h = 18;
+  const rx = x - w / 2;
+  const ry = y - h / 2;
+  const r = 4;
+
+  ctx.beginPath();
+  ctx.moveTo(rx + r, ry);
+  ctx.lineTo(rx + w - r, ry);
+  ctx.quadraticCurveTo(rx + w, ry, rx + w, ry + r);
+  ctx.lineTo(rx + w, ry + h - r);
+  ctx.quadraticCurveTo(rx + w, ry + h, rx + w - r, ry + h);
+  ctx.lineTo(rx + r, ry + h);
+  ctx.quadraticCurveTo(rx, ry + h, rx, ry + h - r);
+  ctx.lineTo(rx, ry + r);
+  ctx.quadraticCurveTo(rx, ry, rx + r, ry);
+  ctx.closePath();
+
+  ctx.fillStyle = bgColor;
+  ctx.shadowColor = "rgba(0, 0, 0, 0.15)";
+  ctx.shadowBlur = 6;
+  ctx.fill();
+
+  if (borderColor) {
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = textColor;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x, y + 0.5);
+  ctx.restore();
+}
+
+// Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
+function animateProbeFloodingWaves(waves, allNodes) {
   stopCurrentPacketAnimation();
   syncPacketCanvasSize();
 
@@ -548,17 +604,22 @@ function animateProbeFloodingWaves(waves) {
   const wave2Packets = waves.wave2 || [];
   const wave3Packets = waves.wave3 || [];
 
-  const waveDuration = 1400; // ms per wave
+  const waveDuration = 1600; // ms per wave
   let currentWaveIndex = 1;
   let waveStartTime = performance.now();
 
+  const morphedNodes = new Set(currentStepData?.initiator_ids || [1, 6, 11, 16, 21, 26, 31, 36, 41, 46]);
+  const discoveredBoundaries = new Set();
+  const ripples = []; // { x, y, radius, maxRadius, color, alpha }
+  const reverseAlerts = []; // { startX, startY, endX, endY, startTime, duration, color }
+
   function logWaveTransition(waveIdx) {
     if (waveIdx === 1) {
-      logToTerminal("ZONE", `[Wave 1] Initiators broadcast PROBE(ttl=3) to ${wave1Packets.length} direct 1-hop physical neighbors.`);
+      logToTerminal("ZONE", `[Wave 1] 10 Initiators broadcast PROBE(TTL=3) to ${wave1Packets.length} direct physical neighbors.`);
     } else if (waveIdx === 2) {
-      logToTerminal("ZONE", `[Wave 2] Hop 1 nodes forward PROBE(ttl=2) to ${wave2Packets.length} 2-hop physical neighbors.`);
+      logToTerminal("ZONE", `[Wave 2] Hop 1 peers forward PROBE(TTL=2) to ${wave2Packets.length} 2-hop physical neighbors.`);
     } else if (waveIdx === 3) {
-      logToTerminal("ZONE", `[Wave 3] Hop 2 nodes forward PROBE(ttl=1) to ${wave3Packets.length} 3-hop boundary receivers.`);
+      logToTerminal("ZONE", `[Wave 3] Hop 2 peers forward PROBE(TTL=1) to ${wave3Packets.length} 3-hop boundary interfaces.`);
     }
   }
 
@@ -576,7 +637,69 @@ function animateProbeFloodingWaves(waves) {
     else if (currentWaveIndex === 2) activePackets = wave2Packets;
     else if (currentWaveIndex === 3) activePackets = wave3Packets;
 
-    // Render traveling PROBE packets
+    // Check impact on nodes when progress >= 0.88
+    if (easeProgress >= 0.88) {
+      activePackets.forEach(pkt => {
+        const tgtNode = cy.getElementById(`node_${pkt.target}`);
+        const p2 = tgtNode && tgtNode.isNode() ? tgtNode.renderedPosition() : null;
+        if (!p2) return;
+
+        if (pkt.is_first_wins && !morphedNodes.has(pkt.target)) {
+          morphedNodes.add(pkt.target);
+          const pal = ZONE_PALETTES[`زون C${pkt.initiator}`];
+          if (pal) {
+            tgtNode.style({
+              "background-color": pal.fill,
+              "border-color": pal.border
+            });
+            ripples.push({
+              x: p2.x,
+              y: p2.y,
+              radius: 10,
+              maxRadius: 36,
+              color: pal.fill,
+              alpha: 0.95
+            });
+            logToTerminal("SUCCESS", `[FIRST-WINS] C${pkt.target} adopted Zone C${pkt.initiator} at Hop ${currentWaveIndex}. Color morphed!`);
+          }
+        } else if (pkt.is_conflict) {
+          const edgeId = pkt.edge_id || `e${Math.min(pkt.source, pkt.target)}_${Math.max(pkt.source, pkt.target)}`;
+          if (!discoveredBoundaries.has(edgeId)) {
+            discoveredBoundaries.add(edgeId);
+            const edge = cy.getElementById(edgeId);
+            if (edge && edge.isEdge()) {
+              edge.addClass("boundary-edge");
+            }
+            ripples.push({
+              x: p2.x,
+              y: p2.y,
+              radius: 8,
+              maxRadius: 30,
+              color: "#f43f5e",
+              alpha: 1.0
+            });
+
+            // Emit reverse boundary alert packet (Alg 3 L17-L19)
+            const srcNode = cy.getElementById(`node_${pkt.source}`);
+            const p1 = srcNode && srcNode.isNode() ? srcNode.renderedPosition() : null;
+            if (p1) {
+              reverseAlerts.push({
+                startX: p2.x,
+                startY: p2.y,
+                endX: p1.x,
+                endY: p1.y,
+                startTime: now,
+                duration: 650,
+                color: "#8b5cf6"
+              });
+            }
+            logToTerminal("WARN", `[CONFLICT/BOUNDARY] C${pkt.target} dropped delayed PROBE from Zone C${pkt.initiator}. Link dashed red. Reverse alert emitted!`);
+          }
+        }
+      });
+    }
+
+    // Render traveling forward PROBE packets
     activePackets.forEach(pkt => {
       const srcNode = cy.getElementById(`node_${pkt.source}`);
       const tgtNode = cy.getElementById(`node_${pkt.target}`);
@@ -588,10 +711,8 @@ function animateProbeFloodingWaves(waves) {
       const curX = p1.x + (p2.x - p1.x) * easeProgress;
       const curY = p1.y + (p2.y - p1.y) * easeProgress;
 
-      // Color packet: First-Wins adoption is bright emerald/cyan; Conflict drop is rose/amber
       const packetColor = pkt.is_first_wins ? "#10b981" : "#f43f5e";
 
-      // Draw outer glow
       ctx.beginPath();
       ctx.arc(curX, curY, 7.5, 0, Math.PI * 2);
       ctx.fillStyle = packetColor;
@@ -599,13 +720,60 @@ function animateProbeFloodingWaves(waves) {
       ctx.shadowColor = packetColor;
       ctx.fill();
 
-      // Draw packet core
       ctx.beginPath();
       ctx.arc(curX, curY, 3.5, 0, Math.PI * 2);
       ctx.fillStyle = "#ffffff";
       ctx.shadowBlur = 0;
       ctx.fill();
     });
+
+    // Render expanding impact ripples
+    for (let i = ripples.length - 1; i >= 0; i--) {
+      const r = ripples[i];
+      r.radius += 1.4;
+      r.alpha -= 0.035;
+      if (r.alpha <= 0 || r.radius >= r.maxRadius) {
+        ripples.splice(i, 1);
+      } else {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = r.color;
+        ctx.lineWidth = 2.5;
+        ctx.globalAlpha = Math.max(r.alpha, 0);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // Render reverse boundary alerts (Alg 3 L17-L19)
+    for (let i = reverseAlerts.length - 1; i >= 0; i--) {
+      const a = reverseAlerts[i];
+      const aElapsed = now - a.startTime;
+      const aProg = Math.min(aElapsed / a.duration, 1.0);
+      const easeA = easeInOutQuad(aProg);
+      const ax = a.startX + (a.endX - a.startX) * easeA;
+      const ay = a.startY + (a.endY - a.startY) * easeA;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(ax, ay, 5.5, 0, Math.PI * 2);
+      ctx.fillStyle = a.color;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = a.color;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(ax, ay, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowBlur = 0;
+      ctx.fill();
+      ctx.restore();
+
+      if (aProg >= 1.0) {
+        reverseAlerts.splice(i, 1);
+      }
+    }
 
     if (progress < 1.0) {
       activeAnimationId = requestAnimationFrame(runWaveFrame);
@@ -625,7 +793,34 @@ function animateProbeFloodingWaves(waves) {
         // Animation finished
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         activeAnimationId = null;
-        logToTerminal("SUCCESS", "[PROBE Complete] All nodes adopted first arriving probe or established boundary bridge.");
+
+        // Ensure all nodes and boundary edges reflect final state
+        (allNodes || []).forEach(n => {
+          const cyNode = cy.getElementById(`node_${n.id}`);
+          if (cyNode && cyNode.isNode() && n.assigned_zone) {
+            const pal = ZONE_PALETTES[n.assigned_zone];
+            const isInit = n.is_initiator;
+            if (pal) {
+              cyNode.style({
+                "background-color": pal.fill,
+                "border-color": isInit ? "#b45309" : pal.border
+              });
+            }
+          }
+        });
+        cy.edges().forEach(e => {
+          if (e.data("is_inter_zone")) {
+            e.addClass("boundary-edge");
+          }
+        });
+
+        const statLeaders = document.getElementById("statLeaders");
+        if (statLeaders) {
+          statLeaders.textContent = "10 Zones Formed";
+        }
+
+        logToTerminal("SUCCESS", "[PROBE Complete] All 50 nodes successfully morphed into 10 semantic zones.");
+        logToTerminal("SUCCESS", "[Algorithm 3 L17-L19] 29 boundary bridge interfaces registered with zone initiators.");
       }
     }
   }
@@ -659,6 +854,11 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
         bgColor = n.zone_color;
         borderColor = isInit ? "#b45309" : n.zone_color;
       }
+    } else if (isInit && options.initiatorColorSeeds) {
+      // Step 3 initiator seeds: 10 distinct hues for the 10 initiators
+      const pal = ZONE_PALETTES[`زون C${n.id}`];
+      bgColor = pal ? pal.fill : (n.initiator_color || n.zone_color || "#f59e0b");
+      borderColor = "#b45309";
     } else if (isInit) {
       bgColor = "#f59e0b";
       borderColor = "#b45309";
@@ -684,6 +884,8 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
         vrf_score: n.vrf_score,
         is_initiator: n.is_initiator,
         assigned_zone: n.assigned_zone,
+        zone_color: n.zone_color,
+        initiator_color: n.initiator_color,
         hops_to_initiator: n.hops_to_initiator,
         hops_label: n.hops_label,
         neighbors: n.neighbors || [],
@@ -694,7 +896,11 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
         winner_score: n.winner_score,
         winner_initiator: n.winner_initiator,
         first_wins_text: n.first_wins_text,
+        accepted_probe: n.accepted_probe,
+        rejected_probes: n.rejected_probes || n.competing_probes_rejected || [],
         competing_probes_rejected: n.competing_probes_rejected || [],
+        forwarded_to: n.forwarded_to || [],
+        boundary_notifications_emitted: n.boundary_notifications_emitted || [],
         is_boundary: n.is_boundary,
         boundary_neighbors: n.boundary_neighbors || [],
         status_tag: n.status_tag,
@@ -924,33 +1130,83 @@ function showNodeModal(nodeData) {
       if (cardZoneWinner) cardZoneWinner.textContent = nodeData.winner_initiator || "Unknown";
       if (cardFirstWinsText) cardFirstWinsText.textContent = nodeData.first_wins_text || "First-Wins";
 
-      // Competing Probes Rejected
-      const rejectedList = nodeData.competing_probes_rejected || [];
-      if (cardRejectedCount) cardRejectedCount.textContent = `${rejectedList.length} probes dropped`;
+      // 1. Accepted Probe Details
+      const cardAcceptedWaveBadge = document.getElementById("cardAcceptedWaveBadge");
+      const cardAcceptedProbeDetail = document.getElementById("cardAcceptedProbeDetail");
+      const acc = nodeData.accepted_probe;
+      if (cardAcceptedWaveBadge && cardAcceptedProbeDetail) {
+        if (isInitiator) {
+          cardAcceptedWaveBadge.textContent = "Root Seed";
+          cardAcceptedWaveBadge.className = "px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold";
+          cardAcceptedProbeDetail.innerHTML = `👑 <strong>Zone Initiator:</strong> Self-elected root node. Floods PROBE(TTL=3) to physical neighbors.`;
+        } else if (acc) {
+          cardAcceptedWaveBadge.textContent = `Hop ${acc.hop} (Wave ${acc.arrival_wave})`;
+          cardAcceptedWaveBadge.className = "px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold";
+          cardAcceptedProbeDetail.innerHTML = `
+            <div class="flex justify-between items-center">
+              <span>Initiator: <strong class="text-amber-800">${acc.from_initiator} 👑</strong></span>
+              <span>Sender: <strong class="text-blue-700">${acc.sender}</strong></span>
+            </div>
+            <div class="text-[8px] text-emerald-700 mt-0.5 font-sans">
+              ✓ Adopted upon impact (First-Wins). Morphed to Initiator zone color.
+            </div>
+          `;
+        }
+      }
+
+      // 2. Competing Probes Rejected
+      const rejectedList = nodeData.rejected_probes || nodeData.competing_probes_rejected || [];
+      if (cardRejectedCount) cardRejectedCount.textContent = `${rejectedList.length} probe(s) dropped`;
       if (cardRejectedProbesList) {
         if (rejectedList.length === 0) {
-          cardRejectedProbesList.innerHTML = '<span class="text-slate-400 italic">None (Internal Core Node)</span>';
+          cardRejectedProbesList.innerHTML = '<span class="text-slate-400 italic">None (Zone interior peer)</span>';
         } else {
           cardRejectedProbesList.innerHTML = rejectedList.map(r => `
-            <span class="rejected-chip mr-1 mb-0.5">
-              ${r.initiator} (Hop ${r.arrived_hop})
-            </span>
+            <div class="rejected-chip flex items-center justify-between my-0.5 w-full">
+              <span>✕ ${r.competing_initiator || r.initiator} (${r.competing_zone || r.zone})</span>
+              <span class="text-[8px] opacity-80">via ${r.sender || 'peer'} • Hop ${r.hop || r.arrived_hop}</span>
+            </div>
           `).join("");
         }
       }
 
-      // Boundary Neighbors
-      const bndNbrs = nodeData.boundary_neighbors || [];
-      if (cardBoundaryNeighborsRow && cardBoundaryNeighborsList) {
-        if (bndNbrs.length > 0) {
-          cardBoundaryNeighborsRow.classList.remove("hidden");
-          cardBoundaryNeighborsList.innerHTML = bndNbrs.map(nb => `
-            <span class="inline-block px-1.5 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-700 font-mono mr-1 mb-0.5">
-              ${nb}
+      // 3. Outgoing Forwarded Probes
+      const fwdRow = document.getElementById("cardForwardedRow");
+      const fwdCount = document.getElementById("cardForwardedCount");
+      const fwdList = document.getElementById("cardForwardedList");
+      const forwards = nodeData.forwarded_to || [];
+      if (fwdRow && fwdList) {
+        fwdRow.classList.remove("hidden");
+        if (forwards.length > 0) {
+          if (fwdCount) fwdCount.textContent = `${forwards.length} forwarded`;
+          fwdList.innerHTML = forwards.map(f => `
+            <span class="forwarded-chip mr-1 mb-0.5">
+              ➜ ${f.target} (Hop ${f.hop})
             </span>
           `).join("");
         } else {
-          cardBoundaryNeighborsRow.classList.add("hidden");
+          if (fwdCount) fwdCount.textContent = "0 (Frontier/Leaf)";
+          fwdList.innerHTML = '<span class="text-slate-400 italic">No further forwards (Zone frontier)</span>';
+        }
+      }
+
+      // 4. Boundary Neighbors & Reverse Alerts (Alg 3 L17-L19)
+      const bndRow = document.getElementById("cardBoundaryNeighborsRow");
+      const bndAlertCount = document.getElementById("cardBoundaryAlertCount");
+      const bndList = document.getElementById("cardBoundaryNeighborsList");
+      const bndAlerts = nodeData.boundary_notifications_emitted || [];
+      if (bndRow && bndList) {
+        if (bndAlerts.length > 0) {
+          bndRow.classList.remove("hidden");
+          if (bndAlertCount) bndAlertCount.textContent = `${bndAlerts.length} alert(s)`;
+          bndList.innerHTML = bndAlerts.map(b => `
+            <div class="boundary-alert-chip flex items-center justify-between my-0.5 w-full">
+              <span>⚡ Interface: ${b.frontier_peer} (${b.adjacent_zone})</span>
+              <span class="text-[8px] text-purple-700">Alert ➜ ${b.to_initiator}</span>
+            </div>
+          `).join("");
+        } else {
+          bndRow.classList.add("hidden");
         }
       }
 
@@ -976,8 +1232,270 @@ function showNodeModal(nodeData) {
 function hideNodeModal() {
   const card = document.getElementById("nodeInfoCard");
   if (card) card.classList.add("hidden");
-  if (cy) cy.nodes().removeClass("selected-node");
+  if (cy) {
+    cy.elements().removeClass("dimmed highlighted selected-node");
+  }
   activeSelectedNodeId = null;
+  activeSelectedNodeData = null;
+  stopCurrentPacketAnimation();
+}
+
+// Focused Slow-Mo Packet Tracer for Clicked Node (Requirement 3 & 4)
+function replaySlowMoNodeTrace(nodeData) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const nid = nodeData.node_id_num;
+  const centerNode = cy.getElementById(`node_${nid}`);
+  if (!centerNode || !centerNode.isNode()) return;
+
+  const isInit = nodeData.is_initiator;
+  const acc = nodeData.accepted_probe;
+  const rejections = nodeData.rejected_probes || [];
+  const forwards = nodeData.forwarded_to || [];
+  const bndAlerts = nodeData.boundary_notifications_emitted || [];
+
+  const totalDuration = 3800; // ms
+  const startTime = performance.now();
+
+  logToTerminal("ZONE", `[Slow-Mo Tracer] Focusing packet trace on C${nid} (${nodeData.class_title})...`);
+
+  function runSlowMoFrame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / totalDuration, 1.0);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const centerPos = centerNode.renderedPosition();
+
+    // -------------------------------------------------------------
+    // Phase 1: Incoming Accepted Probe (0 to 1500ms)
+    // -------------------------------------------------------------
+    if (elapsed < 1500) {
+      const p1Progress = Math.min(elapsed / 1200, 1.0);
+      const ease1 = easeInOutQuad(p1Progress);
+
+      if (isInit) {
+        const pulseR = 20 + Math.sin(elapsed / 140) * 5;
+        ctx.beginPath();
+        ctx.arc(centerPos.x, centerPos.y, pulseR, 0, Math.PI * 2);
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        drawCanvasFloatingBadge(
+          ctx,
+          "👑 Zone Initiator (Root Seed)",
+          centerPos.x,
+          centerPos.y - 30,
+          "rgba(254, 243, 199, 0.98)",
+          "#92400e",
+          "#f59e0b"
+        );
+      } else if (acc && acc.sender_id) {
+        const senderNode = cy.getElementById(`node_${acc.sender_id}`);
+        if (senderNode && senderNode.isNode()) {
+          const sPos = senderNode.renderedPosition();
+          const curX = sPos.x + (centerPos.x - sPos.x) * ease1;
+          const curY = sPos.y + (centerPos.y - sPos.y) * ease1;
+
+          ctx.beginPath();
+          ctx.moveTo(sPos.x, sPos.y);
+          ctx.lineTo(curX, curY);
+          ctx.strokeStyle = "rgba(16, 185, 129, 0.75)";
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(curX, curY, 8, 0, Math.PI * 2);
+          ctx.fillStyle = "#10b981";
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = "#10b981";
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(curX, curY, 4, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowBlur = 0;
+          ctx.fill();
+
+          if (p1Progress < 0.9) {
+            drawCanvasFloatingBadge(
+              ctx,
+              `INCOMING PROBE (${acc.from_initiator})`,
+              curX,
+              curY - 18,
+              "rgba(236, 253, 245, 0.98)",
+              "#065f46",
+              "#10b981"
+            );
+          } else {
+            drawCanvasFloatingBadge(
+              ctx,
+              `✓ Accepted (First-Wins) from Zone ${acc.from_initiator}`,
+              centerPos.x,
+              centerPos.y - 30,
+              "rgba(236, 253, 245, 0.98)",
+              "#047857",
+              "#10b981"
+            );
+          }
+        }
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Phase 2: Competing Probes Rejected (1200 to 2600ms)
+    // -------------------------------------------------------------
+    if (elapsed >= 1200 && elapsed < 2600 && rejections.length > 0) {
+      const p2Progress = Math.min((elapsed - 1200) / 1100, 1.0);
+      const ease2 = easeInOutQuad(p2Progress);
+
+      rejections.forEach((rej, idx) => {
+        const sndId = rej.sender_id || parseInt((rej.sender || "").replace("C", ""));
+        const sndNode = cy.getElementById(`node_${sndId}`);
+        if (!sndNode || !sndNode.isNode()) return;
+
+        const sPos = sndNode.renderedPosition();
+        const curX = sPos.x + (centerPos.x - sPos.x) * ease2;
+        const curY = sPos.y + (centerPos.y - sPos.y) * ease2;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([5, 4]);
+        ctx.moveTo(sPos.x, sPos.y);
+        ctx.lineTo(curX, curY);
+        ctx.strokeStyle = "rgba(244, 63, 94, 0.85)";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.beginPath();
+        ctx.arc(curX, curY, 7.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#f43f5e";
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "#f43f5e";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(curX, curY, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowBlur = 0;
+        ctx.fill();
+
+        if (p2Progress < 0.9) {
+          drawCanvasFloatingBadge(
+            ctx,
+            `COMPETING PROBE (${rej.competing_initiator})`,
+            curX,
+            curY - 18,
+            "rgba(255, 241, 242, 0.98)",
+            "#9f1239",
+            "#f43f5e"
+          );
+        } else {
+          drawCanvasFloatingBadge(
+            ctx,
+            `✕ Dropped Competing Probe from Zone ${rej.competing_initiator}`,
+            centerPos.x,
+            centerPos.y + 26 + idx * 20,
+            "rgba(255, 241, 242, 0.98)",
+            "#be123c",
+            "#f43f5e"
+          );
+        }
+      });
+    }
+
+    // -------------------------------------------------------------
+    // Phase 3: Outgoing Forwards & Boundary Alerts (2400 to 3800ms)
+    // -------------------------------------------------------------
+    if (elapsed >= 2400) {
+      const p3Progress = Math.min((elapsed - 2400) / 1200, 1.0);
+      const ease3 = easeInOutQuad(p3Progress);
+
+      forwards.forEach(f => {
+        const tgtNode = cy.getElementById(`node_${f.target_id}`);
+        if (!tgtNode || !tgtNode.isNode()) return;
+
+        const tPos = tgtNode.renderedPosition();
+        const curX = centerPos.x + (tPos.x - centerPos.x) * ease3;
+        const curY = centerPos.y + (tPos.y - centerPos.y) * ease3;
+
+        ctx.beginPath();
+        ctx.moveTo(centerPos.x, centerPos.y);
+        ctx.lineTo(curX, curY);
+        ctx.strokeStyle = "rgba(59, 130, 246, 0.7)";
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(curX, curY, 6.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#3b82f6";
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = "#3b82f6";
+        ctx.fill();
+
+        if (p3Progress < 0.85) {
+          drawCanvasFloatingBadge(
+            ctx,
+            `➜ Forwarding PROBE(TTL=${3 - f.hop})`,
+            curX,
+            curY - 16,
+            "rgba(239, 246, 255, 0.98)",
+            "#1e40af",
+            "#3b82f6"
+          );
+        }
+      });
+
+      bndAlerts.forEach(b => {
+        const parentId = acc?.sender_id || (isInit ? nid : null);
+        if (!parentId) return;
+        const parentNode = cy.getElementById(`node_${parentId}`);
+        const pPos = parentNode && parentNode.isNode() ? parentNode.renderedPosition() : centerPos;
+
+        const curX = centerPos.x + (pPos.x - centerPos.x) * ease3;
+        const curY = centerPos.y + (pPos.y - centerPos.y) * ease3;
+
+        ctx.beginPath();
+        ctx.arc(curX, curY, 6, 0, Math.PI * 2);
+        ctx.fillStyle = "#8b5cf6";
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = "#8b5cf6";
+        ctx.fill();
+
+        if (p3Progress < 0.9) {
+          drawCanvasFloatingBadge(
+            ctx,
+            `⚡ Reverse Alert to ${b.to_initiator}`,
+            curX,
+            curY - 18,
+            "rgba(250, 245, 255, 0.98)",
+            "#6b21a8",
+            "#8b5cf6"
+          );
+        }
+      });
+    }
+
+    if (progress < 1.0) {
+      activeAnimationId = requestAnimationFrame(runSlowMoFrame);
+    } else {
+      setTimeout(() => {
+        if (activeSelectedNodeId === nid) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }, 1600);
+      activeAnimationId = null;
+    }
+  }
+
+  activeAnimationId = requestAnimationFrame(runSlowMoFrame);
 }
 
 // 11. Render KaTeX Math Formula in Sidebar HUD
@@ -1111,6 +1629,15 @@ function bindActionButtons() {
     btnClearLogs.addEventListener("click", () => {
       const logs = document.getElementById("terminalLogs");
       if (logs) logs.innerHTML = '<div class="text-slate-400">[SYSTEM] Terminal logs cleared.</div>';
+    });
+  }
+
+  const btnReplayNodePackets = document.getElementById("btnReplayNodePackets");
+  if (btnReplayNodePackets) {
+    btnReplayNodePackets.addEventListener("click", () => {
+      if (activeSelectedNodeData && currentStep === 4) {
+        replaySlowMoNodeTrace(activeSelectedNodeData);
+      }
     });
   }
 }
