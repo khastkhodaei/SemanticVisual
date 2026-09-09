@@ -182,3 +182,57 @@ def test_frontend_step4_modal_and_nav():
     assert "cardElectionBanner" in js
     assert "Self-Elected Initiator" in js
     assert "Candidate Member" in js
+
+
+def test_issue3_winner_colors_and_backend_attributes():
+    """Verify Issue #3 winner colors: Node 4 (dark green), Node 2 (dark red), Node 8 (dark yellow)."""
+    data = get_10node_step_data(4)
+    nodes = {n["id"]: n for n in data["nodes"]}
+
+    assert nodes[4]["winner_color"] == "dark green"
+    assert nodes[4]["winner_bg"] == "#166534"
+    assert nodes[4]["winner_border"] == "#14532d"
+
+    assert nodes[2]["winner_color"] == "dark red"
+    assert nodes[2]["winner_bg"] == "#991b1b"
+    assert nodes[2]["winner_border"] == "#7f1d1d"
+
+    assert nodes[8]["winner_color"] == "dark yellow"
+    assert nodes[8]["winner_bg"] == "#a16207"
+    assert nodes[8]["winner_border"] == "#713f12"
+
+    for nid in EXPECTED_CANDIDATES:
+        assert nodes[nid]["winner_color"] is None
+
+
+def test_issue3_steps_md_visualization_rules():
+    """Verify STEPS.md documents the visualization sequence and winner highlight colors."""
+    with open("STEPS.md", "r", encoding="utf-8") as f:
+        steps_md = f.read()
+
+    assert "Dark Green" in steps_md
+    assert "Dark Red" in steps_md
+    assert "Dark Yellow" in steps_md
+    assert "Score Transmission" in steps_md
+    assert "Score Reception" in steps_md
+    assert "Winner Selection" in steps_md
+    assert "Initiator Identification" in steps_md
+
+
+def test_issue3_frontend_winner_classes_and_sequence():
+    """Verify frontend app.js implements sequence flow and winner classes."""
+    with open("frontend/static/app.js", "r", encoding="utf-8") as f:
+        js = f.read()
+
+    assert "winner-node-4" in js
+    assert "winner-node-2" in js
+    assert "winner-node-8" in js
+    assert "#166534" in js  # dark green
+    assert "#991b1b" in js  # dark red
+    assert "#a16207" in js  # dark yellow
+    assert "👑 Winner" in js
+    assert "[1/4 SCORE TRANSMISSION]" in js
+    assert "[2/4 SCORE RECEPTION]" in js
+    assert "[3/4 WINNER SELECTION]" in js
+    assert "[4/4 INITIATOR IDENTIFIED]" in js
+

@@ -386,8 +386,23 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
 
             if is_init:
                 n_copy["decision_banner"] = "🏆 Self-Elected Initiator (Holds minimum score in 1-hop ball)"
+                if nid == 4:
+                    n_copy["winner_color"] = "dark green"
+                    n_copy["winner_bg"] = "#166534"
+                    n_copy["winner_border"] = "#14532d"
+                elif nid == 2:
+                    n_copy["winner_color"] = "dark red"
+                    n_copy["winner_bg"] = "#991b1b"
+                    n_copy["winner_border"] = "#7f1d1d"
+                elif nid == 8:
+                    n_copy["winner_color"] = "dark yellow"
+                    n_copy["winner_bg"] = "#a16207"
+                    n_copy["winner_border"] = "#713f12"
             else:
                 n_copy["decision_banner"] = f"Candidate Member (Minimum held by C{winner_id} with σ={min_score:.4f})"
+                n_copy["winner_color"] = None
+                n_copy["winner_bg"] = None
+                n_copy["winner_border"] = None
 
             # Build neighbor scoreboard with winning minimum marked
             neighbor_scoreboard = []

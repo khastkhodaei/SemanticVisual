@@ -110,3 +110,21 @@ Evaluation across the 10 nodes:
 - Node 10 (0.4126): Neighbors [C5: 0.3185, C8: 0.0275, C9: 0.2947]. Min is C8. (Candidate)
 
 **Result:** Exactly Nodes 2, 4, and 8 become the Initiators.
+
+### Step 4 Visualization & Election Rules
+1. **Sequence Flow:**
+   - **Score Transmission:** Local VRF scores are animated traveling along the physical edges to direct 1-hop neighbors.
+   - **Score Reception:** Packets arrive at neighbor nodes, populating local 1-hop scoreboards.
+   - **Winner Selection:** Each node evaluates the closed-ball minimum $m_p = \min_{q \in \mathcal{N}_1(p) \cup \{p\}} (\sigma_q, id_q)$.
+   - **Initiator Identification:** Nodes whose self-score matches the neighborhood minimum are crowned as Initiators.
+2. **Initiator Winner Color Highlights:**
+   - **Node 4:** **Dark Green** (`#166534`, border `#14532d`)
+   - **Node 2:** **Dark Red** (`#991b1b`, border `#7f1d1d`)
+   - **Node 8:** **Dark Yellow** (`#a16207`, border `#713f12`)
+   - Non-initiator nodes remain in standard client styling.
+3. **Information Box & Scoreboard Display Rules:**
+   - All nodes show their received 1-hop neighbor VRF scores in their detail box.
+   - **Regular Candidate Nodes:** Do **not** highlight the winner in the neighbor-score table.
+   - **Initiator Nodes:** Clearly indicate winning status:
+     - Their winning score is highlighted in **gold** in the scoreboard table.
+     - The node is clearly labeled as the **Winner**.
