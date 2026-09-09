@@ -297,6 +297,37 @@
               </div>
             </div>
 
+            <!-- Step 2: Normalized 10D Semantic Vector (w_i) -->
+            <div id="cardVectorSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>📐</span>
+                  <span>Normalized Vector (w<sub>i</sub>):</span>
+                </span>
+                <span id="cardVectorNormBadge" class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-100 text-cyan-800 border border-cyan-300 font-mono font-bold">10D &Sigma;=1.0</span>
+              </div>
+
+              <!-- Vector Array Representation -->
+              <div id="cardVectorArray" class="text-[10px] font-mono text-slate-800 bg-slate-50 p-2 rounded-lg border border-slate-200 break-all leading-relaxed font-semibold mb-2 select-all">
+                [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]
+              </div>
+
+              <!-- Vector Component Breakdown -->
+              <div class="overflow-hidden border border-slate-200 rounded-lg shadow-xs bg-white">
+                <table class="w-full text-[10px] font-mono border-collapse">
+                  <thead>
+                    <tr class="bg-slate-100 text-slate-600 border-b border-slate-200 text-left">
+                      <th class="py-1 px-2 font-semibold">Dim</th>
+                      <th class="py-1 px-2 font-semibold">Class</th>
+                      <th class="py-1 px-2 font-semibold text-right">Weight (w<sub>i,c</sub>)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cardVectorBreakdownBody" class="divide-y divide-slate-100">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <!-- Step 3: Local VRF Score & 1-Hop Neighborhood Scoreboard -->
             <div id="cardVrfSection" class="hidden pt-2 border-t border-slate-200">
               <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">

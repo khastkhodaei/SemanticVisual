@@ -28,6 +28,20 @@ const CIFAR10_CLASSES = {
   0: { id: 1, name: "Airplane", english: "Airplane", icon: "✈️", code: "C1" },
 };
 
+// Ground-Truth 10D Semantic Vectors (L1-Normalized, Σ=1.0) from STEPS.md & storyboard_10nodes.py
+const STORYBOARD_10_VECTORS = {
+  1: [0.46, 0.17, 0.37, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
+  2: [0.19, 0.24, 0.57, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
+  3: [0.00, 0.00, 0.00, 0.34, 0.20, 0.46, 0.00, 0.00, 0.00, 0.00],
+  4: [0.00, 0.00, 0.00, 0.62, 0.21, 0.17, 0.00, 0.00, 0.00, 0.00],
+  5: [0.00, 0.00, 0.00, 0.53, 0.12, 0.35, 0.00, 0.00, 0.00, 0.00],
+  6: [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.23, 0.19, 0.34, 0.24],
+  7: [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.11, 0.41, 0.21, 0.27],
+  8: [0.00, 0.00, 0.00, 0.32, 0.38, 0.30, 0.00, 0.00, 0.00, 0.00],
+  9: [0.45, 0.32, 0.23, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
+  10: [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.12, 0.43, 0.33, 0.12]
+};
+
 function getCifarClass(keyOrId) {
   if (typeof keyOrId === "string" && keyOrId.startsWith("C")) {
     const num = parseInt(keyOrId.slice(1), 10);
@@ -1412,6 +1426,52 @@ function showNodeModal(nodeData) {
         distTableBody.appendChild(tr);
       });
     }
+  }
+
+  // Step 2: Normalized 10D Semantic Vector (w_i)
+  const vectorSection = document.getElementById("cardVectorSection");
+  const vectorArrayEl = document.getElementById("cardVectorArray");
+  const vectorBreakdownBody = document.getElementById("cardVectorBreakdownBody");
+
+  if (currentStep === 2) {
+    if (cardStatusBadge) {
+      cardStatusBadge.textContent = "LOCAL_TRAINED";
+      cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-cyan-50 text-cyan-800 border border-cyan-300";
+    }
+
+    if (vectorSection) vectorSection.classList.remove("hidden");
+
+    let vec = nodeData.vector_10d || nodeData.normalized_vector || nodeData.vector;
+    if (!vec || !Array.isArray(vec) || vec.length === 0) {
+      vec = STORYBOARD_10_VECTORS[idNum] || [];
+    }
+
+    if (vectorArrayEl) {
+      vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
+    }
+
+    if (vectorBreakdownBody) {
+      vectorBreakdownBody.innerHTML = "";
+      vec.forEach((val, idx) => {
+        const classId = idx + 1;
+        const cls = getCifarClass(classId);
+        const numVal = Number(val);
+        const tr = document.createElement("tr");
+        tr.className = numVal > 0
+          ? "bg-cyan-50/40 hover:bg-cyan-50 font-semibold transition-colors"
+          : "text-slate-400 hover:bg-slate-50 transition-colors";
+        tr.innerHTML = `
+          <td class="py-1 px-2 font-mono ${numVal > 0 ? "text-cyan-700 font-bold" : "text-slate-400"}">C${classId}</td>
+          <td class="py-1 px-2 font-sans ${numVal > 0 ? "text-slate-800" : "text-slate-400"}">${cls.name}</td>
+          <td class="py-1 px-2 text-right font-mono">
+            <span class="inline-block px-1.5 py-0.2 rounded ${numVal > 0 ? "bg-cyan-100 text-cyan-900 border border-cyan-300 font-bold" : "bg-slate-100 text-slate-400"}">${numVal.toFixed(2)}</span>
+          </td>
+        `;
+        vectorBreakdownBody.appendChild(tr);
+      });
+    }
+  } else {
+    if (vectorSection) vectorSection.classList.add("hidden");
   }
 
   // Step 3: Local VRF Score & 1-Hop Neighborhood Scoreboard

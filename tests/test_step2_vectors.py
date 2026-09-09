@@ -188,3 +188,34 @@ def test_class_filter_logic():
     frog_nodes = filter_class(6)
     assert sorted(frog_nodes) == [6, 7, 10]
 
+
+def test_step2_frontend_modal_elements_and_logic():
+    """Verify frontend HTML and JS contain required Step 2 node inspector vector elements."""
+    with open("frontend/templates/index.html", "r", encoding="utf-8") as f:
+        html_content = f.read()
+
+    assert 'id="cardVectorSection"' in html_content
+    assert 'id="cardVectorArray"' in html_content
+    assert 'id="cardVectorBreakdownBody"' in html_content
+
+    with open("frontend/static/app.js", "r", encoding="utf-8") as f:
+        js_content = f.read()
+
+    assert "STORYBOARD_10_VECTORS" in js_content
+    assert 'cardVectorSection' in js_content
+    assert 'cardVectorArray' in js_content
+    assert 'cardVectorBreakdownBody' in js_content
+    assert 'LOCAL_TRAINED' in js_content
+
+
+def test_steps_md_vector_consistency():
+    """Verify vectors in STEPS.md match backend EXPECTED_EXACT_VECTORS for all 10 nodes."""
+    with open("STEPS.md", "r", encoding="utf-8") as f:
+        steps_md = f.read()
+
+    for nid, vec in EXPECTED_EXACT_VECTORS.items():
+        vec_str = ", ".join(f"{x:.2f}" for x in vec)
+        expected_line = f"Node {nid}"
+        assert expected_line in steps_md, f"Node {nid} not found in STEPS.md"
+        assert f"[{vec_str}]" in steps_md, f"Vector for Node {nid} [{vec_str}] not found in STEPS.md"
+
