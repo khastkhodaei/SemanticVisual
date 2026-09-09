@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SemanticDFL Protocol Simulator | Step 3: VRF Neighborhood Exchange</title>
+  <title>SemanticDFL Protocol Simulator | Step 3: VRF Initiator Election (R=3)</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -72,7 +72,7 @@
       <span class="text-slate-300">→</span>
       <div id="stepNav3" class="step-item">
         <span class="step-bubble">3</span>
-        <span>VRF Exchange & Leaders</span>
+        <span>VRF Initiator Election (R=3)</span>
       </div>
       <span class="text-slate-300">→</span>
       <div id="stepNav4" class="step-item text-slate-400">
@@ -156,7 +156,7 @@
             <div id="statDegree" class="text-xs font-bold text-slate-700">3.8 (3-6)</div>
           </div>
           <div class="bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-center min-w-[110px]">
-            <div class="text-[9px] text-slate-500 font-sans">LEADERS / INITIATORS</div>
+            <div class="text-[9px] text-slate-500 font-sans">INITIATORS (R=3)</div>
             <div id="statLeaders" class="text-xs font-bold text-slate-400">0 Initiators</div>
           </div>
         </div>
@@ -219,13 +219,14 @@
     <!-- Center Canvas & Visualization Area (9 cols) -->
     <section class="col-span-12 lg:col-span-9 flex flex-col min-h-0 space-y-2 overflow-hidden">
       
-      <!-- Cytoscape Graph Canvas with Floating Tooltip -->
+      <!-- Cytoscape Graph Canvas with Click-to-Toggle Modal -->
       <div class="paper-card relative flex-1 min-h-0 overflow-hidden p-1.5">
         
         <!-- Canvas Indicator Top-Left -->
         <div class="absolute top-3 left-3 z-10 flex items-center gap-2 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-mono shadow-sm">
           <span class="text-slate-400">TOPOLOGY:</span>
           <span id="canvasViewLabel" class="font-bold text-slate-800">Physical Ad-Hoc Mesh (50 Dispersed Nodes)</span>
+          <span class="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 font-sans ml-1">💡 Click node to pin details</span>
         </div>
 
         <!-- Node Legend Top-Right -->
@@ -243,11 +244,16 @@
         <!-- Cytoscape Container -->
         <div id="cy" class="w-full h-full"></div>
 
-        <!-- Paper Tooltip Card (Hover on Node) -->
-        <div id="nodeInfoCard" class="hidden absolute top-12 right-3 node-tooltip-paper p-3 rounded-xl text-xs font-mono w-80 pointer-events-none z-20 border border-slate-300 overflow-y-auto">
+        <!-- Pinned Node Details Modal (Click-to-Toggle) -->
+        <div id="nodeInfoCard" class="hidden absolute top-12 right-3 node-tooltip-paper p-3 rounded-xl text-xs font-mono w-84 z-20 border border-slate-300 overflow-y-auto">
           <div class="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-1.5">
-            <div class="text-blue-700 font-bold text-sm tracking-tight" id="cardNodeId">NODE #C1</div>
-            <span id="cardStatusBadge" class="text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">NOT_ASSIGNED</span>
+            <div class="text-blue-700 font-bold text-sm tracking-tight flex items-center gap-1.5" id="cardNodeId">
+              NODE #C1
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="cardStatusBadge" class="text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">NOT_ASSIGNED</span>
+              <button id="btnCloseModal" title="Close modal" class="text-slate-400 hover:text-slate-700 p-0.5 rounded hover:bg-slate-100 transition-colors text-xs font-bold leading-none">✕</button>
+            </div>
           </div>
 
           <div class="space-y-1 text-[11px] text-slate-700 font-sans">
@@ -268,44 +274,45 @@
               <span id="cardCoords" class="text-slate-800 font-mono">(145, 230)</span>
             </div>
 
-            <!-- Step 2: Local VRF Computation Details -->
+            <!-- Step 2: Local VRF Score Section -->
             <div id="cardVrfLocalSection" class="hidden mt-1.5 pt-1.5 border-t border-slate-200 space-y-1">
               <div class="flex justify-between items-center">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-900 font-mono">VRF Computation</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-blue-900 font-mono">VRF Local Evaluation</span>
                 <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">Step 2: Local</span>
               </div>
               <div class="bg-slate-50 p-1.5 rounded border border-slate-200 font-mono text-[10px] space-y-0.5">
-                <div class="text-slate-500">Formula: <span class="text-slate-800 font-bold">σ = VRF(sk_p, seed)</span></div>
+                <div class="text-slate-500">Formula: <span class="text-slate-800 font-bold">σ_p = VRF(sk_p, seed)</span></div>
                 <div class="flex justify-between">
-                  <span class="text-slate-600 font-medium">Computed Score (σ_p):</span>
+                  <span class="text-slate-600 font-medium">Self Score (σ_p):</span>
                   <span id="cardLocalScoreVal" class="text-blue-700 font-bold">0.0412</span>
                 </div>
               </div>
             </div>
 
-            <!-- Step 3: Neighborhood VRF Exchange & Initiator Selection Details -->
+            <!-- Step 3: Neighborhood Scoreboard (Radius R = 3 hops) -->
             <div id="cardVrfExchangeSection" class="hidden mt-1.5 pt-1.5 border-t border-slate-200 space-y-1.5">
               <div class="flex justify-between items-center">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-amber-900 font-mono flex items-center gap-1">
                   <span>👑</span>
-                  <span>R-Hop Exchange (R=2)</span>
+                  <span>Scoreboard (Radius R = 3 hops)</span>
                 </span>
                 <span id="cardWinnerBadge" class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">Evaluating</span>
               </div>
 
-              <!-- Own Score Header -->
+              <!-- Self Score Header -->
               <div class="flex justify-between items-center bg-slate-100 px-2 py-1 rounded text-[10px] font-mono border border-slate-200">
-                <span class="text-slate-600">Your Score (σ_self):</span>
-                <span id="cardSelfScoreVal" class="font-bold text-slate-800">0.0412</span>
+                <span class="text-slate-600">Self VRF Score:</span>
+                <span id="cardSelfScoreVal" class="font-bold text-slate-900">0.0412</span>
               </div>
 
-              <!-- Neighborhood Peers and Scores Table -->
-              <div>
-                <div class="text-[9px] text-slate-500 font-mono uppercase tracking-wider mb-1">
-                  Received Scores from R=2 Neighbors:
+              <!-- Neighborhood Peers categorized by Hop Distance -->
+              <div class="space-y-1 pt-0.5">
+                <div class="text-[9px] text-slate-500 font-mono uppercase tracking-wider flex justify-between">
+                  <span>Discovered Peers by Hop Distance:</span>
+                  <span id="cardCoverageCount" class="text-blue-600 font-bold">21 peers</span>
                 </div>
-                <div id="cardNbrScoresList" class="space-y-1 max-h-28 overflow-y-auto pr-1 text-[10px] font-mono">
-                  <!-- Dynamically populated rows in Step 3 -->
+                <div id="cardNbrScoresList" class="space-y-1 max-h-40 overflow-y-auto pr-1 text-[10px] font-mono">
+                  <!-- Dynamically populated rows categorized by Hop 1, Hop 2, Hop 3 -->
                 </div>
               </div>
             </div>
@@ -318,7 +325,7 @@
               <span class="text-[9px] text-blue-600">Peak: ~0.85</span>
             </div>
             <div class="bg-slate-100 rounded p-1 border border-slate-200 flex items-center justify-center">
-              <canvas id="tooltipVectorCanvas" width="240" height="34" class="w-full h-[34px]"></canvas>
+              <canvas id="tooltipVectorCanvas" width="240" height="32" class="w-full h-[32px]"></canvas>
             </div>
           </div>
         </div>

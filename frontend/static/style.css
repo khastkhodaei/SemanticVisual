@@ -212,14 +212,15 @@ body {
   font-weight: 600;
 }
 
-/* Floating Tooltip Card */
+/* Floating Pinned Node Modal */
 .node-tooltip-paper {
   background: rgba(255, 255, 255, 0.98);
   border: 1px solid #cbd5e1;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  max-height: 480px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  max-height: 520px;
+  pointer-events: auto; /* Clickable modal */
 }
 
 /* Buttons */
@@ -252,11 +253,30 @@ body {
   cursor: not-allowed;
 }
 
-/* Step 3 Winner Highlight in Tooltip */
+/* Step 3 Winner Highlight in Scoreboard */
 .winner-score-row {
   background: #fef3c7;
-  border: 1px solid #f59e0b;
+  border: 1.5px solid #f59e0b;
   color: #92400e;
   font-weight: 700;
   border-radius: 4px;
+}
+
+/* Hop Distance Pill Badges */
+.hop-badge-1 {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.hop-badge-2 {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.hop-badge-3 {
+  background: #faf5ff;
+  color: #7e22ce;
+  border: 1px solid #e9d5ff;
 }

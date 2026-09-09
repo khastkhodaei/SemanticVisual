@@ -321,14 +321,15 @@ def test_storyboard_step2_local_vrf_compute():
 
 
 def test_storyboard_step3_vrf_exchange():
-    """Verify Step 3 Neighborhood VRF Exchange & Initiator Selection.
+    """Verify Step 3: Algorithm 2 (SELECTINITIATORS) with R = 3 hops.
 
     Requirements:
     1. Spatial dispersion: all nodes maintain min pairwise distance >= 65px (no clumping).
-    2. R-hop neighborhood exchange: each node gathers its R=2 neighborhood scores.
-    3. Exactly the designated 10 leaders [2, 7, 13, 17, 22, 28, 32, 37, 42, 47] are elected.
-    4. R=2 spatial dispersion: pairwise hop distance between all 10 leaders is strictly > 2.
-    5. FastAPI /api/v1/step/vrf-exchange endpoint succeeds with neighborhood_scores.
+    2. BFS explicitly explores up to distance 3 (hop 1, hop 2, and hop 3).
+    3. Election condition: node p is elected INITIATOR iff its (sigma_p, p) is the strict minimum
+       within its 3-hop neighborhood N_3(p).
+    4. R=3 spatial dispersion: all elected initiators have pairwise hop distance strictly > 3.
+    5. FastAPI /api/v1/step/vrf-exchange endpoint succeeds with default r_hops=3.
     """
     engine = SemanticDFLEngine(seed=42)
     step1 = engine.generate_storyboard_step1()
@@ -346,38 +347,41 @@ def test_storyboard_step3_vrf_exchange():
     # Compute local VRF first (Step 2)
     engine.compute_local_vrf(nodes=nodes)
 
-    # Execute Step 3: VRF Exchange
-    exchange_res = engine.run_vrf_exchange(nodes=nodes, adjacency_list=adj, r_hops=2)
+    # Execute Step 3: VRF Exchange with R=3
+    exchange_res = engine.run_vrf_exchange(nodes=nodes, adjacency_list=adj, r_hops=3)
     initiators = exchange_res["initiators"]
 
-    expected_leaders = [2, 7, 13, 17, 22, 28, 32, 37, 42, 47]
-    assert sorted(initiators) == expected_leaders, (
-        f"Expected leaders {expected_leaders}, got {sorted(initiators)}"
-    )
+    assert len(initiators) >= 1, "At least one initiator must be elected"
 
-    # Assertion 2: R=2 spatial dispersion between all pairs of leaders
-    for i in range(len(initiators)):
-        la = initiators[i]
-        r2_nbrs = set(engine.get_r_hop_neighborhood(la, adj, r_hops=2))
-        for j in range(i + 1, len(initiators)):
-            lb = initiators[j]
-            assert lb not in r2_nbrs, f"Dispersion violation: Leader C{la} and Leader C{lb} within 2 hops!"
-
-    # Assertion 3: Neighborhood score records exist for all nodes
+    # Assertion 2: BFS explicitly explores up to distance 3
     for n in nodes:
         assert "neighborhood_scores" in n
-        assert len(n["neighborhood_scores"]) >= 3
-        # Exactly one min score item
+        hops_present = set(item["hop"] for item in n["neighborhood_scores"])
+        assert 1 in hops_present, f"Node {n['id']} missing hop 1 neighbors"
+        assert 2 in hops_present, f"Node {n['id']} missing hop 2 neighbors"
+        assert 3 in hops_present, f"Node {n['id']} missing hop 3 neighbors"
+
+        # Verification of min_score and min_peer_id in 3-hop ball
         min_items = [item for item in n["neighborhood_scores"] if item["is_min"]]
         assert len(min_items) == 1
+        expected_min_tuple = min((item["score"], item["id"]) for item in n["neighborhood_scores"])
+        assert (min_items[0]["score"], min_items[0]["id"]) == expected_min_tuple
 
-        if n["id"] in expected_leaders:
+        if n["id"] in initiators:
             assert n["role"] == "INITIATOR"
             assert n["status"] == "ASSIGNED"
             assert min_items[0]["id"] == n["id"]
         else:
             assert n["role"] == "CLIENT"
             assert n["status"] == "NOT_ASSIGNED"
+
+    # Assertion 3: R=3 spatial dispersion between all pairs of elected initiators (pairwise hop distance > 3)
+    for i in range(len(initiators)):
+        la = initiators[i]
+        r3_nbrs = set(engine.get_r_hop_neighborhood(la, adj, r_hops=3))
+        for j in range(i + 1, len(initiators)):
+            lb = initiators[j]
+            assert lb not in r3_nbrs, f"R=3 dispersion violation: Initiator C{la} and Initiator C{lb} within 3 hops!"
 
     # Assertion 4: Test FastAPI endpoint /api/v1/step/vrf-exchange
     client = TestClient(app)
@@ -389,12 +393,13 @@ def test_storyboard_step3_vrf_exchange():
     step2_res = client.post("/api/v1/step/vrf-compute", json={"session_id": session_id})
     assert step2_res.status_code == 200
 
-    # Run Step 3
-    step3_res = client.post("/api/v1/step/vrf-exchange", json={"session_id": session_id, "r_hops": 2})
+    # Run Step 3 (default r_hops=3)
+    step3_res = client.post("/api/v1/step/vrf-exchange", json={"session_id": session_id})
     assert step3_res.status_code == 200
     step3_data = step3_res.json()
-    assert sorted(step3_data["initiators"]) == expected_leaders
+    assert step3_data["initiators"] == initiators
     assert all("neighborhood_scores" in n for n in step3_data["nodes"])
+    assert any("[VRF WINNER]" in log["message"] for log in step3_data["logs"])
 
 
 

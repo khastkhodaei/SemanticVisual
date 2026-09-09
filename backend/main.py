@@ -188,7 +188,7 @@ class VRFStepRequest(BaseModel):
 
 class VRFExchangeStepRequest(BaseModel):
     session_id: str
-    r_hops: Optional[int] = Field(default=None, ge=1, le=10)
+    r_hops: Optional[int] = Field(default=3, ge=1, le=10)
 
 
 @app.post("/api/v1/step/vrf-exchange", status_code=status.HTTP_200_OK, tags=["Simulation"])
@@ -199,7 +199,7 @@ def step_vrf_exchange(req: VRFExchangeStepRequest):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {req.session_id} not found")
 
     engine = SemanticDFLEngine()
-    r_hops = req.r_hops if req.r_hops is not None else session["params"].get("r_hops", 2)
+    r_hops = req.r_hops if req.r_hops is not None else session["params"].get("r_hops", 3)
 
     result = engine.run_vrf_exchange(
         nodes=session["nodes"],

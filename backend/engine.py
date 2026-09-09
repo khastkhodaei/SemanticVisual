@@ -494,6 +494,27 @@ class SemanticDFLEngine:
 
         return list(visited.keys())
 
+    def get_r_hop_neighborhood_with_distances(
+        self,
+        node_id: int,
+        adjacency_list: Dict[int, List[int]],
+        r_hops: int,
+    ) -> Dict[int, int]:
+        """Find all nodes within r_hops physical distance along with their exact hop distances {peer_id: hop_distance}."""
+        visited = {node_id: 0}
+        queue = [node_id]
+
+        while queue:
+            curr = queue.pop(0)
+            curr_dist = visited[curr]
+            if curr_dist < r_hops:
+                for neighbor in adjacency_list.get(curr, []):
+                    if neighbor not in visited:
+                        visited[neighbor] = curr_dist + 1
+                        queue.append(neighbor)
+
+        return visited
+
     def compute_local_vrf(
         self,
         nodes: List[Dict[str, Any]],
@@ -544,15 +565,18 @@ class SemanticDFLEngine:
         self,
         nodes: List[Dict[str, Any]],
         adjacency_list: Dict[int, List[int]],
-        r_hops: int = 2,
+        r_hops: int = 3,
     ) -> Dict[str, Any]:
-        """Execute Step 3: R-Hop Neighborhood VRF Exchange & Initiator Selection.
+        """Execute Step 3: Algorithm 2 (SELECTINITIATORS) with R = 3 hops.
 
-        Peers exchange their VRF scores within R-hop physical neighborhoods.
-        Each peer p compiles neighborhood_scores = [{"id": q, "score": sigma_q, "is_min": bool}].
-        Finds m_p = min_{q in N_R(p)} (vrf_score_q, id_q).
+        Peers exchange their VRF scores across their complete 3-hop physical neighborhood.
+        Hop 1: Direct neighbors
+        Hop 2: Neighbors of neighbors
+        Hop 3: Peers 3 physical hops away
+
+        Computes m_p = min_{q in N_R(p)} (vrf_score_q, id_q).
         If (vrf_score_p, id_p) == m_p:
-            node p is elected as INITIATOR (status="ASSIGNED", zone_id=p).
+            node p elects itself as INITIATOR (status="ASSIGNED", zone_id=p).
         """
         STORYBOARD_SCORES = {
             2: 0.0412, 7: 0.0524, 13: 0.0381, 17: 0.0475, 22: 0.0353,
@@ -577,34 +601,36 @@ class SemanticDFLEngine:
         for node in nodes:
             nid = node["id"]
             n_score = node["vrf_score"]
-            neighborhood = self.get_r_hop_neighborhood(nid, adjacency_list, r_hops)
+            neighborhood_dict = self.get_r_hop_neighborhood_with_distances(nid, adjacency_list, r_hops)
 
             # Find minimum tuple (score, id)
             min_tuple = (n_score, nid)
-            for peer_id in neighborhood:
+            for peer_id in neighborhood_dict:
                 peer_tuple = (node_map[peer_id]["vrf_score"], peer_id)
                 if peer_tuple < min_tuple:
                     min_tuple = peer_tuple
 
             min_score, min_peer_id = min_tuple
 
-            # Compile detailed neighborhood scores list for frontend tooltip
+            # Compile detailed neighborhood scores categorized by hop distance
             nbr_scores = []
-            for peer_id in sorted(neighborhood):
+            for peer_id, d in neighborhood_dict.items():
                 s = node_map[peer_id]["vrf_score"]
                 nbr_scores.append({
                     "id": peer_id,
                     "score": s,
+                    "hop": d,
                     "is_self": (peer_id == nid),
                     "is_min": (peer_id == min_peer_id),
                 })
 
-            # Sort by score ascending so lowest score is first
-            nbr_scores.sort(key=lambda x: (x["score"], x["id"]))
+            # Sort by hop distance first, then by score ascending
+            nbr_scores.sort(key=lambda x: (x["hop"], x["score"], x["id"]))
 
             node["neighborhood_scores"] = nbr_scores
             node["min_score"] = min_score
             node["min_peer_id"] = min_peer_id
+            node["hops_covered"] = len(neighborhood_dict)
 
             is_winner = (nid == min_peer_id)
             if is_winner:
@@ -615,7 +641,7 @@ class SemanticDFLEngine:
                 initiators.append(nid)
                 logs.append({
                     "level": "SUCCESS",
-                    "message": f"[ELECTED INITIATOR] Peer C{nid} won R={r_hops} neighborhood with minimum score σ = {n_score:.4f}",
+                    "message": f"[VRF WINNER] Node C{nid} has the strict minimum VRF score (σ={n_score:.4f}) within its {r_hops}-hop neighborhood (covering {len(neighborhood_dict)} peers up to {r_hops} hops). Promoted to Initiator!",
                 })
             else:
                 node["role"] = "CLIENT"
@@ -624,7 +650,7 @@ class SemanticDFLEngine:
                 node["zone_id"] = None
                 logs.append({
                     "level": "INFO",
-                    "message": f"[NEIGHBORHOOD EXCHANGE] Peer C{nid} received min score σ = {min_score:.4f} from Peer C{min_peer_id}",
+                    "message": f"[VRF EXCHANGE] Node C{nid} inspected {len(neighborhood_dict)} peers up to {r_hops} hops. Minimum score is σ={min_score:.4f} held by Node C{min_peer_id}.",
                 })
 
         initiators.sort()
@@ -643,7 +669,7 @@ class SemanticDFLEngine:
         self,
         nodes: List[Dict[str, Any]],
         adjacency_list: Dict[int, List[int]],
-        r_hops: int = 2,
+        r_hops: int = 3,
     ) -> Dict[str, Any]:
         """Legacy alias delegating to run_vrf_exchange."""
         return self.run_vrf_exchange(nodes, adjacency_list, r_hops)

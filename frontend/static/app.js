@@ -1,6 +1,6 @@
 // ==========================================================================
 // SemanticDFL Storyboard Simulator - Step 1, Step 2 & Step 3 Controller
-// ACM 2026 Reference Implementation
+// ACM 2026 Reference Implementation - Algorithm 2 (SELECTINITIATORS, R=3)
 // ==========================================================================
 
 let currentStep = 1;
@@ -10,6 +10,7 @@ let step1Topology = null;
 let step2Data = null;
 let step3Data = null;
 let cy = null;
+let activeSelectedNodeId = null;
 
 const DATASET_CLASSES = {
   0: { name: "Cat", icon: "🐱", slice: [0, 4] },
@@ -61,7 +62,7 @@ function renderClassLegend() {
   }
 }
 
-// 1. Initialize Cytoscape Canvas strictly with preset layout
+// 1. Initialize Cytoscape Canvas strictly with preset layout & Click-to-Toggle
 function initCytoscape() {
   cy = cytoscape({
     container: document.getElementById("cy"),
@@ -101,6 +102,26 @@ function initCytoscape() {
           "color": "#92400e",
           "font-size": "10.5px",
           "z-index": 90
+        }
+      },
+      {
+        selector: "node.selected-node",
+        style: {
+          "border-color": "#0284c7",
+          "border-width": 4,
+          "width": 34,
+          "height": 34,
+          "z-index": 100
+        }
+      },
+      {
+        selector: "node.initiator-node.selected-node",
+        style: {
+          "border-color": "#92400e",
+          "border-width": 4.5,
+          "width": 36,
+          "height": 36,
+          "z-index": 100
         }
       },
       {
@@ -155,19 +176,39 @@ function initCytoscape() {
     maxZoom: 2.5
   });
 
-  // Node Hover Tooltip
-  cy.on("mouseover", "node", (evt) => {
-    const n = evt.target.data();
-    showNodeTooltip(n);
+  // Click-to-Toggle Node Modal Interaction
+  cy.on("tap", "node", (evt) => {
+    const node = evt.target;
+    const nid = node.data("peer_id");
+
+    if (activeSelectedNodeId === nid) {
+      // Toggle off if clicking the already open node
+      hideNodeModal();
+    } else {
+      // Select and pin details modal
+      showNodeModal(node.data());
+      cy.nodes().removeClass("selected-node");
+      node.addClass("selected-node");
+      activeSelectedNodeId = nid;
+    }
   });
 
-  cy.on("mouseout", "node", () => {
-    hideNodeTooltip();
+  // Tap on background to dismiss modal
+  cy.on("tap", (evt) => {
+    if (evt.target === cy) {
+      hideNodeModal();
+    }
   });
+
+  // Modal close button event
+  const btnCloseModal = document.getElementById("btnCloseModal");
+  if (btnCloseModal) {
+    btnCloseModal.addEventListener("click", hideNodeModal);
+  }
 }
 
-// Show Paper Tooltip Card
-function showNodeTooltip(nodeData) {
+// Show Pinned Node Modal
+function showNodeModal(nodeData) {
   const card = document.getElementById("nodeInfoCard");
   if (!card) return;
 
@@ -216,10 +257,11 @@ function showNodeTooltip(nodeData) {
     vrfLocalSec.classList.add("hidden");
   }
 
-  // Step 3 Neighborhood Exchange Section
+  // Step 3 Neighborhood Scoreboard Section (Radius R = 3 hops)
   const exchangeSec = document.getElementById("cardVrfExchangeSection");
   const selfScoreVal = document.getElementById("cardSelfScoreVal");
   const winnerBadge = document.getElementById("cardWinnerBadge");
+  const coverageCountEl = document.getElementById("cardCoverageCount");
   const nbrListContainer = document.getElementById("cardNbrScoresList");
 
   if (currentStep === 3 && nodeData.neighborhood_scores && nodeData.neighborhood_scores.length) {
@@ -227,36 +269,59 @@ function showNodeTooltip(nodeData) {
     selfScoreVal.textContent = Number(nodeData.vrf_score).toFixed(4);
 
     if (isInitiator) {
-      winnerBadge.textContent = "★ Local Initiator";
-      winnerBadge.className = "text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300";
+      winnerBadge.textContent = "🏆 Self-Elected Initiator";
+      winnerBadge.className = "text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
     } else {
       winnerBadge.textContent = `Root: C${nodeData.min_peer_id}`;
       winnerBadge.className = "text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200";
     }
 
-    // Render neighbor list rows
+    if (coverageCountEl) {
+      coverageCountEl.textContent = `${nodeData.neighborhood_scores.length} peers covered`;
+    }
+
+    // Group scores by hop distance: Hop 1, Hop 2, Hop 3
     nbrListContainer.innerHTML = "";
-    nodeData.neighborhood_scores.forEach(item => {
-      const row = document.createElement("div");
-      const isWinner = item.is_min;
-      const isSelf = item.is_self;
+    
+    // Group items by hop (excluding hop 0 self from peers list, or display self prominently)
+    const hops = [1, 2, 3];
+    hops.forEach(h => {
+      const hopPeers = nodeData.neighborhood_scores.filter(item => item.hop === h);
+      if (hopPeers.length === 0) return;
 
-      row.className = isWinner
-        ? "winner-score-row px-2 py-1 flex items-center justify-between"
-        : "px-2 py-0.5 bg-slate-50 border border-slate-200 rounded flex items-center justify-between text-slate-700";
-
-      row.innerHTML = `
+      const groupHeader = document.createElement("div");
+      groupHeader.className = "text-[9px] font-bold font-mono tracking-wider pt-1.5 pb-0.5 flex items-center justify-between text-slate-500 border-b border-slate-100";
+      groupHeader.innerHTML = `
         <span class="flex items-center gap-1">
-          ${isWinner ? "<span>👑</span>" : ""}
-          <span class="${isSelf ? "font-bold underline" : ""}">${isSelf ? "You (C" + item.id + ")" : "Peer C" + item.id}</span>
+          <span class="px-1 py-0.2 rounded text-[8px] hop-badge-${h}">Hop ${h}</span>
+          <span>${h === 1 ? "Direct Neighbors" : (h === 2 ? "2 Hops Away" : "3 Hops Away")}</span>
         </span>
-        <span class="flex items-center gap-1.5">
-          <span class="font-mono ${isWinner ? "text-amber-900 font-extrabold" : "text-slate-800"}">σ=${Number(item.score).toFixed(4)}</span>
-          ${isWinner ? '<span class="text-[8px] px-1 py-0.2 rounded bg-amber-200 text-amber-900 font-bold">★ Winner</span>' : ""}
-        </span>
+        <span class="text-[8px] text-slate-400">(${hopPeers.length} peers)</span>
       `;
-      nbrListContainer.appendChild(row);
+      nbrListContainer.appendChild(groupHeader);
+
+      hopPeers.forEach(item => {
+        const row = document.createElement("div");
+        const isWinner = item.is_min;
+
+        row.className = isWinner
+          ? "winner-score-row px-2 py-1 flex items-center justify-between my-0.5"
+          : "px-2 py-0.5 bg-slate-50 border border-slate-200/80 rounded flex items-center justify-between text-slate-700 my-0.5";
+
+        row.innerHTML = `
+          <span class="flex items-center gap-1 font-mono">
+            ${isWinner ? "<span>👑</span>" : ""}
+            <span class="${isWinner ? "font-bold text-amber-950" : "font-medium"}">Peer C${item.id}</span>
+          </span>
+          <span class="flex items-center gap-1.5 font-mono">
+            <span class="${isWinner ? "text-amber-900 font-extrabold" : "text-slate-800"}">σ=${Number(item.score).toFixed(4)}</span>
+            ${isWinner ? '<span class="text-[8px] px-1 py-0.2 rounded bg-amber-200 text-amber-950 font-bold border border-amber-400">★ Winner</span>' : ""}
+          </span>
+        `;
+        nbrListContainer.appendChild(row);
+      });
     });
+
   } else {
     exchangeSec.classList.add("hidden");
   }
@@ -267,9 +332,11 @@ function showNodeTooltip(nodeData) {
   card.classList.remove("hidden");
 }
 
-function hideNodeTooltip() {
+function hideNodeModal() {
   const card = document.getElementById("nodeInfoCard");
   if (card) card.classList.add("hidden");
+  if (cy) cy.nodes().removeClass("selected-node");
+  activeSelectedNodeId = null;
 }
 
 // Render Mini 50-Dimension Vector Bar Chart Preview
@@ -381,6 +448,7 @@ function bindActionButtons() {
 // 3. API Call: Initialize 50-Node Storyboard Network (Step 1)
 async function initializeNetwork() {
   setNavButtonsDisabled(true);
+  hideNodeModal();
   logToTerminal("INIT", "Deploying 50-node uniform dispersed mesh (Poisson rejection sampling >= 65px)...");
 
   try {
@@ -388,7 +456,7 @@ async function initializeNetwork() {
       benchmark: "Non-IID 10-Class Storyboard",
       num_nodes: 50,
       d_limit: 0.35,
-      r_hops: 2,
+      r_hops: 3,
       max_zone_size: 10,
       theta: 0.70,
       q: 0.20
@@ -428,6 +496,7 @@ async function initializeNetwork() {
 // Apply Step 1 UI State
 function applyStep1UI(data) {
   currentStep = 1;
+  hideNodeModal();
 
   const sessionVal = document.getElementById("sessionVal");
   if (sessionVal) {
@@ -462,7 +531,7 @@ function applyStep1UI(data) {
 
   renderSidebarFormula(
     "Network Topology Model",
-    "G = (V, E), \\quad \\mathbf{w}_i \\in \\mathbb{R}^{50}",
+    "G = (V, E), \\quad \\mathbf{w}_i \in \\mathbb{R}^{50}",
     "Overlay-free physical ad-hoc network. Each peer holds local dataset samples and a 50-dimensional parameter vector.",
     "Topology",
     false
@@ -491,6 +560,7 @@ async function executeStep2VRF() {
   }
 
   setNavButtonsDisabled(true);
+  hideNodeModal();
   logToTerminal("VRF", "Executing Step 2: Local Verifiable Random Function (VRF) score evaluation...");
 
   try {
@@ -515,7 +585,7 @@ async function executeStep2VRF() {
     }
 
     logToTerminal("SUCCESS", "Step 2 Complete: All 50 peers evaluated local VRF scores σ_p ∈ [0, 1).");
-    logToTerminal("INFO", "Local computation only: No messages sent and no leaders elected yet. Hover over any node to inspect σ_p.");
+    logToTerminal("INFO", "Local computation only: Click on any node to view its local score σ_p.");
 
   } catch (err) {
     logToTerminal("ERROR", `Step 2 execution failure: ${err.message}`);
@@ -528,6 +598,7 @@ async function executeStep2VRF() {
 // Apply Step 2 UI State (Pure Local Computation)
 function applyStep2UI(data) {
   currentStep = 2;
+  hideNodeModal();
 
   updateStepper(2);
 
@@ -553,7 +624,7 @@ function applyStep2UI(data) {
   document.getElementById("stepTag").textContent = "STEP 2 / LOCAL COMPUTATION";
   document.getElementById("stepTag").className = "px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide rounded bg-blue-100 text-blue-800";
   document.getElementById("stepTitle").textContent = "Local Verifiable Random Function (VRF) Score Calculation";
-  document.getElementById("stepDescription").textContent = "Each peer locally computes its verifiable score σ_p using its secret key and epoch seed. Scores remain local to each peer.";
+  document.getElementById("stepDescription").textContent = "Each peer locally computes its verifiable score σ_p using its secret key and epoch seed. Click on any node to view its local score.";
 
   renderSidebarFormula(
     "VRF Local Score (Eq. 1)",
@@ -571,24 +642,24 @@ function applyStep2UI(data) {
   const leaderLegend = document.getElementById("leaderLegendItem");
   if (leaderLegend) leaderLegend.classList.add("hidden");
 
-  // Keep all nodes in royal blue, clean labels C{id} {icon}
   renderMesh(data.nodes, step1Topology ? step1Topology.edges : [], false);
 }
 
-// 5. API Call: Execute Step 3 (R-Hop Neighborhood VRF Exchange & Initiator Selection)
+// 5. API Call: Execute Step 3 (Algorithm 2: R=3 Hop Neighborhood Exchange & Initiator Selection)
 async function executeStep3Exchange() {
   if (!currentSession) {
     await initializeNetwork();
   }
 
   setNavButtonsDisabled(true);
-  logToTerminal("VRF", "Executing Step 3: R=2 Neighborhood VRF Score Exchange & Initiator Selection...");
+  hideNodeModal();
+  logToTerminal("VRF", "Executing Step 3: Algorithm 2 (SELECTINITIATORS) with R = 3 hops...");
 
   try {
     const res = await fetch("/api/v1/step/vrf-exchange", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: currentSession, r_hops: 2 })
+      body: JSON.stringify({ session_id: currentSession, r_hops: 3 })
     });
 
     if (!res.ok) {
@@ -605,8 +676,8 @@ async function executeStep3Exchange() {
       data.logs.forEach(l => logToTerminal(l.level === "SUCCESS" ? "LEADER" : "VRF", l.message));
     }
 
-    logToTerminal("SUCCESS", `Step 3 Complete: 10 Initiators elected deterministically: ${data.initiators.map(id => "C" + id).join(", ")}.`);
-    logToTerminal("INFO", "R=2 Spatial Dispersion satisfied: No two elected Initiators are within 2 hops of each other.");
+    logToTerminal("SUCCESS", `Step 3 Complete: ${data.initiators.length} Initiators elected (R=3 hops): ${data.initiators.map(id => "C" + id).join(", ")}.`);
+    logToTerminal("INFO", "Click on any node to view its 3-hop neighborhood scoreboard (Hop 1, Hop 2, Hop 3) and winner.");
 
   } catch (err) {
     logToTerminal("ERROR", `Step 3 execution failure: ${err.message}`);
@@ -616,15 +687,16 @@ async function executeStep3Exchange() {
   }
 }
 
-// Apply Step 3 UI State (Initiators Elected)
+// Apply Step 3 UI State (Initiators Elected with R=3)
 function applyStep3UI(data) {
   currentStep = 3;
+  hideNodeModal();
 
   updateStepper(3);
 
   const activeBadge = document.getElementById("activeStepBadge");
   if (activeBadge) {
-    activeBadge.textContent = "Step 3: VRF Exchange & Leaders";
+    activeBadge.textContent = "Step 3: VRF Initiators (R=3)";
     activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 border border-amber-300";
   }
 
@@ -641,28 +713,29 @@ function applyStep3UI(data) {
     btnNext.innerHTML = `<span>Next Step (Step 4: Zones)</span><span>▶️</span>`;
   }
 
-  document.getElementById("stepTag").textContent = "STEP 3 / INITIATOR SELECTION";
+  document.getElementById("stepTag").textContent = "STEP 3 / ALGORITHM 2 (R=3)";
   document.getElementById("stepTag").className = "px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide rounded bg-amber-100 text-amber-800";
-  document.getElementById("stepTitle").textContent = "R-Hop Neighborhood VRF Exchange & Initiator Selection";
-  document.getElementById("stepDescription").textContent = "Peers exchange VRF scores with 2-hop neighbors. The peer with the minimal score in its R=2 ball is elected as Zone Initiator.";
+  document.getElementById("stepTitle").textContent = "3-Hop Neighborhood VRF Exchange & Initiator Selection";
+  document.getElementById("stepDescription").textContent = "Peers explore their 3-hop neighborhood (Hop 1, Hop 2, Hop 3). The peer holding the minimal score in its 3-hop ball elects itself as Initiator.";
 
   renderSidebarFormula(
-    "VRF Election Model (Eq. 2)",
-    "m_p = \\min_{q \\in N_R(p)} (\\sigma_q, id_q)",
-    "Peers exchange scores with neighbors within R=2 hops. The node with the minimum score tuple self-elects as INITIATOR.",
-    "R=2 Exchange",
+    "VRF Initiator Election (Alg. 2)",
+    "m_p = \\min_{q \\in \\mathcal{N}_3(p)} (\\sigma_q, id_q)",
+    "Peers explore their 3-hop physical neighborhood. The peer holding the minimal score in its 3-hop ball elects itself as Initiator.",
+    "R = 3 Hops",
     true
   );
 
-  document.getElementById("statLeaders").textContent = `${data.initiators ? data.initiators.length : 10} Initiators (R=2)`;
+  const leaderCount = data.initiators ? data.initiators.length : 0;
+  document.getElementById("statLeaders").textContent = `${leaderCount} Initiators (R=3)`;
   document.getElementById("statLeaders").className = "text-xs font-bold text-amber-600";
 
-  document.getElementById("canvasViewLabel").textContent = "VRF Leaders Elected (10 Initiators in Amber, 40 Clients)";
+  document.getElementById("canvasViewLabel").textContent = `VRF Leaders Elected (${leaderCount} Initiators in Amber, ${50 - leaderCount} Clients)`;
 
   const leaderLegend = document.getElementById("leaderLegendItem");
   if (leaderLegend) leaderLegend.classList.remove("hidden");
 
-  // Render Mesh: 10 Initiators in Amber, 40 in Blue, clean labels
+  // Render Mesh: Initiators in Amber, others in Blue, clean labels
   renderMesh(data.nodes, step1Topology ? step1Topology.edges : [], true);
 }
 
@@ -784,6 +857,7 @@ function renderMesh(nodes, edges, showLeaders = false) {
         min_score: n.min_score !== undefined ? n.min_score : null,
         min_peer_id: n.min_peer_id !== undefined ? n.min_peer_id : null,
         neighborhood_scores: n.neighborhood_scores || [],
+        hops_covered: n.hops_covered || 0,
         coords: n.coords,
         weights: n.weights || []
       },
