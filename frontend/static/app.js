@@ -2369,6 +2369,10 @@ function showNodeModal(nodeData) {
         `;
       }
     }
+  } else {
+    if (probeSection) probeSection.classList.add("hidden");
+  }
+
   // Step 6: Zone Creation & Inter-Zone Boundary Discovery
   const bndSection = document.getElementById("cardBoundaryDiscoverySection");
   const bndBadge = document.getElementById("cardBoundaryDiscoveryBadge");
