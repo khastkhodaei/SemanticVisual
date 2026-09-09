@@ -325,30 +325,28 @@ function initCytoscape() {
         style: {
           "width": 2,
           "line-color": "#64748b",
+          "line-style": "solid",
+          "opacity": 0.65,
           "curve-style": "straight",
-          "opacity": 0.6,
-          "transition-property": "line-color, width, opacity",
-          "transition-duration": "0.2s"
+          "target-arrow-shape": "none"
         }
       },
       {
         selector: "edge.boundary-edge",
         style: {
-          "line-style": "dashed",
-          "line-color": "#f87171",
-          "line-dash-pattern": [6, 4],
-          "width": 2.6,
-          "opacity": 0.95,
-          "z-index": 60
+          "line-style": "solid",
+          "line-color": "#64748b",
+          "width": 2,
+          "opacity": 0.65
         }
       },
       {
         selector: "edge.intra-zone-edge",
         style: {
           "line-style": "solid",
-          "line-color": "#475569",
-          "width": 2.2,
-          "opacity": 0.80
+          "line-color": "#64748b",
+          "width": 2,
+          "opacity": 0.65
         }
       },
       {
@@ -987,16 +985,12 @@ function applyAllStep4FinalZoneColors(nodes) {
 
   if (cy) {
     cy.edges().forEach(e => {
-      if (e.data("is_inter_zone")) {
-        e.addClass("boundary-edge");
-        e.style({
-          "line-style": "dashed",
-          "line-color": "#f87171",
-          "line-dash-pattern": [6, 4],
-          "width": 2.4,
-          "opacity": 0.95
-        });
-      }
+      e.style({
+        "line-style": "solid",
+        "line-color": "#64748b",
+        "width": 2,
+        "opacity": 0.65
+      });
     });
   }
 }
@@ -1410,16 +1404,6 @@ function animateStep6BoundaryPackets(packets, allNodes) {
       ctx.shadowColor = pktColor;
       ctx.fill();
       ctx.restore();
-
-      drawCanvasFloatingBadge(
-        ctx,
-        pkt.label || `NEIGHBOR(${pkt.introduced_neighbor || ""})`,
-        curX,
-        curY - 14,
-        badgeBg,
-        badgeText,
-        pktColor
-      );
     });
 
     if (progress < 1.0) {
@@ -1654,18 +1638,6 @@ function animateProbeFloodingWaves(waves, allNodes) {
       ctx.fillStyle = "#ffffff";
       ctx.shadowBlur = 0;
       ctx.fill();
-
-      if (a.label && aProg > 0.15 && aProg < 0.85) {
-        drawCanvasFloatingBadge(
-          ctx,
-          a.label,
-          ax,
-          ay - 14,
-          a.color === "#f59e0b" ? "rgba(254, 243, 199, 0.98)" : "rgba(255, 241, 242, 0.98)",
-          a.color === "#f59e0b" ? "#92400e" : "#9f1239",
-          a.color
-        );
-      }
       ctx.restore();
 
       if (aProg >= 1.0) {
@@ -1886,19 +1858,15 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   });
 
   edges.forEach((e, idx) => {
-    // If currentStep <= 5, force all edges to be normal solid slate lines.
-    // Dashed red boundary styling (#f87171) must ONLY appear in Step 6 after official zone assignment.
-    const isStep6OrLater = (typeof currentStep === "number" && currentStep >= 6);
-    const isBoundary = isStep6OrLater && Boolean(options.showBoundaryEdges && (e.is_boundary_edge || e.is_inter_zone || e.is_boundary));
-
+    // All 18 physical links in the entire network remain uniform, solid, clean slate/neutral lines at all times.
     elements.push({
       group: "edges",
-      classes: isBoundary ? "boundary-edge" : "intra-zone-edge",
+      classes: "network-physical-edge",
       data: {
         id: e.id || `edge_${idx}`,
         source: `node_${e.source_num || parseInt(String(e.source).replace('C', '').replace('node_', ''), 10)}`,
         target: `node_${e.target_num || parseInt(String(e.target).replace('C', '').replace('node_', ''), 10)}`,
-        is_inter_zone: isBoundary,
+        is_inter_zone: false,
       }
     });
   });

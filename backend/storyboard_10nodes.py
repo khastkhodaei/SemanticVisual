@@ -926,14 +926,9 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             e_copy["is_boundary"] = is_cross_zone
             e_copy["is_boundary_edge"] = is_cross_zone
             e_copy["is_frontier_edge"] = is_frontier_pair
-            if is_cross_zone:
-                e_copy["style"] = "dashed"
-                e_copy["line_color"] = "#f87171"
-                e_copy["line_style"] = "dashed"
-            else:
-                e_copy["style"] = "solid"
-                e_copy["line_color"] = "#94a3b8"
-                e_copy["line_style"] = "solid"
+            e_copy["style"] = "solid"
+            e_copy["line_color"] = "#64748b"
+            e_copy["line_style"] = "solid"
             step6_edges.append(e_copy)
 
         terminal_logs = [
