@@ -9,6 +9,19 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from sklearn.cluster import AffinityPropagation
 
+from backend.storyboard_10nodes import (
+    CIFAR10_CLASSES as STORYBOARD_10_CIFAR10_CLASSES,
+    STORYBOARD_10_ADJACENCY,
+    STORYBOARD_10_DISTRIBUTION,
+    STORYBOARD_10_VECTORS,
+    STORYBOARD_10_COORDINATES,
+    get_dominant_class,
+    get_10node_edges,
+    get_10node_nodes,
+    get_10node_config,
+    get_10node_step_data,
+)
+
 
 
 BENCHMARK_CONFIGS = {
@@ -181,17 +194,31 @@ class SemanticDFLEngine:
 
         return [round(float(w), 6) for w in weights]
 
+    def get_10node_topology(self) -> Dict[str, Any]:
+        """Return the strict 10-node CIFAR-10 storyboard topology and data distribution."""
+        return {
+            "nodes": get_10node_nodes(),
+            "edges": get_10node_edges(),
+            "adjacency": STORYBOARD_10_ADJACENCY,
+            "distribution": STORYBOARD_10_DISTRIBUTION,
+            "vectors": STORYBOARD_10_VECTORS,
+            "config": get_10node_config(),
+        }
+
     def generate_storyboard_step1(
         self,
         benchmark: str = "Non-IID 10-Class Storyboard",
+        num_nodes: int = 50,
     ) -> Dict[str, Any]:
-        """Generate the organic 50-node overlay-free physical ad-hoc network for Step 1.
+        """Generate the organic 10-node CIFAR-10 physical ad-hoc network for Step 1.
 
-        - 50 nodes (C_1 to C_50) scattered organically across [100, 850] x [80, 500].
-        - Undirected ad-hoc communication links with degree 3 to 6 and single connected component.
+        - 10 nodes (C1 to C10) with exact symmetric physical adjacency list.
+        - Undirected ad-hoc communication links with 18 physical edges (17 unique pairs).
         - Pure overlay-free initial state: status='NOT_ASSIGNED', role='CLIENT', zone_id=None.
-        - vrf_score is strictly None (null in JSON) in Step 1.
+        - CIFAR-10 class percentage distributions (summing to 100% per node).
         """
+        if num_nodes == 10:
+            return get_10node_step_data(1)
         # Uniform spatial rejection sampling across [70, 840] x [60, 520] with min distance >= 65px
         rng = np.random.default_rng(10)
         raw_coords = []
@@ -336,6 +363,20 @@ class SemanticDFLEngine:
             raise ValueError("Number of nodes N must be greater than 0.")
         if D_limit <= 0.0:
             raise ValueError("D_limit must be strictly positive.")
+
+        if N == 10 and benchmark == "Non-IID 10-Class Storyboard":
+            return {
+                "nodes": get_10node_nodes(),
+                "edges": get_10node_edges(),
+                "adjacency_list": {str(k): v for k, v in STORYBOARD_10_ADJACENCY.items()},
+                "metadata": {
+                    "num_nodes": 10,
+                    "avg_degree": 3.4,
+                    "total_edges": 18,
+                    "model_architecture": "CIFAR-10 Non-IID",
+                    "classes": STORYBOARD_10_CIFAR10_CLASSES,
+                }
+            }
 
         if N == 50:
             return self.generate_storyboard_topology(benchmark=benchmark)

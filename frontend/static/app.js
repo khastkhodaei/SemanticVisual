@@ -12,19 +12,30 @@ let activeSelectedNodeId = null;
 let activeSelectedNodeData = null;
 let activeAnimationId = null;
 
-// CIFAR-10 Fallback / Cache
+// CIFAR-10 10-Class Definitions (C1 to C10)
 const CIFAR10_CLASSES = {
-  0: { name: "هواپیما (Airplane)", english: "Airplane", icon: "✈️" },
-  1: { name: "اتومبیل (Automobile)", english: "Automobile", icon: "🚗" },
-  2: { name: "پرنده (Bird)", english: "Bird", icon: "🐦" },
-  3: { name: "گربه (Cat)", english: "Cat", icon: "🐱" },
-  4: { name: "آهو (Deer)", english: "Deer", icon: "🦌" },
-  5: { name: "سگ (Dog)", english: "Dog", icon: "🐶" },
-  6: { name: "قورباغه (Frog)", english: "Frog", icon: "🐸" },
-  7: { name: "اسب (Horse)", english: "Horse", icon: "🐎" },
-  8: { name: "کشتی (Ship)", english: "Ship", icon: "🚢" },
-  9: { name: "کامیون (Truck)", english: "Truck", icon: "🚚" },
+  1: { id: 1, name: "Airplane", english: "Airplane", icon: "✈️", code: "C1" },
+  2: { id: 2, name: "Automobile", english: "Automobile", icon: "🚗", code: "C2" },
+  3: { id: 3, name: "Bird", english: "Bird", icon: "🐦", code: "C3" },
+  4: { id: 4, name: "Cat", english: "Cat", icon: "🐱", code: "C4" },
+  5: { id: 5, name: "Deer", english: "Deer", icon: "🦌", code: "C5" },
+  6: { id: 6, name: "Dog", english: "Dog", icon: "🐶", code: "C6" },
+  7: { id: 7, name: "Frog", english: "Frog", icon: "🐸", code: "C7" },
+  8: { id: 8, name: "Horse", english: "Horse", icon: "🐴", code: "C8" },
+  9: { id: 9, name: "Ship", english: "Ship", icon: "🚢", code: "C9" },
+  10: { id: 10, name: "Truck", english: "Truck", icon: "🚚", code: "C10" },
+  // Backward compatibility alias
+  0: { id: 1, name: "Airplane", english: "Airplane", icon: "✈️", code: "C1" },
 };
+
+function getCifarClass(keyOrId) {
+  if (typeof keyOrId === "string" && keyOrId.startsWith("C")) {
+    const num = parseInt(keyOrId.slice(1), 10);
+    return CIFAR10_CLASSES[num] || { id: num, name: keyOrId, icon: "📦", code: keyOrId };
+  }
+  const num = parseInt(keyOrId, 10);
+  return CIFAR10_CLASSES[num] || { id: num, name: `Class ${num}`, icon: "📦", code: `C${num}` };
+}
 
 // 10 Distinct Palettes for the 10 Proximity Zones (Sheet 3)
 // High-contrast, distinct hues: Cyan, Green, Purple, Orange, Pink, Teal, Blue, Yellow, Indigo, Lime
@@ -92,20 +103,20 @@ function initCytoscape() {
         style: {
           "label": "data(label)",
           "color": "#0f172a",
-          "font-size": "9.5px",
+          "font-size": "11px",
           "font-family": "ui-monospace, monospace",
           "font-weight": "bold",
           "text-valign": "bottom",
-          "text-margin-y": 4,
-          "text-background-color": "rgba(255, 255, 255, 0.92)",
+          "text-margin-y": 5,
+          "text-background-color": "rgba(255, 255, 255, 0.95)",
           "text-background-opacity": 0.95,
-          "text-background-padding": 2,
+          "text-background-padding": 3,
           "text-background-shape": "roundrectangle",
           "background-color": "data(bg_color)",
           "border-color": "data(border_color)",
-          "border-width": 2,
-          "width": 26,
-          "height": 26,
+          "border-width": 2.5,
+          "width": 36,
+          "height": 36,
           "transition-property": "background-color, border-color, width, height, border-width, opacity, shadow-blur, shadow-opacity",
           "transition-duration": "0.25s"
         }
@@ -115,10 +126,10 @@ function initCytoscape() {
         style: {
           "border-color": "#b45309",
           "border-width": 4.5,
-          "width": 36,
-          "height": 36,
+          "width": 42,
+          "height": 42,
           "color": "#78350f",
-          "font-size": "11px",
+          "font-size": "12px",
           "shadow-blur": 18,
           "shadow-color": "#f59e0b",
           "shadow-opacity": 0.85,
@@ -130,8 +141,8 @@ function initCytoscape() {
         style: {
           "border-color": "#0284c7",
           "border-width": 5,
-          "width": 38,
-          "height": 38,
+          "width": 44,
+          "height": 44,
           "z-index": 100
         }
       },
@@ -140,8 +151,8 @@ function initCytoscape() {
         style: {
           "border-color": "#78350f",
           "border-width": 5,
-          "width": 40,
-          "height": 40,
+          "width": 46,
+          "height": 46,
           "z-index": 100
         }
       },
@@ -151,8 +162,8 @@ function initCytoscape() {
           "background-color": "#0284c7",
           "border-color": "#0369a1",
           "border-width": 4,
-          "width": 34,
-          "height": 34,
+          "width": 42,
+          "height": 42,
           "z-index": 95
         }
       },
@@ -165,10 +176,10 @@ function initCytoscape() {
       {
         selector: "edge",
         style: {
-          "width": 1.5,
-          "line-color": "#94a3b8", // High-contrast clean physical link
+          "width": 2.2,
+          "line-color": "#475569", // High-contrast slate lines
           "curve-style": "straight",
-          "opacity": 0.65,
+          "opacity": 0.85,
           "transition-property": "line-color, width, opacity",
           "transition-duration": "0.2s"
         }
@@ -179,7 +190,7 @@ function initCytoscape() {
           "line-style": "dashed",
           "line-color": "#f87171",
           "line-dash-pattern": [6, 4],
-          "width": 2.4,
+          "width": 2.6,
           "opacity": 0.95,
           "z-index": 60
         }
@@ -188,9 +199,9 @@ function initCytoscape() {
         selector: "edge.intra-zone-edge",
         style: {
           "line-style": "solid",
-          "line-color": "#94a3b8",
-          "width": 1.5,
-          "opacity": 0.45
+          "line-color": "#475569",
+          "width": 2.2,
+          "opacity": 0.80
         }
       },
       {
@@ -333,12 +344,12 @@ async function loadGlobalConfig() {
     renderDatasetClassLegend(data.classes || []);
 
     const statNodes = document.getElementById("statNodes");
-    if (statNodes) statNodes.textContent = data.num_nodes || 50;
+    if (statNodes) statNodes.textContent = data.num_nodes || 10;
     const statDegree = document.getElementById("statDegree");
-    if (statDegree) statDegree.textContent = `${data.avg_degree || 3.6} (${data.total_edges} edges)`;
+    if (statDegree) statDegree.textContent = `${data.avg_degree || 3.4} (${data.total_edges || 18} links)`;
 
     const sessionVal = document.getElementById("sessionVal");
-    if (sessionVal) sessionVal.textContent = "Excel Ground-Truth";
+    if (sessionVal) sessionVal.textContent = "10-Node CIFAR-10 Storyboard";
   } catch (err) {
     console.error("Config Load Error:", err);
     logToTerminal("ERROR", `Failed to load network configuration: ${err.message}`);
@@ -467,14 +478,14 @@ function updateUIHeaders(data) {
 function renderStep1(data) {
   renderSidebarFormula(
     "Physical Network Topology",
-    "G = (V, E), \\quad |V|=50, \\quad |E|=90",
-    "Base physical ad-hoc network loaded from Sheet 2. 50 mobile edge devices with 90 physical communication links. No overlays or zones.",
+    "G = (V, E), \\quad |V|=10, \\quad |E|=18",
+    "Base physical ad-hoc network for 10 CIFAR-10 edge clients. 10 mobile edge devices with 18 physical links (symmetric adjacency). No overlays or zones.",
     "Topology",
     false
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "Physical Ad-Hoc Topology (50 Nodes, 90 Edges)";
+  if (canvasLabel) canvasLabel.textContent = "Physical Ad-Hoc Topology (10 Nodes, 18 Links)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
   if (leaderLegend) leaderLegend.classList.add("hidden");
@@ -1003,7 +1014,10 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
 
   nodes.forEach(n => {
     const isInit = options.showInitiators && n.is_initiator;
-    const label = isInit ? `👑 C${n.id} ${n.class_icon}` : `C${n.id} ${n.class_icon}`;
+    const domIcon = n.dominant_class_icon || n.class_icon || "";
+    const domName = n.dominant_class_name || n.class_title || "CIFAR-10";
+    const defaultLabel = `C${n.id} ${domIcon}`.trim();
+    const label = isInit ? `👑 ${defaultLabel}` : (n.label || defaultLabel);
 
     let bgColor = "#2563eb";
     let borderColor = "#1d4ed8";
@@ -1027,13 +1041,19 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
         node_id_num: n.id,
         node_id_str: n.node_id || `C${n.id}`,
         label: label,
-        role: isInit ? "👑 Initiator" : (n.role || "Member"),
+        role: isInit ? "👑 Initiator" : (n.role || "CLIENT"),
         status: n.status || "NOT_ASSIGNED",
         bg_color: bgColor,
         border_color: borderColor,
         class_id: n.class_id,
-        class_title: n.class_title,
-        class_icon: n.class_icon,
+        class_title: domName,
+        class_icon: domIcon,
+        dominant_class: n.dominant_class,
+        dominant_class_id: n.dominant_class_id,
+        dominant_class_name: domName,
+        dominant_class_icon: domIcon,
+        data_distribution: n.data_distribution || n.distribution || {},
+        distribution: n.distribution || n.data_distribution || {},
         sk: n.sk,
         vrf_formula: n.vrf_formula,
         vrf_score: n.vrf_score,
@@ -1146,10 +1166,13 @@ function showNodeModal(nodeData) {
 
   // Title: Node ID & Emoji
   if (cardNodeId) {
+    const idNum = nodeData.node_id_num || nodeData.id;
+    const idStr = nodeData.node_id_str || `C${idNum}`;
+    const domIcon = nodeData.dominant_class_icon || nodeData.class_icon || "";
     if (isInitiator && currentStep >= 3) {
-      cardNodeId.innerHTML = `<span class="text-amber-800">👑 C${nodeData.node_id_num} ${nodeData.class_icon}</span>`;
+      cardNodeId.innerHTML = `<span class="text-amber-800 font-bold">👑 Node ${idNum} (${idStr}) ${domIcon}</span>`;
     } else {
-      cardNodeId.innerHTML = `<span class="text-blue-700">C${nodeData.node_id_num} ${nodeData.class_icon}</span>`;
+      cardNodeId.innerHTML = `<span class="text-blue-700 font-bold">Node ${idNum} (${idStr}) ${domIcon}</span>`;
     }
   }
 
@@ -1166,7 +1189,7 @@ function showNodeModal(nodeData) {
         ? "text-[9px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300"
         : "text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300";
     } else if (currentStep === 2) {
-      cardStatusBadge.textContent = "VRF COMPUTED";
+      cardStatusBadge.textContent = "LOCAL_TRAINED";
       cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-sky-100 text-sky-800 border border-sky-300";
     } else {
       cardStatusBadge.textContent = "NOT_ASSIGNED";
@@ -1174,7 +1197,7 @@ function showNodeModal(nodeData) {
     }
   }
 
-  // Role: 👑 Initiator or Member
+  // Role: 👑 Initiator or Member or CLIENT
   if (cardRole) {
     if (currentStep >= 3 && isInitiator) {
       cardRole.textContent = "👑 Initiator (Zone Root)";
@@ -1188,9 +1211,49 @@ function showNodeModal(nodeData) {
     }
   }
 
-  // CIFAR-10 Class (Title + Emoji)
+  // CIFAR-10 Dominant Class (Title + Emoji)
   if (cardClass) {
-    cardClass.textContent = `${nodeData.class_title} ${nodeData.class_icon} (Class ${nodeData.class_id})`;
+    const domName = nodeData.dominant_class_name || nodeData.class_title || "CIFAR-10";
+    const domIcon = nodeData.dominant_class_icon || nodeData.class_icon || "";
+    const domCode = nodeData.dominant_class || `C${nodeData.class_id}`;
+    cardClass.textContent = `${domName} ${domIcon} (${domCode})`;
+  }
+
+  // Local Data Distribution breakdown table with percentages
+  const distTableBody = document.getElementById("cardDataDistributionTableBody");
+  if (distTableBody) {
+    distTableBody.innerHTML = "";
+    const dist = nodeData.data_distribution || nodeData.distribution || {};
+    const entries = Object.entries(dist);
+    if (entries.length === 0) {
+      distTableBody.innerHTML = '<tr><td colspan="3" class="py-1 px-2 text-slate-400 italic">No local distribution data</td></tr>';
+    } else {
+      entries.forEach(([clsKey, pct]) => {
+        const clsInfo = getCifarClass(clsKey);
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition-colors";
+        tr.innerHTML = `
+          <td class="py-1 px-2 font-bold text-blue-700 font-mono">${clsKey}</td>
+          <td class="py-1 px-2 text-slate-800 font-sans font-medium">${clsInfo.name} ${clsInfo.icon}</td>
+          <td class="py-1 px-2 text-right font-mono">
+            <span class="inline-block px-1.5 py-0.2 rounded font-bold text-slate-900 bg-slate-100 border border-slate-200">${pct}%</span>
+          </td>
+        `;
+        distTableBody.appendChild(tr);
+      });
+    }
+  }
+
+  // Connected Neighbors list
+  if (cardDegree) {
+    const deg = (nodeData.neighbors || []).length;
+    cardDegree.textContent = `${deg} neighbor${deg === 1 ? '' : 's'}`;
+  }
+  if (cardNeighbors) {
+    const neighList = (nodeData.neighbors_str && nodeData.neighbors_str.length)
+      ? nodeData.neighbors_str.join(", ")
+      : (nodeData.neighbors || []).map(x => `C${x}`).join(", ");
+    cardNeighbors.textContent = neighList || "None";
   }
 
   // Exact VRF Score (Step 2+)
@@ -1459,18 +1522,6 @@ function showNodeModal(nodeData) {
       if (cardFrontierSec) cardFrontierSec.classList.add("hidden");
     }
   }
-
-  // Direct Physical Neighbors (Sheet 2)
-  if (cardDegree) {
-    cardDegree.textContent = `${(nodeData.neighbors || []).length} neighbors`;
-  }
-  if (cardNeighbors) {
-    const neighList = (nodeData.neighbors_str && nodeData.neighbors_str.length)
-      ? nodeData.neighbors_str.join(", ")
-      : (nodeData.neighbors || []).map(x => `C${x}`).join(", ");
-    cardNeighbors.textContent = neighList || "None";
-  }
-
   card.classList.remove("hidden");
 }
 
