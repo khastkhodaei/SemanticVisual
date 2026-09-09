@@ -722,43 +722,54 @@ async function loadStep(stepNumber) {
 // Update Top Headers and Narrative Cards
 function updateUIHeaders(data) {
   const step = data.step || currentStep || 1;
-  const activeBadge = document.getElementById("activeStepBadge");
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
   const stepTag = document.getElementById("stepTag");
   const stepTitle = document.getElementById("stepTitle");
   const stepDesc = document.getElementById("stepDescription");
 
   if (step === 1) {
-    if (activeBadge) {
-      activeBadge.textContent = "Step 1: Network Creation";
-      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200";
-    }
+    activeBadges.forEach(badge => {
+      badge.textContent = "Step 1: Network Creation";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200";
+    });
     if (stepTag) stepTag.textContent = "STEP 1 / NETWORK CREATION";
     if (stepTitle) stepTitle.textContent = "Step 1: Network Creation & Non-IID Data Distribution";
     if (stepDesc) stepDesc.textContent = "10 decentralized edge clients connected via 18 physical ad-hoc links. Each node holds local CIFAR-10 data.";
   } else if (step === 2) {
-    if (activeBadge) {
-      activeBadge.textContent = "Step 2: Local Vectors";
-      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-cyan-50 text-cyan-700 border border-cyan-200";
-    }
+    activeBadges.forEach(badge => {
+      badge.textContent = "Step 2: Local Vectors";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-cyan-50 text-cyan-700 border border-cyan-200";
+    });
     if (stepTag) stepTag.textContent = "STEP 2 / LOCAL TRAINING & VECTORS";
     if (stepTitle) stepTitle.textContent = "Step 2: Local Training & Normalized 10D Vector Generation";
     if (stepDesc) stepDesc.textContent = "Each client trains on local CIFAR-10 data, outputting a normalized 10-dimensional vector representing class proportions.";
   } else if (step === 3) {
-    if (activeBadge) {
-      activeBadge.textContent = "Step 3: Local VRF";
-      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200";
-    }
+    activeBadges.forEach(badge => {
+      badge.textContent = "Step 3: Local VRF";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200";
+    });
     if (stepTag) stepTag.textContent = "STEP 3 / LOCAL VRF GENERATION";
     if (stepTitle) stepTitle.textContent = "Step 3: Local VRF Score Calculation";
     if (stepDesc) stepDesc.textContent = "Each peer independently calculates its local VRF score σ_p = VRF(seed_{e-1}) using its private key. Scores are not transmitted or received in this step.";
   } else if (step === 4) {
-    if (activeBadge) {
-      activeBadge.textContent = "Step 4: Initiator Election";
-      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-300";
-    }
+    activeBadges.forEach(badge => {
+      badge.textContent = "Step 4: Initiator Election";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-300";
+    });
     if (stepTag) stepTag.textContent = "STEP 4 / 1-HOP EXCHANGE & INITIATOR ELECTION";
     if (stepTitle) stepTitle.textContent = "Step 4: 1-Hop Neighbor Score Exchange & Initiator Election";
     if (stepDesc) stepDesc.textContent = "Clients exchange VRF scores with direct 1-hop physical neighbors and elect closed-ball minimums. Nodes 2, 4, and 8 are crowned as Initiators.";
+  } else if (step === 5) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "STEP 5: ZONE PROBE FLOODING (TTL=1)";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-300";
+    });
+    if (stepTag) stepTag.textContent = "STEP 5 / ZONE PROBE FLOODING (TTL=1)";
+    if (stepTitle) stepTitle.textContent = "Step 5: Zone Creation via PROBE Flooding (TTL = 1)";
+    if (stepDesc) stepDesc.textContent = "Elected Initiators (Nodes 2, 4, and 8) broadcast a PROBE packet with TTL=1 strictly to their 1-hop physical neighbors.";
   }
 }
 
@@ -1080,6 +1091,16 @@ function animateVrfScoreExchangePackets(packets, allNodes, onArrival) {
 function renderStep5(data) {
   stopCurrentPacketAnimation();
 
+  // Explicitly sync header active step badge
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "STEP 5: ZONE PROBE FLOODING (TTL=1)";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-300";
+  });
+
   renderSidebarFormula(
     "Zone Creation via PROBE Flooding",
     "\\text{PROBE}(p, \\text{TTL}=1), \\quad p \\in \\{2, 4, 8\\}",
@@ -1093,35 +1114,35 @@ function renderStep5(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 5: Zone Creation via PROBE Flooding (TTL = 1)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.add("hidden");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
   if (zoneLegend) zoneLegend.classList.remove("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
-  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.innerHTML = '<span>3 Zones (<span class="text-emerald-700 font-bold">Zone 2</span>, <span class="text-orange-700 font-bold">Zone 4</span>, <span class="text-purple-700 font-bold">Zone 8</span>) | <span class="text-rose-700 font-bold">2 Boundaries (C1, C6)</span></span>';
+    statLeaders.innerHTML = '<span>3 Initiators (<span class="text-rose-700 font-bold">C2</span>, <span class="text-emerald-700 font-bold">C4</span>, <span class="text-amber-700 font-bold">C8</span>) | <span class="text-blue-700 font-bold">7 Neutral Clients (Probing)</span></span>';
     statLeaders.className = "text-xs font-bold text-slate-800";
   }
 
-  // Render nodes: Color-coded by adopted zone palette; Initiators retain crown (👑)
+  // Prevent Premature Zone Coloring:
+  // Initiators (C2, C4, C8) retain distinct initiator/winner styling & crown badge (👑).
+  // All non-initiator clients (C1, C3, C5, C6, C7, C9, C10) remain solid neutral blue (#2563eb).
+  // Zone color morphing happens only in the subsequent zone joining step.
   renderCytoscapeGraph(data.nodes, data.edges, {
     showInitiators: true,
-    useZoneColors: true,
-    showBoundaryEdges: true
+    useZoneColors: false,
+    showBoundaryEdges: false
   });
 
   logToTerminal("ZONE", "[PROBE FLOODING] Initiators broadcast PROBE(TTL=1) to 1-hop physical neighbors.");
   logToTerminal("ZONE", "Initiator C2 (Zone 2 - Emerald Green) dispatches PROBE to: [C1, C3]");
   logToTerminal("ZONE", "Initiator C4 (Zone 4 - Coral/Orange) dispatches PROBE to: [C1, C5, C6, C7]");
   logToTerminal("ZONE", "Initiator C8 (Zone 8 - Violet/Purple) dispatches PROBE to: [C6, C9, C10]");
-  logToTerminal("ZONE", "[PROBE ARRIVAL] C3 adopts Zone 2 from Initiator C2.");
-  logToTerminal("ZONE", "[PROBE ARRIVAL] C5 and C7 adopt Zone 4 from Initiator C4.");
-  logToTerminal("ZONE", "[PROBE ARRIVAL] C9 and C10 adopt Zone 8 from Initiator C8.");
-  logToTerminal("BOUNDARY", "[BOUNDARY OVERLAP] Node C1 received intersecting PROBE messages from Initiators C2 and C4 -> Marked Boundary Node (Zone 2 ∩ Zone 4).");
-  logToTerminal("BOUNDARY", "[BOUNDARY OVERLAP] Node C6 received intersecting PROBE messages from Initiators C4 and C8 -> Marked Boundary Node (Zone 4 ∩ Zone 8).");
-  logToTerminal("SUCCESS", "[ZONE FORMATION] 3 Semantic Zones created via PROBE flooding (TTL=1). All 10 peers assigned.");
+  logToTerminal("ZONE", "[PROBE ARRIVAL] C1: C2 arrived at t=10.4ms (First-Wins Winner) vs C4 at t=16.8ms (Delayed).");
+  logToTerminal("ZONE", "[PROBE ARRIVAL] C6: C4 arrived at t=11.2ms (First-Wins Winner) vs C8 at t=18.5ms (Delayed).");
+  logToTerminal("NOTICE", "[FIRST-WINS ARBITRATION] Competing probes resolved. Nodes retain neutral blue until formal zone joining in next step.");
 
   const packets = data.packet_events || data.packet_exchanges || [];
   if (packets.length > 0) {
@@ -2035,14 +2056,14 @@ function showNodeModal(nodeData) {
 
     if (zoneBadge) {
       if (isBoundary) {
-        zoneBadge.textContent = idNum === 1 ? "Boundary: Zone 2 ∩ Zone 4" : "Boundary: Zone 4 ∩ Zone 8";
-        zoneBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-rose-100 text-rose-800 border border-rose-300";
+        zoneBadge.textContent = idNum === 1 ? "Zone 2 (First-Wins) ∩ Zone 4" : "Zone 4 (First-Wins) ∩ Zone 8";
+        zoneBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-800 border border-amber-300";
       } else if (isInitiator) {
         zoneBadge.textContent = `Zone ${assignedZ} (Initiator)`;
         zoneBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-800 border border-amber-300";
       } else {
-        zoneBadge.textContent = `Zone ${assignedZ}`;
-        zoneBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
+        zoneBadge.textContent = `Zone ${assignedZ} (Pending Join)`;
+        zoneBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-blue-100 text-blue-800 border border-blue-300";
       }
     }
 
@@ -2050,12 +2071,9 @@ function showNodeModal(nodeData) {
       if (isInitiator) {
         cardStatusBadge.textContent = "👑 INITIATOR";
         cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
-      } else if (isBoundary) {
-        cardStatusBadge.textContent = "BOUNDARY GATEWAY";
-        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-rose-100 text-rose-900 border-rose-400";
       } else {
-        cardStatusBadge.textContent = "ZONE MEMBER";
-        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-emerald-100 text-emerald-900 border-emerald-400";
+        cardStatusBadge.textContent = "CLIENT";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-blue-50 text-blue-800 border-blue-200";
       }
     }
 
@@ -2066,42 +2084,60 @@ function showNodeModal(nodeData) {
           ? nodeData.probes_sent.map(p => `C${p.target_id || p.target}`)
           : (idNum === 2 ? ["C1", "C3"] : idNum === 4 ? ["C1", "C5", "C6", "C7"] : ["C6", "C9", "C10"]);
         probeContent.innerHTML = `
-          <div class="p-2 bg-amber-50 rounded border border-amber-200 text-amber-950">
-            <div class="font-bold flex items-center gap-1 text-[11px]">
+          <div class="p-2.5 bg-amber-50 rounded-lg border border-amber-200 text-amber-950">
+            <div class="font-bold flex items-center gap-1.5 text-xs text-amber-900">
               <span>👑</span>
-              <span>Self-Elected Initiator for Zone ${assignedZ}</span>
+              <span>Elected Initiator for Zone ${assignedZ}</span>
             </div>
-            <div class="text-slate-600 mt-1">Dispatched <span class="font-bold font-mono text-slate-800">PROBE(TTL=1)</span> to 1-hop physical neighbors:</div>
-            <div class="font-mono font-bold text-amber-900 mt-0.5">${tgtList.join(", ")}</div>
+            <div class="text-slate-600 mt-1.5 text-xs">Dispatched <span class="font-bold font-mono text-slate-800">PROBE(TTL=1)</span> to 1-hop physical neighbors:</div>
+            <div class="font-mono font-bold text-amber-900 mt-1 text-xs">${tgtList.join(", ")}</div>
           </div>
         `;
-      } else if (isBoundary) {
-        const overlapProbes = idNum === 1
-          ? ["Initiator C2 (TTL=1) → Zone 2", "Initiator C4 (TTL=1) → Zone 4"]
-          : ["Initiator C4 (TTL=1) → Zone 4", "Initiator C8 (TTL=1) → Zone 8"];
+      } else if (isBoundary || idNum === 1 || idNum === 6) {
+        const isNode6 = (idNum === 6);
+        const winInit = isNode6 ? "C4" : "C2";
+        const winTime = isNode6 ? "t = 11.2 ms" : "t = 10.4 ms";
+        const winZone = isNode6 ? "4" : "2";
+        const delInit = isNode6 ? "C8" : "C4";
+        const delTime = isNode6 ? "t = 18.5 ms" : "t = 16.8 ms";
+
         probeContent.innerHTML = `
-          <div class="p-2 bg-rose-50 rounded border border-rose-200 text-rose-950">
-            <div class="font-bold flex items-center gap-1 text-[11px]">
+          <div class="p-3 bg-amber-50/80 rounded-lg border border-amber-200 text-slate-800">
+            <div class="font-bold flex items-center gap-1.5 text-xs text-amber-900">
               <span>⚠️</span>
-              <span>Overlapping Probes Detected (Boundary Interface)</span>
+              <span>Overlapping Probes Detected (First-Wins Arbitration)</span>
             </div>
-            <div class="text-slate-600 mt-1">Received multiple intersecting PROBE messages:</div>
-            <ul class="list-disc list-inside mt-0.5 space-y-0.5 font-mono text-rose-900 font-semibold">
-              ${overlapProbes.map(p => `<li>${p}</li>`).join("")}
+            <div class="text-slate-600 mt-1 text-xs">Received competing 1-hop PROBE messages:</div>
+            <ul class="mt-2 space-y-1.5 text-xs font-mono">
+              <li class="flex items-center gap-1.5 text-emerald-800 font-semibold">
+                <span>-</span>
+                <span>Initiator ${winInit}: Arrived at ${winTime} (<span class="font-bold text-emerald-700">✓ FIRST-WINS WINNER</span>)</span>
+              </li>
+              <li class="flex items-center gap-1.5 text-slate-600">
+                <span>-</span>
+                <span>Initiator ${delInit}: Arrived at ${delTime} (<span class="font-semibold text-rose-600">✕ Delayed / Will be dropped</span>)</span>
+              </li>
             </ul>
-            <div class="text-[9.5px] text-slate-500 mt-1 font-sans">Registered as inter-zone gateway interface.</div>
+            <div class="mt-2.5 pt-2 border-t border-amber-200/70 text-[11px] text-slate-700 font-sans leading-relaxed">
+              <span class="font-bold text-slate-900">Notice:</span> Per Algorithm 3 (First-Wins rule), this node will formally join Zone ${winZone} in the next step.
+            </div>
           </div>
         `;
       } else {
         const fromInit = idNum === 3 ? 2 : (idNum === 5 || idNum === 7) ? 4 : 8;
+        const arrivalTime = idNum === 3 ? "t = 9.8 ms" : idNum === 5 ? "t = 12.1 ms" : idNum === 7 ? "t = 13.5 ms" : idNum === 9 ? "t = 10.9 ms" : "t = 14.2 ms";
         probeContent.innerHTML = `
-          <div class="p-2 bg-emerald-50 rounded border border-emerald-200 text-emerald-950">
-            <div class="font-bold flex items-center gap-1 text-[11px]">
+          <div class="p-3 bg-blue-50/80 rounded-lg border border-blue-200 text-slate-800">
+            <div class="font-bold flex items-center gap-1.5 text-xs text-blue-900">
               <span>✓</span>
               <span>Accepted PROBE(TTL=1) from Initiator C${fromInit}</span>
             </div>
-            <div class="text-slate-600 mt-1">Adopted <span class="font-bold text-emerald-900">Zone ${assignedZ}</span> identity.</div>
-            <div class="text-[9.5px] text-slate-500 mt-0.5 font-sans">Hop distance: 1 hop from initiator.</div>
+            <div class="text-xs font-mono text-blue-800 mt-1.5">
+              - Initiator C${fromInit}: Arrived at ${arrivalTime} (<span class="font-bold text-emerald-700">✓ FIRST-WINS WINNER</span>)
+            </div>
+            <div class="mt-2.5 pt-2 border-t border-blue-200/70 text-[11px] text-slate-700 font-sans leading-relaxed">
+              <span class="font-bold text-slate-900">Notice:</span> Per Algorithm 3 (First-Wins rule), this node will formally join Zone ${fromInit} in the next step.
+            </div>
           </div>
         `;
       }

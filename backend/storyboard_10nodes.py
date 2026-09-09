@@ -474,10 +474,29 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             8: [6, 9, 10],
         }
 
+        # Simulated network latency and arrival timestamps per probe (First-Wins Arbitration)
+        # Node 1: Initiator 2 arrives at t = 10.4 ms (Winner), Initiator 4 at t = 16.8 ms (Delayed)
+        # Node 6: Initiator 4 arrives at t = 11.2 ms (Winner), Initiator 8 at t = 18.5 ms (Delayed)
+        probe_latencies = {
+            (2, 1): {"time_str": "t = 10.4 ms", "ms": 10.4, "winner": True, "notice": "✓ FIRST-WINS WINNER"},
+            (4, 1): {"time_str": "t = 16.8 ms", "ms": 16.8, "winner": False, "notice": "✕ Delayed / Will be dropped"},
+            (2, 3): {"time_str": "t = 9.8 ms", "ms": 9.8, "winner": True, "notice": "✓ FIRST-WINS WINNER"},
+            (4, 5): {"time_str": "t = 12.1 ms", "ms": 12.1, "winner": True, "notice": "✓ FIRST-WINS WINNER"},
+            (4, 6): {"time_str": "t = 11.2 ms", "ms": 11.2, "winner": True, "notice": "✓ FIRST-WINS WINNER"},
+            (8, 6): {"time_str": "t = 18.5 ms", "ms": 18.5, "winner": False, "notice": "✕ Delayed / Will be dropped"},
+            (4, 7): {"time_str": "t = 13.5 ms", "ms": 13.5, "winner": True, "notice": "✓ FIRST-WINS WINNER"},
+            (8, 9): {"time_str": "t = 10.9 ms", "ms": 10.9, "winner": True, "notice": "✓ FIRST-WINS WINNER"},
+            (8, 10): {"time_str": "t = 14.2 ms", "ms": 14.2, "winner": True, "notice": "✓ FIRST-WINS WINNER"},
+        }
+
         packet_events = []
         for init_id in sorted(probe_targets.keys()):
             for target_id in sorted(probe_targets[init_id]):
                 z_color = "#059669" if init_id == 2 else ("#ea580c" if init_id == 4 else "#7c3aed")
+                lat_info = probe_latencies.get(
+                    (init_id, target_id),
+                    {"time_str": "t = 12.0 ms", "ms": 12.0, "winner": True, "notice": "✓ FIRST-WINS WINNER"}
+                )
                 packet_events.append({
                     "packet_id": f"probe_{init_id}_{target_id}",
                     "initiator_id": init_id,
@@ -490,6 +509,10 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                     "label": f"PROBE({init_id}, TTL=1)",
                     "zone": init_id,
                     "color": z_color,
+                    "timestamp": lat_info["time_str"],
+                    "latency_ms": lat_info["ms"],
+                    "is_winner": lat_info["winner"],
+                    "status": lat_info["notice"],
                 })
 
         # Palettes:
@@ -517,17 +540,28 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             n_copy["is_initiator"] = is_init
             n_copy["role"] = "INITIATOR" if is_init else "CLIENT"
 
-            # Determine received probes
+            # Determine received probes with network arrival timestamps and first-wins arbitration
             probes_rec = []
             for init_id, targets in probe_targets.items():
                 if nid in targets:
+                    lat_info = probe_latencies.get(
+                        (init_id, nid),
+                        {"time_str": "t = 12.0 ms", "ms": 12.0, "winner": True, "notice": "✓ FIRST-WINS WINNER"}
+                    )
                     probes_rec.append({
                         "initiator_id": init_id,
                         "initiator_label": f"C{init_id}",
                         "ttl": 1,
                         "zone": init_id,
                         "zone_name": f"Zone {init_id}",
+                        "timestamp": lat_info["time_str"],
+                        "latency_ms": lat_info["ms"],
+                        "winner": lat_info["winner"],
+                        "is_winner": lat_info["winner"],
+                        "status": lat_info["notice"],
+                        "explanation": lat_info["notice"],
                     })
+            probes_rec.sort(key=lambda p: p["latency_ms"])
             n_copy["zone_probes_received"] = probes_rec
 
             # Probes sent (for initiators)
@@ -539,27 +573,35 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             else:
                 n_copy["probes_sent"] = []
 
-            # Determine boundary condition and assigned zone
+            # In Step 5: Prevent premature zone coloring on non-initiators.
+            # All non-initiators remain solid neutral blue (#2563eb).
+            # Only elected Initiators (Nodes 2, 4, 8) keep their distinct initiator colors.
             if nid == 1:
                 n_copy["is_boundary"] = True
                 n_copy["boundary_zones"] = [2, 4]
                 n_copy["assigned_zone"] = 2
+                n_copy["first_wins_zone"] = 2
+                n_copy["first_wins_initiator"] = 2
+                n_copy["first_wins_notice"] = "Per Algorithm 3 (First-Wins rule), this node will formally join Zone 2 in the next step."
                 n_copy["zone_id"] = 2
                 n_copy["zone_label"] = "Zone 2 / Zone 4 (Boundary)"
-                n_copy["status"] = "BOUNDARY"
-                n_copy["bg_color"] = "#059669"
-                n_copy["border_color"] = "#ea580c"
-                n_copy["border_width"] = 3.5
+                n_copy["status"] = "CLIENT"
+                n_copy["bg_color"] = "#2563eb"
+                n_copy["border_color"] = "#1d4ed8"
+                n_copy["border_width"] = 2.0
             elif nid == 6:
                 n_copy["is_boundary"] = True
                 n_copy["boundary_zones"] = [4, 8]
                 n_copy["assigned_zone"] = 4
+                n_copy["first_wins_zone"] = 4
+                n_copy["first_wins_initiator"] = 4
+                n_copy["first_wins_notice"] = "Per Algorithm 3 (First-Wins rule), this node will formally join Zone 4 in the next step."
                 n_copy["zone_id"] = 4
                 n_copy["zone_label"] = "Zone 4 / Zone 8 (Boundary)"
-                n_copy["status"] = "BOUNDARY"
-                n_copy["bg_color"] = "#ea580c"
-                n_copy["border_color"] = "#7c3aed"
-                n_copy["border_width"] = 3.5
+                n_copy["status"] = "CLIENT"
+                n_copy["bg_color"] = "#2563eb"
+                n_copy["border_color"] = "#1d4ed8"
+                n_copy["border_width"] = 2.0
             elif nid == 2:
                 n_copy["is_boundary"] = False
                 n_copy["boundary_zones"] = []
@@ -567,18 +609,22 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 n_copy["zone_id"] = 2
                 n_copy["zone_label"] = "Zone 2 (Initiator)"
                 n_copy["status"] = "INITIATOR"
-                n_copy["bg_color"] = "#059669"
-                n_copy["border_color"] = "#047857"
-                n_copy["border_width"] = 4.0
+                n_copy["bg_color"] = "#991b1b"
+                n_copy["border_color"] = "#7f1d1d"
+                n_copy["border_width"] = 4.5
+                n_copy["winner_color"] = "dark red"
             elif nid == 3:
                 n_copy["is_boundary"] = False
                 n_copy["boundary_zones"] = []
                 n_copy["assigned_zone"] = 2
+                n_copy["first_wins_zone"] = 2
+                n_copy["first_wins_initiator"] = 2
+                n_copy["first_wins_notice"] = "Per Algorithm 3 (First-Wins rule), this node will formally join Zone 2 in the next step."
                 n_copy["zone_id"] = 2
-                n_copy["zone_label"] = "Zone 2"
-                n_copy["status"] = "ASSIGNED"
-                n_copy["bg_color"] = "#059669"
-                n_copy["border_color"] = "#047857"
+                n_copy["zone_label"] = "Zone 2 (Pending Join)"
+                n_copy["status"] = "CLIENT"
+                n_copy["bg_color"] = "#2563eb"
+                n_copy["border_color"] = "#1d4ed8"
                 n_copy["border_width"] = 2.0
             elif nid == 4:
                 n_copy["is_boundary"] = False
@@ -587,18 +633,22 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 n_copy["zone_id"] = 4
                 n_copy["zone_label"] = "Zone 4 (Initiator)"
                 n_copy["status"] = "INITIATOR"
-                n_copy["bg_color"] = "#ea580c"
-                n_copy["border_color"] = "#c2410c"
-                n_copy["border_width"] = 4.0
+                n_copy["bg_color"] = "#166534"
+                n_copy["border_color"] = "#14532d"
+                n_copy["border_width"] = 4.5
+                n_copy["winner_color"] = "dark green"
             elif nid in (5, 7):
                 n_copy["is_boundary"] = False
                 n_copy["boundary_zones"] = []
                 n_copy["assigned_zone"] = 4
+                n_copy["first_wins_zone"] = 4
+                n_copy["first_wins_initiator"] = 4
+                n_copy["first_wins_notice"] = "Per Algorithm 3 (First-Wins rule), this node will formally join Zone 4 in the next step."
                 n_copy["zone_id"] = 4
-                n_copy["zone_label"] = "Zone 4"
-                n_copy["status"] = "ASSIGNED"
-                n_copy["bg_color"] = "#ea580c"
-                n_copy["border_color"] = "#c2410c"
+                n_copy["zone_label"] = "Zone 4 (Pending Join)"
+                n_copy["status"] = "CLIENT"
+                n_copy["bg_color"] = "#2563eb"
+                n_copy["border_color"] = "#1d4ed8"
                 n_copy["border_width"] = 2.0
             elif nid == 8:
                 n_copy["is_boundary"] = False
@@ -607,18 +657,22 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 n_copy["zone_id"] = 8
                 n_copy["zone_label"] = "Zone 8 (Initiator)"
                 n_copy["status"] = "INITIATOR"
-                n_copy["bg_color"] = "#7c3aed"
-                n_copy["border_color"] = "#6d28d9"
-                n_copy["border_width"] = 4.0
+                n_copy["bg_color"] = "#a16207"
+                n_copy["border_color"] = "#713f12"
+                n_copy["border_width"] = 4.5
+                n_copy["winner_color"] = "dark yellow"
             else:  # nid in (9, 10)
                 n_copy["is_boundary"] = False
                 n_copy["boundary_zones"] = []
                 n_copy["assigned_zone"] = 8
+                n_copy["first_wins_zone"] = 8
+                n_copy["first_wins_initiator"] = 8
+                n_copy["first_wins_notice"] = "Per Algorithm 3 (First-Wins rule), this node will formally join Zone 8 in the next step."
                 n_copy["zone_id"] = 8
-                n_copy["zone_label"] = "Zone 8"
-                n_copy["status"] = "ASSIGNED"
-                n_copy["bg_color"] = "#7c3aed"
-                n_copy["border_color"] = "#6d28d9"
+                n_copy["zone_label"] = "Zone 8 (Pending Join)"
+                n_copy["status"] = "CLIENT"
+                n_copy["bg_color"] = "#2563eb"
+                n_copy["border_color"] = "#1d4ed8"
                 n_copy["border_width"] = 2.0
 
             n_copy["zone_color"] = zone_configs[n_copy["assigned_zone"]]["color"]
@@ -654,7 +708,7 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
         return {
             "step": 5,
             "title": "Step 5: Zone Creation via PROBE Flooding (TTL = 1)",
-            "phase_badge": "Step 5: Zone Creation",
+            "phase_badge": "STEP 5: ZONE PROBE FLOODING (TTL=1)",
             "description": "Elected Initiators (Nodes 2, 4, and 8) dispatch a PROBE packet with TTL=1 to 1-hop neighbors, creating Zone 2 (Emerald Green), Zone 4 (Coral/Orange), and Zone 8 (Violet/Purple) with Boundary Nodes 1 and 6.",
             "formula": "\\text{PROBE}(p, \\text{TTL}=1), \\quad p \\in \\{2, 4, 8\\}",
             "formula_desc": "Elected Initiators broadcast a PROBE packet with TTL=1 to discover and claim their 1-hop physical neighbors.",

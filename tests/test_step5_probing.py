@@ -95,14 +95,18 @@ def test_step5_all_10nodes_retain_full_metadata():
         assert "vrf_score" in node
         assert node["vrf_score"] == pytest.approx(STORYBOARD_10_VRF_SCORES[nid], abs=1e-4)
 
-        # 5. role
+        # 5. role & styling
         if nid in (2, 4, 8):
             assert node["role"] == "INITIATOR"
             assert node["is_initiator"] is True
             assert node["status"] == "INITIATOR"
+            assert node["bg_color"] in ("#991b1b", "#166534", "#a16207")
         else:
             assert node["role"] == "CLIENT"
             assert node["is_initiator"] is False
+            # Premature zone coloring prevention: non-initiators must remain solid neutral blue
+            assert node["bg_color"] == "#2563eb"
+            assert node["border_color"] == "#1d4ed8"
 
 
 def test_step5_boundary_nodes_and_zone_membership():
@@ -139,12 +143,43 @@ def test_step5_boundary_nodes_and_zone_membership():
     assert nodes[10]["assigned_zone"] == 8
 
 
+def test_step5_arrival_timestamps_and_first_wins_arbitration():
+    """Assert simulated network arrival timestamps and First-Wins arbitration metadata."""
+    data = get_10node_step_data(5)
+    nodes = {n["id"]: n for n in data["nodes"]}
+
+    # Node 1: C2 arrived at t = 10.4 ms (Winner), C4 arrived at t = 16.8 ms (Delayed)
+    n1 = nodes[1]
+    n1_probes = {p["initiator_id"]: p for p in n1["zone_probes_received"]}
+    assert n1_probes[2]["timestamp"] == "t = 10.4 ms"
+    assert n1_probes[2]["winner"] is True
+    assert n1_probes[4]["timestamp"] == "t = 16.8 ms"
+    assert n1_probes[4]["winner"] is False
+    assert "First-Wins" in n1["first_wins_notice"]
+
+    # Node 6: C4 arrived at t = 11.2 ms (Winner), C8 arrived at t = 18.5 ms (Delayed)
+    n6 = nodes[6]
+    n6_probes = {p["initiator_id"]: p for p in n6["zone_probes_received"]}
+    assert n6_probes[4]["timestamp"] == "t = 11.2 ms"
+    assert n6_probes[4]["winner"] is True
+    assert n6_probes[8]["timestamp"] == "t = 18.5 ms"
+    assert n6_probes[8]["winner"] is False
+    assert "First-Wins" in n6["first_wins_notice"]
+
+    # Check packet events contain latency and timestamp
+    for pkt in data["packet_events"]:
+        assert "timestamp" in pkt
+        assert "latency_ms" in pkt
+        assert "is_winner" in pkt
+
+
 def test_step5_api_endpoints(client):
     """Assert GET and POST /api/v1/storyboard/step/5 return HTTP 200 with full payload."""
     res_get = client.get("/api/v1/storyboard/step/5")
     assert res_get.status_code == 200
     d_get = res_get.json()
     assert d_get["step"] == 5
+    assert d_get["phase_badge"] == "STEP 5: ZONE PROBE FLOODING (TTL=1)"
     assert len(d_get["nodes"]) == 10
     assert len(d_get["packet_events"]) == 9
     assert d_get["active_leaders"] == [2, 4, 8]
@@ -184,6 +219,7 @@ def test_step5_frontend_elements_and_logic():
         html = f.read()
 
     assert 'id="stepNav5"' in html
+    assert 'id="activePhaseBadge"' in html
     assert 'id="zoneLegendItem"' in html
     assert 'id="cardProbeSection"' in html
     assert 'id="cardVectorBarsContainer"' in html
@@ -193,11 +229,12 @@ def test_step5_frontend_elements_and_logic():
 
     assert "renderStep5" in js
     assert "animateStep5ProbePackets" in js
-    assert "zone-node-2" in js
-    assert "zone-node-4" in js
-    assert "zone-node-8" in js
-    assert "boundary-node-1" in js
-    assert "boundary-node-6" in js
+    assert "useZoneColors: false" in js
+    assert "activePhaseBadge" in js
+    assert "STEP 5: ZONE PROBE FLOODING (TTL=1)" in js
+    assert "Overlapping Probes Detected (First-Wins Arbitration)" in js
+    assert "t = 11.2 ms" in js
+    assert "t = 18.5 ms" in js
     assert "PROBE(TTL=1)" in js
     assert "stepNav" in js
     assert "cardProbeSection" in js
