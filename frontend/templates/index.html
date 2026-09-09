@@ -79,6 +79,11 @@
         <span class="step-bubble">4</span>
         <span>Initiator Election</span>
       </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav5" class="step-item cursor-pointer" title="Jump to Step 5">
+        <span class="step-bubble">5</span>
+        <span>Zone Creation</span>
+      </div>
     </nav>
 
     <!-- Session Badge -->
@@ -236,6 +241,12 @@
             <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-800 border border-rose-950"></span><span class="text-rose-900 font-bold text-[10.5px]">C2 (Dark Red)</span></span>
             <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-700 border border-yellow-950"></span><span class="text-amber-900 font-bold text-[10.5px]">C8 (Dark Yellow)</span></span>
           </div>
+          <div id="zoneLegendItem" class="hidden flex items-center gap-2">
+            <span class="text-slate-500 font-bold text-[10.5px]">Zones:</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600 border border-emerald-800"></span><span class="text-emerald-800 font-bold text-[10.5px]">Zone 2 (Emerald)</span></span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-orange-600 border border-orange-800"></span><span class="text-orange-800 font-bold text-[10.5px]">Zone 4 (Coral)</span></span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-purple-600 border border-purple-800"></span><span class="text-purple-800 font-bold text-[10.5px]">Zone 8 (Violet)</span></span>
+          </div>
           <div id="boundaryLegendItem" class="hidden flex items-center gap-1.5">
             <span class="w-4 border-t-2 border-dashed border-red-500 inline-block"></span>
             <span class="text-red-700 font-bold text-[11px]">Zone Boundary</span>
@@ -320,6 +331,15 @@
                 [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]
               </div>
 
+              <!-- Visual Mini Bar Profile (Step 5) -->
+              <div id="cardVectorBarsContainer" class="hidden mb-2 p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                <div class="text-[9.5px] font-bold text-slate-600 mb-1.5 flex items-center justify-between">
+                  <span>Vector Profile (Mini Bars):</span>
+                  <span class="text-[9px] text-slate-400 font-normal">w<sub>i,c</sub></span>
+                </div>
+                <div id="cardVectorBars" class="space-y-1"></div>
+              </div>
+
               <!-- Vector Component Breakdown (Hidden in Step 4+ per Issue #4) -->
               <div id="cardVectorBreakdownContainer" class="overflow-hidden border border-slate-200 rounded-lg shadow-xs bg-white">
                 <table class="w-full text-[10px] font-mono border-collapse">
@@ -371,6 +391,19 @@
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </div>
+
+            <!-- Step 5: Zone Creation & Probe Status -->
+            <div id="cardProbeSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>📡</span>
+                  <span>Probe Flooding (TTL=1):</span>
+                </span>
+                <span id="cardZoneBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Zone 2</span>
+              </div>
+              <div id="cardProbeContent" class="mt-1 space-y-1.5 text-[10px] font-mono">
               </div>
             </div>
           </div>

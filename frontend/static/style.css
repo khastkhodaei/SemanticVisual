@@ -143,6 +143,10 @@ body {
   color: var(--brand-purple);
 }
 
+.step-item.active.step-emerald {
+  color: #059669;
+}
+
 .step-item.completed {
   color: var(--brand-emerald);
 }
@@ -182,6 +186,13 @@ body {
   border-color: var(--brand-purple);
   color: #ffffff;
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25);
+}
+
+.step-item.active.step-emerald .step-bubble {
+  background: #059669;
+  border-color: #059669;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.25);
 }
 
 .step-item.completed .step-bubble {

@@ -180,6 +180,53 @@ function initCytoscape() {
         }
       },
       {
+        selector: "node.zone-node-2",
+        style: {
+          "background-color": "#059669",
+          "border-color": "#047857",
+          "shadow-color": "#059669",
+          "color": "#ffffff"
+        }
+      },
+      {
+        selector: "node.zone-node-4",
+        style: {
+          "background-color": "#ea580c",
+          "border-color": "#c2410c",
+          "shadow-color": "#ea580c",
+          "color": "#ffffff"
+        }
+      },
+      {
+        selector: "node.zone-node-8",
+        style: {
+          "background-color": "#7c3aed",
+          "border-color": "#6d28d9",
+          "shadow-color": "#7c3aed",
+          "color": "#ffffff"
+        }
+      },
+      {
+        selector: "node.boundary-node-1",
+        style: {
+          "background-color": "#059669",
+          "border-color": "#ea580c",
+          "border-width": 4.5,
+          "shadow-color": "#ea580c",
+          "color": "#ffffff"
+        }
+      },
+      {
+        selector: "node.boundary-node-6",
+        style: {
+          "background-color": "#ea580c",
+          "border-color": "#7c3aed",
+          "border-width": 4.5,
+          "shadow-color": "#7c3aed",
+          "color": "#ffffff"
+        }
+      },
+      {
         selector: "node.selected-node",
         style: {
           "border-color": "#0284c7",
@@ -604,9 +651,19 @@ function clearClassFilter() {
   logToTerminal("INFO", "Cleared class filter. All 10 nodes restored to full opacity.");
 }
 
-// 4. Main Step Loading Function (Steps 1 to 4)
+// Helper to reliably find Cytoscape node element by number or ID string
+function getNodeElement(id) {
+  if (!cy) return null;
+  const numId = parseInt(String(id).replace("node_", "").replace("C", ""), 10);
+  let el = cy.getElementById(`node_${numId}`);
+  if (!el || !el.length) el = cy.getElementById(String(numId));
+  if (!el || !el.length) el = cy.getElementById(`C${numId}`);
+  return (el && el.length && el.isNode && el.isNode()) ? el : null;
+}
+
+// 4. Main Step Loading Function (Steps 1 to 5)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 4) return;
+  if (stepNumber < 1 || stepNumber > 5) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -635,6 +692,8 @@ async function loadStep(stepNumber) {
       renderStep3(data);
     } else if (stepNumber === 4) {
       renderStep4(data);
+    } else if (stepNumber === 5) {
+      renderStep5(data);
     }
 
     // Stream initial terminal logs
@@ -1017,6 +1076,140 @@ function animateVrfScoreExchangePackets(packets, allNodes, onArrival) {
   activeAnimationId = requestAnimationFrame(runFrame);
 }
 
+// 8b. Storyboard Step 5: Zone Creation via PROBE Flooding (TTL = 1)
+function renderStep5(data) {
+  stopCurrentPacketAnimation();
+
+  renderSidebarFormula(
+    "Zone Creation via PROBE Flooding",
+    "\\text{PROBE}(p, \\text{TTL}=1), \\quad p \\in \\{2, 4, 8\\}",
+    "Elected Initiators broadcast a PROBE packet with TTL=1 to discover and claim their 1-hop physical neighbors.",
+    "Step 5: Zone Creation",
+    false,
+    "emerald"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Step 5: Zone Creation via PROBE Flooding (TTL = 1)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
+  const zoneLegend = document.getElementById("zoneLegendItem");
+  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>3 Zones (<span class="text-emerald-700 font-bold">Zone 2</span>, <span class="text-orange-700 font-bold">Zone 4</span>, <span class="text-purple-700 font-bold">Zone 8</span>) | <span class="text-rose-700 font-bold">2 Boundaries (C1, C6)</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Render nodes: Color-coded by adopted zone palette; Initiators retain crown (👑)
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useZoneColors: true,
+    showBoundaryEdges: true
+  });
+
+  logToTerminal("ZONE", "[PROBE FLOODING] Initiators broadcast PROBE(TTL=1) to 1-hop physical neighbors.");
+  logToTerminal("ZONE", "Initiator C2 (Zone 2 - Emerald Green) dispatches PROBE to: [C1, C3]");
+  logToTerminal("ZONE", "Initiator C4 (Zone 4 - Coral/Orange) dispatches PROBE to: [C1, C5, C6, C7]");
+  logToTerminal("ZONE", "Initiator C8 (Zone 8 - Violet/Purple) dispatches PROBE to: [C6, C9, C10]");
+  logToTerminal("ZONE", "[PROBE ARRIVAL] C3 adopts Zone 2 from Initiator C2.");
+  logToTerminal("ZONE", "[PROBE ARRIVAL] C5 and C7 adopt Zone 4 from Initiator C4.");
+  logToTerminal("ZONE", "[PROBE ARRIVAL] C9 and C10 adopt Zone 8 from Initiator C8.");
+  logToTerminal("BOUNDARY", "[BOUNDARY OVERLAP] Node C1 received intersecting PROBE messages from Initiators C2 and C4 -> Marked Boundary Node (Zone 2 ∩ Zone 4).");
+  logToTerminal("BOUNDARY", "[BOUNDARY OVERLAP] Node C6 received intersecting PROBE messages from Initiators C4 and C8 -> Marked Boundary Node (Zone 4 ∩ Zone 8).");
+  logToTerminal("SUCCESS", "[ZONE FORMATION] 3 Semantic Zones created via PROBE flooding (TTL=1). All 10 peers assigned.");
+
+  const packets = data.packet_events || data.packet_exchanges || [];
+  if (packets.length > 0) {
+    animateStep5ProbePackets(packets, data.nodes);
+  }
+}
+
+// Directional PROBE packet animation along physical links in Step 5
+function animateStep5ProbePackets(packets, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const duration = 2400; // ms
+  const startTime = performance.now();
+  const activeList = packets || [];
+
+  function runFrame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1.0);
+    const ease = easeInOutQuad(progress);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    activeList.forEach(pkt => {
+      const srcId = pkt.source_num || pkt.source;
+      const tgtId = pkt.target_num || pkt.target;
+      const srcNode = getNodeElement(srcId);
+      const tgtNode = getNodeElement(tgtId);
+      if (!srcNode || !tgtNode) return;
+
+      const p1 = srcNode.renderedPosition();
+      const p2 = tgtNode.renderedPosition();
+
+      const curX = p1.x + (p2.x - p1.x) * ease;
+      const curY = p1.y + (p2.y - p1.y) * ease;
+
+      const initId = pkt.initiator_id || (typeof srcId === "number" ? srcId : parseInt(String(srcId).replace("C", "").replace("node_", ""), 10));
+      let badgeBg = "rgba(209, 250, 229, 0.98)";
+      let badgeText = "#065f46";
+      let badgeBorder = "#059669";
+      if (initId === 4) {
+        badgeBg = "rgba(255, 237, 213, 0.98)";
+        badgeText = "#9a3412";
+        badgeBorder = "#ea580c";
+      } else if (initId === 8) {
+        badgeBg = "rgba(237, 233, 254, 0.98)";
+        badgeText = "#5b21b6";
+        badgeBorder = "#7c3aed";
+      }
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(curX, curY, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = badgeBorder;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = badgeBorder;
+      ctx.fill();
+      ctx.restore();
+
+      drawCanvasFloatingBadge(
+        ctx,
+        `PROBE(TTL=1)`,
+        curX,
+        curY - 14,
+        badgeBg,
+        badgeText,
+        badgeBorder
+      );
+    });
+
+    if (progress < 1.0) {
+      activeAnimationId = requestAnimationFrame(runFrame);
+    } else {
+      setTimeout(() => {
+        if (currentStep === 5) {
+          animateStep5ProbePackets(packets, allNodes);
+        }
+      }, 2000);
+    }
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
 // Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
 function animateProbeFloodingWaves(waves, allNodes) {
   stopCurrentPacketAnimation();
@@ -1316,10 +1509,38 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
     let bgColor = "#2563eb";
     let borderColor = "#1d4ed8";
 
-    if (options.useZoneColors && n.assigned_zone) {
-      bgColor = getZoneColor(n.assigned_zone || n.zone_id || n.winner_initiator_id);
-      borderColor = isInit ? "#d97706" : (n.is_boundary ? "#f87171" : "#ffffff");
+    let nodeClasses = "";
+    if (options.useZoneColors && (n.assigned_zone || n.zone_id)) {
+      const zid = n.assigned_zone || n.zone_id;
+      if (zid === 2) {
+        bgColor = "#059669";
+        borderColor = isInit ? "#047857" : (n.is_boundary ? "#ea580c" : "#047857");
+      } else if (zid === 4) {
+        bgColor = "#ea580c";
+        borderColor = isInit ? "#c2410c" : (n.is_boundary ? "#7c3aed" : "#c2410c");
+      } else if (zid === 8) {
+        bgColor = "#7c3aed";
+        borderColor = isInit ? "#6d28d9" : "#6d28d9";
+      }
+
+      if (n.is_boundary) {
+        if (n.id === 1) {
+          bgColor = "#059669";
+          borderColor = "#ea580c";
+          nodeClasses += "boundary-node-1 ";
+        } else if (n.id === 6) {
+          bgColor = "#ea580c";
+          borderColor = "#7c3aed";
+          nodeClasses += "boundary-node-6 ";
+        }
+      } else {
+        nodeClasses += `zone-node-${zid} `;
+      }
+      if (isInit) {
+        nodeClasses += "initiator-node ";
+      }
     } else if (isInit) {
+      nodeClasses += `initiator-node winner-node-${n.id} `;
       if (n.id === 4 || n.winner_color === "dark green") {
         bgColor = "#166534";
         borderColor = "#14532d";
@@ -1337,7 +1558,7 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
 
     elements.push({
       group: "nodes",
-      classes: isInit ? `initiator-node winner-node-${n.id}` : "",
+      classes: nodeClasses.trim(),
       data: {
         id: `node_${n.id}`,
         node_id_num: n.id,
@@ -1371,7 +1592,12 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
         vrf_score: n.vrf_score,
         is_initiator: n.is_initiator,
         assigned_zone: n.assigned_zone,
-        zone_color: n.zone_color,
+        zone_id: n.zone_id || n.assigned_zone,
+        zone_label: n.zone_label,
+        zone_color: n.zone_color || bgColor,
+        zone_probes_received: n.zone_probes_received || [],
+        probes_sent: n.probes_sent || [],
+        boundary_zones: n.boundary_zones || [],
         initiator_color: n.initiator_color,
         hops_to_initiator: n.hops_to_initiator,
         hops_label: n.hops_label,
@@ -1453,9 +1679,17 @@ function showNodeModal(nodeData) {
 
   const idNum = nodeData.node_id_num || nodeData.id;
 
-  // Header: Node C{id}
+  // Header: Node C{id} | Role: INITIATOR / CLIENT | Zone: {assigned_zone} in Step 5
   if (cardNodeId) {
-    cardNodeId.innerHTML = `<span class="text-blue-700 font-bold font-mono text-sm">Node C${idNum}</span>`;
+    if (currentStep === 5) {
+      const isInit = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
+      const roleStr = isInit ? "INITIATOR" : "CLIENT";
+      let zStr = "Zone " + (nodeData.assigned_zone || (idNum in {1:1,2:1,3:1} ? 2 : idNum in {4:1,5:1,6:1,7:1} ? 4 : 8));
+      if (nodeData.zone_label) zStr = nodeData.zone_label;
+      cardNodeId.innerHTML = `<span class="text-blue-700 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Role: <span class="${isInit ? 'text-amber-700 font-bold' : 'text-slate-800'}">${roleStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Zone: <span class="font-bold text-slate-900">${zStr}</span></span>`;
+    } else {
+      cardNodeId.innerHTML = `<span class="text-blue-700 font-bold font-mono text-sm">Node C${idNum}</span>`;
+    }
   }
 
   // Status: NOT_ASSIGNED
@@ -1477,19 +1711,20 @@ function showNodeModal(nodeData) {
     cardNeighbors.textContent = neighArr.length ? neighArr.join(", ") : "None";
   }
 
-  // Client dataset classes directly below connected neighbors (Issue #4)
+  // Client dataset classes directly below connected neighbors (Issue #4 & Step 5)
+  // Shows Local percentage breakdown (e.g., Airplane: 46%, Automobile: 17%, Bird: 37%)
   const cardClientClasses = document.getElementById("cardClientClasses");
   if (cardClientClasses) {
     let activeClasses = [];
-    const dist = nodeData.data_distribution || nodeData.distribution || {};
+    const dist = nodeData.data_distribution || nodeData.distribution || STORYBOARD_10_DISTRIBUTION[idNum] || {};
     const entries = Object.entries(dist).filter(([_, pct]) => Number(pct) > 0);
     if (entries.length > 0) {
-      activeClasses = entries.map(([clsKey]) => getCifarClass(clsKey).name);
+      activeClasses = entries.map(([clsKey, pct]) => `${getCifarClass(clsKey).name}: ${pct}%`);
     } else {
       const vec = nodeData.vector_10d || nodeData.normalized_vector || nodeData.vector || STORYBOARD_10_VECTORS[idNum] || [];
       vec.forEach((val, idx) => {
         if (Number(val) > 0) {
-          activeClasses.push(getCifarClass(idx + 1).name);
+          activeClasses.push(`${getCifarClass(idx + 1).name}: ${(Number(val) * 100).toFixed(0)}%`);
         }
       });
     }
@@ -1551,6 +1786,33 @@ function showNodeModal(nodeData) {
       vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
     }
 
+    // Mini bar profile for Step 5
+    const vectorBarsContainer = document.getElementById("cardVectorBarsContainer");
+    const vectorBars = document.getElementById("cardVectorBars");
+    if (currentStep === 5 && vectorBarsContainer && vectorBars) {
+      vectorBarsContainer.classList.remove("hidden");
+      vectorBars.innerHTML = "";
+      vec.forEach((val, idx) => {
+        const numVal = Number(val);
+        if (numVal > 0) {
+          const cls = getCifarClass(idx + 1);
+          const pct = (numVal * 100).toFixed(0);
+          const row = document.createElement("div");
+          row.className = "flex items-center gap-2 text-[10px] font-mono";
+          row.innerHTML = `
+            <span class="w-20 truncate font-sans text-slate-700 font-medium">${cls.name}</span>
+            <div class="flex-1 bg-slate-200 rounded-full h-2 overflow-hidden">
+              <div class="bg-cyan-600 h-2 rounded-full" style="width: ${pct}%"></div>
+            </div>
+            <span class="w-10 text-right font-bold text-slate-800">${numVal.toFixed(2)}</span>
+          `;
+          vectorBars.appendChild(row);
+        }
+      });
+    } else if (vectorBarsContainer) {
+      vectorBarsContainer.classList.add("hidden");
+    }
+
     // In Step 4 and subsequent steps, remove the breakdown table below the vector per Issue #4
     if (currentStep >= 4) {
       if (vectorBreakdownContainer) vectorBreakdownContainer.classList.add("hidden");
@@ -1581,7 +1843,7 @@ function showNodeModal(nodeData) {
     if (vectorSection) vectorSection.classList.add("hidden");
   }
 
-  // Step 3 & Step 4: Local VRF Score & 1-Hop Neighborhood Scoreboard / Initiator Election
+  // Step 3, 4, 5: Local VRF Score & 1-Hop Neighborhood Scoreboard / Election / Probe
   const vrfSection = document.getElementById("cardVrfSection");
   const vrfBadge = document.getElementById("cardVrfScoreBadge");
   const scoreboardContainer = document.getElementById("cardNeighborhoodScoreboardContainer");
@@ -1590,7 +1852,7 @@ function showNodeModal(nodeData) {
   const scoreboardTitle = document.getElementById("cardScoreboardTitle");
   const scoreboardSubtitle = document.getElementById("cardScoreboardSubtitle");
 
-  if (currentStep === 3 || currentStep === 4) {
+  if (currentStep === 3 || currentStep === 4 || currentStep === 5) {
     if (vrfSection) vrfSection.classList.remove("hidden");
 
     // Self VRF Score
@@ -1602,7 +1864,10 @@ function showNodeModal(nodeData) {
       vrfBadge.textContent = selfScore !== null ? `\u03c3_self = ${selfScore.toFixed(4)}` : "N/A";
     }
 
-    if (currentStep === 3) {
+    if (currentStep === 5) {
+      if (scoreboardContainer) scoreboardContainer.classList.add("hidden");
+      if (electionBanner) electionBanner.classList.add("hidden");
+    } else if (currentStep === 3) {
       // Step 3: Only local score calculation. Keep Step 2 node info + local VRF score.
       // Remove Received Scores section (Issue #2)
       if (cardStatusBadge) {
@@ -1755,6 +2020,94 @@ function showNodeModal(nodeData) {
     }
   } else {
     if (vrfSection) vrfSection.classList.add("hidden");
+  }
+
+  // Step 5: Zone Creation & Probe Status
+  const probeSection = document.getElementById("cardProbeSection");
+  const probeContent = document.getElementById("cardProbeContent");
+  const zoneBadge = document.getElementById("cardZoneBadge");
+
+  if (currentStep === 5) {
+    if (probeSection) probeSection.classList.remove("hidden");
+    const isInitiator = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
+    const isBoundary = Boolean(nodeData.is_boundary || [1, 6].includes(idNum));
+    const assignedZ = nodeData.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
+
+    if (zoneBadge) {
+      if (isBoundary) {
+        zoneBadge.textContent = idNum === 1 ? "Boundary: Zone 2 ∩ Zone 4" : "Boundary: Zone 4 ∩ Zone 8";
+        zoneBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-rose-100 text-rose-800 border border-rose-300";
+      } else if (isInitiator) {
+        zoneBadge.textContent = `Zone ${assignedZ} (Initiator)`;
+        zoneBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-800 border border-amber-300";
+      } else {
+        zoneBadge.textContent = `Zone ${assignedZ}`;
+        zoneBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
+      }
+    }
+
+    if (cardStatusBadge) {
+      if (isInitiator) {
+        cardStatusBadge.textContent = "👑 INITIATOR";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+      } else if (isBoundary) {
+        cardStatusBadge.textContent = "BOUNDARY GATEWAY";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-rose-100 text-rose-900 border-rose-400";
+      } else {
+        cardStatusBadge.textContent = "ZONE MEMBER";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-emerald-100 text-emerald-900 border-emerald-400";
+      }
+    }
+
+    if (probeContent) {
+      probeContent.innerHTML = "";
+      if (isInitiator) {
+        const tgtList = (nodeData.probes_sent && nodeData.probes_sent.length)
+          ? nodeData.probes_sent.map(p => `C${p.target_id || p.target}`)
+          : (idNum === 2 ? ["C1", "C3"] : idNum === 4 ? ["C1", "C5", "C6", "C7"] : ["C6", "C9", "C10"]);
+        probeContent.innerHTML = `
+          <div class="p-2 bg-amber-50 rounded border border-amber-200 text-amber-950">
+            <div class="font-bold flex items-center gap-1 text-[11px]">
+              <span>👑</span>
+              <span>Self-Elected Initiator for Zone ${assignedZ}</span>
+            </div>
+            <div class="text-slate-600 mt-1">Dispatched <span class="font-bold font-mono text-slate-800">PROBE(TTL=1)</span> to 1-hop physical neighbors:</div>
+            <div class="font-mono font-bold text-amber-900 mt-0.5">${tgtList.join(", ")}</div>
+          </div>
+        `;
+      } else if (isBoundary) {
+        const overlapProbes = idNum === 1
+          ? ["Initiator C2 (TTL=1) → Zone 2", "Initiator C4 (TTL=1) → Zone 4"]
+          : ["Initiator C4 (TTL=1) → Zone 4", "Initiator C8 (TTL=1) → Zone 8"];
+        probeContent.innerHTML = `
+          <div class="p-2 bg-rose-50 rounded border border-rose-200 text-rose-950">
+            <div class="font-bold flex items-center gap-1 text-[11px]">
+              <span>⚠️</span>
+              <span>Overlapping Probes Detected (Boundary Interface)</span>
+            </div>
+            <div class="text-slate-600 mt-1">Received multiple intersecting PROBE messages:</div>
+            <ul class="list-disc list-inside mt-0.5 space-y-0.5 font-mono text-rose-900 font-semibold">
+              ${overlapProbes.map(p => `<li>${p}</li>`).join("")}
+            </ul>
+            <div class="text-[9.5px] text-slate-500 mt-1 font-sans">Registered as inter-zone gateway interface.</div>
+          </div>
+        `;
+      } else {
+        const fromInit = idNum === 3 ? 2 : (idNum === 5 || idNum === 7) ? 4 : 8;
+        probeContent.innerHTML = `
+          <div class="p-2 bg-emerald-50 rounded border border-emerald-200 text-emerald-950">
+            <div class="font-bold flex items-center gap-1 text-[11px]">
+              <span>✓</span>
+              <span>Accepted PROBE(TTL=1) from Initiator C${fromInit}</span>
+            </div>
+            <div class="text-slate-600 mt-1">Adopted <span class="font-bold text-emerald-900">Zone ${assignedZ}</span> identity.</div>
+            <div class="text-[9.5px] text-slate-500 mt-0.5 font-sans">Hop distance: 1 hop from initiator.</div>
+          </div>
+        `;
+      }
+    }
+  } else {
+    if (probeSection) probeSection.classList.add("hidden");
   }
 
   card.classList.remove("hidden");
@@ -2120,17 +2473,19 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 4; s++) {
+  for (let s = 1; s <= 5; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
-    item.classList.remove("active", "completed", "step-amber", "step-purple");
+    item.classList.remove("active", "completed", "step-amber", "step-purple", "step-emerald");
     if (s < step) {
       item.classList.add("completed");
     } else if (s === step) {
       item.classList.add("active");
       if (step === 3 || step === 4) {
         item.classList.add("step-amber");
+      } else if (step === 5) {
+        item.classList.add("step-emerald");
       }
     }
   }
@@ -2160,7 +2515,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 4) {
+    if (step < 5) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -2168,7 +2523,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 4 active (Initiator Election complete)";
+      btnNext.title = "Step 5 active (Zone Creation complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -2181,7 +2536,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 4);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 5);
 }
 
 function bindActionButtons() {
@@ -2205,16 +2560,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 4) {
+      if (currentStep < 5) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 4 is active (Initiator Election complete).");
+        logToTerminal("INFO", "Step 5 is active (Zone Creation complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1, Step 2, Step 3, Step 4)
-  for (let s = 1; s <= 4; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 5)
+  for (let s = 1; s <= 5; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

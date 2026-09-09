@@ -135,4 +135,35 @@ Evaluation across the 10 nodes:
      - Its winning status and color (Node 4: dark green, Node 2: dark red, Node 8: dark yellow) are prominently highlighted in the status badge and election banner.
    - These connected neighbors, client data classes, and normalized vector representations remain available unchanged in all subsequent steps.
 
+---
+
+## Step 5 — Zone Creation via PROBE Flooding (TTL = 1)
+
+Elected Initiators (Nodes 2, 4, and 8) initiate local zone formation by dispatching a `PROBE` packet to their 1-hop physical neighbors ($TTL = R = 1$):
+$$\text{PROBE}(p, \text{TTL} = 1)$$
+
+- **Initiator 2** sends `PROBE` to: Node 1 and Node 3.
+- **Initiator 4** sends `PROBE` to: Node 1, Node 5, Node 6, and Node 7.
+- **Initiator 8** sends `PROBE` to: Node 6, Node 9, and Node 10.
+
+Peers receiving a probe from an initiator adopt that initiator's zone identity. Where overlapping probes are received, boundary interfaces between neighboring zones are recorded.
+
+### Step 5 Visualization & Zone Formation Rules
+1. **Outgoing PROBE Flooding:**
+   - Directional packet animations originate from Initiators 2, 4, and 8 traveling along physical links to their 1-hop neighbors ($TTL = 1$).
+2. **Zone Membership & Palettes:**
+   - **Zone 2 Palette (Emerald Green - `#059669`):** Initiator 2, Member Node 3, Boundary Node 1.
+   - **Zone 4 Palette (Coral / Orange - `#ea580c`):** Initiator 4, Member Nodes 5, 7, Boundary Nodes 1, 6.
+   - **Zone 8 Palette (Violet / Purple - `#7c3aed`):** Initiator 8, Member Nodes 9, 10, Boundary Node 6.
+   - Initiators retain their prominent crown badge (`👑`).
+3. **Boundary Interfaces:**
+   - **Node 1:** Receives overlapping probes from Initiator 2 and Initiator 4 ($C1 \in \mathcal{Z}_2 \cap \mathcal{Z}_4$).
+   - **Node 6:** Receives overlapping probes from Initiator 4 and Initiator 8 ($C6 \in \mathcal{Z}_4 \cap \mathcal{Z}_8$).
+4. **Node Inspector Modal:**
+   - **Header:** `Node C{id}` | `Role: INITIATOR / CLIENT` | `Zone: {assigned_zone}`.
+   - **Connected Neighbors:** `[C...]`.
+   - **Client Data Classes:** Local percentage breakdown (e.g., Airplane: 46%, Automobile: 17%, Bird: 37%).
+   - **Normalized Vector ($\mathbf{w}_i$):** 10-dimensional array and visual mini bar profile.
+   - **VRF Score:** $\sigma_p$ value.
+   - **Probe Status:** Initiator that sent the probe, received TTL, and boundary flags if applicable.
 

@@ -460,6 +460,222 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "packet_exchanges": packet_exchanges,
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 5:
+        # Step 5: Zone Creation via PROBE Message Flooding (TTL = 1)
+        # Initiators (Nodes 2, 4, 8) broadcast a PROBE packet strictly to their 1-hop physical neighbors (TTL = 1)
+        # Initiator 2 -> [1, 3]
+        # Initiator 4 -> [1, 5, 6, 7]
+        # Initiator 8 -> [6, 9, 10]
+        initiators = [2, 4, 8]
+
+        probe_targets = {
+            2: [1, 3],
+            4: [1, 5, 6, 7],
+            8: [6, 9, 10],
+        }
+
+        packet_events = []
+        for init_id in sorted(probe_targets.keys()):
+            for target_id in sorted(probe_targets[init_id]):
+                z_color = "#059669" if init_id == 2 else ("#ea580c" if init_id == 4 else "#7c3aed")
+                packet_events.append({
+                    "packet_id": f"probe_{init_id}_{target_id}",
+                    "initiator_id": init_id,
+                    "source": f"C{init_id}",
+                    "target": f"C{target_id}",
+                    "source_num": init_id,
+                    "target_num": target_id,
+                    "ttl": 1,
+                    "type": "PROBE",
+                    "label": f"PROBE({init_id}, TTL=1)",
+                    "zone": init_id,
+                    "color": z_color,
+                })
+
+        # Palettes:
+        # Zone 2: Emerald Green (#059669)
+        # Zone 4: Coral / Orange (#ea580c)
+        # Zone 8: Violet / Purple (#7c3aed)
+        zone_configs = {
+            2: {"name": "Zone 2", "palette": "Emerald Green", "color": "#059669", "bg": "#d1fae5", "border": "#047857"},
+            4: {"name": "Zone 4", "palette": "Coral/Orange", "color": "#ea580c", "bg": "#ffedd5", "border": "#c2410c"},
+            8: {"name": "Zone 8", "palette": "Violet/Purple", "color": "#7c3aed", "bg": "#ede9fe", "border": "#6d28d9"},
+        }
+
+        step5_nodes = []
+        for n in nodes:
+            nid = n["id"]
+            n_copy = dict(n)
+            n_copy["vrf_score"] = STORYBOARD_10_VRF_SCORES[nid]
+            n_copy["vector_10d"] = list(STORYBOARD_10_VECTORS[nid])
+            n_copy["distribution"] = dict(STORYBOARD_10_DISTRIBUTION[nid])
+            n_copy["data_distribution"] = dict(STORYBOARD_10_DISTRIBUTION[nid])
+            n_copy["neighbors"] = sorted(STORYBOARD_10_ADJACENCY[nid])
+            n_copy["neighbors_str"] = [f"C{nb}" for nb in n_copy["neighbors"]]
+
+            is_init = (nid in initiators)
+            n_copy["is_initiator"] = is_init
+            n_copy["role"] = "INITIATOR" if is_init else "CLIENT"
+
+            # Determine received probes
+            probes_rec = []
+            for init_id, targets in probe_targets.items():
+                if nid in targets:
+                    probes_rec.append({
+                        "initiator_id": init_id,
+                        "initiator_label": f"C{init_id}",
+                        "ttl": 1,
+                        "zone": init_id,
+                        "zone_name": f"Zone {init_id}",
+                    })
+            n_copy["zone_probes_received"] = probes_rec
+
+            # Probes sent (for initiators)
+            if is_init:
+                n_copy["probes_sent"] = [
+                    {"target_id": tgt, "target_label": f"C{tgt}", "ttl": 1}
+                    for tgt in probe_targets[nid]
+                ]
+            else:
+                n_copy["probes_sent"] = []
+
+            # Determine boundary condition and assigned zone
+            if nid == 1:
+                n_copy["is_boundary"] = True
+                n_copy["boundary_zones"] = [2, 4]
+                n_copy["assigned_zone"] = 2
+                n_copy["zone_id"] = 2
+                n_copy["zone_label"] = "Zone 2 / Zone 4 (Boundary)"
+                n_copy["status"] = "BOUNDARY"
+                n_copy["bg_color"] = "#059669"
+                n_copy["border_color"] = "#ea580c"
+                n_copy["border_width"] = 3.5
+            elif nid == 6:
+                n_copy["is_boundary"] = True
+                n_copy["boundary_zones"] = [4, 8]
+                n_copy["assigned_zone"] = 4
+                n_copy["zone_id"] = 4
+                n_copy["zone_label"] = "Zone 4 / Zone 8 (Boundary)"
+                n_copy["status"] = "BOUNDARY"
+                n_copy["bg_color"] = "#ea580c"
+                n_copy["border_color"] = "#7c3aed"
+                n_copy["border_width"] = 3.5
+            elif nid == 2:
+                n_copy["is_boundary"] = False
+                n_copy["boundary_zones"] = []
+                n_copy["assigned_zone"] = 2
+                n_copy["zone_id"] = 2
+                n_copy["zone_label"] = "Zone 2 (Initiator)"
+                n_copy["status"] = "INITIATOR"
+                n_copy["bg_color"] = "#059669"
+                n_copy["border_color"] = "#047857"
+                n_copy["border_width"] = 4.0
+            elif nid == 3:
+                n_copy["is_boundary"] = False
+                n_copy["boundary_zones"] = []
+                n_copy["assigned_zone"] = 2
+                n_copy["zone_id"] = 2
+                n_copy["zone_label"] = "Zone 2"
+                n_copy["status"] = "ASSIGNED"
+                n_copy["bg_color"] = "#059669"
+                n_copy["border_color"] = "#047857"
+                n_copy["border_width"] = 2.0
+            elif nid == 4:
+                n_copy["is_boundary"] = False
+                n_copy["boundary_zones"] = []
+                n_copy["assigned_zone"] = 4
+                n_copy["zone_id"] = 4
+                n_copy["zone_label"] = "Zone 4 (Initiator)"
+                n_copy["status"] = "INITIATOR"
+                n_copy["bg_color"] = "#ea580c"
+                n_copy["border_color"] = "#c2410c"
+                n_copy["border_width"] = 4.0
+            elif nid in (5, 7):
+                n_copy["is_boundary"] = False
+                n_copy["boundary_zones"] = []
+                n_copy["assigned_zone"] = 4
+                n_copy["zone_id"] = 4
+                n_copy["zone_label"] = "Zone 4"
+                n_copy["status"] = "ASSIGNED"
+                n_copy["bg_color"] = "#ea580c"
+                n_copy["border_color"] = "#c2410c"
+                n_copy["border_width"] = 2.0
+            elif nid == 8:
+                n_copy["is_boundary"] = False
+                n_copy["boundary_zones"] = []
+                n_copy["assigned_zone"] = 8
+                n_copy["zone_id"] = 8
+                n_copy["zone_label"] = "Zone 8 (Initiator)"
+                n_copy["status"] = "INITIATOR"
+                n_copy["bg_color"] = "#7c3aed"
+                n_copy["border_color"] = "#6d28d9"
+                n_copy["border_width"] = 4.0
+            else:  # nid in (9, 10)
+                n_copy["is_boundary"] = False
+                n_copy["boundary_zones"] = []
+                n_copy["assigned_zone"] = 8
+                n_copy["zone_id"] = 8
+                n_copy["zone_label"] = "Zone 8"
+                n_copy["status"] = "ASSIGNED"
+                n_copy["bg_color"] = "#7c3aed"
+                n_copy["border_color"] = "#6d28d9"
+                n_copy["border_width"] = 2.0
+
+            n_copy["zone_color"] = zone_configs[n_copy["assigned_zone"]]["color"]
+            n_copy["zone_name"] = zone_configs[n_copy["assigned_zone"]]["name"]
+
+            step5_nodes.append(n_copy)
+
+        step5_edges = []
+        node_zone_map = {n["id"]: n["assigned_zone"] for n in step5_nodes}
+        for e in edges:
+            e_copy = dict(e)
+            u = e["source_num"]
+            v = e["target_num"]
+            z_u = node_zone_map.get(u)
+            z_v = node_zone_map.get(v)
+            is_boundary_edge = (z_u != z_v) or (u in (1, 6)) or (v in (1, 6))
+            e_copy["is_inter_zone"] = is_boundary_edge
+            step5_edges.append(e_copy)
+
+        terminal_logs = [
+            "[PROBE FLOODING] Initiators broadcast PROBE(TTL=1) to 1-hop physical neighbors.",
+            "Initiator C2 (Zone 2 - Emerald Green) dispatches PROBE to: [C1, C3]",
+            "Initiator C4 (Zone 4 - Coral/Orange) dispatches PROBE to: [C1, C5, C6, C7]",
+            "Initiator C8 (Zone 8 - Violet/Purple) dispatches PROBE to: [C6, C9, C10]",
+            "[PROBE ARRIVAL] C3 adopts Zone 2 from Initiator C2.",
+            "[PROBE ARRIVAL] C5 and C7 adopt Zone 4 from Initiator C4.",
+            "[PROBE ARRIVAL] C9 and C10 adopt Zone 8 from Initiator C8.",
+            "[BOUNDARY OVERLAP] Node C1 received intersecting PROBE messages from Initiators C2 and C4 -> Marked Boundary Node (Zone 2 ∩ Zone 4).",
+            "[BOUNDARY OVERLAP] Node C6 received intersecting PROBE messages from Initiators C4 and C8 -> Marked Boundary Node (Zone 4 ∩ Zone 8).",
+            "[ZONE FORMATION] 3 Semantic Zones created via PROBE flooding (TTL=1). All 10 peers assigned.",
+        ]
+
+        return {
+            "step": 5,
+            "title": "Step 5: Zone Creation via PROBE Flooding (TTL = 1)",
+            "phase_badge": "Step 5: Zone Creation",
+            "description": "Elected Initiators (Nodes 2, 4, and 8) dispatch a PROBE packet with TTL=1 to 1-hop neighbors, creating Zone 2 (Emerald Green), Zone 4 (Coral/Orange), and Zone 8 (Violet/Purple) with Boundary Nodes 1 and 6.",
+            "formula": "\\text{PROBE}(p, \\text{TTL}=1), \\quad p \\in \\{2, 4, 8\\}",
+            "formula_desc": "Elected Initiators broadcast a PROBE packet with TTL=1 to discover and claim their 1-hop physical neighbors.",
+            "nodes": step5_nodes,
+            "edges": step5_edges,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "packet_events": packet_events,
+            "packet_exchanges": packet_events,
+            "zones": {
+                2: [1, 2, 3],
+                4: [1, 4, 5, 6, 7],
+                8: [6, 8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
