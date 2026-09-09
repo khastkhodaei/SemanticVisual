@@ -1411,27 +1411,34 @@ function showNodeModal(nodeData) {
   }
 
   // Local Data Distribution: Clean percentage table showing ONLY classes this client actually holds
-  if (distTableBody) {
-    distTableBody.innerHTML = "";
-    const dist = nodeData.data_distribution || nodeData.distribution || {};
-    const entries = Object.entries(dist).filter(([_, pct]) => Number(pct) > 0);
+  // In Step 2, remove redundant data percentage from node information box to free up space (Issue #1)
+  const distSection = document.getElementById("cardDataDistributionSection");
+  if (currentStep === 2) {
+    if (distSection) distSection.classList.add("hidden");
+  } else {
+    if (distSection) distSection.classList.remove("hidden");
+    if (distTableBody) {
+      distTableBody.innerHTML = "";
+      const dist = nodeData.data_distribution || nodeData.distribution || {};
+      const entries = Object.entries(dist).filter(([_, pct]) => Number(pct) > 0);
 
-    if (entries.length === 0) {
-      distTableBody.innerHTML = '<tr><td colspan="3" class="py-1 px-2 text-slate-400 italic">No local distribution data</td></tr>';
-    } else {
-      entries.forEach(([clsKey, pct]) => {
-        const clsInfo = getCifarClass(clsKey);
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-50 transition-colors";
-        tr.innerHTML = `
-          <td class="py-1.5 px-2 font-bold text-blue-700 font-mono">${clsKey}</td>
-          <td class="py-1.5 px-2 text-slate-800 font-sans font-medium">${clsInfo.name}</td>
-          <td class="py-1.5 px-2 text-right font-mono">
-            <span class="inline-block px-1.5 py-0.5 rounded font-bold text-slate-900 bg-slate-100 border border-slate-200">${pct}%</span>
-          </td>
-        `;
-        distTableBody.appendChild(tr);
-      });
+      if (entries.length === 0) {
+        distTableBody.innerHTML = '<tr><td colspan="3" class="py-1 px-2 text-slate-400 italic">No local distribution data</td></tr>';
+      } else {
+        entries.forEach(([clsKey, pct]) => {
+          const clsInfo = getCifarClass(clsKey);
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-50 transition-colors";
+          tr.innerHTML = `
+            <td class="py-1.5 px-2 font-bold text-blue-700 font-mono">${clsKey}</td>
+            <td class="py-1.5 px-2 text-slate-800 font-sans font-medium">${clsInfo.name}</td>
+            <td class="py-1.5 px-2 text-right font-mono">
+              <span class="inline-block px-1.5 py-0.5 rounded font-bold text-slate-900 bg-slate-100 border border-slate-200">${pct}%</span>
+            </td>
+          `;
+          distTableBody.appendChild(tr);
+        });
+      }
     }
   }
 

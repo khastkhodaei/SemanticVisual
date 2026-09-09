@@ -219,3 +219,30 @@ def test_steps_md_vector_consistency():
         assert expected_line in steps_md, f"Node {nid} not found in STEPS.md"
         assert f"[{vec_str}]" in steps_md, f"Vector for Node {nid} [{vec_str}] not found in STEPS.md"
 
+
+def test_issue1_step2_redundant_percentage_removed_from_modal():
+    """Verify Issue #1: in Step 2, node data percentage is removed from inspector box,
+
+    while existing data percentage visualization elsewhere remains intact.
+    """
+    with open("frontend/templates/index.html", "r", encoding="utf-8") as f:
+        html_content = f.read()
+
+    # Section exists in template so Step 1 can display it
+    assert 'id="cardDataDistributionSection"' in html_content
+    assert 'id="cardDataDistributionTableBody"' in html_content
+
+    with open("frontend/static/app.js", "r", encoding="utf-8") as f:
+        js_content = f.read()
+
+    # app.js hides cardDataDistributionSection in Step 2 to free space for 10D vector
+    assert "cardDataDistributionSection" in js_content
+    assert "currentStep === 2" in js_content
+    assert "distSection.classList.add(\"hidden\")" in js_content or "distSection.classList.add('hidden')" in js_content
+
+    # Backend / node objects still retain local data distribution and percentages
+    nodes = get_10node_nodes()
+    for n in nodes:
+        assert "data_distribution" in n or "class_distribution" in n
+        assert len(n.get("class_distribution", {})) > 0
+
