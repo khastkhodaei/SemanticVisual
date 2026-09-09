@@ -433,6 +433,7 @@ async function loadStep(stepNumber) {
       data.terminal_logs.forEach(log => {
         let lvl = "INFO";
         if (log.startsWith("[Topology]")) lvl = "TOPOLOGY";
+        else if (log.startsWith("[LOCAL TRAINING]")) lvl = "TRAINING";
         else if (log.startsWith("[VRF")) lvl = "VRF";
         else if (log.startsWith("[Algorithm")) lvl = "VRF";
         else if (log.startsWith("[FIRST-WINS]")) lvl = "SUCCESS";
@@ -505,18 +506,18 @@ function renderStep1(data) {
   });
 }
 
-// 6. STEP 2: Local VRF Score Computation
+// 6. STEP 2: Local Training & Normalized 10D Vector Generation
 function renderStep2(data) {
   renderSidebarFormula(
-    "Local VRF Score Computation",
-    "\\sigma_p = \\text{VRF}_{sk_p}(\\text{seed}_{e-1}) \\in [0, 1)",
-    "Each peer computes a verifiable pseudorandom score using its private key sk and global seed_e0. Zero network communication.",
-    "Local VRF",
+    "Local Training & Vector Generation",
+    "\\mathbf{w}_i = [C_1, C_2, \\dots, C_{10}], \\quad \\sum_{c=1}^{10} w_{i, c} = 1.0",
+    "Each client maps local trained parameter distribution to a 10-dimensional normalized vector representing class proportions.",
+    "Step 2: Vectors",
     false
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "Local VRF Evaluation (50 Peers, All Roles = CLIENT)";
+  if (canvasLabel) canvasLabel.textContent = "Step 2: Local Training & Normalized 10D Vectors (10 Clients)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
   if (leaderLegend) leaderLegend.classList.add("hidden");
@@ -525,7 +526,7 @@ function renderStep2(data) {
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.textContent = "0 Initiators (Unexchanged)";
+    statLeaders.textContent = "0 Initiators (Step 2)";
     statLeaders.className = "text-xs font-bold text-slate-500";
   }
 
@@ -1051,9 +1052,10 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
         dominant_class: n.dominant_class,
         dominant_class_id: n.dominant_class_id,
         dominant_class_name: domName,
-        dominant_class_icon: domIcon,
         data_distribution: n.data_distribution || n.distribution || {},
         distribution: n.distribution || n.data_distribution || {},
+        vector: n.vector || n.normalized_vector || (Array.isArray(n.weights) ? n.weights : null),
+        normalized_vector: n.normalized_vector || n.vector || (Array.isArray(n.weights) ? n.weights : null),
         sk: n.sk,
         vrf_formula: n.vrf_formula,
         vrf_score: n.vrf_score,
@@ -1256,7 +1258,58 @@ function showNodeModal(nodeData) {
     cardNeighbors.textContent = neighList || "None";
   }
 
-  // Exact VRF Score (Step 2+)
+  // STEP 2: 10D Normalized Semantic Vector Profile & Visual Bar Chart
+  const step2Sec = document.getElementById("cardStep2VectorSection");
+  const cardVectorRawText = document.getElementById("cardVectorRawText");
+  const cardVectorBarChart = document.getElementById("cardVectorBarChart");
+
+  const vec = nodeData.vector || nodeData.normalized_vector || (Array.isArray(nodeData.weights) ? nodeData.weights : null);
+
+  if (step2Sec) {
+    if (currentStep >= 2 || (vec && vec.length === 10)) {
+      step2Sec.classList.remove("hidden");
+      if (cardVectorRawText && vec) {
+        cardVectorRawText.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
+      }
+      if (cardVectorBarChart && vec) {
+        cardVectorBarChart.innerHTML = "";
+        for (let i = 0; i < 10; i++) {
+          const classId = i + 1;
+          const cls = CIFAR10_CLASSES[classId] || { name: `Class ${classId}`, icon: "📦", code: `C${classId}` };
+          const val = Number(vec[i] || 0.0);
+          const pct = Math.round(val * 100);
+          const isNonZero = val > 0.001;
+
+          const row = document.createElement("div");
+          row.className = isNonZero
+            ? "flex items-center gap-1.5 p-1 rounded bg-sky-50/70 border border-sky-200/80 transition-all"
+            : "flex items-center gap-1.5 p-0.5 rounded opacity-40 hover:opacity-75 transition-opacity";
+
+          row.innerHTML = `
+            <div class="w-14 flex items-center justify-between text-[9px] font-mono">
+              <span class="${isNonZero ? 'font-bold text-sky-900' : 'text-slate-500'}">${cls.code}</span>
+              <span class="text-[10px]">${cls.icon}</span>
+            </div>
+            <div class="flex-1 bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200/80 relative">
+              <div class="h-full rounded-full transition-all duration-500 ${
+                isNonZero
+                  ? 'bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400 shadow-xs'
+                  : 'bg-transparent'
+              }" style="width: ${Math.max(pct, isNonZero ? 4 : 0)}%;"></div>
+            </div>
+            <div class="w-10 text-right font-mono text-[9px]">
+              <span class="${isNonZero ? 'font-bold text-blue-700' : 'text-slate-400'}">${val.toFixed(2)}</span>
+            </div>
+          `;
+          cardVectorBarChart.appendChild(row);
+        }
+      }
+    } else {
+      step2Sec.classList.add("hidden");
+    }
+  }
+
+  // Exact VRF Score (Step 3+)
   if (cardVrfScore && cardVrfScoreRow) {
     if (currentStep >= 2 && nodeData.vrf_score !== null && nodeData.vrf_score !== undefined) {
       cardVrfScoreRow.classList.remove("hidden");
@@ -1985,6 +2038,7 @@ function logToTerminal(level, message) {
 
   if (level === "ERROR") badgeColor = "text-rose-400";
   else if (level === "SUCCESS") badgeColor = "text-emerald-400";
+  else if (level === "TRAINING") badgeColor = "text-cyan-400";
   else if (level === "WARN") badgeColor = "text-amber-400";
   else if (level === "ZONE") badgeColor = "text-purple-400";
   else if (level === "VRF") badgeColor = "text-amber-400";

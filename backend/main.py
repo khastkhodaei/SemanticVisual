@@ -130,6 +130,17 @@ def get_storyboard_step(step_number: int):
     return get_10node_step_data(step_number)
 
 
+@app.post("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
+def post_storyboard_step(step_number: int):
+    """Execute / return deterministic data for Storyboard Step (1 to 4) for 10-node simulation."""
+    if step_number not in [1, 2, 3, 4]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid step number {step_number}. Must be between 1 and 4.",
+        )
+    return get_10node_step_data(step_number)
+
+
 @app.post("/api/v1/init", status_code=status.HTTP_200_OK, tags=["Simulation"])
 def init_simulation(req: SimulationInitRequest):
     """Initialize a new simulation session with RGG topology and heterogeneous weights."""

@@ -308,7 +308,37 @@
               </div>
             </div>
 
-            <!-- 3. Exact VRF Score from Sheet 3 (Step 2+) -->
+            <!-- STEP 2: 10D Normalized Semantic Vector Profile -->
+            <div id="cardStep2VectorSection" class="hidden pt-1.5 border-t border-slate-200 space-y-1.5">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider px-0.5">
+                <span class="flex items-center gap-1 text-sky-800">
+                  <span>📊</span>
+                  <span>10D Semantic Vector (w_i):</span>
+                </span>
+                <span class="text-[9px] px-1.5 py-0.2 rounded bg-sky-100 text-sky-800 border border-sky-300 font-mono font-bold">||w_i||_1 = 1.0</span>
+              </div>
+
+              <!-- Vector in Text -->
+              <div class="bg-slate-900 text-slate-100 p-2 rounded-lg font-mono text-[9.5px] border border-slate-700 shadow-inner">
+                <div class="text-[8px] text-slate-400 font-semibold mb-0.5 uppercase tracking-wider">Vector:</div>
+                <div id="cardVectorRawText" class="text-sky-300 font-bold break-all leading-relaxed">
+                  [0.46, 0.17, 0.37, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]
+                </div>
+              </div>
+
+              <!-- 10-Class Visual Bar Chart -->
+              <div class="bg-white border border-slate-200 rounded-lg p-2 shadow-xs space-y-1">
+                <div class="text-[8.5px] text-slate-500 font-bold uppercase tracking-wider mb-1 flex justify-between">
+                  <span>Class Dimensions (C1..C10)</span>
+                  <span>Normalized Weight</span>
+                </div>
+                <div id="cardVectorBarChart" class="space-y-1 text-[9.5px] font-mono">
+                  <!-- Dynamically rendered 10 bars: non-zero vibrant, 0.00 dimmed -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Exact VRF Score from Sheet 3 (Step 3+) -->
             <div id="cardVrfScoreRow" class="hidden flex justify-between items-center px-1">
               <span class="text-slate-500 font-medium">Self VRF Score (σ_p):</span>
               <span id="cardVrfScore" class="text-blue-700 font-mono font-bold">0.0235</span>

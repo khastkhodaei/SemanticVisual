@@ -136,6 +136,7 @@ def get_10node_nodes() -> List[Dict[str, Any]]:
             "class_icon": dom["icon"],
             "data_distribution": dist,
             "distribution": dist,
+            "vector": STORYBOARD_10_VECTORS[nid],
             "normalized_vector": STORYBOARD_10_VECTORS[nid],
             "weights": STORYBOARD_10_VECTORS[nid],
             "x": coord[0],
@@ -204,24 +205,37 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             ]
         }
     elif step_number == 2:
-        # Step 2 from simulate_steps.MD: Local training and normalized vector generation
+        # Step 2: Local Training and Normalized 10D Vector Generation
+        step2_nodes = []
         for n in nodes:
-            n["status"] = "LOCAL_TRAINED"
+            n_copy = dict(n)
+            n_copy["status"] = "LOCAL_TRAINED"
+            n_copy["vector"] = STORYBOARD_10_VECTORS[n["id"]]
+            n_copy["normalized_vector"] = STORYBOARD_10_VECTORS[n["id"]]
+            n_copy["weights"] = STORYBOARD_10_VECTORS[n["id"]]
+            step2_nodes.append(n_copy)
+
+        terminal_logs = [
+            f"[LOCAL TRAINING] Node C{n['id']} completed local training. Generated 10D class representation vector."
+            for n in step2_nodes
+        ]
+
         return {
             "step": 2,
-            "title": "Step 2: Local Training and Vector Generation",
+            "title": "Step 2: Local Training & Normalized 10D Vector Generation",
             "phase_badge": "Step 2: Local Vectors",
-            "description": "10 nodes completed local CIFAR-10 training, producing normalized 10-D semantic class distribution vectors.",
-            "nodes": nodes,
+            "description": "Each client trains on local CIFAR-10 data, outputting a normalized 10-dimensional vector representing class proportions.",
+            "formula": "\\mathbf{w}_i = [C_1, C_2, \\dots, C_{10}], \\quad \\sum_{c=1}^{10} w_{i, c} = 1.0",
+            "formula_desc": "Each client maps local trained parameter distribution to a 10-dimensional normalized vector representing class proportions.",
+            "nodes": step2_nodes,
             "edges": edges,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
             "total_nodes": 10,
             "total_edges": 18,
             "unique_edges": len(edges),
             "active_leaders": [],
-            "terminal_logs": [
-                "[Training] Completed local CIFAR-10 model updates on 10 nodes.",
-                "[Vector] Generated normalized 10-dimensional semantic vectors [C1..C10].",
-            ]
+            "terminal_logs": terminal_logs,
         }
     else:
         return {
