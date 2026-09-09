@@ -104,10 +104,10 @@ function initCytoscape() {
       {
         selector: "edge",
         style: {
-          "width": 1.4,
-          "line-color": "#334155",
+          "width": 2,
+          "line-color": "#38bdf8",
           "curve-style": "straight",
-          "opacity": 0.65,
+          "opacity": 0.45,
           "transition-property": "line-color, width, opacity",
           "transition-duration": "0.2s"
         }
@@ -116,15 +116,15 @@ function initCytoscape() {
         selector: "edge.highlighted",
         style: {
           "line-color": "#06b6d4",
-          "width": 2.2,
-          "opacity": 0.9,
+          "width": 2.8,
+          "opacity": 0.95,
           "z-index": 50
         }
       },
       {
         selector: "edge.dimmed",
         style: {
-          "opacity": 0.15
+          "opacity": 0.12
         }
       }
     ],
@@ -155,13 +155,17 @@ function showNodeTooltip(nodeData) {
   document.getElementById("cardNodeId").textContent = `NODE #C${nodeData.id}`;
   document.getElementById("cardStatusBadge").textContent = nodeData.status || "NOT_ASSIGNED";
 
-  const classId = nodeData.class_id !== undefined ? nodeData.class_id : (nodeData.category || 0);
+  const classId = nodeData.class_id !== undefined ? nodeData.class_id : (nodeData.category_id || 0);
   const cls = DATASET_CLASSES[classId] || { name: "Class", icon: "📦", slice: [0, 4] };
 
   document.getElementById("cardClass").textContent = `${cls.name} ${cls.icon} (Class ${classId})`;
   document.getElementById("cardSlice").textContent = `Dims [${cls.slice[0]} - ${cls.slice[1]}]`;
   document.getElementById("cardDegree").textContent = `${nodeData.degree || 0} neighbors`;
-  document.getElementById("cardVRF").textContent = nodeData.vrf_score !== undefined ? Number(nodeData.vrf_score).toFixed(4) : "-";
+
+  const x = nodeData.coords ? Math.round(nodeData.coords.x) : (nodeData.x ? Math.round(nodeData.x) : "-");
+  const y = nodeData.coords ? Math.round(nodeData.coords.y) : (nodeData.y ? Math.round(nodeData.y) : "-");
+  const cardCoords = document.getElementById("cardCoords");
+  if (cardCoords) cardCoords.textContent = `(${x}, ${y})`;
 
   // Draw 50-dimensional parameter vector preview with active class spike
   renderTooltipVectorPreview(nodeData.weights || [], classId);
@@ -348,7 +352,7 @@ function renderMesh(nodes, edges) {
 
   // Build Nodes with uniform neutral blue/cyan
   nodes.forEach(n => {
-    const classId = n.class_id !== undefined ? n.class_id : (n.category || 0);
+    const classId = n.class_id !== undefined ? n.class_id : (n.category_id !== undefined ? n.category_id : (n.category || 0));
     const cls = DATASET_CLASSES[classId] || { name: "Node", icon: "📦" };
     const label = `C${n.id} ${cls.icon}`;
 
@@ -361,10 +365,14 @@ function renderMesh(nodes, edges) {
         status: n.status || "NOT_ASSIGNED",
         role: n.role || "CLIENT",
         class_id: classId,
+        category_id: classId,
         class_name: cls.name,
+        category_name: cls.name,
+        emoji: cls.icon,
         class_icon: cls.icon,
         degree: n.degree || 0,
-        vrf_score: n.vrf_score,
+        vrf_score: null,
+        coords: n.coords,
         weights: n.weights || []
       },
       position: {

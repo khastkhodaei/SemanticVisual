@@ -181,57 +181,96 @@ class SemanticDFLEngine:
 
         return [round(float(w), 6) for w in weights]
 
-    def generate_storyboard_topology(
+    def generate_storyboard_step1(
         self,
         benchmark: str = "Non-IID 10-Class Storyboard",
     ) -> Dict[str, Any]:
-        """Generate the exact deterministic 50-node overlay-free physical ad-hoc network.
+        """Generate the organic 50-node overlay-free physical ad-hoc network for Step 1.
 
-        Matches Figure 3(a) of the ACM 2026 paper:
-        - 50 nodes (C_1 to C_50) across 10 spatial regions.
-        - Undirected ad-hoc communication links with degree 3 to 6.
+        - 50 nodes (C_1 to C_50) scattered organically across [80, 850] x [60, 520] with min distance constraint.
+        - Undirected ad-hoc communication links with degree 3 to 6 and single connected component.
         - Pure overlay-free initial state: status='NOT_ASSIGNED', role='CLIENT', zone_id=None.
+        - vrf_score is strictly None (null in JSON).
         """
-        coords_map: Dict[int, Tuple[float, float]] = {}
-        for g_idx, (cx, cy) in enumerate(REGION_CENTERS_50):
-            start_id = g_idx * 5 + 1
-            for off_idx, (ox, oy) in enumerate(LOCAL_OFFSETS_50):
-                nid = start_id + off_idx
-                coords_map[nid] = (round(cx + ox, 2), round(cy + oy, 2))
+        from collections import deque
 
-        # Intra-region edges
-        intra_edges: List[Tuple[int, int]] = []
-        for g in range(10):
-            base = g * 5 + 1
-            n1, n2, n3, n4, n5 = base, base + 1, base + 2, base + 3, base + 4
-            intra_edges.extend([
-                (n2, n1), (n2, n3), (n2, n4), (n2, n5),
-                (n1, n3), (n1, n4),
-                (n3, n5), (n4, n5),
-            ])
+        rng = np.random.default_rng(2026)
+        points: List[np.ndarray] = []
+        while len(points) < 50:
+            p = np.array([rng.uniform(85.0, 845.0), rng.uniform(65.0, 515.0)])
+            if all(np.linalg.norm(p - existing) >= 48.0 for existing in points):
+                points.append(p)
+        coords_map = {i + 1: (round(float(points[i][0]), 2), round(float(points[i][1]), 2)) for i in range(50)}
+
+        R = 120.0
+        adj_set: Dict[int, set] = {i: set() for i in range(1, 51)}
+        for i in range(1, 51):
+            c_i = np.array(coords_map[i])
+            for j in range(i + 1, 51):
+                c_j = np.array(coords_map[j])
+                if np.linalg.norm(c_i - c_j) <= R:
+                    adj_set[i].add(j)
+                    adj_set[j].add(i)
+
+        # Ensure min degree >= 3
+        for i in range(1, 51):
+            if len(adj_set[i]) < 3:
+                c_i = np.array(coords_map[i])
+                sorted_by_dist = sorted(
+                    [j for j in range(1, 51) if j != i and j not in adj_set[i] and len(adj_set[j]) < 6],
+                    key=lambda j: np.linalg.norm(c_i - np.array(coords_map[j]))
+                )
+                while len(adj_set[i]) < 3 and sorted_by_dist:
+                    nxt = sorted_by_dist.pop(0)
+                    adj_set[i].add(nxt)
+                    adj_set[nxt].add(i)
+
+        # Prune degree > 6 while preserving min degree >= 3 and graph connectivity
+        for i in range(1, 51):
+            c_i = np.array(coords_map[i])
+            while len(adj_set[i]) > 6:
+                sorted_neighbors = sorted(list(adj_set[i]), key=lambda j: -np.linalg.norm(c_i - np.array(coords_map[j])))
+                removed = False
+                for nbr in sorted_neighbors:
+                    if len(adj_set[nbr]) > 3:
+                        adj_set[i].remove(nbr)
+                        adj_set[nbr].remove(i)
+                        visited = set()
+                        q = deque([1])
+                        visited.add(1)
+                        while q:
+                            curr = q.popleft()
+                            for next_nbr in adj_set[curr]:
+                                if next_nbr not in visited:
+                                    visited.add(next_nbr)
+                                    q.append(next_nbr)
+                        if len(visited) == 50:
+                            removed = True
+                            break
+                        else:
+                            adj_set[i].add(nbr)
+                            adj_set[nbr].add(i)
+                if not removed:
+                    break
 
         all_edge_pairs = set()
         edges_list: List[Dict[str, Any]] = []
-        adjacency: Dict[int, List[int]] = {i: [] for i in range(1, 51)}
+        adjacency: Dict[int, List[int]] = {i: sorted(list(adj_set[i])) for i in range(1, 51)}
 
-        for u, v in intra_edges + INTER_REGION_BRIDGES_50:
-            pair = (min(u, v), max(u, v))
-            if pair not in all_edge_pairs:
-                all_edge_pairs.add(pair)
-                adjacency[u].append(v)
-                adjacency[v].append(u)
-                c_u = coords_map[u]
-                c_v = coords_map[v]
-                dist = float(np.hypot(c_u[0] - c_v[0], c_u[1] - c_v[1]))
-                edges_list.append({
-                    "source": pair[0],
-                    "target": pair[1],
-                    "distance": round(dist, 4),
-                    "distance_norm": round(dist / 900.0, 6),
-                })
-
-        for nid in adjacency:
-            adjacency[nid].sort()
+        for u in range(1, 51):
+            c_u = np.array(coords_map[u])
+            for v in adjacency[u]:
+                pair = (min(u, v), max(u, v))
+                if pair not in all_edge_pairs:
+                    all_edge_pairs.add(pair)
+                    c_v = np.array(coords_map[v])
+                    dist = float(np.linalg.norm(c_u - c_v))
+                    edges_list.append({
+                        "source": pair[0],
+                        "target": pair[1],
+                        "distance": round(dist, 4),
+                        "distance_norm": round(dist / 900.0, 6),
+                    })
 
         # Build 50 deterministic node objects
         nodes: List[Dict[str, Any]] = []
@@ -239,24 +278,24 @@ class SemanticDFLEngine:
             class_id = NODE_CLASSES_50[nid]
             cls_info = DATASET_CLASSES[class_id]
             weights = self.generate_node_weights(class_id, num_categories=10)
-            vrf_score = DETERMINISTIC_VRF_SCORES_50.get(nid, float(self.rng.uniform(0.35, 0.95)))
 
             nodes.append({
                 "id": nid,
                 "label": f"C{nid} {cls_info['icon']}",
+                "category_id": class_id,
+                "category_name": cls_info["name"],
+                "emoji": cls_info["icon"],
+                "class_id": class_id,
+                "class_name": cls_info["name"],
+                "class_icon": cls_info["icon"],
                 "role": "CLIENT",
                 "status": "NOT_ASSIGNED",
                 "state": "NOT_ASSIGNED",
                 "zone_id": None,
-                "class_id": class_id,
-                "class_name": cls_info["name"],
-                "class_icon": cls_info["icon"],
-                "category": class_id,
-                "category_name": f"{cls_info['name']} {cls_info['icon']}",
+                "vrf_score": None,  # Strictly null in Step 1
                 "benchmark": benchmark,
                 "model_architecture": "Homogeneous Model (M=50)",
                 "weights": weights,
-                "vrf_score": round(vrf_score, 6),
                 "coords": {
                     "x": coords_map[nid][0],
                     "y": coords_map[nid][1],
@@ -279,6 +318,8 @@ class SemanticDFLEngine:
                 "classes": DATASET_CLASSES,
             },
         }
+
+    generate_storyboard_topology = generate_storyboard_step1
 
     def generate_topology(
         self,

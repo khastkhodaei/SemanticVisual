@@ -216,16 +216,19 @@ def test_step1_storyboard_topology_and_data_distribution():
     edges = topo["edges"]
     adj = topo["adjacency_list"]
 
-    # 1. Exactly 50 nodes, all NOT_ASSIGNED, role CLIENT, zone_id None
+    # 1. Exactly 50 nodes, all NOT_ASSIGNED, role CLIENT, zone_id None, vrf_score None
     assert len(nodes) == 50, f"Expected 50 nodes, got {len(nodes)}"
     for node in nodes:
         assert node["status"] == "NOT_ASSIGNED"
         assert node["role"] == "CLIENT"
         assert node["zone_id"] is None
+        assert node["vrf_score"] is None, f"Node {node['id']} vrf_score must be None in Step 1"
         assert len(node["weights"]) == 50
         assert 3 <= node["degree"] <= 6, f"Node {node['id']} degree {node['degree']} outside [3, 6]"
         assert "class_name" in node
         assert "class_icon" in node
+        assert "category_id" in node
+        assert "emoji" in node
         assert node["label"].startswith(f"C{node['id']} ")
 
     # 2. Verify graph is connected (single connected component, no isolated singletons)
