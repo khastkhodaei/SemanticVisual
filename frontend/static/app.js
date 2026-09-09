@@ -718,9 +718,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 5)
+// 4. Main Step Loading Function (Steps 1 to 6)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 5) return;
+  if (stepNumber < 1 || stepNumber > 6) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -752,7 +752,12 @@ async function loadStep(stepNumber) {
     } else if (stepNumber === 5) {
       renderStep5(data);
     } else if (stepNumber === 6) {
-      renderStep6(data);
+      try {
+        renderStep6(data);
+      } catch (renderErr) {
+        console.error("Step 6 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 6 Render Error: ${renderErr.message}`);
+      }
     }
 
     // Stream initial terminal logs
@@ -1881,14 +1886,18 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   });
 
   edges.forEach((e, idx) => {
-    const isBoundary = Boolean(e.is_boundary_edge || e.is_inter_zone || (options.showBoundaryEdges && !!e.is_inter_zone));
+    // If currentStep <= 5, force all edges to be normal solid slate lines.
+    // Dashed red boundary styling (#f87171) must ONLY appear in Step 6 after official zone assignment.
+    const isStep6OrLater = (typeof currentStep === "number" && currentStep >= 6);
+    const isBoundary = isStep6OrLater && Boolean(options.showBoundaryEdges && (e.is_boundary_edge || e.is_inter_zone || e.is_boundary));
+
     elements.push({
       group: "edges",
       classes: isBoundary ? "boundary-edge" : "intra-zone-edge",
       data: {
         id: e.id || `edge_${idx}`,
-        source: `node_${e.source_num || parseInt(e.source.replace('C', ''))}`,
-        target: `node_${e.target_num || parseInt(e.target.replace('C', ''))}`,
+        source: `node_${e.source_num || parseInt(String(e.source).replace('C', '').replace('node_', ''), 10)}`,
+        target: `node_${e.target_num || parseInt(String(e.target).replace('C', '').replace('node_', ''), 10)}`,
         is_inter_zone: isBoundary,
       }
     });

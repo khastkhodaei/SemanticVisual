@@ -185,13 +185,22 @@ def test_step6_tonal_colors_and_boundary_edges():
     assert nodes[9]["color"] == "#a78bfa"
     assert nodes[10]["color"] == "#a78bfa"
 
-    # Boundary edges: dashed with #f87171
+    # Boundary edges in Step 6: dashed with #f87171 and is_boundary is True
     edges = data["edges"]
     boundary_edges = [e for e in edges if e.get("is_boundary_edge")]
     assert len(boundary_edges) > 0
     for be in boundary_edges:
         assert be.get("style") == "dashed"
         assert be.get("line_color") == "#f87171"
+        assert be.get("is_boundary") is True
+
+    # Confirm Step 5 edges have NO premature boundary dashed styling
+    data_step5 = get_10node_step_data(5)
+    for e in data_step5["edges"]:
+        assert e.get("is_boundary_edge") is False
+        assert e.get("is_inter_zone") is False
+        assert e.get("is_boundary") is False
+        assert e.get("style") == "solid"
 
 
 def test_step6_api_endpoints(client):

@@ -681,15 +681,13 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             step5_nodes.append(n_copy)
 
         step5_edges = []
-        node_zone_map = {n["id"]: n["assigned_zone"] for n in step5_nodes}
         for e in edges:
             e_copy = dict(e)
-            u = e["source_num"]
-            v = e["target_num"]
-            z_u = node_zone_map.get(u)
-            z_v = node_zone_map.get(v)
-            is_boundary_edge = (z_u != z_v) or (u in (1, 6)) or (v in (1, 6))
-            e_copy["is_inter_zone"] = is_boundary_edge
+            e_copy["is_inter_zone"] = False
+            e_copy["is_boundary"] = False
+            e_copy["is_boundary_edge"] = False
+            e_copy["style"] = "solid"
+            e_copy["line_color"] = "#64748b"
             step5_edges.append(e_copy)
 
         terminal_logs = [
@@ -925,6 +923,7 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             is_frontier_pair = (min(u, v) == 1 and max(u, v) == 4) or (min(u, v) == 6 and max(u, v) == 8)
 
             e_copy["is_inter_zone"] = is_cross_zone
+            e_copy["is_boundary"] = is_cross_zone
             e_copy["is_boundary_edge"] = is_cross_zone
             e_copy["is_frontier_edge"] = is_frontier_pair
             if is_cross_zone:
