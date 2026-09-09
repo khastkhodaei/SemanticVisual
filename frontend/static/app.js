@@ -1,5 +1,5 @@
 // ==========================================================================
-// SemanticDFL Storyboard Simulator - Excel Integration Controller
+// SemanticDFL Storyboard Simulator - Decoupled Algorithm 2 & 3 Controller
 // Precomputed Ground-Truth from 'semantic_dfl_simulation_data.xlsx'
 // ACM 2026 Reference Implementation - Steps 1 to 4
 // ==========================================================================
@@ -102,6 +102,16 @@ function initCytoscape() {
         }
       },
       {
+        selector: "node.initiator-node.selected-node",
+        style: {
+          "border-color": "#78350f",
+          "border-width": 5,
+          "width": 40,
+          "height": 40,
+          "z-index": 100
+        }
+      },
+      {
         selector: "node.highlighted",
         style: {
           "background-color": "#0284c7",
@@ -135,7 +145,7 @@ function initCytoscape() {
           "line-style": "dashed",
           "line-color": "#f87171",
           "line-dash-pattern": [6, 4],
-          "width": 2.2,
+          "width": 2.4,
           "opacity": 0.95,
           "z-index": 60
         }
@@ -340,14 +350,16 @@ async function loadStep(stepNumber) {
       renderStep4(data);
     }
 
-    // Stream terminal logs
+    // Stream initial terminal logs
     if (data.terminal_logs && Array.isArray(data.terminal_logs)) {
       data.terminal_logs.forEach(log => {
         let lvl = "INFO";
         if (log.startsWith("[Topology]")) lvl = "TOPOLOGY";
-        else if (log.startsWith("[VRF]")) lvl = "VRF";
-        else if (log.startsWith("[Wave") || log.startsWith("[Propagation")) lvl = "WAVE";
-        else if (log.startsWith("[Election]") || log.startsWith("[Zone")) lvl = "ZONE";
+        else if (log.startsWith("[VRF")) lvl = "VRF";
+        else if (log.startsWith("[Algorithm")) lvl = "VRF";
+        else if (log.startsWith("[FIRST-WINS]")) lvl = "SUCCESS";
+        else if (log.startsWith("[CONFLICT")) lvl = "WARN";
+        else if (log.startsWith("[PROBE") || log.startsWith("[Zone")) lvl = "ZONE";
         logToTerminal(lvl, log);
       });
     }
@@ -370,9 +382,9 @@ function updateUIHeaders(data) {
     } else if (data.step === 2) {
       activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-sky-50 text-sky-700 border border-sky-300";
     } else if (data.step === 3) {
-      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-700 border border-purple-300";
-    } else if (data.step === 4) {
       activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-300";
+    } else if (data.step === 4) {
+      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-800 border border-purple-300";
     }
   }
 
@@ -446,45 +458,85 @@ function renderStep2(data) {
   });
 }
 
-// 7. STEP 3: TTL=3 Packet Wave Propagation
+// 7. STEP 3: VRF Comparison & Local Initiator Deciding (Algorithm 2)
+// - Nodes remain neutral blue, except elected Initiators (C1, C6, etc.) which have gold crown 👑 and glowing amber border.
+// - No zone colors applied to non-initiators yet.
+// - Clicking a node displays the 3-hop decision table and scoreboard.
 function renderStep3(data) {
   renderSidebarFormula(
-    "TTL=3 Wave Propagation",
-    "\\text{PROBE}(p, \\text{TTL}=3) \\xrightarrow{\\text{multi-hop}} \\mathcal{N}_3(p)",
-    "Initiators flood discovery probes across physical links up to TTL=3 hops: Wave 1 (1-hop), Wave 2 (2-hop), Wave 3 (3-hop).",
-    "TTL = 3 Waves",
-    false,
-    "purple"
+    "VRF Initiator Election (Alg. 2)",
+    "m_p = \\min_{q \\in \\mathcal{N}_3(p)} (\\sigma_q, id_q)",
+    "Each node evaluates the minimum VRF score in its 3-hop physical neighborhood ball. The node holding the minimum score elects itself as Initiator.",
+    "R = 3 Hops",
+    true
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "TTL=3 Multi-Hop Wave Propagation (Waves 1, 2, 3 Animated)";
+  if (canvasLabel) canvasLabel.textContent = "VRF Comparison (10 Initiators 👑 Elected, 40 Candidates)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.add("hidden");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
   if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.textContent = "10 Probing Nodes";
-    statLeaders.className = "text-xs font-bold text-purple-700";
+    statLeaders.textContent = "10 Initiators 👑 (R=3)";
+    statLeaders.className = "text-xs font-bold text-amber-600";
   }
 
+  // Render nodes: Initiators in amber with crown, non-initiators in neutral blue, no zone colors
   renderCytoscapeGraph(data.nodes, data.edges, {
-    showInitiators: false,
+    showInitiators: true,
     useZoneColors: false,
     showBoundaryEdges: false
   });
+}
 
-  // Launch sequential wave animations
+// 8. STEP 4: Zone Formation, First-Wins & Probe Conflicts (Algorithm 3)
+// - Formula: PROBE(p, TTL=3) -> ASSIGNED(Z_I), delayed -> BOUNDARY
+// - Packets travel in 3 waves along physical edges.
+// - First-Wins accepted probes adopt zone color.
+// - Delayed competing probes dropped and marked as dashed boundary links.
+function renderStep4(data) {
+  renderSidebarFormula(
+    "Zone Formation (Alg. 3)",
+    "\\text{PROBE}(p, \\text{TTL}=3) \\xrightarrow{\\text{first-wins}} \\text{ASSIGNED}(Z_I), \\quad \\text{delayed} \\rightarrow \\text{BOUNDARY}",
+    "Initiators flood PROBE packets (TTL=3). Unassigned peers adopt the first arriving probe (First-Wins). Delayed competing probes are dropped, forming boundary bridges.",
+    "TTL = 3, First-Wins",
+    false,
+    "purple"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Zone PROBE Flooding & First-Wins Conflict Resolution (10 Zones Formed)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.textContent = "10 Zones Formed";
+    statLeaders.className = "text-xs font-bold text-purple-700";
+  }
+
+  // Render Cytoscape graph with 10 Zone Colors and dashed boundary edges
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useZoneColors: true,
+    showBoundaryEdges: true
+  });
+
+  // Launch the 3-wave PROBE packet animation with real-time streaming
   if (data.waves) {
-    animateThreeWaves(data.waves);
+    animateProbeFloodingWaves(data.waves);
   }
 }
 
-// Animate the 3 Sequential Waves on the Packet Overlay Canvas
-function animateThreeWaves(waves) {
+// Animate PROBE packet flooding in Step 4 across 3 waves with real-time logs
+function animateProbeFloodingWaves(waves) {
   stopCurrentPacketAnimation();
   syncPacketCanvasSize();
 
@@ -496,9 +548,21 @@ function animateThreeWaves(waves) {
   const wave2Packets = waves.wave2 || [];
   const wave3Packets = waves.wave3 || [];
 
-  const waveDuration = 1200; // ms per wave
+  const waveDuration = 1400; // ms per wave
   let currentWaveIndex = 1;
   let waveStartTime = performance.now();
+
+  function logWaveTransition(waveIdx) {
+    if (waveIdx === 1) {
+      logToTerminal("ZONE", `[Wave 1] Initiators broadcast PROBE(ttl=3) to ${wave1Packets.length} direct 1-hop physical neighbors.`);
+    } else if (waveIdx === 2) {
+      logToTerminal("ZONE", `[Wave 2] Hop 1 nodes forward PROBE(ttl=2) to ${wave2Packets.length} 2-hop physical neighbors.`);
+    } else if (waveIdx === 3) {
+      logToTerminal("ZONE", `[Wave 3] Hop 2 nodes forward PROBE(ttl=1) to ${wave3Packets.length} 3-hop boundary receivers.`);
+    }
+  }
+
+  logWaveTransition(1);
 
   function runWaveFrame(now) {
     const elapsed = now - waveStartTime;
@@ -508,20 +572,11 @@ function animateThreeWaves(waves) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     let activePackets = [];
-    let packetColor = "#38bdf8";
+    if (currentWaveIndex === 1) activePackets = wave1Packets;
+    else if (currentWaveIndex === 2) activePackets = wave2Packets;
+    else if (currentWaveIndex === 3) activePackets = wave3Packets;
 
-    if (currentWaveIndex === 1) {
-      activePackets = wave1Packets;
-      packetColor = "#38bdf8"; // Sky cyan
-    } else if (currentWaveIndex === 2) {
-      activePackets = wave2Packets;
-      packetColor = "#8b5cf6"; // Violet purple
-    } else if (currentWaveIndex === 3) {
-      activePackets = wave3Packets;
-      packetColor = "#f59e0b"; // Amber gold
-    }
-
-    // Render traveling packet dots
+    // Render traveling PROBE packets
     activePackets.forEach(pkt => {
       const srcNode = cy.getElementById(`node_${pkt.source}`);
       const tgtNode = cy.getElementById(`node_${pkt.target}`);
@@ -533,9 +588,12 @@ function animateThreeWaves(waves) {
       const curX = p1.x + (p2.x - p1.x) * easeProgress;
       const curY = p1.y + (p2.y - p1.y) * easeProgress;
 
-      // Draw packet outer glow
+      // Color packet: First-Wins adoption is bright emerald/cyan; Conflict drop is rose/amber
+      const packetColor = pkt.is_first_wins ? "#10b981" : "#f43f5e";
+
+      // Draw outer glow
       ctx.beginPath();
-      ctx.arc(curX, curY, 7, 0, Math.PI * 2);
+      ctx.arc(curX, curY, 7.5, 0, Math.PI * 2);
       ctx.fillStyle = packetColor;
       ctx.shadowBlur = 10;
       ctx.shadowColor = packetColor;
@@ -552,19 +610,22 @@ function animateThreeWaves(waves) {
     if (progress < 1.0) {
       activeAnimationId = requestAnimationFrame(runWaveFrame);
     } else {
-      // Wave transition
+      // Advance to next wave
       if (currentWaveIndex === 1 && wave2Packets.length > 0) {
         currentWaveIndex = 2;
         waveStartTime = performance.now();
+        logWaveTransition(2);
         activeAnimationId = requestAnimationFrame(runWaveFrame);
       } else if (currentWaveIndex === 2 && wave3Packets.length > 0) {
         currentWaveIndex = 3;
         waveStartTime = performance.now();
+        logWaveTransition(3);
         activeAnimationId = requestAnimationFrame(runWaveFrame);
       } else {
-        // Animation finished: clear canvas
+        // Animation finished
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         activeAnimationId = null;
+        logToTerminal("SUCCESS", "[PROBE Complete] All nodes adopted first arriving probe or established boundary bridge.");
       }
     }
   }
@@ -574,37 +635,6 @@ function animateThreeWaves(waves) {
 
 function easeInOutQuad(t) {
   return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-}
-
-// 8. STEP 4: Initiator Election & Zone Formation
-function renderStep4(data) {
-  renderSidebarFormula(
-    "Zone Formation & Initiators",
-    "Z_I = \\{ q \\mid \\text{dist}(I, q) \\le 3 \\land I = \\arg\\min \\sigma \\}",
-    "10 Initiators elected (👑 C1, C6, C11, C16, C21, C26, C31, C36, C41, C46). 50 nodes partitioned into 10 physical zones with 29 boundary bridge links.",
-    "10 Zones Formed",
-    true
-  );
-
-  const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "10 Proximity Zones Formed (10 Initiators 👑 & Boundary Edges)";
-
-  const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
-  const boundaryLegend = document.getElementById("boundaryLegendItem");
-  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
-
-  const statLeaders = document.getElementById("statLeaders");
-  if (statLeaders) {
-    statLeaders.textContent = "10 Initiators 👑";
-    statLeaders.className = "text-xs font-bold text-amber-600";
-  }
-
-  renderCytoscapeGraph(data.nodes, data.edges, {
-    showInitiators: true,
-    useZoneColors: true,
-    showBoundaryEdges: true
-  });
 }
 
 // 9. Core Cytoscape Rendering Pipeline
@@ -658,9 +688,16 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
         hops_label: n.hops_label,
         neighbors: n.neighbors || [],
         neighbors_str: n.neighbors_str || [],
-        wave1_reach: n.wave1_reach || [],
-        wave2_reach: n.wave2_reach || [],
-        wave3_reach: n.wave3_reach || [],
+        scoreboard_3hop: n.scoreboard_3hop,
+        decision_result: n.decision_result,
+        winner_id: n.winner_id,
+        winner_score: n.winner_score,
+        winner_initiator: n.winner_initiator,
+        first_wins_text: n.first_wins_text,
+        competing_probes_rejected: n.competing_probes_rejected || [],
+        is_boundary: n.is_boundary,
+        boundary_neighbors: n.boundary_neighbors || [],
+        status_tag: n.status_tag,
       },
       position: {
         x: n.x,
@@ -704,17 +741,30 @@ function showNodeModal(nodeData) {
   const cardVrfDetailsRow = document.getElementById("cardVrfDetailsRow");
   const cardSk = document.getElementById("cardSk");
   const cardFormula = document.getElementById("cardFormula");
-  const cardZone = document.getElementById("cardZone");
-  const cardZoneRow = document.getElementById("cardZoneRow");
-  const cardHops = document.getElementById("cardHops");
-  const cardHopsRow = document.getElementById("cardHopsRow");
   const cardDegree = document.getElementById("cardDegree");
   const cardNeighbors = document.getElementById("cardNeighbors");
-  const cardWaveReachRow = document.getElementById("cardWaveReachRow");
 
-  // Title: Node ID & CIFAR-10 Class (Title + Emoji)
+  // Step 3 Scoreboard Elements
+  const step3Sec = document.getElementById("cardStep3ScoreboardSection");
+  const step3Badge = document.getElementById("cardStep3Badge");
+  const decisionBanner = document.getElementById("cardDecisionBanner");
+  const scoreboardCount = document.getElementById("cardScoreboardCount");
+  const scoreboardList = document.getElementById("cardScoreboardList");
+
+  // Step 4 Zone & Conflict Elements
+  const step4Sec = document.getElementById("cardStep4ZoneSection");
+  const zoneStatusTag = document.getElementById("cardZoneStatusTag");
+  const cardZoneId = document.getElementById("cardZoneId");
+  const cardZoneWinner = document.getElementById("cardZoneWinner");
+  const cardFirstWinsText = document.getElementById("cardFirstWinsText");
+  const cardRejectedCount = document.getElementById("cardRejectedCount");
+  const cardRejectedProbesList = document.getElementById("cardRejectedProbesList");
+  const cardBoundaryNeighborsRow = document.getElementById("cardBoundaryNeighborsRow");
+  const cardBoundaryNeighborsList = document.getElementById("cardBoundaryNeighborsList");
+
+  // Title: Node ID & Emoji
   if (cardNodeId) {
-    if (currentStep === 4 && isInitiator) {
+    if (isInitiator && currentStep >= 3) {
       cardNodeId.innerHTML = `<span class="text-amber-800">👑 C${nodeData.node_id_num} ${nodeData.class_icon}</span>`;
     } else {
       cardNodeId.innerHTML = `<span class="text-blue-700">C${nodeData.node_id_num} ${nodeData.class_icon}</span>`;
@@ -728,7 +778,12 @@ function showNodeModal(nodeData) {
       cardStatusBadge.className = isInitiator
         ? "text-[9px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300"
         : "text-[9px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
-    } else if (currentStep >= 2) {
+    } else if (currentStep === 3) {
+      cardStatusBadge.textContent = isInitiator ? "👑 INITIATOR" : "CANDIDATE";
+      cardStatusBadge.className = isInitiator
+        ? "text-[9px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300"
+        : "text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300";
+    } else if (currentStep === 2) {
       cardStatusBadge.textContent = "VRF COMPUTED";
       cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-sky-100 text-sky-800 border border-sky-300";
     } else {
@@ -739,9 +794,12 @@ function showNodeModal(nodeData) {
 
   // Role: 👑 Initiator or Member
   if (cardRole) {
-    if (currentStep === 4) {
-      cardRole.textContent = isInitiator ? "👑 Initiator (Zone Root)" : "Member";
-      cardRole.className = isInitiator ? "text-amber-800 font-mono font-bold" : "text-slate-800 font-mono font-bold";
+    if (currentStep >= 3 && isInitiator) {
+      cardRole.textContent = "👑 Initiator (Zone Root)";
+      cardRole.className = "text-amber-800 font-mono font-bold";
+    } else if (currentStep === 4) {
+      cardRole.textContent = "Member";
+      cardRole.className = "text-slate-800 font-mono font-bold";
     } else {
       cardRole.textContent = "CLIENT";
       cardRole.className = "text-slate-700 font-mono font-bold";
@@ -753,7 +811,7 @@ function showNodeModal(nodeData) {
     cardClass.textContent = `${nodeData.class_title} ${nodeData.class_icon} (Class ${nodeData.class_id})`;
   }
 
-  // Exact VRF Score from Sheet 3
+  // Exact VRF Score (Step 2+)
   if (cardVrfScore && cardVrfScoreRow) {
     if (currentStep >= 2 && nodeData.vrf_score !== null && nodeData.vrf_score !== undefined) {
       cardVrfScoreRow.classList.remove("hidden");
@@ -763,9 +821,9 @@ function showNodeModal(nodeData) {
     }
   }
 
-  // VRF Formula and Key details (Step 2+)
+  // VRF Formula & Key details (Step 2)
   if (cardVrfDetailsRow) {
-    if (currentStep >= 2 && nodeData.sk) {
+    if (currentStep === 2 && nodeData.sk) {
       cardVrfDetailsRow.classList.remove("hidden");
       if (cardSk) cardSk.textContent = nodeData.sk;
       if (cardFormula) cardFormula.textContent = nodeData.vrf_formula || "((100+ID)*sk+1337)%10000";
@@ -774,27 +832,134 @@ function showNodeModal(nodeData) {
     }
   }
 
-  // Assigned Zone
-  if (cardZone && cardZoneRow) {
+  // STEP 3: 3-Hop VRF Scoreboard & Decision Table
+  if (step3Sec) {
+    if (currentStep === 3 && nodeData.scoreboard_3hop) {
+      step3Sec.classList.remove("hidden");
+      const sb = nodeData.scoreboard_3hop;
+
+      if (step3Badge) {
+        step3Badge.textContent = isInitiator ? "Self-Elected" : "Candidate";
+        step3Badge.className = isInitiator
+          ? "text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300"
+          : "text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300";
+      }
+
+      if (decisionBanner) {
+        decisionBanner.textContent = sb.decision_result;
+        decisionBanner.className = isInitiator
+          ? "p-2 rounded font-mono text-[10px] font-bold border bg-amber-50 border-amber-300 text-amber-950 leading-snug"
+          : "p-2 rounded font-mono text-[10px] font-bold border bg-slate-50 border-slate-300 text-slate-800 leading-snug";
+      }
+
+      if (scoreboardCount) {
+        scoreboardCount.textContent = `${sb.total_coverage} peers covered`;
+      }
+
+      // Populate Hop 1, 2, 3 peers
+      if (scoreboardList) {
+        scoreboardList.innerHTML = "";
+
+        const hopGroups = [
+          { hop: 1, label: "Hop 1 (Direct Neighbors)", peers: sb.hop_1 },
+          { hop: 2, label: "Hop 2 Reach", peers: sb.hop_2 },
+          { hop: 3, label: "Hop 3 Reach", peers: sb.hop_3 },
+        ];
+
+        hopGroups.forEach(grp => {
+          if (!grp.peers || grp.peers.length === 0) return;
+
+          const grpHeader = document.createElement("div");
+          grpHeader.className = "text-[9px] font-bold font-mono tracking-wider pt-1.5 pb-0.5 flex items-center justify-between text-slate-500 border-b border-slate-100";
+          grpHeader.innerHTML = `
+            <span class="flex items-center gap-1">
+              <span class="px-1 py-0.2 rounded text-[8px] hop-badge-${grp.hop}">Hop ${grp.hop}</span>
+              <span>${grp.label}</span>
+            </span>
+            <span class="text-[8px] text-slate-400">(${grp.peers.length} peers)</span>
+          `;
+          scoreboardList.appendChild(grpHeader);
+
+          grp.peers.forEach(peer => {
+            const row = document.createElement("div");
+            const isWinner = peer.is_min;
+
+            row.className = isWinner
+              ? "winner-score-row px-2 py-1 flex items-center justify-between my-0.5"
+              : "px-2 py-0.5 bg-slate-50 border border-slate-200/80 rounded flex items-center justify-between text-slate-700 my-0.5";
+
+            row.innerHTML = `
+              <span class="flex items-center gap-1 font-mono">
+                ${isWinner ? "<span>👑</span>" : ""}
+                <span class="${isWinner ? "font-bold text-amber-950" : "font-medium"}">C${peer.id}</span>
+              </span>
+              <span class="flex items-center gap-1 font-mono">
+                <span class="${isWinner ? "text-amber-900 font-extrabold" : "text-slate-800"}">σ=${Number(peer.score).toFixed(4)}</span>
+                ${isWinner ? '<span class="text-[8px] px-1 py-0.2 rounded bg-amber-200 text-amber-950 font-bold border border-amber-400">★ Winner (m_p)</span>' : ""}
+              </span>
+            `;
+            scoreboardList.appendChild(row);
+          });
+        });
+      }
+
+    } else {
+      step3Sec.classList.add("hidden");
+    }
+  }
+
+  // STEP 4: Zone Formation, First-Wins & Conflict Resolution
+  if (step4Sec) {
     if (currentStep === 4 && nodeData.assigned_zone) {
-      cardZoneRow.classList.remove("hidden");
-      cardZone.textContent = nodeData.assigned_zone;
+      step4Sec.classList.remove("hidden");
+
+      if (zoneStatusTag) {
+        zoneStatusTag.textContent = nodeData.status_tag || (nodeData.is_boundary ? "⚡ BOUNDARY" : "ASSIGNED");
+        zoneStatusTag.className = nodeData.is_boundary
+          ? "text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300"
+          : "text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-300";
+      }
+
+      if (cardZoneId) cardZoneId.textContent = nodeData.assigned_zone;
+      if (cardZoneWinner) cardZoneWinner.textContent = nodeData.winner_initiator || "Unknown";
+      if (cardFirstWinsText) cardFirstWinsText.textContent = nodeData.first_wins_text || "First-Wins";
+
+      // Competing Probes Rejected
+      const rejectedList = nodeData.competing_probes_rejected || [];
+      if (cardRejectedCount) cardRejectedCount.textContent = `${rejectedList.length} probes dropped`;
+      if (cardRejectedProbesList) {
+        if (rejectedList.length === 0) {
+          cardRejectedProbesList.innerHTML = '<span class="text-slate-400 italic">None (Internal Core Node)</span>';
+        } else {
+          cardRejectedProbesList.innerHTML = rejectedList.map(r => `
+            <span class="rejected-chip mr-1 mb-0.5">
+              ${r.initiator} (Hop ${r.arrived_hop})
+            </span>
+          `).join("");
+        }
+      }
+
+      // Boundary Neighbors
+      const bndNbrs = nodeData.boundary_neighbors || [];
+      if (cardBoundaryNeighborsRow && cardBoundaryNeighborsList) {
+        if (bndNbrs.length > 0) {
+          cardBoundaryNeighborsRow.classList.remove("hidden");
+          cardBoundaryNeighborsList.innerHTML = bndNbrs.map(nb => `
+            <span class="inline-block px-1.5 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-700 font-mono mr-1 mb-0.5">
+              ${nb}
+            </span>
+          `).join("");
+        } else {
+          cardBoundaryNeighborsRow.classList.add("hidden");
+        }
+      }
+
     } else {
-      cardZoneRow.classList.add("hidden");
+      step4Sec.classList.add("hidden");
     }
   }
 
-  // Distance to Initiator (Hops)
-  if (cardHops && cardHopsRow) {
-    if (currentStep === 4 && nodeData.hops_label) {
-      cardHopsRow.classList.remove("hidden");
-      cardHops.textContent = nodeData.hops_label;
-    } else {
-      cardHopsRow.classList.add("hidden");
-    }
-  }
-
-  // List of Direct Physical Neighbors from Sheet 2
+  // Direct Physical Neighbors (Sheet 2)
   if (cardDegree) {
     cardDegree.textContent = `${(nodeData.neighbors || []).length} neighbors`;
   }
@@ -803,21 +968,6 @@ function showNodeModal(nodeData) {
       ? nodeData.neighbors_str.join(", ")
       : (nodeData.neighbors || []).map(x => `C${x}`).join(", ");
     cardNeighbors.textContent = neighList || "None";
-  }
-
-  // Wave Reach (Step 3)
-  if (cardWaveReachRow) {
-    if (currentStep === 3) {
-      cardWaveReachRow.classList.remove("hidden");
-      const w1 = document.getElementById("cardWave1Reach");
-      if (w1) w1.textContent = `${(nodeData.wave1_reach || []).length} nodes`;
-      const w2 = document.getElementById("cardWave2Reach");
-      if (w2) w2.textContent = `${(nodeData.wave2_reach || []).length} nodes`;
-      const w3 = document.getElementById("cardWave3Reach");
-      if (w3) w3.textContent = `${(nodeData.wave3_reach || []).length} nodes`;
-    } else {
-      cardWaveReachRow.classList.add("hidden");
-    }
   }
 
   card.classList.remove("hidden");
@@ -885,9 +1035,9 @@ function updateStepper(step) {
     } else if (s === step) {
       item.classList.add("active");
       if (step === 3) {
-        item.classList.add("step-purple");
-      } else if (step === 4) {
         item.classList.add("step-amber");
+      } else if (step === 4) {
+        item.classList.add("step-purple");
       }
     }
   }
@@ -916,8 +1066,8 @@ function updateNavButtons(step) {
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 shadow-sm transition-colors";
       const nextNames = {
         1: "Step 2: VRF Compute",
-        2: "Step 3: TTL=3 Waves",
-        3: "Step 4: Zone Formation",
+        2: "Step 3: VRF Comparison",
+        3: "Step 4: Zone Flooding",
       };
       btnNext.innerHTML = `<span>Next Step (${nextNames[step]})</span><span>▶️</span>`;
     }
@@ -979,9 +1129,8 @@ function logToTerminal(level, message) {
   if (level === "ERROR") badgeColor = "text-rose-400";
   else if (level === "SUCCESS") badgeColor = "text-emerald-400";
   else if (level === "WARN") badgeColor = "text-amber-400";
-  else if (level === "ZONE") badgeColor = "text-amber-400";
-  else if (level === "VRF") badgeColor = "text-sky-400";
-  else if (level === "WAVE") badgeColor = "text-purple-400";
+  else if (level === "ZONE") badgeColor = "text-purple-400";
+  else if (level === "VRF") badgeColor = "text-amber-400";
   else if (level === "TOPOLOGY") badgeColor = "text-blue-400";
 
   row.innerHTML = `

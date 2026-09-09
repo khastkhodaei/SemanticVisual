@@ -4,7 +4,10 @@ Parses 'semantic_dfl_simulation_data.xlsx' to extract:
 1. Sheet 1 ('خلاصه پیکربندی شبکه'): Global configuration KPIs and CIFAR-10 class distributions.
 2. Sheet 2 ('مشخصات گره‌ها'): 50 nodes (C1 to C50), physical degree, neighbors, CIFAR-10 class data, and exactly 90 edges.
 3. Sheet 3 ('رأی‌گیری VRF و انتشار پیام‌ها'): Cryptographic VRF keys, formulas, sigma scores, multi-hop wave reaches, election statuses, 10 zones, and hop distances.
-Precomputes fixed, organic, collision-free 2D coordinates for Cytoscape visualization.
+
+Implements two-stage protocol lifecycle:
+- Step 3 (Algorithm 2: SELECTINITIATORS): 3-hop VRF neighborhood comparison & local decision (why C1, C6, etc. win).
+- Step 4 (Algorithm 3: ZONEFORMATION): TTL=3 PROBE wave flooding with First-Wins adoption & competing probe conflict resolution.
 """
 
 from pathlib import Path
@@ -31,7 +34,8 @@ class ExcelDataLoader:
         self._load_sheet2_nodes_and_edges()
         self._load_sheet3_vrf_and_zones()
         self._compute_fixed_coordinates()
-        self._compute_wave_propagation_events()
+        self._compute_step3_scoreboards()
+        self._compute_step4_probe_waves_and_conflicts()
 
     @classmethod
     def get_instance(cls) -> "ExcelDataLoader":
@@ -175,6 +179,7 @@ class ExcelDataLoader:
         self.node_vrf: Dict[int, Dict[str, Any]] = {}
         self.initiators: List[int] = []
         self.zones: Dict[str, List[int]] = {}
+        self.node_to_initiator: Dict[int, int] = {}
 
         # 10 zone colors
         zone_color_map = {
@@ -247,6 +252,13 @@ class ExcelDataLoader:
 
         self.initiators.sort()
 
+        # Map each node to its designated zone initiator
+        for init_id in self.initiators:
+            zname = f"زون C{init_id}"
+            for nid, data in self.node_vrf.items():
+                if data["assigned_zone"] == zname:
+                    self.node_to_initiator[nid] = init_id
+
     def _compute_fixed_coordinates(self) -> None:
         """Precompute fixed, organic, collision-free 2D coordinates for Cytoscape."""
         G = nx.Graph()
@@ -293,26 +305,100 @@ class ExcelDataLoader:
                 "y": round(float(coords[i - 1, 1]), 1),
             }
 
-    def _compute_wave_propagation_events(self) -> None:
-        """Derive sequential multi-hop wave transmission packets from Sheet 3 Columns E, F, G."""
+    def _compute_step3_scoreboards(self) -> None:
+        """Compute the 3-hop VRF neighborhood scoreboard for Algorithm 2 decision making."""
+        self.step3_scoreboards: Dict[int, Dict[str, Any]] = {}
+
+        for nid in range(1, 51):
+            vrf_data = self.node_vrf[nid]
+            own_score = vrf_data["vrf_score"]
+            is_initiator = vrf_data["is_initiator"]
+            winner_id = nid if is_initiator else self.node_to_initiator[nid]
+            winner_score = self.node_vrf[winner_id]["vrf_score"]
+
+            h1_peers = [
+                {
+                    "id": q,
+                    "node_id": f"C{q}",
+                    "score": self.node_vrf[q]["vrf_score"],
+                    "hop": 1,
+                    "is_min": (q == winner_id)
+                }
+                for q in vrf_data["wave1_reach"]
+            ]
+            h2_peers = [
+                {
+                    "id": q,
+                    "node_id": f"C{q}",
+                    "score": self.node_vrf[q]["vrf_score"],
+                    "hop": 2,
+                    "is_min": (q == winner_id)
+                }
+                for q in vrf_data["wave2_reach"]
+            ]
+            h3_peers = [
+                {
+                    "id": q,
+                    "node_id": f"C{q}",
+                    "score": self.node_vrf[q]["vrf_score"],
+                    "hop": 3,
+                    "is_min": (q == winner_id)
+                }
+                for q in vrf_data["wave3_reach"]
+            ]
+
+            decision_text = (
+                "🏆 Self-Elected Initiator (Holds minimum score in 3-hop ball)"
+                if is_initiator
+                else f"⏳ Candidate Member (Minimum held by C{winner_id} with σ={winner_score:.4f})"
+            )
+
+            self.step3_scoreboards[nid] = {
+                "node_id": f"C{nid}",
+                "own_score": own_score,
+                "is_initiator": is_initiator,
+                "winner_id": winner_id,
+                "winner_node_id": f"C{winner_id}",
+                "winner_score": winner_score,
+                "decision_result": decision_text,
+                "total_coverage": len(h1_peers) + len(h2_peers) + len(h3_peers),
+                "hop_1": h1_peers,
+                "hop_2": h2_peers,
+                "hop_3": h3_peers,
+            }
+
+    def _compute_step4_probe_waves_and_conflicts(self) -> None:
+        """Derive First-Wins adoptions, competing probe drops, and multi-wave transmissions."""
         neighbors_map: Dict[int, Set[int]] = {i: set() for i in range(1, 51)}
         for u, v in self.edges_list:
             neighbors_map[u].add(v)
             neighbors_map[v].add(u)
 
-        self.wave_events: Dict[str, Any] = {
-            "wave1": [],
-            "wave2": [],
-            "wave3": [],
-            "logs": [],
-        }
+        # Boundary nodes: nodes having at least one neighbor in a different zone
+        boundary_nodes_set: Set[int] = set()
+        for u, v in self.edges_list:
+            if self.node_vrf[u]["assigned_zone"] != self.node_vrf[v]["assigned_zone"]:
+                boundary_nodes_set.add(u)
+                boundary_nodes_set.add(v)
 
-        # Wave 1: Initiators -> 1-hop receivers (TTL 3 -> 2)
-        wave1_transmissions = []
+        # For each node, calculate competing probes rejected
+        self.node_rejected_probes: Dict[int, List[Dict[str, Any]]] = {i: [] for i in range(1, 51)}
+        self.first_wins_transmissions: List[Dict[str, Any]] = []
+        self.conflict_transmissions: List[Dict[str, Any]] = []
+
+        step4_logs: List[str] = [
+            "[PROBE Flood] 10 Initiators initiate PROBE(initiator_id, TTL=3) waves.",
+        ]
+
+        # Wave 1 transmissions
+        wave1_list = []
         for init_id in self.initiators:
             h1 = self.node_vrf[init_id]["wave1_reach"]
             for target in h1:
-                wave1_transmissions.append({
+                is_first_win = (self.node_to_initiator[target] == init_id and self.node_vrf[target]["hops_to_initiator"] == 1)
+                is_conflict = not is_first_win
+
+                item = {
                     "source": init_id,
                     "target": target,
                     "source_id": f"C{init_id}",
@@ -320,21 +406,43 @@ class ExcelDataLoader:
                     "initiator": init_id,
                     "initiator_id": f"C{init_id}",
                     "ttl_remaining": 2,
+                    "is_first_wins": is_first_win,
+                    "is_conflict": is_conflict,
                     "edge_id": f"e{min(init_id, target)}_{max(init_id, target)}",
-                })
-        self.wave_events["wave1"] = wave1_transmissions
+                }
+                wave1_list.append(item)
 
-        # Wave 2: 1-hop nodes -> 2-hop receivers (TTL 2 -> 1)
-        wave2_transmissions = []
+                if is_first_win:
+                    self.first_wins_transmissions.append(item)
+                    step4_logs.append(
+                        f"[FIRST-WINS] C{target} accepted PROBE from C{init_id} at Hop 1. Status: ASSIGNED to Zone C{init_id}."
+                    )
+                else:
+                    self.conflict_transmissions.append(item)
+                    self.node_rejected_probes[target].append({
+                        "initiator": f"C{init_id}",
+                        "initiator_id": init_id,
+                        "arrived_hop": 1,
+                        "zone": f"زون C{init_id}",
+                    })
+                    curr_zone = self.node_vrf[target]["assigned_zone"]
+                    step4_logs.append(
+                        f"[CONFLICT/BOUNDARY] C{target} (already in {curr_zone}) received delayed PROBE from Zone C{init_id}. Packet dropped! Boundary recorded."
+                    )
+
+        # Wave 2 transmissions
+        wave2_list = []
         for init_id in self.initiators:
             h1_set = set(self.node_vrf[init_id]["wave1_reach"])
             h2 = self.node_vrf[init_id]["wave2_reach"]
             for target in h2:
-                # Find which 1-hop node forwards to this 2-hop node
                 possible_senders = [v for v in h1_set if target in neighbors_map[v]]
                 sender = possible_senders[0] if possible_senders else None
                 if sender:
-                    wave2_transmissions.append({
+                    is_first_win = (self.node_to_initiator[target] == init_id and self.node_vrf[target]["hops_to_initiator"] == 2)
+                    is_conflict = not is_first_win
+
+                    item = {
                         "source": sender,
                         "target": target,
                         "source_id": f"C{sender}",
@@ -342,12 +450,32 @@ class ExcelDataLoader:
                         "initiator": init_id,
                         "initiator_id": f"C{init_id}",
                         "ttl_remaining": 1,
+                        "is_first_wins": is_first_win,
+                        "is_conflict": is_conflict,
                         "edge_id": f"e{min(sender, target)}_{max(sender, target)}",
-                    })
-        self.wave_events["wave2"] = wave2_transmissions
+                    }
+                    wave2_list.append(item)
 
-        # Wave 3: 2-hop nodes -> 3-hop receivers (TTL 1 -> 0)
-        wave3_transmissions = []
+                    if is_first_win:
+                        self.first_wins_transmissions.append(item)
+                        step4_logs.append(
+                            f"[FIRST-WINS] C{target} accepted PROBE from C{init_id} at Hop 2. Status: ASSIGNED to Zone C{init_id}."
+                        )
+                    else:
+                        self.conflict_transmissions.append(item)
+                        self.node_rejected_probes[target].append({
+                            "initiator": f"C{init_id}",
+                            "initiator_id": init_id,
+                            "arrived_hop": 2,
+                            "zone": f"زون C{init_id}",
+                        })
+                        curr_zone = self.node_vrf[target]["assigned_zone"]
+                        step4_logs.append(
+                            f"[CONFLICT/BOUNDARY] C{target} (already in {curr_zone}) received delayed PROBE from Zone C{init_id}. Packet dropped! Boundary recorded."
+                        )
+
+        # Wave 3 transmissions
+        wave3_list = []
         for init_id in self.initiators:
             h2_set = set(self.node_vrf[init_id]["wave2_reach"])
             h3 = self.node_vrf[init_id]["wave3_reach"]
@@ -355,7 +483,7 @@ class ExcelDataLoader:
                 possible_senders = [v for v in h2_set if target in neighbors_map[v]]
                 sender = possible_senders[0] if possible_senders else None
                 if sender:
-                    wave3_transmissions.append({
+                    item = {
                         "source": sender,
                         "target": target,
                         "source_id": f"C{sender}",
@@ -363,16 +491,33 @@ class ExcelDataLoader:
                         "initiator": init_id,
                         "initiator_id": f"C{init_id}",
                         "ttl_remaining": 0,
+                        "is_first_wins": False,
+                        "is_conflict": True,
                         "edge_id": f"e{min(sender, target)}_{max(sender, target)}",
+                    }
+                    wave3_list.append(item)
+                    self.conflict_transmissions.append(item)
+                    self.node_rejected_probes[target].append({
+                        "initiator": f"C{init_id}",
+                        "initiator_id": init_id,
+                        "arrived_hop": 3,
+                        "zone": f"زون C{init_id}",
                     })
-        self.wave_events["wave3"] = wave3_transmissions
+                    curr_zone = self.node_vrf[target]["assigned_zone"]
+                    step4_logs.append(
+                        f"[CONFLICT/BOUNDARY] C{target} (already in {curr_zone}) received delayed PROBE from Zone C{init_id}. Packet dropped! Boundary recorded."
+                    )
 
-        self.wave_events["logs"] = [
-            f"[Wave 1] TTL=3 -> 2: 10 Initiators broadcast PROBE packets to {len(wave1_transmissions)} direct 1-hop neighbors.",
-            f"[Wave 2] TTL=2 -> 1: Intermediate nodes forward probes across {len(wave2_transmissions)} links to 2-hop receivers.",
-            f"[Wave 3] TTL=1 -> 0: Final wave traverses {len(wave3_transmissions)} links to 3-hop boundary receivers.",
-            "[Propagation Complete] All 50 nodes successfully collected VRF scores within TTL=3 physical radius.",
-        ]
+        step4_logs.append("[Zone Formation Complete] 50 nodes successfully assigned to 10 physical zones.")
+        step4_logs.append(f"[Boundary Interfaces] Identified {len(self.edges_list) - 61} inter-zone boundary bridges.")
+
+        self.step4_waves = {
+            "wave1": wave1_list,
+            "wave2": wave2_list,
+            "wave3": wave3_list,
+        }
+        self.step4_logs = step4_logs
+        self.boundary_nodes_set = boundary_nodes_set
 
     # Public Accessors
     def get_config(self) -> Dict[str, Any]:
@@ -516,12 +661,18 @@ class ExcelDataLoader:
             }
 
         elif step_number == 3:
+            # STEP 3: VRF Comparison & Local Initiator Deciding (Algorithm 2)
+            # - Nodes remain neutral blue, except elected Initiators which receive gold crown & amber halo
+            # - No zone colors yet
             step_nodes = []
             for n in all_nodes:
+                is_init = (n["id"] in self.initiators)
+                sb = self.step3_scoreboards[n["id"]]
+
                 step_nodes.append({
                     "id": n["id"],
                     "node_id": n["node_id"],
-                    "label": n["label"],
+                    "label": f"👑 C{n['id']} {n['class_icon']}" if is_init else n["label"],
                     "x": n["x"],
                     "y": n["y"],
                     "degree": n["degree"],
@@ -530,42 +681,59 @@ class ExcelDataLoader:
                     "class_id": n["class_id"],
                     "class_title": n["class_title"],
                     "class_icon": n["class_icon"],
-                    "role": "CLIENT",
-                    "status": "PROBING",
+                    "role": "INITIATOR" if is_init else "CLIENT",
+                    "status": "INITIATOR" if is_init else "CANDIDATE_MEMBER",
                     "sk": n["sk"],
                     "vrf_formula": n["vrf_formula"],
                     "vrf_score": n["vrf_score"],
-                    "is_initiator": False,
-                    "wave1_reach": n["wave1_reach"],
-                    "wave2_reach": n["wave2_reach"],
-                    "wave3_reach": n["wave3_reach"],
-                    "assigned_zone": None,
+                    "is_initiator": is_init,
+                    "assigned_zone": None,  # No zone colors in Step 3
                     "hops_to_initiator": None,
+                    "scoreboard_3hop": sb,
+                    "decision_result": sb["decision_result"],
+                    "winner_id": sb["winner_id"],
+                    "winner_score": sb["winner_score"],
                 })
+
+            step_edges = [{**e, "is_inter_zone": False} for e in all_edges]
+
             return {
                 "step": 3,
-                "title": "TTL=3 Packet Wave Propagation",
-                "phase_badge": "Step 3: Multi-Hop Wave Propagation (TTL=3)",
-                "description": "Multi-hop wave propagation along physical links: Wave 1 (1-hop), Wave 2 (2-hop), Wave 3 (3-hop).",
+                "title": "3-Hop Neighborhood VRF Comparison & Local Initiator Deciding",
+                "phase_badge": "Step 3: VRF Comparison (R=3 Hops)",
+                "description": "Nodes compare VRF scores in their 3-hop physical neighborhood ball. Nodes holding local minimum self-elect as Initiators.",
+                "formula": r"m_p = \min_{q \in \mathcal{N}_3(p)} (\sigma_q, id_q)",
                 "nodes": step_nodes,
-                "edges": all_edges,
-                "waves": {
-                    "wave1": self.wave_events["wave1"],
-                    "wave2": self.wave_events["wave2"],
-                    "wave3": self.wave_events["wave3"],
-                },
+                "edges": step_edges,
                 "initiators": [f"C{x}" for x in self.initiators],
                 "initiator_ids": self.initiators,
-                "terminal_logs": self.wave_events["logs"],
+                "terminal_logs": [
+                    "[Algorithm 2] Evaluating 3-hop VRF neighborhood balls (R=3) for all 50 nodes.",
+                    "[VRF Decision] 10 Initiators self-elected with local minimum VRF scores: C1, C6, C11, C16, C21, C26, C31, C36, C41, C46.",
+                    "[VRF Decision] 40 non-initiators observed lower scores in their R=3 ball and adopted Candidate Member state.",
+                    "[Inspect] Click on any node to view its 3-hop neighborhood scoreboard (Hop 1, Hop 2, Hop 3) and decision result.",
+                ],
             }
 
         elif step_number == 4:
+            # STEP 4: Zone PROBE Flooding & First-Wins Conflict Resolution (Algorithm 3)
             step_nodes = []
             for n in all_nodes:
+                nid = n["id"]
+                is_init = (nid in self.initiators)
+                init_id = self.node_to_initiator[nid]
+                is_bnd = (nid in self.boundary_nodes_set)
+
+                # Find boundary neighbors (neighbors in other zones)
+                bnd_neighbors = [
+                    f"C{nb}" for nb in n["neighbors"]
+                    if self.node_vrf[nb]["assigned_zone"] != n["assigned_zone"]
+                ]
+
                 step_nodes.append({
-                    "id": n["id"],
+                    "id": nid,
                     "node_id": n["node_id"],
-                    "label": n["label"],
+                    "label": f"👑 C{nid} {n['class_icon']}" if is_init else n["label"],
                     "x": n["x"],
                     "y": n["y"],
                     "degree": n["degree"],
@@ -574,16 +742,24 @@ class ExcelDataLoader:
                     "class_id": n["class_id"],
                     "class_title": n["class_title"],
                     "class_icon": n["class_icon"],
-                    "role": "INITIATOR" if n["is_initiator"] else "MEMBER",
+                    "role": "INITIATOR" if is_init else "MEMBER",
                     "status": "ASSIGNED",
                     "sk": n["sk"],
                     "vrf_formula": n["vrf_formula"],
                     "vrf_score": n["vrf_score"],
-                    "is_initiator": n["is_initiator"],
+                    "is_initiator": is_init,
                     "assigned_zone": n["assigned_zone"],
                     "zone_color": n["zone_color"],
                     "hops_to_initiator": n["hops_to_initiator"],
                     "hops_label": n["hops_label"],
+                    "winner_initiator": f"C{init_id} 👑",
+                    "winner_initiator_id": init_id,
+                    "first_wins_hop": n["hops_to_initiator"],
+                    "first_wins_text": f"Probe arrived FIRST at Hop {n['hops_to_initiator']}",
+                    "competing_probes_rejected": self.node_rejected_probes.get(nid, []),
+                    "is_boundary": is_bnd,
+                    "boundary_neighbors": bnd_neighbors,
+                    "status_tag": "⚡ ZONE FRONTIER / BOUNDARY" if is_bnd else "ASSIGNED",
                 })
 
             boundary_edges = [e for e in all_edges if e["is_inter_zone"]]
@@ -604,9 +780,10 @@ class ExcelDataLoader:
 
             return {
                 "step": 4,
-                "title": "Initiator Election & Zone Formation",
-                "phase_badge": "Step 4: 10 Physical Zones Formed",
-                "description": "10 Initiators crowned (C1, C6, C11, C16, C21, C26, C31, C36, C41, C46) and 50 nodes partitioned into 10 physical zones.",
+                "title": "Zone PROBE Flooding & First-Wins Conflict Resolution",
+                "phase_badge": "Step 4: Algorithm 3 (Zone Formation)",
+                "description": "Initiators flood PROBE packets (TTL=3). Unassigned peers adopt the first arriving probe (First-Wins). Delayed competing probes are dropped, forming boundary bridges.",
+                "formula": r"\text{PROBE}(p, \text{TTL}=3) \xrightarrow{\text{first-wins}} \text{ASSIGNED}(Z_I), \quad \text{delayed} \rightarrow \text{BOUNDARY}",
                 "nodes": step_nodes,
                 "edges": all_edges,
                 "initiators": [f"C{x}" for x in self.initiators],
@@ -615,12 +792,8 @@ class ExcelDataLoader:
                 "boundary_edges": boundary_edges,
                 "total_boundary_edges": len(boundary_edges),
                 "total_intra_edges": len(intra_edges),
-                "terminal_logs": [
-                    "[Election] 10 Initiators confirmed: C1, C6, C11, C16, C21, C26, C31, C36, C41, C46.",
-                    f"[Zone Formation] 50 nodes assigned to 10 proximity zones: {len(boundary_edges)} inter-zone boundary edges identified.",
-                    "[Zone Formation] Max hop distance to zone initiator: 2 hops (within TTL=3 limit).",
-                    "[Ready] Network ready for intra-zone semantic clustering and Personalized DFL rounds.",
-                ],
+                "waves": self.step4_waves,
+                "terminal_logs": self.step4_logs,
             }
 
         else:

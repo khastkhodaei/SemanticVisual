@@ -296,3 +296,25 @@ body {
   color: #7e22ce;
   border: 1px solid #e9d5ff;
 }
+
+.rejected-chip {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #be123c;
+  font-size: 9px;
+  font-family: ui-monospace, monospace;
+}
+
+.first-wins-chip {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+  font-size: 9px;
+  font-family: ui-monospace, monospace;
+}

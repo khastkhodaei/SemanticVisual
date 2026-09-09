@@ -129,17 +129,32 @@ def test_api_storyboard_step_progression(client):
     assert d2["nodes"][0]["vrf_score"] == 0.0235  # C1 score from Sheet 3
     assert "formula" in d2
 
-    # Step 3: Multi-Hop Wave Propagation
+    # Step 3: VRF Comparison & Local Initiator Deciding (Algorithm 2)
     s3 = client.get("/api/v1/storyboard/step/3")
     assert s3.status_code == 200
     d3 = s3.json()
     assert d3["step"] == 3
-    assert "waves" in d3
-    assert len(d3["waves"]["wave1"]) > 0
-    assert len(d3["waves"]["wave2"]) > 0
-    assert len(d3["waves"]["wave3"]) > 0
+    assert len(d3["initiators"]) == 10
+    assert "m_p" in d3["formula"]
 
-    # Step 4: Zone Formation & 10 Initiators
+    # In Step 3, only initiators are marked; non-initiator nodes have no assigned zone
+    nodes_s3 = {n["id"]: n for n in d3["nodes"]}
+    for init_id in [1, 6, 11, 16, 21, 26, 31, 36, 41, 46]:
+        assert nodes_s3[init_id]["is_initiator"] is True
+        assert "Initiator" in nodes_s3[init_id]["decision_result"]
+
+    for non_init_id in [2, 3, 4, 5, 7, 8, 9, 10]:
+        assert nodes_s3[non_init_id]["is_initiator"] is False
+        assert nodes_s3[non_init_id]["assigned_zone"] is None
+        assert "Candidate" in nodes_s3[non_init_id]["decision_result"]
+
+    # Verify 3-hop scoreboard data
+    c1_sb = nodes_s3[1]["scoreboard_3hop"]
+    assert len(c1_sb["hop_1"]) > 0
+    assert len(c1_sb["hop_2"]) > 0
+    assert len(c1_sb["hop_3"]) > 0
+
+    # Step 4: Zone Formation, First-Wins & Probe Conflicts (Algorithm 3)
     s4 = client.get("/api/v1/storyboard/step/4")
     assert s4.status_code == 200
     d4 = s4.json()
@@ -147,6 +162,16 @@ def test_api_storyboard_step_progression(client):
     assert len(d4["initiators"]) == 10
     assert len(d4["zones"]) == 10
     assert len(d4["boundary_edges"]) == 29
+    assert "PROBE" in d4["formula"]
+    assert "waves" in d4
+    assert len(d4["waves"]["wave1"]) > 0
+
+    # In Step 4, all nodes adopt the first-arriving probe and form 10 zones
+    nodes_s4 = {n["id"]: n for n in d4["nodes"]}
+    for nid, node in nodes_s4.items():
+        assert node["assigned_zone"] is not None
+        assert "FIRST" in node["first_wins_text"]
+        assert "winner_initiator" in node
 
     # Invalid Step
     s_err = client.get("/api/v1/storyboard/step/5")
