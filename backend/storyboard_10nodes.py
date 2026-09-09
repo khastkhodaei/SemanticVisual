@@ -79,6 +79,21 @@ STORYBOARD_10_COORDINATES: Dict[int, Tuple[float, float]] = {
     10: (840.0, 380.0),
 }
 
+# Deterministic local VRF scores for Step 3 (seed_{e-1})
+STORYBOARD_10_VRF_SCORES: Dict[int, float] = {
+    1: 0.1543,
+    2: 0.0837,
+    3: 0.2318,
+    4: 0.0412,
+    5: 0.3185,
+    6: 0.4721,
+    7: 0.3564,
+    8: 0.0275,
+    9: 0.2947,
+    10: 0.4126,
+}
+
+
 
 def get_dominant_class(distribution: Dict[str, int]) -> Dict[str, Any]:
     """Identify the dominant class (highest percentage share) in a node's distribution."""
@@ -251,6 +266,89 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "total_edges": 18,
             "unique_edges": len(edges),
             "active_leaders": [],
+            "terminal_logs": terminal_logs,
+        }
+    elif step_number == 3:
+        # Step 3: Local VRF Generation & 1-Hop Neighbor Score Exchange
+        step3_nodes = []
+        for n in nodes:
+            nid = n["id"]
+            n_copy = dict(n)
+            vrf = STORYBOARD_10_VRF_SCORES[nid]
+            nbrs = n["neighbors"]
+            neighbor_scores = {nb: STORYBOARD_10_VRF_SCORES[nb] for nb in nbrs}
+            neighbor_scores_str = {f"C{nb}": STORYBOARD_10_VRF_SCORES[nb] for nb in nbrs}
+            neighbor_scoreboard = [
+                {
+                    "neighbor_id": nb,
+                    "label": f"C{nb}",
+                    "vrf_score": STORYBOARD_10_VRF_SCORES[nb],
+                }
+                for nb in nbrs
+            ]
+
+            n_copy["status"] = "NOT_ASSIGNED"
+            n_copy["role"] = "CLIENT"
+            n_copy["is_initiator"] = False
+            n_copy["zone_id"] = None
+            n_copy["is_boundary"] = False
+            n_copy["vrf_score"] = vrf
+            n_copy["neighbor_scores"] = neighbor_scores
+            n_copy["neighbor_scores_str"] = neighbor_scores_str
+            n_copy["neighbor_scoreboard"] = neighbor_scoreboard
+            step3_nodes.append(n_copy)
+
+        # 36 mutual 1-hop score packet transmission events along the 18 physical links
+        packet_exchanges = []
+        for e in edges:
+            u = e["source_num"]
+            v = e["target_num"]
+            packet_exchanges.append({
+                "from": u,
+                "to": v,
+                "from_label": f"C{u}",
+                "to_label": f"C{v}",
+                "type": "VRF_SCORE",
+                "score": STORYBOARD_10_VRF_SCORES[u],
+                "msg": f"C{u} sends VRF score {STORYBOARD_10_VRF_SCORES[u]} to 1-hop neighbor C{v}",
+            })
+            packet_exchanges.append({
+                "from": v,
+                "to": u,
+                "from_label": f"C{v}",
+                "to_label": f"C{u}",
+                "type": "VRF_SCORE",
+                "score": STORYBOARD_10_VRF_SCORES[v],
+                "msg": f"C{v} sends VRF score {STORYBOARD_10_VRF_SCORES[v]} to 1-hop neighbor C{u}",
+            })
+
+        terminal_logs = [
+            f"[VRF GENERATION] Node C{nid} computed local VRF seed score: {STORYBOARD_10_VRF_SCORES[nid]}"
+            for nid in range(1, 11)
+        ]
+        unique_undirected = sorted({(min(e['source_num'], e['target_num']), max(e['source_num'], e['target_num'])) for e in edges})
+        terminal_logs.extend([
+            f"[VRF EXCHANGE] Node C{u} <-> Node C{v} exchanged 1-hop VRF scores ({STORYBOARD_10_VRF_SCORES[u]} vs {STORYBOARD_10_VRF_SCORES[v]})"
+            for u, v in unique_undirected
+        ])
+        terminal_logs.append("[STATUS] All 10 nodes completed 1-hop score exchange. Local neighborhood scoreboards populated.")
+
+        return {
+            "step": 3,
+            "title": "Step 3: VRF Generation & 1-Hop Neighbor Score Exchange",
+            "phase_badge": "Step 3: VRF Exchange",
+            "description": "Each peer calculates its local VRF score and exchanges it with direct 1-hop physical neighbors.",
+            "formula": "\\sigma_p = \\text{VRF}_{sk_p}(\\text{seed}_{e-1}), \\quad \\text{Exchange with } q \\in \\mathcal{N}_1(p)",
+            "formula_desc": "Each peer calculates its local VRF score and exchanges it with direct 1-hop physical neighbors.",
+            "nodes": step3_nodes,
+            "edges": edges,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [],
+            "packet_exchanges": packet_exchanges,
             "terminal_logs": terminal_logs,
         }
     else:

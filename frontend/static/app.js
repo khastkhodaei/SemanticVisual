@@ -601,18 +601,37 @@ async function loadStep(stepNumber) {
 
 // Update Top Headers and Narrative Cards
 function updateUIHeaders(data) {
+  const step = data.step || currentStep || 1;
   const activeBadge = document.getElementById("activeStepBadge");
-  if (activeBadge) {
-    activeBadge.textContent = "Step 1: Network Creation";
-    activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200";
-  }
-
   const stepTag = document.getElementById("stepTag");
-  if (stepTag) stepTag.textContent = "STEP 1 / NETWORK CREATION";
   const stepTitle = document.getElementById("stepTitle");
-  if (stepTitle) stepTitle.textContent = "Step 1: Network Creation & Non-IID Data Distribution";
   const stepDesc = document.getElementById("stepDescription");
-  if (stepDesc) stepDesc.textContent = "10 decentralized edge clients connected via 18 physical ad-hoc links. Each node holds local CIFAR-10 data.";
+
+  if (step === 1) {
+    if (activeBadge) {
+      activeBadge.textContent = "Step 1: Network Creation";
+      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200";
+    }
+    if (stepTag) stepTag.textContent = "STEP 1 / NETWORK CREATION";
+    if (stepTitle) stepTitle.textContent = "Step 1: Network Creation & Non-IID Data Distribution";
+    if (stepDesc) stepDesc.textContent = "10 decentralized edge clients connected via 18 physical ad-hoc links. Each node holds local CIFAR-10 data.";
+  } else if (step === 2) {
+    if (activeBadge) {
+      activeBadge.textContent = "Step 2: Local Vectors";
+      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-cyan-50 text-cyan-700 border border-cyan-200";
+    }
+    if (stepTag) stepTag.textContent = "STEP 2 / LOCAL TRAINING & VECTORS";
+    if (stepTitle) stepTitle.textContent = "Step 2: Local Training & Normalized 10D Vector Generation";
+    if (stepDesc) stepDesc.textContent = "Each client trains on local CIFAR-10 data, outputting a normalized 10-dimensional vector representing class proportions.";
+  } else if (step === 3) {
+    if (activeBadge) {
+      activeBadge.textContent = "Step 3: VRF Exchange";
+      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200";
+    }
+    if (stepTag) stepTag.textContent = "STEP 3 / VRF GENERATION & 1-HOP EXCHANGE";
+    if (stepTitle) stepTitle.textContent = "Step 3: Local VRF Generation & 1-Hop Neighbor Score Exchange";
+    if (stepDesc) stepDesc.textContent = "Each peer calculates its local VRF score and exchanges it with direct 1-hop physical neighbors.";
+  }
 }
 
 // 5. STEP 1: Base Physical Topology & Non-IID Data Distribution
@@ -677,40 +696,41 @@ function renderStep2(data) {
   });
 }
 
-// 7. STEP 3: VRF Comparison & Local Initiator Deciding (Algorithm 2)
-// - 10 Initiators receive their distinct assigned Zone Palette color seed with gold crown 👑
-// - Non-initiators stay in neutral blue (#2563eb)
-// - Clicking a node displays the 3-hop decision table and scoreboard
+// 7. STEP 3: Local VRF Generation & 1-Hop Neighbor Score Exchange
 function renderStep3(data) {
+  stopCurrentPacketAnimation();
+
   renderSidebarFormula(
-    "VRF Initiator Election (Alg. 2)",
-    "m_p = \\min_{q \\in \\mathcal{N}_3(p)} (\\sigma_q, id_q)",
-    "Each node evaluates the minimum VRF score in its 3-hop physical neighborhood ball. The node holding the minimum score elects itself as Initiator.",
-    "R = 3 Hops",
-    true
+    "VRF Generation & 1-Hop Exchange",
+    "\\sigma_p = \\text{VRF}_{sk_p}(\\text{seed}_{e-1}), \\quad \\text{Exchange with } q \\in \\mathcal{N}_1(p)",
+    "Each peer calculates its local VRF score and exchanges it with direct 1-hop physical neighbors.",
+    "Step 3: VRF Exchange",
+    false
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "VRF Comparison (10 Initiator Color Seeds 👑, 40 Candidates)";
+  if (canvasLabel) canvasLabel.textContent = "Step 3: Local VRF Generation & 1-Hop Neighbor Score Exchange (10 Nodes, 18 Links)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
   if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.textContent = "10 Initiators 👑 (R=3)";
-    statLeaders.className = "text-xs font-bold text-amber-600";
+    statLeaders.textContent = "0 Initiators (Step 3: VRF Exchange)";
+    statLeaders.className = "text-xs font-bold text-slate-500";
   }
 
-  // Render nodes: 10 Initiators receive their distinct Zone Palette color seeds with crown, non-initiators in neutral blue
+  // Render nodes: uniform default neutral client blue, label C{id}, no initiator crown or zone coloring
   renderCytoscapeGraph(data.nodes, data.edges, {
-    showInitiators: true,
-    initiatorColorSeeds: true,
+    showInitiators: false,
     useZoneColors: false,
     showBoundaryEdges: false
   });
+
+  // Animate 1-hop score packet exchanges along edges
+  animateVrfScoreExchangePackets(data.packet_exchanges, data.nodes);
 }
 
 // 8. STEP 4: Zone Formation, First-Wins & Probe Conflicts (Algorithm 3)
@@ -861,6 +881,66 @@ function drawCanvasFloatingBadge(ctx, text, x, y, bgColor, textColor, borderColo
   ctx.textBaseline = "middle";
   ctx.fillText(text, x, y + 0.5);
   ctx.restore();
+}
+
+// Animate 1-hop VRF score exchange packets along the 18 physical links in Step 3
+function animateVrfScoreExchangePackets(packets, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const duration = 2400; // ms
+  const startTime = performance.now();
+  const activeList = packets || [];
+
+  function runFrame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1.0);
+    const ease = easeInOutQuad(progress);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    activeList.forEach(pkt => {
+      const srcNode = cy.getElementById(String(pkt.from));
+      const tgtNode = cy.getElementById(String(pkt.to));
+      if (!srcNode || !tgtNode || !srcNode.isNode || !srcNode.isNode() || !tgtNode.isNode || !tgtNode.isNode()) return;
+
+      const p1 = srcNode.renderedPosition();
+      const p2 = tgtNode.renderedPosition();
+
+      // Interpolate position along physical edge
+      const curX = p1.x + (p2.x - p1.x) * ease;
+      const curY = p1.y + (p2.y - p1.y) * ease;
+
+      // Draw floating score badge
+      const scoreStr = Number(pkt.score).toFixed(4);
+      drawCanvasFloatingBadge(
+        ctx,
+        `\u03c3:${scoreStr}`,
+        curX,
+        curY,
+        "rgba(255, 255, 255, 0.96)",
+        "#0369a1",
+        "#38bdf8"
+      );
+    });
+
+    if (progress < 1.0) {
+      activeAnimationId = requestAnimationFrame(runFrame);
+    } else {
+      // Loop smoothly after a brief pause if still on Step 3
+      setTimeout(() => {
+        if (currentStep === 3) {
+          animateVrfScoreExchangePackets(packets, allNodes);
+        }
+      }, 1600);
+    }
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
 }
 
 // Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
@@ -1334,6 +1414,59 @@ function showNodeModal(nodeData) {
     }
   }
 
+  // Step 3: Local VRF Score & 1-Hop Neighborhood Scoreboard
+  const vrfSection = document.getElementById("cardVrfSection");
+  const vrfBadge = document.getElementById("cardVrfScoreBadge");
+  const scoreboardBody = document.getElementById("cardNeighborhoodScoreboardBody");
+
+  if (currentStep === 3) {
+    if (cardStatusBadge) {
+      cardStatusBadge.textContent = "Scores Exchanged (Awaiting Decision)";
+      cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-300";
+    }
+
+    if (vrfSection) vrfSection.classList.remove("hidden");
+    if (vrfBadge) {
+      const selfVrf = (nodeData.vrf_score !== undefined && nodeData.vrf_score !== null)
+        ? Number(nodeData.vrf_score).toFixed(4)
+        : "N/A";
+      vrfBadge.textContent = `\u03c3_self = ${selfVrf}`;
+    }
+
+    if (scoreboardBody) {
+      scoreboardBody.innerHTML = "";
+      const scoreboard = nodeData.neighbor_scoreboard || [];
+      if (scoreboard.length > 0) {
+        scoreboard.forEach(item => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-50 transition-colors";
+          tr.innerHTML = `
+            <td class="py-1 px-2 font-bold text-blue-700 font-mono">${item.label || ('C' + item.neighbor_id)}</td>
+            <td class="py-1 px-2 text-right font-mono font-bold text-slate-800">
+              <span class="inline-block px-1.5 py-0.2 rounded bg-slate-100 border border-slate-200">${Number(item.vrf_score).toFixed(4)}</span>
+            </td>
+          `;
+          scoreboardBody.appendChild(tr);
+        });
+      } else if (nodeData.neighbor_scores) {
+        Object.entries(nodeData.neighbor_scores).forEach(([nbId, score]) => {
+          const label = String(nbId).startsWith("C") ? nbId : `C${nbId}`;
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-50 transition-colors";
+          tr.innerHTML = `
+            <td class="py-1 px-2 font-bold text-blue-700 font-mono">${label}</td>
+            <td class="py-1 px-2 text-right font-mono font-bold text-slate-800">
+              <span class="inline-block px-1.5 py-0.2 rounded bg-slate-100 border border-slate-200">${Number(score).toFixed(4)}</span>
+            </td>
+          `;
+          scoreboardBody.appendChild(tr);
+        });
+      }
+    }
+  } else {
+    if (vrfSection) vrfSection.classList.add("hidden");
+  }
+
   card.classList.remove("hidden");
 }
 
@@ -1718,18 +1851,38 @@ function updateStepper(step) {
 function updateNavButtons(step) {
   const btnPrev = document.getElementById("btnPrev");
   const btnNext = document.getElementById("btnNext");
+  const btnReset = document.getElementById("btnReset");
+
+  if (btnReset) {
+    btnReset.disabled = false;
+  }
 
   if (btnPrev) {
-    btnPrev.disabled = true;
-    btnPrev.className = "btn-secondary px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-    btnPrev.innerHTML = `<span>◀️</span><span>Previous Step</span>`;
+    if (step > 1) {
+      btnPrev.disabled = false;
+      btnPrev.className = "btn-secondary px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-slate-100 cursor-pointer transition-colors";
+      btnPrev.innerHTML = `<span>◀️</span><span>Previous Step</span>`;
+      btnPrev.title = `Return to Step ${step - 1}`;
+    } else {
+      btnPrev.disabled = true;
+      btnPrev.className = "btn-secondary px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
+      btnPrev.innerHTML = `<span>◀️</span><span>Previous Step</span>`;
+      btnPrev.title = "Already at initial Step 1";
+    }
   }
 
   if (btnNext) {
-    btnNext.disabled = true;
-    btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-    btnNext.title = "Step 1 active - Next steps locked";
-    btnNext.innerHTML = `<span>Next Step (Disabled)</span><span>🔒</span>`;
+    if (step < 3) {
+      btnNext.disabled = false;
+      btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
+      btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
+      btnNext.title = `Advance to Step ${step + 1}`;
+    } else {
+      btnNext.disabled = true;
+      btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
+      btnNext.title = "Step 3 active - Step 4 next";
+      btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
+    }
   }
 }
 
@@ -1739,8 +1892,8 @@ function setNavButtonsDisabled(disabled) {
   const btnNext = document.getElementById("btnNext");
 
   if (btnReset) btnReset.disabled = disabled;
-  if (btnPrev) btnPrev.disabled = true;
-  if (btnNext) btnNext.disabled = true;
+  if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 3);
 }
 
 function bindActionButtons() {
@@ -1754,7 +1907,9 @@ function bindActionButtons() {
   const btnPrev = document.getElementById("btnPrev");
   if (btnPrev) {
     btnPrev.addEventListener("click", () => {
-      if (currentStep > 1) loadStep(currentStep - 1);
+      if (currentStep > 1) {
+        loadStep(currentStep - 1);
+      }
     });
   }
 
@@ -1762,8 +1917,22 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      logToTerminal("INFO", "Step 1 is active. Next steps are locked until Step 1 is verified.");
+      if (currentStep < 3) {
+        loadStep(currentStep + 1);
+      } else {
+        logToTerminal("INFO", "Step 3 is active. Step 4 (Zone Formation) will follow.");
+      }
     });
+  }
+
+  // Clickable Stepper tabs (Step 1, Step 2, Step 3)
+  for (let s = 1; s <= 3; s++) {
+    const item = document.getElementById(`stepNav${s}`);
+    if (item) {
+      item.addEventListener("click", () => {
+        loadStep(s);
+      });
+    }
   }
 
   const btnClearLogs = document.getElementById("btnClearLogs");
