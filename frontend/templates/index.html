@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SemanticDFL Protocol Simulator | Step 3: VRF Initiator Election (R=3)</title>
+  <title>SemanticDFL Protocol Simulator | Step 1: Network Creation & Non-IID Data Distribution</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -104,9 +104,9 @@
           <span>◀️</span>
           <span>Previous Step</span>
         </button>
-        <button id="btnNext" class="btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 shadow-sm transition-colors">
-          <span>Next Step (Step 2: VRF Compute)</span>
-          <span>▶️</span>
+        <button id="btnNext" disabled class="btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed transition-colors" title="Step 1 active - Next steps locked">
+          <span>Next Step (Disabled)</span>
+          <span>🔒</span>
         </button>
       </div>
 
@@ -114,7 +114,7 @@
       <div class="flex items-center gap-2">
         <span class="text-xs text-slate-500 font-sans">Active Phase:</span>
         <span id="activeStepBadge" class="text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
-          Step 1: Physical Mesh Setup
+          Step 1: Network Creation
         </span>
       </div>
     </div>
@@ -125,14 +125,14 @@
         <div class="space-y-1 flex-1">
           <div class="flex items-center gap-2">
             <span id="stepTag" class="px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide rounded bg-blue-100 text-blue-800">
-              STEP 1 / FIGURE 3(a)
+              STEP 1 / NETWORK CREATION
             </span>
             <h2 id="stepTitle" class="text-sm font-bold text-slate-900">
-              Physical Ad-Hoc Network Topology & Non-IID Data Distribution
+              Step 1: Network Creation & Non-IID Data Distribution
             </h2>
           </div>
           <p id="stepDescription" class="text-xs text-slate-600 font-sans">
-            50 decentralized clients in an ad-hoc mesh. Each client holds local data from 1 dataset class.
+            10 decentralized edge clients connected via 18 physical ad-hoc links. Each node holds local CIFAR-10 data.
           </p>
         </div>
 
@@ -247,37 +247,40 @@
 
         <!-- Pinned Node Details Modal (Click-to-Toggle) -->
         <div id="nodeInfoCard" class="hidden absolute top-12 right-3 node-tooltip-paper p-3 rounded-xl text-xs font-mono w-84 z-20 border border-slate-300 shadow-xl overflow-y-auto max-h-[520px]">
-          <div class="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-2">
+          <!-- Header: Node C{id} | Status: NOT_ASSIGNED -->
+          <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-2">
             <div class="text-blue-700 font-bold text-sm tracking-tight flex items-center gap-1.5" id="cardNodeId">
-              C1 🐶
+              Node C1
             </div>
             <div class="flex items-center gap-1.5">
-              <span id="cardStatusBadge" class="text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">CLIENT</span>
+              <span id="cardStatusBadge" class="text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">NOT_ASSIGNED</span>
               <button id="btnCloseModal" title="Close modal" class="text-slate-400 hover:text-slate-700 p-0.5 rounded hover:bg-slate-100 transition-colors text-xs font-bold leading-none">✕</button>
             </div>
           </div>
 
-          <div class="space-y-1.5 text-[11px] text-slate-700 font-sans">
-            <!-- 1. Node ID & CIFAR-10 Class (Title + Emoji) -->
-            <div class="flex justify-between items-center bg-slate-50 px-2 py-1 rounded border border-slate-200">
-              <span class="text-slate-500 font-medium">Dominant Class:</span>
-              <span id="cardClass" class="text-slate-900 font-bold font-mono">Airplane ✈️ (C1)</span>
+          <div class="space-y-2.5 text-[11px] text-slate-700 font-sans">
+            <!-- Physical Connectivity: Direct physical neighbors list -->
+            <div>
+              <div class="flex justify-between items-center text-[10px] text-slate-500 mb-1 px-0.5">
+                <span class="font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                  <span>🔗</span>
+                  <span>Connected Neighbors:</span>
+                </span>
+                <span id="cardDegree" class="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">2 neighbors</span>
+              </div>
+              <div id="cardNeighbors" class="text-[11px] font-mono text-slate-800 bg-slate-50 p-2 rounded-lg border border-slate-200 break-words leading-relaxed font-semibold">
+                C2, C4
+              </div>
             </div>
 
-            <!-- 2. Role -->
-            <div class="flex justify-between items-center px-1">
-              <span class="text-slate-500 font-medium">Role:</span>
-              <span id="cardRole" class="text-slate-800 font-mono font-bold">CLIENT</span>
-            </div>
-
-            <!-- Local Data Distribution Breakdown Table with Percentages -->
-            <div id="cardDataDistributionSection" class="pt-1.5 border-t border-slate-200">
+            <!-- Local Data Distribution: Clean minimal percentage table showing ONLY non-zero classes -->
+            <div id="cardDataDistributionSection" class="pt-2 border-t border-slate-200">
               <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
                 <span class="flex items-center gap-1">
                   <span>📊</span>
                   <span>Local Data Distribution:</span>
                 </span>
-                <span id="cardDistTotalBadge" class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono font-bold">100% Local</span>
+                <span id="cardDistTotalBadge" class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono font-bold">100% Total</span>
               </div>
               <div class="overflow-hidden border border-slate-200 rounded-lg shadow-xs bg-white">
                 <table class="w-full text-[10px] font-mono border-collapse">
@@ -291,203 +294,6 @@
                   <tbody id="cardDataDistributionTableBody" class="divide-y divide-slate-100">
                   </tbody>
                 </table>
-              </div>
-            </div>
-
-            <!-- Connected Neighbors List -->
-            <div class="pt-1.5 border-t border-slate-200">
-              <div class="flex justify-between text-slate-500 text-[10px] mb-1 px-0.5">
-                <span class="font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
-                  <span>🔗</span>
-                  <span>Connected Neighbors:</span>
-                </span>
-                <span id="cardDegree" class="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">2 neighbors</span>
-              </div>
-              <div id="cardNeighbors" class="text-[10px] font-mono text-slate-800 bg-slate-50 p-2 rounded-lg border border-slate-200 break-words leading-relaxed font-semibold">
-                C2, C4
-              </div>
-            </div>
-
-            <!-- STEP 2: 10D Normalized Semantic Vector Profile -->
-            <div id="cardStep2VectorSection" class="hidden pt-1.5 border-t border-slate-200 space-y-1.5">
-              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider px-0.5">
-                <span class="flex items-center gap-1 text-sky-800">
-                  <span>📊</span>
-                  <span>10D Semantic Vector (w_i):</span>
-                </span>
-                <span class="text-[9px] px-1.5 py-0.2 rounded bg-sky-100 text-sky-800 border border-sky-300 font-mono font-bold">||w_i||_1 = 1.0</span>
-              </div>
-
-              <!-- Vector in Text -->
-              <div class="bg-slate-900 text-slate-100 p-2 rounded-lg font-mono text-[9.5px] border border-slate-700 shadow-inner">
-                <div class="text-[8px] text-slate-400 font-semibold mb-0.5 uppercase tracking-wider">Vector:</div>
-                <div id="cardVectorRawText" class="text-sky-300 font-bold break-all leading-relaxed">
-                  [0.46, 0.17, 0.37, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]
-                </div>
-              </div>
-
-              <!-- 10-Class Visual Bar Chart -->
-              <div class="bg-white border border-slate-200 rounded-lg p-2 shadow-xs space-y-1">
-                <div class="text-[8.5px] text-slate-500 font-bold uppercase tracking-wider mb-1 flex justify-between">
-                  <span>Class Dimensions (C1..C10)</span>
-                  <span>Normalized Weight</span>
-                </div>
-                <div id="cardVectorBarChart" class="space-y-1 text-[9.5px] font-mono">
-                  <!-- Dynamically rendered 10 bars: non-zero vibrant, 0.00 dimmed -->
-                </div>
-              </div>
-            </div>
-
-            <!-- 3. Exact VRF Score from Sheet 3 (Step 3+) -->
-            <div id="cardVrfScoreRow" class="hidden flex justify-between items-center px-1">
-              <span class="text-slate-500 font-medium">Self VRF Score (σ_p):</span>
-              <span id="cardVrfScore" class="text-blue-700 font-mono font-bold">0.0235</span>
-            </div>
-
-            <!-- VRF Formula & Key (Step 2) -->
-            <div id="cardVrfDetailsRow" class="hidden bg-blue-50/70 p-1.5 rounded border border-blue-100 text-[10px] font-mono space-y-0.5">
-              <div class="flex justify-between text-slate-600">
-                <span>Private Key (sk):</span>
-                <span id="cardSk" class="font-bold text-slate-800">9098</span>
-              </div>
-              <div class="text-slate-500 truncate" id="cardFormula">((100+1)*9098+1337)%10000</div>
-            </div>
-
-            <!-- STEP 3: 3-Hop VRF Scoreboard & Decision Table (Algorithm 2) -->
-            <div id="cardStep3ScoreboardSection" class="hidden pt-1.5 border-t border-slate-200 space-y-1.5">
-              <div class="flex justify-between items-center">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-900 font-mono flex items-center gap-1">
-                  <span>👑</span>
-                  <span>R=3 VRF Decision Table</span>
-                </span>
-                <span id="cardStep3Badge" class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">Evaluating</span>
-              </div>
-
-              <!-- Decision Result Banner -->
-              <div id="cardDecisionBanner" class="p-1.5 rounded font-mono text-[10px] font-bold border leading-snug">
-                <!-- e.g. 🏆 Self-Elected Initiator or ⏳ Candidate Member -->
-              </div>
-
-              <!-- Scoreboard list grouped by Hop 1, 2, 3 -->
-              <div class="space-y-1 pt-0.5">
-                <div class="text-[9px] text-slate-500 font-mono uppercase tracking-wider flex justify-between">
-                  <span>3-Hop Neighborhood Ball (N_3):</span>
-                  <span id="cardScoreboardCount" class="text-blue-600 font-bold">23 peers</span>
-                </div>
-                <div id="cardScoreboardList" class="space-y-1 max-h-44 overflow-y-auto pr-1 text-[10px] font-mono">
-                  <!-- Dynamically populated rows categorized by Hop 1, Hop 2, Hop 3 -->
-                </div>
-              </div>
-            </div>
-
-            <!-- STEP 4: Zone Formation, First-Wins & Conflict Resolution (Algorithm 3) -->
-            <div id="cardStep4ZoneSection" class="hidden pt-1.5 border-t border-slate-200 space-y-1.5">
-              <div class="flex justify-between items-center">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-purple-900 font-mono flex items-center gap-1">
-                  <span>🌐</span>
-                  <span>First-Wins & Probe Conflicts</span>
-                </span>
-                <span id="cardZoneStatusTag" class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-300">ASSIGNED</span>
-              </div>
-
-              <!-- Replay Node Packets Button (Slow-Mo Focus) -->
-              <button id="btnReplayNodePackets" class="w-full py-1.5 px-3 rounded-lg text-[11px] font-bold font-mono bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 transition-colors flex items-center justify-center gap-1.5 shadow-sm">
-                <span>Replay Node Packets</span>
-                <span>🔁</span>
-              </button>
-
-              <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 font-mono text-[10px] space-y-1">
-                <div class="flex justify-between">
-                  <span class="text-slate-500">Assigned Zone:</span>
-                  <span id="cardZoneId" class="font-bold text-purple-700">زون C1</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-500">Winner Initiator:</span>
-                  <span id="cardZoneWinner" class="font-bold text-amber-800">C1 👑</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-500">Adoption State:</span>
-                  <span id="cardFirstWinsText" class="font-bold text-emerald-700">Probe arrived FIRST at Hop 1</span>
-                </div>
-
-                <!-- Accepted Probe Details -->
-                <div id="cardAcceptedProbeRow" class="pt-1 border-t border-slate-200 text-[9px]">
-                  <div class="flex justify-between text-emerald-800 font-bold mb-0.5">
-                    <span>✓ Accepted (First-Wins):</span>
-                    <span id="cardAcceptedWaveBadge" class="px-1.5 py-0.2 rounded bg-emerald-100 border border-emerald-300">Hop 1</span>
-                  </div>
-                  <div id="cardAcceptedProbeDetail" class="text-slate-700 font-mono text-[9px] bg-white p-1 rounded border border-slate-200">
-                    <!-- Populated dynamically -->
-                  </div>
-                </div>
-
-                <!-- Competing Probes Rejected -->
-                <div class="pt-1 border-t border-slate-200">
-                  <div class="flex justify-between text-[9px] text-slate-600 font-bold">
-                    <span class="text-rose-600">✕ Dropped Competing Probes:</span>
-                    <span id="cardRejectedCount" class="text-slate-500 font-normal">0 probes</span>
-                  </div>
-                  <div id="cardRejectedProbesList" class="font-mono text-slate-800 text-[9px] mt-0.5 max-h-20 overflow-y-auto space-y-0.5">
-                    <!-- Populated dynamically -->
-                  </div>
-                </div>
-
-                <!-- Outgoing Forwarded Probes -->
-                <div id="cardForwardedRow" class="pt-1 border-t border-slate-200 text-[9px]">
-                  <div class="flex justify-between text-slate-600 font-bold mb-0.5">
-                    <span class="text-blue-700">Outgoing PROBE Forwards:</span>
-                    <span id="cardForwardedCount" class="text-slate-500 font-normal">0 peers</span>
-                  </div>
-                  <div id="cardForwardedList" class="font-mono text-slate-800 text-[9px] mt-0.5 max-h-16 overflow-y-auto space-y-0.5">
-                    <!-- Populated dynamically -->
-                  </div>
-                </div>
-
-                <!-- Boundary Neighbors & Reverse Alerts (Alg 3 L17-L19) -->
-                <div id="cardBoundaryNeighborsRow" class="hidden pt-1 border-t border-slate-200 text-[9px]">
-                  <div class="flex justify-between text-rose-600 font-bold">
-                    <span>⚡ Boundary Neighbors (Alg 3 L17-19):</span>
-                    <span id="cardBoundaryAlertCount" class="text-slate-500 font-normal">0</span>
-                  </div>
-                  <div id="cardBoundaryNeighborsList" class="font-mono text-slate-800 text-[9px] mt-0.5 space-y-0.5"></div>
-                </div>
-
-                <!-- Dedicated Initiator Discovered Neighbor Zones Section (Algorithm 3 L18-20) -->
-                <div id="cardInitiatorNeighborsSection" class="hidden pt-1.5 border-t border-slate-200 text-[9px] space-y-1">
-                  <div class="flex justify-between items-center text-amber-900 font-bold font-mono">
-                    <span class="flex items-center gap-1">
-                      <span>🌐</span>
-                      <span>Physical Neighbor Zones Discovered:</span>
-                    </span>
-                    <span id="cardInitiatorNeighborsCount" class="px-1.5 py-0.2 rounded bg-amber-100 border border-amber-300 text-[8px] text-amber-800">0 zones</span>
-                  </div>
-                  <div id="cardInitiatorNeighborsList" class="flex flex-wrap gap-1 mt-1">
-                    <!-- Badges for each adjacent zone registered via alerts e.g. Connected to: Zone C6, Zone C26 -->
-                  </div>
-                </div>
-
-                <!-- Frontier Node Boundary Registration (Algorithm 3 L18-19) -->
-                <div id="cardFrontierSection" class="hidden pt-1 border-t border-rose-200 bg-rose-50/60 p-2 rounded-lg border text-[9px] font-mono space-y-1">
-                  <div class="flex justify-between items-center text-rose-800 font-bold">
-                    <span class="flex items-center gap-1">
-                      <span>⚡</span>
-                      <span>Frontier Boundary Node (Alg 3 L18-19)</span>
-                    </span>
-                    <span class="px-1.5 py-0.2 rounded bg-rose-100 border border-rose-300 text-[8px] text-rose-700">CONFLICT</span>
-                  </div>
-                  <div class="flex justify-between text-slate-700">
-                    <span class="text-slate-500">Accepted Probe from:</span>
-                    <span id="cardFrontierAcceptedFrom" class="font-bold text-emerald-700">C1</span>
-                  </div>
-                  <div class="flex justify-between text-slate-700">
-                    <span class="text-slate-500">Rejected Probe from:</span>
-                    <span id="cardFrontierRejectedFrom" class="font-bold text-rose-600">C6</span>
-                  </div>
-                  <div class="flex justify-between text-slate-700">
-                    <span class="text-slate-500">Boundary status:</span>
-                    <span id="cardFrontierStatus" class="font-bold text-amber-800">Dual NEIGHBOR alerts emitted</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>

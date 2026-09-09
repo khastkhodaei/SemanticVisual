@@ -170,7 +170,7 @@ function initCytoscape() {
       {
         selector: "node.dimmed",
         style: {
-          "opacity": 0.22
+          "opacity": 0.25
         }
       },
       {
@@ -225,7 +225,7 @@ function initCytoscape() {
       {
         selector: "edge.dimmed",
         style: {
-          "opacity": 0.15
+          "opacity": 0.25
         }
       }
     ],
@@ -260,7 +260,7 @@ function initCytoscape() {
     return res;
   };
 
-  // Click-to-Toggle Node Modal Interaction & Slow-Mo Focus
+  // Click-to-Toggle Node Modal Interaction
   cy.on("tap", "node", (evt) => {
     const node = evt.target;
     const nid = node.data("node_id_num");
@@ -272,16 +272,9 @@ function initCytoscape() {
       activeSelectedNodeData = node.data();
       showNodeModal(node.data());
 
-      // Darken/dim all unrelated nodes and edges on canvas (opacity 0.2)
-      cy.elements().addClass("dimmed");
-      node.removeClass("dimmed").addClass("selected-node");
-      node.connectedEdges().removeClass("dimmed").addClass("highlighted");
-      node.neighborhood().nodes().removeClass("dimmed");
-
-      // In Step 4, automatically launch slow-mo packet tracer for this clicked node
-      if (currentStep === 4) {
-        replaySlowMoNodeTrace(node.data());
-      }
+      // Highlight selected node without dimming other nodes or links
+      cy.nodes().removeClass("selected-node");
+      node.addClass("selected-node");
     }
   });
 
@@ -506,18 +499,18 @@ function highlightNodesByClass(classId, forceReapply = false) {
     });
   });
 
-  // Dim non-matching nodes to opacity 0.2 and set border to neutral
+  // Dim non-matching nodes strictly to opacity 0.25
   nonMatchingNodes.forEach(n => {
     n.removeClass("highlighted").addClass("dimmed");
     n.style({
-      "opacity": 0.2,
+      "opacity": 0.25,
       "border-color": "#94a3b8",
       "border-width": 1.5,
       "z-index": 1
     });
   });
 
-  // Update edges: keep connecting matching nodes, dim others to 0.15
+  // Update edges: keep connecting matching nodes, dim others strictly to 0.25
   cy.edges().forEach(e => {
     const src = e.source();
     const tgt = e.target();
@@ -535,22 +528,13 @@ function highlightNodesByClass(classId, forceReapply = false) {
     } else {
       e.removeClass("highlighted").addClass("dimmed");
       e.style({
-        "opacity": 0.15,
+        "opacity": 0.25,
         "line-color": "#cbd5e1",
         "width": 1.5,
         "z-index": 1
       });
     }
   });
-
-  // Zoom / pan slightly to center matching nodes
-  if (matchingNodes.length > 0) {
-    const coll = cy.collection(matchingNodes);
-    cy.animate({
-      fit: { eles: coll, padding: 80 },
-      duration: 350
-    });
-  }
 
   logToTerminal("TOPOLOGY", `Filtered by class (ID: ${classId}). ${matchingNodes.length} nodes highlighted.`);
 }
@@ -565,35 +549,16 @@ function clearClassFilter() {
 
   if (!cy) return;
 
-  // Reset all nodes and edges to default opacity (1.0)
+  // Reset all nodes and edges to uniform full opacity (1.0)
   cy.elements().removeClass("highlighted dimmed");
   cy.nodes().forEach(n => {
-    const nd = n.data();
-    n.style({
-      "opacity": 1.0,
-      "border-color": nd.border_color || (nd.is_initiator ? "#d97706" : "#ffffff"),
-      "border-width": nd.is_initiator ? 4 : (nd.is_boundary ? 2.5 : 2),
-      "background-color": nd.bg_color || "#2563eb",
-      "z-index": nd.is_initiator ? 80 : 10
-    });
+    n.removeStyle();
   });
-
   cy.edges().forEach(e => {
-    const ed = e.data();
-    e.style({
-      "opacity": 0.85,
-      "line-color": ed.is_boundary ? "#f87171" : "#475569",
-      "width": ed.is_boundary ? 2.6 : 2.2,
-      "z-index": ed.is_boundary ? 60 : 20
-    });
+    e.removeStyle();
   });
-
-  cy.animate({
-    fit: { padding: 40 },
-    duration: 300
-  });
-
-  logToTerminal("INFO", "Cleared class filter. All 10 nodes restored to normal opacity.");
+  cy.fit(undefined, 35);
+  logToTerminal("INFO", "Cleared class filter. All 10 nodes restored to full opacity.");
 }
 
 // 4. Main Step Loading Function (Steps 1 to 4)
@@ -656,33 +621,25 @@ async function loadStep(stepNumber) {
 function updateUIHeaders(data) {
   const activeBadge = document.getElementById("activeStepBadge");
   if (activeBadge) {
-    activeBadge.textContent = data.phase_badge || `Step ${data.step}`;
-    if (data.step === 1) {
-      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200";
-    } else if (data.step === 2) {
-      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-sky-50 text-sky-700 border border-sky-300";
-    } else if (data.step === 3) {
-      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-300";
-    } else if (data.step === 4) {
-      activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-800 border border-purple-300";
-    }
+    activeBadge.textContent = "Step 1: Network Creation";
+    activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200";
   }
 
   const stepTag = document.getElementById("stepTag");
-  if (stepTag) stepTag.textContent = `STEP ${data.step} / SHEET ${data.step === 1 ? '2' : '3'}`;
+  if (stepTag) stepTag.textContent = "STEP 1 / NETWORK CREATION";
   const stepTitle = document.getElementById("stepTitle");
-  if (stepTitle) stepTitle.textContent = data.title;
+  if (stepTitle) stepTitle.textContent = "Step 1: Network Creation & Non-IID Data Distribution";
   const stepDesc = document.getElementById("stepDescription");
-  if (stepDesc) stepDesc.textContent = data.description;
+  if (stepDesc) stepDesc.textContent = "10 decentralized edge clients connected via 18 physical ad-hoc links. Each node holds local CIFAR-10 data.";
 }
 
-// 5. STEP 1: Base Physical Topology
+// 5. STEP 1: Base Physical Topology & Non-IID Data Distribution
 function renderStep1(data) {
   renderSidebarFormula(
-    "Physical Network Topology",
-    "G = (V, E), \\quad |V|=10, \\quad |E|=18",
-    "Base physical ad-hoc network for 10 CIFAR-10 edge clients. 10 mobile edge devices with 18 physical links (symmetric adjacency). No overlays or zones.",
-    "Topology",
+    "Step 1: Network Creation & Non-IID Data Distribution",
+    "G = (V, E), \\quad |V| = 10, \\quad |E| = 18, \\quad \\sum_{c=1}^{10} \\text{Data}_{i, c} = 100\\%",
+    "10 decentralized edge clients connected via 18 physical ad-hoc links. Each node holds local CIFAR-10 data.",
+    "Network Creation",
     false
   );
 
@@ -1333,101 +1290,49 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   }
 }
 
-// 10. Click-to-Toggle Node Details Modal
+// 10. Click-to-Toggle Node Details Modal (Strict Step 1 Scope)
 function showNodeModal(nodeData) {
   const card = document.getElementById("nodeInfoCard");
   if (!card) return;
 
-  const isInitiator = nodeData.is_initiator;
   const cardNodeId = document.getElementById("cardNodeId");
   const cardStatusBadge = document.getElementById("cardStatusBadge");
-  const cardRole = document.getElementById("cardRole");
-  const cardClass = document.getElementById("cardClass");
-  const cardVrfScore = document.getElementById("cardVrfScore");
-  const cardVrfScoreRow = document.getElementById("cardVrfScoreRow");
-  const cardVrfDetailsRow = document.getElementById("cardVrfDetailsRow");
-  const cardSk = document.getElementById("cardSk");
-  const cardFormula = document.getElementById("cardFormula");
   const cardDegree = document.getElementById("cardDegree");
   const cardNeighbors = document.getElementById("cardNeighbors");
-
-  // Step 3 Scoreboard Elements
-  const step3Sec = document.getElementById("cardStep3ScoreboardSection");
-  const step3Badge = document.getElementById("cardStep3Badge");
-  const decisionBanner = document.getElementById("cardDecisionBanner");
-  const scoreboardCount = document.getElementById("cardScoreboardCount");
-  const scoreboardList = document.getElementById("cardScoreboardList");
-
-  // Step 4 Zone & Conflict Elements
-  const step4Sec = document.getElementById("cardStep4ZoneSection");
-  const zoneStatusTag = document.getElementById("cardZoneStatusTag");
-  const cardZoneId = document.getElementById("cardZoneId");
-  const cardZoneWinner = document.getElementById("cardZoneWinner");
-  const cardFirstWinsText = document.getElementById("cardFirstWinsText");
-  const cardRejectedCount = document.getElementById("cardRejectedCount");
-  const cardRejectedProbesList = document.getElementById("cardRejectedProbesList");
-  const cardBoundaryNeighborsRow = document.getElementById("cardBoundaryNeighborsRow");
-  const cardBoundaryNeighborsList = document.getElementById("cardBoundaryNeighborsList");
-
-  // Title: Node ID: C{id}
-  if (cardNodeId) {
-    const idNum = nodeData.node_id_num || nodeData.id;
-    if (isInitiator && currentStep >= 3) {
-      cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono">👑 Node C${idNum}</span>`;
-    } else {
-      cardNodeId.innerHTML = `<span class="text-blue-700 font-bold font-mono">Node C${idNum}</span>`;
-    }
-  }
-
-  // Status Badge
-  if (cardStatusBadge) {
-    if (currentStep === 4) {
-      cardStatusBadge.textContent = isInitiator ? "👑 INITIATOR" : "ASSIGNED";
-      cardStatusBadge.className = isInitiator
-        ? "text-[9px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300"
-        : "text-[9px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
-    } else if (currentStep === 3) {
-      cardStatusBadge.textContent = isInitiator ? "👑 INITIATOR" : "CANDIDATE";
-      cardStatusBadge.className = isInitiator
-        ? "text-[9px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300"
-        : "text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300";
-    } else if (currentStep === 2) {
-      cardStatusBadge.textContent = "LOCAL_TRAINED";
-      cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-sky-100 text-sky-800 border border-sky-300";
-    } else {
-      cardStatusBadge.textContent = "NOT_ASSIGNED";
-      cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200";
-    }
-  }
-
-  // Role: 👑 Initiator or Member or CLIENT
-  if (cardRole) {
-    if (currentStep >= 3 && isInitiator) {
-      cardRole.textContent = "👑 Initiator (Zone Root)";
-      cardRole.className = "text-amber-800 font-mono font-bold";
-    } else if (currentStep === 4) {
-      cardRole.textContent = "Member";
-      cardRole.className = "text-slate-800 font-mono font-bold";
-    } else {
-      cardRole.textContent = "CLIENT";
-      cardRole.className = "text-slate-700 font-mono font-bold";
-    }
-  }
-
-  // CIFAR-10 Dominant Class (Title + Emoji)
-  if (cardClass) {
-    const domName = nodeData.dominant_class_name || nodeData.class_title || "CIFAR-10";
-    const domIcon = nodeData.dominant_class_icon || nodeData.class_icon || "";
-    const domCode = nodeData.dominant_class || `C${nodeData.class_id}`;
-    cardClass.textContent = domIcon ? `${domName} ${domIcon} (${domCode})` : `${domName} (${domCode})`;
-  }
-
-  // Local Data Distribution breakdown table with percentages
   const distTableBody = document.getElementById("cardDataDistributionTableBody");
+
+  const idNum = nodeData.node_id_num || nodeData.id;
+
+  // Header: Node C{id}
+  if (cardNodeId) {
+    cardNodeId.innerHTML = `<span class="text-blue-700 font-bold font-mono text-sm">Node C${idNum}</span>`;
+  }
+
+  // Status: NOT_ASSIGNED
+  if (cardStatusBadge) {
+    cardStatusBadge.textContent = nodeData.status || "NOT_ASSIGNED";
+    cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200";
+  }
+
+  // Direct physical neighbors list
+  const neighArr = (nodeData.neighbors_str && nodeData.neighbors_str.length)
+    ? nodeData.neighbors_str
+    : (nodeData.neighbors || []).map(x => `C${x}`);
+
+  if (cardDegree) {
+    const deg = neighArr.length;
+    cardDegree.textContent = `${deg} neighbor${deg === 1 ? '' : 's'}`;
+  }
+  if (cardNeighbors) {
+    cardNeighbors.textContent = neighArr.length ? neighArr.join(", ") : "None";
+  }
+
+  // Local Data Distribution: Clean percentage table showing ONLY classes this client actually holds
   if (distTableBody) {
     distTableBody.innerHTML = "";
     const dist = nodeData.data_distribution || nodeData.distribution || {};
-    const entries = Object.entries(dist);
+    const entries = Object.entries(dist).filter(([_, pct]) => Number(pct) > 0);
+
     if (entries.length === 0) {
       distTableBody.innerHTML = '<tr><td colspan="3" class="py-1 px-2 text-slate-400 italic">No local distribution data</td></tr>';
     } else {
@@ -1436,10 +1341,10 @@ function showNodeModal(nodeData) {
         const tr = document.createElement("tr");
         tr.className = "hover:bg-slate-50 transition-colors";
         tr.innerHTML = `
-          <td class="py-1 px-2 font-bold text-blue-700 font-mono">${clsKey}</td>
-          <td class="py-1 px-2 text-slate-800 font-sans font-medium">${clsInfo.name} ${clsInfo.icon}</td>
-          <td class="py-1 px-2 text-right font-mono">
-            <span class="inline-block px-1.5 py-0.2 rounded font-bold text-slate-900 bg-slate-100 border border-slate-200">${pct}%</span>
+          <td class="py-1.5 px-2 font-bold text-blue-700 font-mono">${clsKey}</td>
+          <td class="py-1.5 px-2 text-slate-800 font-sans font-medium">${clsInfo.name}</td>
+          <td class="py-1.5 px-2 text-right font-mono">
+            <span class="inline-block px-1.5 py-0.5 rounded font-bold text-slate-900 bg-slate-100 border border-slate-200">${pct}%</span>
           </td>
         `;
         distTableBody.appendChild(tr);
@@ -1447,371 +1352,31 @@ function showNodeModal(nodeData) {
     }
   }
 
-  // Connected Neighbors list
-  if (cardDegree) {
-    const deg = (nodeData.neighbors || []).length;
-    cardDegree.textContent = `${deg} neighbor${deg === 1 ? '' : 's'}`;
-  }
-  if (cardNeighbors) {
-    const neighArr = (nodeData.neighbors_str && nodeData.neighbors_str.length)
-      ? nodeData.neighbors_str
-      : (nodeData.neighbors || []).map(x => `C${x}`);
-    cardNeighbors.textContent = neighArr.length ? `[${neighArr.join(", ")}]` : "[]";
-  }
-
-  // STEP 2: 10D Normalized Semantic Vector Profile & Visual Bar Chart
-  const step2Sec = document.getElementById("cardStep2VectorSection");
-  const cardVectorRawText = document.getElementById("cardVectorRawText");
-  const cardVectorBarChart = document.getElementById("cardVectorBarChart");
-
-  const vec = nodeData.vector || nodeData.normalized_vector || (Array.isArray(nodeData.weights) ? nodeData.weights : null);
-
-  if (step2Sec) {
-    if (currentStep >= 2 || (vec && vec.length === 10)) {
-      step2Sec.classList.remove("hidden");
-      if (cardVectorRawText && vec) {
-        cardVectorRawText.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
-      }
-      if (cardVectorBarChart && vec) {
-        cardVectorBarChart.innerHTML = "";
-        for (let i = 0; i < 10; i++) {
-          const classId = i + 1;
-          const cls = CIFAR10_CLASSES[classId] || { name: `Class ${classId}`, icon: "📦", code: `C${classId}` };
-          const val = Number(vec[i] || 0.0);
-          const pct = Math.round(val * 100);
-          const isNonZero = val > 0.001;
-
-          const row = document.createElement("div");
-          row.className = isNonZero
-            ? "flex items-center gap-1.5 p-1 rounded bg-sky-50/70 border border-sky-200/80 transition-all"
-            : "flex items-center gap-1.5 p-0.5 rounded opacity-40 hover:opacity-75 transition-opacity";
-
-          row.innerHTML = `
-            <div class="w-14 flex items-center justify-between text-[9px] font-mono">
-              <span class="${isNonZero ? 'font-bold text-sky-900' : 'text-slate-500'}">${cls.code}</span>
-              <span class="text-[10px]">${cls.icon}</span>
-            </div>
-            <div class="flex-1 bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200/80 relative">
-              <div class="h-full rounded-full transition-all duration-500 ${
-                isNonZero
-                  ? 'bg-gradient-to-r from-blue-600 via-sky-500 to-cyan-400 shadow-xs'
-                  : 'bg-transparent'
-              }" style="width: ${Math.max(pct, isNonZero ? 4 : 0)}%;"></div>
-            </div>
-            <div class="w-10 text-right font-mono text-[9px]">
-              <span class="${isNonZero ? 'font-bold text-blue-700' : 'text-slate-400'}">${val.toFixed(2)}</span>
-            </div>
-          `;
-          cardVectorBarChart.appendChild(row);
-        }
-      }
-    } else {
-      step2Sec.classList.add("hidden");
-    }
-  }
-
-  // Exact VRF Score (Step 3+)
-  if (cardVrfScore && cardVrfScoreRow) {
-    if (currentStep >= 2 && nodeData.vrf_score !== null && nodeData.vrf_score !== undefined) {
-      cardVrfScoreRow.classList.remove("hidden");
-      cardVrfScore.textContent = Number(nodeData.vrf_score).toFixed(4);
-    } else {
-      cardVrfScoreRow.classList.add("hidden");
-    }
-  }
-
-  // VRF Formula & Key details (Step 2)
-  if (cardVrfDetailsRow) {
-    if (currentStep === 2 && nodeData.sk) {
-      cardVrfDetailsRow.classList.remove("hidden");
-      if (cardSk) cardSk.textContent = nodeData.sk;
-      if (cardFormula) cardFormula.textContent = nodeData.vrf_formula || "((100+ID)*sk+1337)%10000";
-    } else {
-      cardVrfDetailsRow.classList.add("hidden");
-    }
-  }
-
-  // STEP 3: 3-Hop VRF Scoreboard & Decision Table
-  if (step3Sec) {
-    if (currentStep === 3 && nodeData.scoreboard_3hop) {
-      step3Sec.classList.remove("hidden");
-      const sb = nodeData.scoreboard_3hop;
-
-      if (step3Badge) {
-        step3Badge.textContent = isInitiator ? "Self-Elected" : "Candidate";
-        step3Badge.className = isInitiator
-          ? "text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300"
-          : "text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300";
-      }
-
-      if (decisionBanner) {
-        decisionBanner.textContent = sb.decision_result;
-        decisionBanner.className = isInitiator
-          ? "p-2 rounded font-mono text-[10px] font-bold border bg-amber-50 border-amber-300 text-amber-950 leading-snug"
-          : "p-2 rounded font-mono text-[10px] font-bold border bg-slate-50 border-slate-300 text-slate-800 leading-snug";
-      }
-
-      if (scoreboardCount) {
-        scoreboardCount.textContent = `${sb.total_coverage} peers covered`;
-      }
-
-      // Populate Hop 1, 2, 3 peers
-      if (scoreboardList) {
-        scoreboardList.innerHTML = "";
-
-        const hopGroups = [
-          { hop: 1, label: "Hop 1 (Direct Neighbors)", peers: sb.hop_1 },
-          { hop: 2, label: "Hop 2 Reach", peers: sb.hop_2 },
-          { hop: 3, label: "Hop 3 Reach", peers: sb.hop_3 },
-        ];
-
-        hopGroups.forEach(grp => {
-          if (!grp.peers || grp.peers.length === 0) return;
-
-          const grpHeader = document.createElement("div");
-          grpHeader.className = "text-[9px] font-bold font-mono tracking-wider pt-1.5 pb-0.5 flex items-center justify-between text-slate-500 border-b border-slate-100";
-          grpHeader.innerHTML = `
-            <span class="flex items-center gap-1">
-              <span class="px-1 py-0.2 rounded text-[8px] hop-badge-${grp.hop}">Hop ${grp.hop}</span>
-              <span>${grp.label}</span>
-            </span>
-            <span class="text-[8px] text-slate-400">(${grp.peers.length} peers)</span>
-          `;
-          scoreboardList.appendChild(grpHeader);
-
-          grp.peers.forEach(peer => {
-            const row = document.createElement("div");
-            const isWinner = peer.is_min;
-
-            row.className = isWinner
-              ? "winner-score-row px-2 py-1 flex items-center justify-between my-0.5"
-              : "px-2 py-0.5 bg-slate-50 border border-slate-200/80 rounded flex items-center justify-between text-slate-700 my-0.5";
-
-            row.innerHTML = `
-              <span class="flex items-center gap-1 font-mono">
-                ${isWinner ? "<span>👑</span>" : ""}
-                <span class="${isWinner ? "font-bold text-amber-950" : "font-medium"}">C${peer.id}</span>
-              </span>
-              <span class="flex items-center gap-1 font-mono">
-                <span class="${isWinner ? "text-amber-900 font-extrabold" : "text-slate-800"}">σ=${Number(peer.score).toFixed(4)}</span>
-                ${isWinner ? '<span class="text-[8px] px-1 py-0.2 rounded bg-amber-200 text-amber-950 font-bold border border-amber-400">★ Winner (m_p)</span>' : ""}
-              </span>
-            `;
-            scoreboardList.appendChild(row);
-          });
-        });
-      }
-
-    } else {
-      step3Sec.classList.add("hidden");
-    }
-  }
-
-  // STEP 4: Zone Formation, First-Wins & Conflict Resolution
-  if (step4Sec) {
-    if (currentStep === 4 && nodeData.assigned_zone) {
-      step4Sec.classList.remove("hidden");
-
-      if (zoneStatusTag) {
-        zoneStatusTag.textContent = nodeData.status_tag || (nodeData.is_boundary ? "⚡ BOUNDARY" : "ASSIGNED");
-        zoneStatusTag.className = nodeData.is_boundary
-          ? "text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-300"
-          : "text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-300";
-      }
-
-      if (cardZoneId) cardZoneId.textContent = nodeData.assigned_zone;
-      if (cardZoneWinner) cardZoneWinner.textContent = nodeData.winner_initiator || "Unknown";
-      if (cardFirstWinsText) cardFirstWinsText.textContent = nodeData.first_wins_text || "First-Wins";
-
-      // 1. Accepted Probe Details
-      const cardAcceptedWaveBadge = document.getElementById("cardAcceptedWaveBadge");
-      const cardAcceptedProbeDetail = document.getElementById("cardAcceptedProbeDetail");
-      const acc = nodeData.accepted_probe;
-      if (cardAcceptedWaveBadge && cardAcceptedProbeDetail) {
-        if (isInitiator) {
-          cardAcceptedWaveBadge.textContent = "Root Seed";
-          cardAcceptedWaveBadge.className = "px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold";
-          cardAcceptedProbeDetail.innerHTML = `👑 <strong>Zone Initiator:</strong> Self-elected root node. Floods PROBE(TTL=3) to physical neighbors.`;
-        } else if (acc) {
-          cardAcceptedWaveBadge.textContent = `Hop ${acc.hop} (Wave ${acc.arrival_wave})`;
-          cardAcceptedWaveBadge.className = "px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold";
-          cardAcceptedProbeDetail.innerHTML = `
-            <div class="flex justify-between items-center">
-              <span>Initiator: <strong class="text-amber-800">${acc.from_initiator} 👑</strong></span>
-              <span>Sender: <strong class="text-blue-700">${acc.sender}</strong></span>
-            </div>
-            <div class="text-[8px] text-emerald-700 mt-0.5 font-sans">
-              ✓ Adopted upon impact (First-Wins). Morphed to Initiator zone color.
-            </div>
-          `;
-        }
-      }
-
-      // 2. Competing Probes Rejected
-      const rejectedList = nodeData.rejected_probes || nodeData.competing_probes_rejected || [];
-      if (cardRejectedCount) cardRejectedCount.textContent = `${rejectedList.length} probe(s) dropped`;
-      if (cardRejectedProbesList) {
-        if (rejectedList.length === 0) {
-          cardRejectedProbesList.innerHTML = '<span class="text-slate-400 italic">None (Zone interior peer)</span>';
-        } else {
-          cardRejectedProbesList.innerHTML = rejectedList.map(r => `
-            <div class="rejected-chip flex items-center justify-between my-0.5 w-full">
-              <span>✕ ${r.competing_initiator || r.initiator} (${r.competing_zone || r.zone})</span>
-              <span class="text-[8px] opacity-80">via ${r.sender || 'peer'} • Hop ${r.hop || r.arrived_hop}</span>
-            </div>
-          `).join("");
-        }
-      }
-
-      // 3. Outgoing Forwarded Probes
-      const fwdRow = document.getElementById("cardForwardedRow");
-      const fwdCount = document.getElementById("cardForwardedCount");
-      const fwdList = document.getElementById("cardForwardedList");
-      const forwards = nodeData.forwarded_to || [];
-      if (fwdRow && fwdList) {
-        fwdRow.classList.remove("hidden");
-        if (forwards.length > 0) {
-          if (fwdCount) fwdCount.textContent = `${forwards.length} forwarded`;
-          fwdList.innerHTML = forwards.map(f => `
-            <span class="forwarded-chip mr-1 mb-0.5">
-              ➜ ${f.target} (Hop ${f.hop})
-            </span>
-          `).join("");
-        } else {
-          if (fwdCount) fwdCount.textContent = "0 (Frontier/Leaf)";
-          fwdList.innerHTML = '<span class="text-slate-400 italic">No further forwards (Zone frontier)</span>';
-        }
-      }
-
-      // 4. Boundary Neighbors & Reverse Alerts (Alg 3 L17-L19)
-      const bndRow = document.getElementById("cardBoundaryNeighborsRow");
-      const bndAlertCount = document.getElementById("cardBoundaryAlertCount");
-      const bndList = document.getElementById("cardBoundaryNeighborsList");
-      const bndAlerts = nodeData.boundary_notifications_emitted || [];
-      if (bndRow && bndList) {
-        if (bndAlerts.length > 0) {
-          bndRow.classList.remove("hidden");
-          if (bndAlertCount) bndAlertCount.textContent = `${bndAlerts.length} alert(s)`;
-          bndList.innerHTML = bndAlerts.map(b => `
-            <div class="boundary-alert-chip flex items-center justify-between my-0.5 w-full">
-              <span>⚡ Interface: ${b.frontier_peer} (${b.adjacent_zone})</span>
-              <span class="text-[8px] text-purple-700">Alert ➜ ${b.to_initiator}</span>
-            </div>
-          `).join("");
-        } else {
-          bndRow.classList.add("hidden");
-        }
-      }
-
-      // 5. Initiator Discovered Adjacent Neighbor Zones (Algorithm 3 Lines 18-20)
-      const cardInitNeighborsSec = document.getElementById("cardInitiatorNeighborsSection");
-      const cardInitNeighborsCount = document.getElementById("cardInitiatorNeighborsCount");
-      const cardInitNeighborsList = document.getElementById("cardInitiatorNeighborsList");
-
-      if (cardInitNeighborsSec) {
-        if (isInitiator) {
-          cardInitNeighborsSec.classList.remove("hidden");
-          const discZones = (nodeData.discovered_neighbor_zones && nodeData.discovered_neighbor_zones.length > 0)
-            ? nodeData.discovered_neighbor_zones
-            : (currentStepData?.initiator_neighbor_details?.[nodeData.node_id_str] || currentStepData?.initiator_neighbor_details?.[`C${nodeData.node_id_num}`] || []);
-
-          if (cardInitNeighborsCount) cardInitNeighborsCount.textContent = `${discZones.length} zones`;
-          if (cardInitNeighborsList) {
-            if (discZones.length === 0) {
-              cardInitNeighborsList.innerHTML = '<span class="text-slate-400 italic text-[9px]">No adjacent zones discovered yet</span>';
-            } else {
-              cardInitNeighborsList.innerHTML = discZones.map(z => {
-                const pal = ZONE_PALETTES[z.zone || z.zone_name] || { fill: "#fef3c7", border: "#f59e0b" };
-                return `
-                  <div class="neighbor-zone-badge" style="background-color: ${pal.fill}; border-color: ${pal.border}; color: ${pal.border};">
-                    <span>🌐 Connected to: Zone C${z.initiator_id}</span>
-                    <span class="text-[8px] opacity-80 font-normal">via ${z.frontier_peer}⇄${z.adjacent_peer}</span>
-                  </div>
-                `;
-              }).join("");
-            }
-          }
-        } else {
-          cardInitNeighborsSec.classList.add("hidden");
-        }
-      }
-
-      // 6. Frontier Node Boundary Registration (Algorithm 3 Lines 18-19)
-      const cardFrontierSec = document.getElementById("cardFrontierSection");
-      const cardFrontierAcceptedFrom = document.getElementById("cardFrontierAcceptedFrom");
-      const cardFrontierRejectedFrom = document.getElementById("cardFrontierRejectedFrom");
-      const cardFrontierStatus = document.getElementById("cardFrontierStatus");
-
-      const isFrontier = !isInitiator && (
-        nodeData.is_boundary ||
-        (nodeData.dual_neighbor_alerts && nodeData.dual_neighbor_alerts.length > 0) ||
-        (nodeData.rejected_probes && nodeData.rejected_probes.length > 0)
-      );
-
-      if (cardFrontierSec) {
-        if (isFrontier) {
-          cardFrontierSec.classList.remove("hidden");
-          if (cardFrontierAcceptedFrom) {
-            cardFrontierAcceptedFrom.textContent = nodeData.accepted_probe_from || nodeData.accepted_probe?.from_initiator || `C${nodeData.winner_initiator_id || '?'}`;
-          }
-          if (cardFrontierRejectedFrom) {
-            const rejs = (nodeData.rejected_probe_from && nodeData.rejected_probe_from.length > 0)
-              ? nodeData.rejected_probe_from.join(", ")
-              : (nodeData.rejected_probes?.map(r => r.competing_initiator).join(", ") || "None");
-            cardFrontierRejectedFrom.textContent = rejs;
-          }
-          if (cardFrontierStatus) {
-            cardFrontierStatus.textContent = nodeData.boundary_status || "Dual NEIGHBOR alerts emitted";
-          }
-        } else {
-          cardFrontierSec.classList.add("hidden");
-        }
-      }
-
-    } else {
-      step4Sec.classList.add("hidden");
-      const cardInitNeighborsSec = document.getElementById("cardInitiatorNeighborsSection");
-      if (cardInitNeighborsSec) cardInitNeighborsSec.classList.add("hidden");
-      const cardFrontierSec = document.getElementById("cardFrontierSection");
-      if (cardFrontierSec) cardFrontierSec.classList.add("hidden");
-    }
-  }
   card.classList.remove("hidden");
 }
 
 function hideNodeModal() {
   const card = document.getElementById("nodeInfoCard");
   if (card) card.classList.add("hidden");
+  activeSelectedNodeId = null;
+  activeSelectedNodeData = null;
   if (cy) {
+    cy.nodes().removeClass("selected-node");
     if (activeClassFilterId !== null) {
       highlightNodesByClass(activeClassFilterId, true);
     } else {
       cy.elements().removeClass("dimmed highlighted selected-node");
       cy.nodes().forEach(n => {
-        const nd = n.data();
-        n.style({
-          "opacity": 1.0,
-          "border-color": nd.border_color || (nd.is_initiator ? "#d97706" : "#ffffff"),
-          "border-width": nd.is_initiator ? 4 : (nd.is_boundary ? 2.5 : 2),
-          "background-color": nd.bg_color || "#2563eb",
-          "z-index": nd.is_initiator ? 80 : 10
-        });
+        n.removeStyle();
       });
       cy.edges().forEach(e => {
-        const ed = e.data();
-        e.style({
-          "opacity": 0.85,
-          "line-color": ed.is_boundary ? "#f87171" : "#475569",
-          "width": ed.is_boundary ? 2.6 : 2.2,
-          "z-index": ed.is_boundary ? 60 : 20
-        });
+        e.removeStyle();
       });
     }
   }
-  activeSelectedNodeId = null;
-  activeSelectedNodeData = null;
-  stopCurrentPacketAnimation();
 }
+
+
 
 // Focused Slow-Mo Packet Tracer for Clicked Node (Requirement 3 & 4)
 function replaySlowMoNodeTrace(nodeData) {
@@ -2173,29 +1738,16 @@ function updateNavButtons(step) {
   const btnNext = document.getElementById("btnNext");
 
   if (btnPrev) {
-    btnPrev.disabled = (step === 1);
-    if (step === 1) {
-      btnPrev.innerHTML = `<span>◀️</span><span>Previous Step</span>`;
-    } else {
-      btnPrev.innerHTML = `<span>◀️</span><span>Previous Step (Step ${step - 1})</span>`;
-    }
+    btnPrev.disabled = true;
+    btnPrev.className = "btn-secondary px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
+    btnPrev.innerHTML = `<span>◀️</span><span>Previous Step</span>`;
   }
 
   if (btnNext) {
-    if (step === 4) {
-      btnNext.disabled = true;
-      btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.innerHTML = `<span>Simulation Complete</span><span>✓</span>`;
-    } else {
-      btnNext.disabled = false;
-      btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 shadow-sm transition-colors";
-      const nextNames = {
-        1: "Step 2: VRF Compute",
-        2: "Step 3: VRF Comparison",
-        3: "Step 4: Zone Flooding",
-      };
-      btnNext.innerHTML = `<span>Next Step (${nextNames[step]})</span><span>▶️</span>`;
-    }
+    btnNext.disabled = true;
+    btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
+    btnNext.title = "Step 1 active - Next steps locked";
+    btnNext.innerHTML = `<span>Next Step (Disabled)</span><span>🔒</span>`;
   }
 }
 
@@ -2205,8 +1757,8 @@ function setNavButtonsDisabled(disabled) {
   const btnNext = document.getElementById("btnNext");
 
   if (btnReset) btnReset.disabled = disabled;
-  if (btnPrev && currentStep > 1) btnPrev.disabled = disabled;
-  if (btnNext && currentStep < 4) btnNext.disabled = disabled;
+  if (btnPrev) btnPrev.disabled = true;
+  if (btnNext) btnNext.disabled = true;
 }
 
 function bindActionButtons() {
@@ -2226,8 +1778,9 @@ function bindActionButtons() {
 
   const btnNext = document.getElementById("btnNext");
   if (btnNext) {
-    btnNext.addEventListener("click", () => {
-      if (currentStep < 4) loadStep(currentStep + 1);
+    btnNext.addEventListener("click", (e) => {
+      e.preventDefault();
+      logToTerminal("INFO", "Step 1 is active. Next steps are locked until Step 1 is verified.");
     });
   }
 

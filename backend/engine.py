@@ -258,9 +258,9 @@ def load_step1_data() -> Dict[str, Any]:
 
     return {
         "step": 1,
-        "title": "Step 1: 10-Node CIFAR-10 Physical Ad-Hoc Topology",
+        "title": "Step 1: Network Creation & Non-IID Data Distribution",
         "phase_badge": "Step 1: Network Creation",
-        "description": "Ad-hoc physical network of 10 edge clients initialized with Non-IID CIFAR-10 data distributions. Status: NOT_ASSIGNED, Role: CLIENT, Zone: null.",
+        "description": "10 decentralized edge clients connected via 18 physical ad-hoc links. Each node holds local CIFAR-10 data.",
         "nodes": nodes,
         "edges": edges,
         "adjacency_list": {n["id"]: sorted(n["neighbors"]) for n in nodes},
