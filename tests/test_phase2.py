@@ -320,3 +320,81 @@ def test_storyboard_step2_local_vrf_compute():
     assert all(n["status"] == "NOT_ASSIGNED" for n in res_data["nodes"])
 
 
+def test_storyboard_step3_vrf_exchange():
+    """Verify Step 3 Neighborhood VRF Exchange & Initiator Selection.
+
+    Requirements:
+    1. Spatial dispersion: all nodes maintain min pairwise distance >= 65px (no clumping).
+    2. R-hop neighborhood exchange: each node gathers its R=2 neighborhood scores.
+    3. Exactly the designated 10 leaders [2, 7, 13, 17, 22, 28, 32, 37, 42, 47] are elected.
+    4. R=2 spatial dispersion: pairwise hop distance between all 10 leaders is strictly > 2.
+    5. FastAPI /api/v1/step/vrf-exchange endpoint succeeds with neighborhood_scores.
+    """
+    engine = SemanticDFLEngine(seed=42)
+    step1 = engine.generate_storyboard_step1()
+    nodes = step1["nodes"]
+    adj = step1["adjacency_list"]
+
+    # Assertion 1: Dispersed layout with min distance >= 65px
+    for i in range(len(nodes)):
+        for j in range(i + 1, len(nodes)):
+            xi, yi = nodes[i]["coords"]["x"], nodes[i]["coords"]["y"]
+            xj, yj = nodes[j]["coords"]["x"], nodes[j]["coords"]["y"]
+            dist = np.hypot(xi - xj, yi - yj)
+            assert dist >= 64.9, f"Nodes C{nodes[i]['id']} and C{nodes[j]['id']} are too close ({dist:.2f}px < 65px)"
+
+    # Compute local VRF first (Step 2)
+    engine.compute_local_vrf(nodes=nodes)
+
+    # Execute Step 3: VRF Exchange
+    exchange_res = engine.run_vrf_exchange(nodes=nodes, adjacency_list=adj, r_hops=2)
+    initiators = exchange_res["initiators"]
+
+    expected_leaders = [2, 7, 13, 17, 22, 28, 32, 37, 42, 47]
+    assert sorted(initiators) == expected_leaders, (
+        f"Expected leaders {expected_leaders}, got {sorted(initiators)}"
+    )
+
+    # Assertion 2: R=2 spatial dispersion between all pairs of leaders
+    for i in range(len(initiators)):
+        la = initiators[i]
+        r2_nbrs = set(engine.get_r_hop_neighborhood(la, adj, r_hops=2))
+        for j in range(i + 1, len(initiators)):
+            lb = initiators[j]
+            assert lb not in r2_nbrs, f"Dispersion violation: Leader C{la} and Leader C{lb} within 2 hops!"
+
+    # Assertion 3: Neighborhood score records exist for all nodes
+    for n in nodes:
+        assert "neighborhood_scores" in n
+        assert len(n["neighborhood_scores"]) >= 3
+        # Exactly one min score item
+        min_items = [item for item in n["neighborhood_scores"] if item["is_min"]]
+        assert len(min_items) == 1
+
+        if n["id"] in expected_leaders:
+            assert n["role"] == "INITIATOR"
+            assert n["status"] == "ASSIGNED"
+            assert min_items[0]["id"] == n["id"]
+        else:
+            assert n["role"] == "CLIENT"
+            assert n["status"] == "NOT_ASSIGNED"
+
+    # Assertion 4: Test FastAPI endpoint /api/v1/step/vrf-exchange
+    client = TestClient(app)
+    init_res = client.post("/api/v1/init", json={"benchmark": "Non-IID 10-Class Storyboard"})
+    assert init_res.status_code == 200
+    session_id = init_res.json()["session_id"]
+
+    # Run Step 2
+    step2_res = client.post("/api/v1/step/vrf-compute", json={"session_id": session_id})
+    assert step2_res.status_code == 200
+
+    # Run Step 3
+    step3_res = client.post("/api/v1/step/vrf-exchange", json={"session_id": session_id, "r_hops": 2})
+    assert step3_res.status_code == 200
+    step3_data = step3_res.json()
+    assert sorted(step3_data["initiators"]) == expected_leaders
+    assert all("neighborhood_scores" in n for n in step3_data["nodes"])
+
+
+

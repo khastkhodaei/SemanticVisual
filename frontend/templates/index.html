@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SemanticDFL Protocol Simulator | Step 2: VRF Local Computation</title>
+  <title>SemanticDFL Protocol Simulator | Step 3: VRF Neighborhood Exchange</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -19,7 +19,7 @@
             paperMuted: '#64748b',
             brandBlue: '#2563eb',
             brandSky: '#0284c7',
-            brandAmber: '#d97706',
+            brandAmber: '#f59e0b',
             brandEmerald: '#059669',
           }
         }
@@ -70,9 +70,9 @@
         <span>VRF Calculation</span>
       </div>
       <span class="text-slate-300">→</span>
-      <div id="stepNav3" class="step-item text-slate-400">
+      <div id="stepNav3" class="step-item">
         <span class="step-bubble">3</span>
-        <span>Zones</span>
+        <span>VRF Exchange & Leaders</span>
       </div>
       <span class="text-slate-300">→</span>
       <div id="stepNav4" class="step-item text-slate-400">
@@ -125,7 +125,7 @@
     </div>
 
     <!-- Narrative Info Card -->
-    <div class="paper-card-elevated px-4 py-2.5 border-slate-200 bg-white">
+    <div class="paper-card-elevated px-4 py-2 border-slate-200 bg-white">
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div class="space-y-1 flex-1">
           <div class="flex items-center gap-2">
@@ -153,11 +153,11 @@
           </div>
           <div class="bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-center min-w-[95px]">
             <div class="text-[9px] text-slate-500 font-sans">AVG DEGREE</div>
-            <div id="statDegree" class="text-xs font-bold text-slate-700">3.9 (3-6)</div>
+            <div id="statDegree" class="text-xs font-bold text-slate-700">3.8 (3-6)</div>
           </div>
           <div class="bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-center min-w-[110px]">
-            <div class="text-[9px] text-slate-500 font-sans">VRF STATUS</div>
-            <div id="statVrfStatus" class="text-xs font-bold text-slate-400">Uncomputed</div>
+            <div class="text-[9px] text-slate-500 font-sans">LEADERS / INITIATORS</div>
+            <div id="statLeaders" class="text-xs font-bold text-slate-400">0 Initiators</div>
           </div>
         </div>
       </div>
@@ -167,16 +167,36 @@
   <!-- Main Grid Workspace (Locked Viewport) -->
   <main class="flex-1 grid grid-cols-12 gap-4 px-6 pb-2 min-h-0 overflow-hidden">
 
-    <!-- Left Sidebar: Dataset Classes & Persistent Step Formula (3 cols) -->
+    <!-- Left Sidebar: Step Formula Card at Top + Dataset Classes (3 cols) -->
     <aside class="col-span-12 lg:col-span-3 flex flex-col min-h-0 space-y-2 overflow-hidden">
       
-      <!-- Dataset Classes Card (Scrollable inside, takes flexible space) -->
-      <div class="paper-card p-3 flex-1 min-h-0 flex flex-col overflow-hidden">
+      <!-- Prominent Step Formula Card (Positioned at the TOP of the sidebar) -->
+      <div id="sidebarFormulaCard" class="formula-card flex-shrink-0 space-y-1">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-1">
+          <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1">
+            <span>📐</span>
+            <span id="formulaCardTitle">Step Formula</span>
+          </h3>
+          <span id="formulaCardBadge" class="text-[9px] font-mono font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">Topology</span>
+        </div>
+
+        <!-- KaTeX Math Container -->
+        <div id="sidebarFormula" class="text-xs text-slate-900 py-1 text-center overflow-x-auto min-h-[32px] flex items-center justify-center font-mono">
+          <!-- Rendered dynamically via KaTeX -->
+        </div>
+
+        <p id="sidebarFormulaDesc" class="text-[11px] text-slate-600 leading-snug">
+          Overlay-free physical ad-hoc network. Each peer holds local dataset samples and a 50-dimensional parameter vector.
+        </p>
+      </div>
+
+      <!-- Dataset Classes Card (Scrollable inside, takes remaining flexible height) -->
+      <div id="classListCard" class="paper-card p-3 flex-1 min-h-0 flex flex-col overflow-hidden">
         <div class="flex items-center justify-between border-b border-slate-100 pb-1.5 flex-shrink-0">
           <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
             <span class="mr-1.5">🏷️</span> Dataset Classes (10)
           </h3>
-          <span class="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">M=50</span>
+          <span class="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">M=50 Dims</span>
         </div>
 
         <p class="text-[11px] text-slate-500 my-1 flex-shrink-0">
@@ -189,29 +209,9 @@
         </div>
 
         <div class="pt-1.5 border-t border-slate-100 text-[10px] text-slate-500 font-sans flex-shrink-0 flex justify-between">
-          <span>Intra-class Sim: <strong class="text-emerald-600 font-mono">&ge; 0.85</strong></span>
+          <span>Intra-class: <strong class="text-emerald-600 font-mono">&ge; 0.85</strong></span>
           <span>Inter-class: <strong class="text-slate-600 font-mono">&approx; 0.00</strong></span>
         </div>
-      </div>
-
-      <!-- Persistent Current Step Formula Card (Located in Sidebar) -->
-      <div id="sidebarFormulaCard" class="formula-card flex-shrink-0 space-y-1.5">
-        <div class="flex items-center justify-between border-b border-blue-200/60 pb-1">
-          <h3 class="text-xs font-bold text-blue-900 uppercase tracking-wider flex items-center gap-1">
-            <span>📐</span>
-            <span id="formulaCardTitle">Step Formula</span>
-          </h3>
-          <span id="formulaCardBadge" class="text-[9px] font-mono font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">Local</span>
-        </div>
-
-        <!-- KaTeX Math Target -->
-        <div id="sidebarFormula" class="text-xs text-slate-900 py-1 text-center overflow-x-auto min-h-[30px] flex items-center justify-center font-mono">
-          <!-- Rendered via KaTeX -->
-        </div>
-
-        <p id="sidebarFormulaDesc" class="text-[11px] text-slate-600 leading-snug">
-          Peers locally compute a verifiable pseudorandom score using their private key and epoch seed. No messages are sent yet.
-        </p>
       </div>
 
     </aside>
@@ -225,18 +225,18 @@
         <!-- Canvas Indicator Top-Left -->
         <div class="absolute top-3 left-3 z-10 flex items-center gap-2 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-mono shadow-sm">
           <span class="text-slate-400">TOPOLOGY:</span>
-          <span id="canvasViewLabel" class="font-bold text-slate-800">Physical Ad-Hoc Mesh (50 Nodes, 98 Edges)</span>
+          <span id="canvasViewLabel" class="font-bold text-slate-800">Physical Ad-Hoc Mesh (50 Dispersed Nodes)</span>
         </div>
 
-        <!-- Node Color Legend Top-Right -->
+        <!-- Node Legend Top-Right -->
         <div class="absolute top-3 right-3 z-10 flex items-center gap-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-mono shadow-sm">
           <div class="flex items-center gap-1.5">
             <span class="w-3 h-3 rounded-full bg-blue-600"></span>
             <span class="text-slate-600 text-[11px]">Client Peer</span>
           </div>
-          <div id="vrfComputedLegend" class="hidden flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse"></span>
-            <span class="text-sky-700 font-semibold text-[11px]">VRF Computed (σ_p)</span>
+          <div id="leaderLegendItem" class="hidden flex items-center gap-1.5">
+            <span class="w-3.5 h-3.5 rounded-full bg-amber-500 border border-amber-700 shadow-sm"></span>
+            <span class="text-amber-800 font-bold text-[11px]">Elected Initiator (👑)</span>
           </div>
         </div>
 
@@ -244,8 +244,8 @@
         <div id="cy" class="w-full h-full"></div>
 
         <!-- Paper Tooltip Card (Hover on Node) -->
-        <div id="nodeInfoCard" class="hidden absolute top-12 right-3 node-tooltip-paper p-3.5 rounded-xl text-xs font-mono w-72 pointer-events-none z-20 border border-slate-300">
-          <div class="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-2">
+        <div id="nodeInfoCard" class="hidden absolute top-12 right-3 node-tooltip-paper p-3 rounded-xl text-xs font-mono w-80 pointer-events-none z-20 border border-slate-300 overflow-y-auto">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-1.5">
             <div class="text-blue-700 font-bold text-sm tracking-tight" id="cardNodeId">NODE #C1</div>
             <span id="cardStatusBadge" class="text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">NOT_ASSIGNED</span>
           </div>
@@ -268,30 +268,57 @@
               <span id="cardCoords" class="text-slate-800 font-mono">(145, 230)</span>
             </div>
 
-            <!-- Dedicated Step 2 VRF Computation Section in Tooltip -->
-            <div id="cardVrfSection" class="hidden mt-2 pt-2 border-t border-slate-200 space-y-1">
+            <!-- Step 2: Local VRF Computation Details -->
+            <div id="cardVrfLocalSection" class="hidden mt-1.5 pt-1.5 border-t border-slate-200 space-y-1">
               <div class="flex justify-between items-center">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-blue-900 font-mono">VRF Computation</span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">Local Only</span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">Step 2: Local</span>
               </div>
               <div class="bg-slate-50 p-1.5 rounded border border-slate-200 font-mono text-[10px] space-y-0.5">
                 <div class="text-slate-500">Formula: <span class="text-slate-800 font-bold">σ = VRF(sk_p, seed)</span></div>
                 <div class="flex justify-between">
-                  <span class="text-slate-600 font-medium">Computed Score:</span>
-                  <span id="cardVrfScoreVal" class="text-blue-700 font-bold">0.0412</span>
+                  <span class="text-slate-600 font-medium">Computed Score (σ_p):</span>
+                  <span id="cardLocalScoreVal" class="text-blue-700 font-bold">0.0412</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3: Neighborhood VRF Exchange & Initiator Selection Details -->
+            <div id="cardVrfExchangeSection" class="hidden mt-1.5 pt-1.5 border-t border-slate-200 space-y-1.5">
+              <div class="flex justify-between items-center">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-900 font-mono flex items-center gap-1">
+                  <span>👑</span>
+                  <span>R-Hop Exchange (R=2)</span>
+                </span>
+                <span id="cardWinnerBadge" class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">Evaluating</span>
+              </div>
+
+              <!-- Own Score Header -->
+              <div class="flex justify-between items-center bg-slate-100 px-2 py-1 rounded text-[10px] font-mono border border-slate-200">
+                <span class="text-slate-600">Your Score (σ_self):</span>
+                <span id="cardSelfScoreVal" class="font-bold text-slate-800">0.0412</span>
+              </div>
+
+              <!-- Neighborhood Peers and Scores Table -->
+              <div>
+                <div class="text-[9px] text-slate-500 font-mono uppercase tracking-wider mb-1">
+                  Received Scores from R=2 Neighbors:
+                </div>
+                <div id="cardNbrScoresList" class="space-y-1 max-h-28 overflow-y-auto pr-1 text-[10px] font-mono">
+                  <!-- Dynamically populated rows in Step 3 -->
                 </div>
               </div>
             </div>
           </div>
 
           <!-- 50D Vector Bar Chart Snapshot -->
-          <div class="mt-2.5 pt-2 border-t border-slate-200">
+          <div class="mt-2 pt-1.5 border-t border-slate-200">
             <div class="flex justify-between items-center mb-1 font-mono">
               <span class="text-[9px] uppercase font-bold text-slate-500">Model Vector (M=50)</span>
               <span class="text-[9px] text-blue-600">Peak: ~0.85</span>
             </div>
             <div class="bg-slate-100 rounded p-1 border border-slate-200 flex items-center justify-center">
-              <canvas id="tooltipVectorCanvas" width="240" height="36" class="w-full h-[36px]"></canvas>
+              <canvas id="tooltipVectorCanvas" width="240" height="34" class="w-full h-[34px]"></canvas>
             </div>
           </div>
         </div>

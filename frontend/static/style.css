@@ -17,7 +17,8 @@
   --brand-blue: #2563eb;     /* blue-600 */
   --brand-blue-hover: #1d4ed8;
   --brand-sky: #0284c7;      /* sky-600 */
-  --brand-amber: #d97706;    /* amber-600 */
+  --brand-amber: #f59e0b;    /* amber-500 */
+  --brand-amber-dark: #b45309; /* amber-700 */
   --brand-emerald: #059669;  /* emerald-600 */
   --brand-rose: #e11d48;     /* rose-600 */
   --brand-purple: #7c3aed;   /* purple-600 */
@@ -72,7 +73,7 @@ body {
   border-bottom: 1px solid var(--border-light);
 }
 
-/* Custom Scrollbar for Inner Containers Only */
+/* Custom Scrollbar for Inner Containers */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -98,13 +99,20 @@ body {
   border-radius: 0.5rem;
 }
 
-/* Formula Box in Sidebar */
+/* Formula Card at Top of Sidebar */
 .formula-card {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid var(--border-strong);
-  border-left: 3.5px solid var(--brand-blue);
+  border-left: 4px solid var(--brand-blue);
   border-radius: 0.5rem;
   padding: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s ease;
+}
+
+.formula-card.formula-amber {
+  border-left-color: var(--brand-amber);
+  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
 }
 
 /* Stepper Indicator */
@@ -120,6 +128,10 @@ body {
 
 .step-item.active {
   color: var(--brand-blue);
+}
+
+.step-item.active.step-amber {
+  color: var(--brand-amber-dark);
 }
 
 .step-item.completed {
@@ -149,13 +161,20 @@ body {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
 }
 
+.step-item.active.step-amber .step-bubble {
+  background: var(--brand-amber);
+  border-color: var(--brand-amber);
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+}
+
 .step-item.completed .step-bubble {
   background: var(--brand-emerald);
   border-color: var(--brand-emerald);
   color: #ffffff;
 }
 
-/* Terminal logs styling - Clean Academic Console */
+/* Terminal Console Styling */
 .terminal-window {
   font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 0.73rem;
@@ -197,9 +216,10 @@ body {
 .node-tooltip-paper {
   background: rgba(255, 255, 255, 0.98);
   border: 1px solid #cbd5e1;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  max-height: 480px;
 }
 
 /* Buttons */
@@ -230,4 +250,13 @@ body {
 .btn-secondary:disabled, .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Step 3 Winner Highlight in Tooltip */
+.winner-score-row {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  font-weight: 700;
+  border-radius: 4px;
 }

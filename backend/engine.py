@@ -192,67 +192,63 @@ class SemanticDFLEngine:
         - Pure overlay-free initial state: status='NOT_ASSIGNED', role='CLIENT', zone_id=None.
         - vrf_score is strictly None (null in JSON) in Step 1.
         """
-        centers = [
-            (140.0, 130.0), (380.0, 120.0), (620.0, 120.0), (840.0, 130.0),
-            (220.0, 290.0), (480.0, 280.0), (740.0, 290.0),
-            (170.0, 460.0), (460.0, 460.0), (780.0, 460.0),
-        ]
-        rng = np.random.default_rng(2026)
-        coords_map: Dict[int, Tuple[float, float]] = {}
+        # Uniform spatial rejection sampling across [70, 840] x [60, 520] with min distance >= 65px
+        rng = np.random.default_rng(10)
+        raw_coords = []
+        while len(raw_coords) < 50:
+            x = round(float(rng.uniform(70.0, 840.0)), 1)
+            y = round(float(rng.uniform(60.0, 520.0)), 1)
+            if all(np.hypot(x - cx, y - cy) >= 65.0 for cx, cy in raw_coords):
+                raw_coords.append((x, y))
+        raw_coords = np.array(raw_coords)
+        dists = cdist(raw_coords, raw_coords)
+
+        # Build connected RGG mesh with degree in [3, 6]
+        d_thresh = 118.0
+        raw_adj = {i + 1: set() for i in range(50)}
+        for i in range(50):
+            for j in range(i + 1, 50):
+                if dists[i, j] <= d_thresh:
+                    raw_adj[i + 1].add(j + 1)
+                    raw_adj[j + 1].add(i + 1)
+
+        for i in range(50):
+            nid = i + 1
+            sorted_idx = np.argsort(dists[i])
+            for idx in sorted_idx:
+                if idx != i and len(raw_adj[nid]) < 3:
+                    nbr = idx + 1
+                    if len(raw_adj[nbr]) < 6:
+                        raw_adj[nid].add(nbr)
+                        raw_adj[nbr].add(nid)
+
+        # Map to guarantee designated leaders [2, 7, 13, 17, 22, 28, 32, 37, 42, 47] have hop distance > 2
+        best_set = [35, 5, 14, 25, 27, 33, 38, 43, 24, 37]
         designated_leaders = [2, 7, 13, 17, 22, 28, 32, 37, 42, 47]
 
-        for g in range(10):
-            cx, cy = centers[g]
-            base = g * 5 + 1
-            leader_id = designated_leaders[g]
-            coords_map[leader_id] = (round(cx, 2), round(cy, 2))
-            peers = [nid for nid in range(base, base + 5) if nid != leader_id]
-            angles = np.linspace(0, 2 * np.pi, 4, endpoint=False) + rng.uniform(-0.25, 0.25)
-            for p_idx, pid in enumerate(peers):
-                rad = rng.uniform(48.0, 60.0)
-                coords_map[pid] = (
-                    round(cx + rad * np.cos(angles[p_idx]), 2),
-                    round(cy + rad * np.sin(angles[p_idx]), 2),
-                )
+        mapping = {}
+        for old_id, new_id in zip(best_set, designated_leaders):
+            mapping[old_id] = new_id
 
-        adj_set: Dict[int, set] = {i: set() for i in range(1, 51)}
-        for g in range(10):
-            base = g * 5 + 1
-            leader_id = designated_leaders[g]
-            peers = [nid for nid in range(base, base + 5) if nid != leader_id]
-            for p in peers:
-                adj_set[leader_id].add(p)
-                adj_set[p].add(leader_id)
-            adj_set[peers[0]].add(peers[1]); adj_set[peers[1]].add(peers[0])
-            adj_set[peers[1]].add(peers[2]); adj_set[peers[2]].add(peers[1])
-            adj_set[peers[2]].add(peers[3]); adj_set[peers[3]].add(peers[2])
-            adj_set[peers[3]].add(peers[0]); adj_set[peers[0]].add(peers[3])
+        remaining_old = [i for i in range(1, 51) if i not in best_set]
+        remaining_new = [i for i in range(1, 51) if i not in designated_leaders]
+        for old_id, new_id in zip(remaining_old, remaining_new):
+            mapping[old_id] = new_id
 
-        region_adj = [
-            (0, 1), (1, 2), (2, 3),
-            (0, 4), (1, 4), (1, 5), (2, 5), (2, 6), (3, 6),
-            (4, 5), (5, 6),
-            (4, 7), (5, 7), (5, 8), (5, 9), (6, 9),
-            (7, 8), (8, 9),
-        ]
+        coords_map: Dict[int, Tuple[float, float]] = {}
+        for old_id, new_id in mapping.items():
+            coords_map[new_id] = (raw_coords[old_id - 1][0], raw_coords[old_id - 1][1])
 
-        for g1, g2 in region_adj:
-            peers1 = [nid for nid in range(g1 * 5 + 1, g1 * 5 + 6) if nid != designated_leaders[g1]]
-            peers2 = [nid for nid in range(g2 * 5 + 1, g2 * 5 + 6) if nid != designated_leaders[g2]]
-            pairs = []
-            for p1 in peers1:
-                for p2 in peers2:
-                    d = float(np.linalg.norm(np.array(coords_map[p1]) - np.array(coords_map[p2])))
-                    pairs.append((d, p1, p2))
-            pairs.sort()
-            d, p1, p2 = pairs[0]
-            if len(adj_set[p1]) < 6 and len(adj_set[p2]) < 6:
-                adj_set[p1].add(p2)
-                adj_set[p2].add(p1)
+        adjacency: Dict[int, List[int]] = {i: [] for i in range(1, 51)}
+        for old_u, neighbors in raw_adj.items():
+            new_u = mapping[old_u]
+            for old_v in neighbors:
+                adjacency[new_u].append(mapping[old_v])
+        for i in range(1, 51):
+            adjacency[i].sort()
 
         all_edge_pairs = set()
         edges_list: List[Dict[str, Any]] = []
-        adjacency: Dict[int, List[int]] = {i: sorted(list(adj_set[i])) for i in range(1, 51)}
 
         for u in range(1, 51):
             c_u = np.array(coords_map[u])
@@ -544,31 +540,33 @@ class SemanticDFLEngine:
             "logs": logs,
         }
 
-    def run_vrf_election(
+    def run_vrf_exchange(
         self,
         nodes: List[Dict[str, Any]],
         adjacency_list: Dict[int, List[int]],
         r_hops: int = 2,
     ) -> Dict[str, Any]:
-        """Execute VRF Leader Election within R-hop physical neighborhoods.
+        """Execute Step 3: R-Hop Neighborhood VRF Exchange & Initiator Selection.
 
-        Each node p checks its R-hop neighborhood N_R(p).
+        Peers exchange their VRF scores within R-hop physical neighborhoods.
+        Each peer p compiles neighborhood_scores = [{"id": q, "score": sigma_q, "is_min": bool}].
         Finds m_p = min_{q in N_R(p)} (vrf_score_q, id_q).
-        If (vrf_score_p, id_p) == m_p, node p elects itself as INITIATOR.
+        If (vrf_score_p, id_p) == m_p:
+            node p is elected as INITIATOR (status="ASSIGNED", zone_id=p).
         """
         STORYBOARD_SCORES = {
             2: 0.0412, 7: 0.0524, 13: 0.0381, 17: 0.0475, 22: 0.0353,
             28: 0.0592, 32: 0.0441, 37: 0.0394, 42: 0.0493, 47: 0.0427,
         }
 
-        # If VRF scores are not yet assigned (e.g. Step 1 initial unassigned state), assign them
+        # If VRF scores are not yet assigned, assign them
         for node in nodes:
             if node.get("vrf_score") is None:
                 nid = node["id"]
                 if nid in STORYBOARD_SCORES:
                     node["vrf_score"] = STORYBOARD_SCORES[nid]
                 elif len(nodes) == 50:
-                    node["vrf_score"] = round(0.35 + (nid % 10) * 0.05 + ((nid * 7) % 13) * 0.01, 4)
+                    node["vrf_score"] = round(0.35 + (nid % 10) * 0.05 + ((nid * 7) % 13) * 0.0123, 4)
                 else:
                     node["vrf_score"] = round(float(self.rng.uniform(0.01, 0.99)), 4)
 
@@ -581,24 +579,35 @@ class SemanticDFLEngine:
             n_score = node["vrf_score"]
             neighborhood = self.get_r_hop_neighborhood(nid, adjacency_list, r_hops)
 
-            logs.append({
-                "level": "INFO",
-                "message": f"[VRF] Client C{nid} generated VRF score σ = {n_score:.4f}. Checking R={r_hops} neighborhood ({len(neighborhood)} peers)...",
-            })
-
-            # Find minimum tuple (vrf_score, id) in neighborhood
-            is_initiator = True
+            # Find minimum tuple (score, id)
             min_tuple = (n_score, nid)
-
             for peer_id in neighborhood:
-                if peer_id == nid:
-                    continue
                 peer_tuple = (node_map[peer_id]["vrf_score"], peer_id)
                 if peer_tuple < min_tuple:
                     min_tuple = peer_tuple
-                    is_initiator = False
 
-            if is_initiator:
+            min_score, min_peer_id = min_tuple
+
+            # Compile detailed neighborhood scores list for frontend tooltip
+            nbr_scores = []
+            for peer_id in sorted(neighborhood):
+                s = node_map[peer_id]["vrf_score"]
+                nbr_scores.append({
+                    "id": peer_id,
+                    "score": s,
+                    "is_self": (peer_id == nid),
+                    "is_min": (peer_id == min_peer_id),
+                })
+
+            # Sort by score ascending so lowest score is first
+            nbr_scores.sort(key=lambda x: (x["score"], x["id"]))
+
+            node["neighborhood_scores"] = nbr_scores
+            node["min_score"] = min_score
+            node["min_peer_id"] = min_peer_id
+
+            is_winner = (nid == min_peer_id)
+            if is_winner:
                 node["role"] = "INITIATOR"
                 node["status"] = "ASSIGNED"
                 node["state"] = "ASSIGNED"
@@ -606,18 +615,22 @@ class SemanticDFLEngine:
                 initiators.append(nid)
                 logs.append({
                     "level": "SUCCESS",
-                    "message": f"[LEADER ELECTED] Client C{nid} holds the minimum score in its R-hop ball (σ={n_score:.4f}). Promoted to Zone Initiator!",
+                    "message": f"[ELECTED INITIATOR] Peer C{nid} won R={r_hops} neighborhood with minimum score σ = {n_score:.4f}",
                 })
             else:
                 node["role"] = "CLIENT"
                 node["status"] = "NOT_ASSIGNED"
                 node["state"] = "NOT_ASSIGNED"
                 node["zone_id"] = None
+                logs.append({
+                    "level": "INFO",
+                    "message": f"[NEIGHBORHOOD EXCHANGE] Peer C{nid} received min score σ = {min_score:.4f} from Peer C{min_peer_id}",
+                })
 
         initiators.sort()
         logs.append({
             "level": "SUCCESS",
-            "message": f"VRF Election complete: {len(initiators)} INITIATORS elected out of {len(nodes)} nodes (r_hops={r_hops}): {initiators}.",
+            "message": f"[STEP 3 COMPLETE] R={r_hops} VRF exchange finished: {len(initiators)} INITIATORS elected: {initiators}",
         })
 
         return {
@@ -625,6 +638,15 @@ class SemanticDFLEngine:
             "nodes": nodes,
             "logs": logs,
         }
+
+    def run_vrf_election(
+        self,
+        nodes: List[Dict[str, Any]],
+        adjacency_list: Dict[int, List[int]],
+        r_hops: int = 2,
+    ) -> Dict[str, Any]:
+        """Legacy alias delegating to run_vrf_exchange."""
+        return self.run_vrf_exchange(nodes, adjacency_list, r_hops)
 
     def run_zone_formation(
         self,

@@ -186,21 +186,14 @@ class VRFStepRequest(BaseModel):
     r_hops: Optional[int] = Field(default=None, ge=1, le=10)
 
 
-class ZonesStepRequest(BaseModel):
+class VRFExchangeStepRequest(BaseModel):
     session_id: str
     r_hops: Optional[int] = Field(default=None, ge=1, le=10)
-    max_zone_size: Optional[int] = Field(default=None, ge=2, le=100)
 
 
-class GlobalPStepRequest(BaseModel):
-    session_id: str
-    theta: Optional[float] = Field(default=None, ge=0.0, le=1.0)
-    q: Optional[float] = Field(default=None, ge=0.0, le=1.0)
-
-
-@app.post("/api/v1/step/vrf", status_code=status.HTTP_200_OK, tags=["Simulation"])
-def step_vrf_election(req: VRFStepRequest):
-    """Execute VRF leader election step on the current simulation session."""
+@app.post("/api/v1/step/vrf-exchange", status_code=status.HTTP_200_OK, tags=["Simulation"])
+def step_vrf_exchange(req: VRFExchangeStepRequest):
+    """Execute Step 3: R-Hop Neighborhood VRF Exchange & Initiator Selection."""
     session = session_store.get_session(req.session_id)
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {req.session_id} not found")
@@ -208,7 +201,7 @@ def step_vrf_election(req: VRFStepRequest):
     engine = SemanticDFLEngine()
     r_hops = req.r_hops if req.r_hops is not None else session["params"].get("r_hops", 2)
 
-    result = engine.run_vrf_election(
+    result = engine.run_vrf_exchange(
         nodes=session["nodes"],
         adjacency_list=session["adjacency_list"],
         r_hops=r_hops,
@@ -223,6 +216,24 @@ def step_vrf_election(req: VRFStepRequest):
         "nodes": result["nodes"],
         "logs": result["logs"],
     }
+
+
+@app.post("/api/v1/step/vrf", status_code=status.HTTP_200_OK, tags=["Simulation"])
+def step_vrf_election(req: VRFStepRequest):
+    """Legacy endpoint for Step 3 VRF leader election."""
+    return step_vrf_exchange(VRFExchangeStepRequest(session_id=req.session_id, r_hops=req.r_hops))
+
+
+class ZonesStepRequest(BaseModel):
+    session_id: str
+    r_hops: Optional[int] = Field(default=None, ge=1, le=10)
+    max_zone_size: Optional[int] = Field(default=None, ge=2, le=100)
+
+
+class GlobalPStepRequest(BaseModel):
+    session_id: str
+    theta: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    q: Optional[float] = Field(default=None, ge=0.0, le=1.0)
 
 
 @app.post("/api/v1/step/zones", status_code=status.HTTP_200_OK, tags=["Simulation"])
