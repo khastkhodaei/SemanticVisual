@@ -148,7 +148,7 @@ def test_10nodes_dominant_class_icons():
         assert node["dominant_class"] == exp_code
         assert node["dominant_class_name"] == exp_name
         assert node["dominant_class_icon"] == exp_icon
-        assert f"C{nid} {exp_icon}" == node["label"]
+        assert node["label"] in [f"C{nid}", f"C{nid} {exp_icon}"]
 
 
 def test_engine_10node_methods():

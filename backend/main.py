@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from backend.engine import SemanticDFLEngine
+from backend.engine import SemanticDFLEngine, load_step1_data
 from backend.excel_loader import ExcelDataLoader
 from backend.storyboard_10nodes import (
     get_10node_config,
@@ -103,25 +103,41 @@ def health_check():
 @app.get("/api/v1/storyboard/config", tags=["Storyboard"])
 def get_storyboard_config():
     """Returns global network configuration and CIFAR-10 class metrics for 10-node setup."""
-    return get_10node_config()
+    d1 = load_step1_data()
+    return {
+        "num_nodes": 10,
+        "avg_degree": 3.4,
+        "total_edges": 18,
+        "unique_edges": len(d1["edges"]),
+        "num_classes": len(d1["classes"]),
+        "classes": d1["classes"],
+    }
 
 
 @app.get("/api/v1/storyboard/nodes", tags=["Storyboard"])
 def get_storyboard_nodes():
     """Returns 10 nodes with fixed coordinates, CIFAR-10 data, and physical links."""
-    edges = get_10node_edges()
+    d1 = load_step1_data()
     return {
-        "nodes": get_10node_nodes(),
-        "edges": edges,
+        "nodes": d1["nodes"],
+        "edges": d1["edges"],
         "total_nodes": 10,
         "total_edges": 18,
-        "unique_edges": len(edges),
+        "unique_edges": len(d1["edges"]),
     }
+
+
+@app.get("/api/v1/storyboard/step/1", tags=["Storyboard"])
+def get_storyboard_step_1():
+    """Returns the 10 nodes, 18 edges, dataset classes, and step description."""
+    return load_step1_data()
 
 
 @app.get("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
 def get_storyboard_step(step_number: int):
     """Returns deterministic data for Storyboard Step (1 to 4) for 10-node simulation."""
+    if step_number == 1:
+        return load_step1_data()
     if step_number not in [1, 2, 3, 4]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -133,6 +149,8 @@ def get_storyboard_step(step_number: int):
 @app.post("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
 def post_storyboard_step(step_number: int):
     """Execute / return deterministic data for Storyboard Step (1 to 4) for 10-node simulation."""
+    if step_number == 1:
+        return load_step1_data()
     if step_number not in [1, 2, 3, 4]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

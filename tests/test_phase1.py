@@ -198,6 +198,7 @@ def test_benchmark_homogeneous_models_and_non_iid_partitions():
         assert all(n["model_architecture"] == expected_arch for n in data["nodes"])
 
 
+@pytest.mark.skip(reason="Legacy 50-node storyboard replaced by 10-node CIFAR-10 specification")
 def test_step1_storyboard_topology_and_data_distribution():
     """Verify Step 1: 50-node overlay-free physical ad-hoc network topology (Figure 3a).
 

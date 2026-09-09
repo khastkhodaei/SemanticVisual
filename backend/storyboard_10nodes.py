@@ -65,18 +65,18 @@ STORYBOARD_10_VECTORS: Dict[int, List[float]] = {
     10: [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.12, 0.43, 0.33, 0.12],
 }
 
-# Balanced, readable planar 2D coordinates for Cytoscape viewport
+# Balanced, readable planar 2D coordinates from scenario_data.json
 STORYBOARD_10_COORDINATES: Dict[int, Tuple[float, float]] = {
-    1: (130.0, 160.0),
-    2: (130.0, 370.0),
-    4: (290.0, 160.0),
-    3: (290.0, 370.0),
-    7: (470.0, 110.0),
-    6: (490.0, 265.0),
-    5: (470.0, 420.0),
-    9: (670.0, 140.0),
-    8: (710.0, 265.0),
-    10: (670.0, 390.0),
+    1: (130.0, 140.0),
+    2: (130.0, 380.0),
+    3: (310.0, 380.0),
+    4: (310.0, 140.0),
+    5: (480.0, 420.0),
+    6: (480.0, 240.0),
+    7: (480.0, 90.0),
+    8: (700.0, 380.0),
+    9: (700.0, 140.0),
+    10: (840.0, 380.0),
 }
 
 
@@ -151,7 +151,7 @@ def get_10node_nodes() -> List[Dict[str, Any]]:
             "x": coord[0],
             "y": coord[1],
             "coords": {"x": coord[0], "y": coord[1]},
-            "label": f"C{nid} {dom['icon']}",
+            "label": f"C{nid}",
         })
     return nodes
 

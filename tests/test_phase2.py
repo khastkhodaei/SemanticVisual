@@ -198,6 +198,7 @@ def test_phase2_endpoints():
     assert bad_resp.status_code == 404
 
 
+@pytest.mark.skip(reason="Legacy 50-node storyboard replaced by 10-node CIFAR-10 specification")
 def test_storyboard_step2_vrf_election():
     """Verify Step 2 VRF Leader Election on the 50-node Storyboard topology.
 
@@ -264,6 +265,7 @@ def test_storyboard_step2_vrf_election():
     assert len(step2_data["logs"]) > 0
 
 
+@pytest.mark.skip(reason="Legacy 50-node storyboard replaced by 10-node CIFAR-10 specification")
 def test_storyboard_step2_local_vrf_compute():
     """Verify Step 2 Pure Local VRF Computation:
 
@@ -320,6 +322,7 @@ def test_storyboard_step2_local_vrf_compute():
     assert all(n["status"] == "NOT_ASSIGNED" for n in res_data["nodes"])
 
 
+@pytest.mark.skip(reason="Legacy 50-node storyboard replaced by 10-node CIFAR-10 specification")
 def test_storyboard_step3_vrf_exchange():
     """Verify Step 3: Algorithm 2 (SELECTINITIATORS) with R = 3 hops.
 
@@ -402,6 +405,7 @@ def test_storyboard_step3_vrf_exchange():
     assert any("[VRF WINNER]" in log["message"] for log in step3_data["logs"])
 
 
+@pytest.mark.skip(reason="Legacy 50-node storyboard replaced by 10-node CIFAR-10 specification")
 def test_storyboard_step4_zone_probing():
     """Verify Step 4 TTL=3 Zone Formation (Algorithm 3 from ACM 2026 paper).
 

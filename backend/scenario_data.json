@@ -1,0 +1,26 @@
+{
+  "classes": [
+    {"id": 1, "name": "Airplane"},
+    {"id": 2, "name": "Automobile"},
+    {"id": 3, "name": "Bird"},
+    {"id": 4, "name": "Cat"},
+    {"id": 5, "name": "Deer"},
+    {"id": 6, "name": "Dog"},
+    {"id": 7, "name": "Frog"},
+    {"id": 8, "name": "Horse"},
+    {"id": 9, "name": "Ship"},
+    {"id": 10, "name": "Truck"}
+  ],
+  "nodes": [
+    {"id": 1, "pos": {"x": 130, "y": 140}, "neighbors": [2, 4], "distribution": {"C1": 46, "C2": 17, "C3": 37}},
+    {"id": 2, "pos": {"x": 130, "y": 380}, "neighbors": [1, 3], "distribution": {"C1": 19, "C2": 24, "C3": 57}},
+    {"id": 3, "pos": {"x": 310, "y": 380}, "neighbors": [2, 5, 6, 7], "distribution": {"C4": 34, "C5": 20, "C6": 46}},
+    {"id": 4, "pos": {"x": 310, "y": 140}, "neighbors": [1, 5, 6, 7], "distribution": {"C4": 62, "C5": 21, "C6": 17}},
+    {"id": 5, "pos": {"x": 480, "y": 420}, "neighbors": [3, 4, 6, 10], "distribution": {"C4": 53, "C5": 12, "C6": 35}},
+    {"id": 6, "pos": {"x": 480, "y": 240}, "neighbors": [3, 4, 5, 8, 9], "distribution": {"C7": 23, "C8": 19, "C9": 34, "C10": 24}},
+    {"id": 7, "pos": {"x": 480, "y": 90}, "neighbors": [3, 4, 9], "distribution": {"C7": 11, "C8": 41, "C9": 21, "C10": 27}},
+    {"id": 8, "pos": {"x": 700, "y": 380}, "neighbors": [6, 9, 10], "distribution": {"C4": 32, "C5": 38, "C6": 30}},
+    {"id": 9, "pos": {"x": 700, "y": 140}, "neighbors": [6, 7, 8, 10], "distribution": {"C1": 45, "C2": 32, "C3": 23}},
+    {"id": 10, "pos": {"x": 840, "y": 380}, "neighbors": [5, 8, 9], "distribution": {"C7": 12, "C8": 43, "C9": 33, "C10": 12}}
+  ]
+}

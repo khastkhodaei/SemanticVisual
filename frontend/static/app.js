@@ -101,24 +101,24 @@ function initCytoscape() {
       {
         selector: "node",
         style: {
-          "label": "data(label)",
-          "color": "#0f172a",
+          "label": function(ele) {
+            const raw = ele.data("node_id_num") || ele.data("id");
+            const clean = String(raw).replace("node_", "").replace("C", "");
+            return "C" + clean;
+          },
+          "color": "#ffffff",
           "font-size": "11px",
-          "font-family": "ui-monospace, monospace",
+          "font-family": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
           "font-weight": "bold",
-          "text-valign": "bottom",
-          "text-margin-y": 5,
-          "text-background-color": "rgba(255, 255, 255, 0.95)",
-          "text-background-opacity": 0.95,
-          "text-background-padding": 3,
-          "text-background-shape": "roundrectangle",
-          "background-color": "data(bg_color)",
-          "border-color": "data(border_color)",
-          "border-width": 2.5,
-          "width": 36,
-          "height": 36,
+          "text-valign": "center",
+          "text-halign": "center",
+          "background-color": "#2563eb",
+          "border-color": "#1d4ed8",
+          "border-width": 2,
+          "width": 32,
+          "height": 32,
           "transition-property": "background-color, border-color, width, height, border-width, opacity, shadow-blur, shadow-opacity",
-          "transition-duration": "0.25s"
+          "transition-duration": "0.2s"
         }
       },
       {
@@ -176,10 +176,10 @@ function initCytoscape() {
       {
         selector: "edge",
         style: {
-          "width": 2.2,
-          "line-color": "#475569", // High-contrast slate lines
+          "width": 2,
+          "line-color": "#64748b",
           "curve-style": "straight",
-          "opacity": 0.85,
+          "opacity": 0.6,
           "transition-property": "line-color, width, opacity",
           "transition-duration": "0.2s"
         }
@@ -1210,10 +1210,8 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
 
   nodes.forEach(n => {
     const isInit = options.showInitiators && n.is_initiator;
-    const domIcon = n.dominant_class_icon || n.class_icon || "";
     const domName = n.dominant_class_name || n.class_title || "CIFAR-10";
-    const defaultLabel = `C${n.id} ${domIcon}`.trim();
-    const label = isInit ? `👑 ${defaultLabel}` : (n.label || defaultLabel);
+    const label = isInit ? `👑 C${n.id}` : `C${n.id}`;
 
     let bgColor = "#2563eb";
     let borderColor = "#1d4ed8";
@@ -1364,15 +1362,13 @@ function showNodeModal(nodeData) {
   const cardBoundaryNeighborsRow = document.getElementById("cardBoundaryNeighborsRow");
   const cardBoundaryNeighborsList = document.getElementById("cardBoundaryNeighborsList");
 
-  // Title: Node ID & Emoji
+  // Title: Node ID: C{id}
   if (cardNodeId) {
     const idNum = nodeData.node_id_num || nodeData.id;
-    const idStr = nodeData.node_id_str || `C${idNum}`;
-    const domIcon = nodeData.dominant_class_icon || nodeData.class_icon || "";
     if (isInitiator && currentStep >= 3) {
-      cardNodeId.innerHTML = `<span class="text-amber-800 font-bold">👑 Node ${idNum} (${idStr}) ${domIcon}</span>`;
+      cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono">👑 Node C${idNum}</span>`;
     } else {
-      cardNodeId.innerHTML = `<span class="text-blue-700 font-bold">Node ${idNum} (${idStr}) ${domIcon}</span>`;
+      cardNodeId.innerHTML = `<span class="text-blue-700 font-bold font-mono">Node C${idNum}</span>`;
     }
   }
 
@@ -1450,10 +1446,10 @@ function showNodeModal(nodeData) {
     cardDegree.textContent = `${deg} neighbor${deg === 1 ? '' : 's'}`;
   }
   if (cardNeighbors) {
-    const neighList = (nodeData.neighbors_str && nodeData.neighbors_str.length)
-      ? nodeData.neighbors_str.join(", ")
-      : (nodeData.neighbors || []).map(x => `C${x}`).join(", ");
-    cardNeighbors.textContent = neighList || "None";
+    const neighArr = (nodeData.neighbors_str && nodeData.neighbors_str.length)
+      ? nodeData.neighbors_str
+      : (nodeData.neighbors || []).map(x => `C${x}`);
+    cardNeighbors.textContent = neighArr.length ? `[${neighArr.join(", ")}]` : "[]";
   }
 
   // STEP 2: 10D Normalized Semantic Vector Profile & Visual Bar Chart

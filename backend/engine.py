@@ -5,6 +5,8 @@ connectivity guarantees, and 50-dimensional heterogeneous semantic weight modeli
 """
 
 from typing import Any, Dict, List, Optional, Tuple
+import json
+from pathlib import Path
 import numpy as np
 from scipy.spatial.distance import cdist
 from sklearn.cluster import AffinityPropagation
@@ -158,8 +160,131 @@ BOOST_SLICES = {
 }
 
 
+SCENARIO_DATA_PATH = Path(__file__).parent / "scenario_data.json"
+
+
+def load_step1_data() -> Dict[str, Any]:
+    """Read backend/scenario_data.json and construct Step 1 ground truth."""
+    with open(SCENARIO_DATA_PATH, "r", encoding="utf-8") as f:
+        scenario = json.load(f)
+
+    classes_raw = scenario.get("classes", [])
+    nodes_raw = scenario.get("nodes", [])
+
+    # Build unique undirected edges from neighbor lists
+    edges = []
+    seen = set()
+    for n in nodes_raw:
+        u = n["id"]
+        for v in n.get("neighbors", []):
+            edge_key = (min(u, v), max(u, v))
+            if edge_key not in seen:
+                seen.add(edge_key)
+                edges.append({
+                    "id": f"e{edge_key[0]}_{edge_key[1]}",
+                    "source": f"C{edge_key[0]}",
+                    "target": f"C{edge_key[1]}",
+                    "source_num": edge_key[0],
+                    "target_num": edge_key[1],
+                })
+
+    # Build nodes with pure initial state
+    nodes = []
+    for n in nodes_raw:
+        nid = n["id"]
+        dist = n["distribution"]
+        nbrs = sorted(n["neighbors"])
+        pos = n["pos"]
+
+        # 10D normalized vector
+        vec_10d = [0.0] * 10
+        for k, v in dist.items():
+            c_idx = int(k.replace("C", "")) - 1
+            if 0 <= c_idx < 10:
+                vec_10d[c_idx] = round(v / 100.0, 2)
+
+        assigned_classes = [i for i, val in enumerate(vec_10d) if val > 0.0]
+        class_dist_0idx = {
+            int(k.replace("C", "")) - 1: v for k, v in dist.items()
+        }
+
+        # dominant class
+        best_k = max(dist, key=lambda k: dist[k])
+
+        nodes.append({
+            "id": nid,
+            "node_id": f"C{nid}",
+            "label": f"C{nid}",  # Strictly no emojis
+            "role": "CLIENT",
+            "status": "NOT_ASSIGNED",
+            "zone_id": None,
+            "is_initiator": False,
+            "is_boundary": False,
+            "vrf_score": None,
+            "neighbors": nbrs,
+            "neighbors_str": [f"C{nb}" for nb in nbrs],
+            "degree": len(nbrs),
+            "dominant_class": best_k,
+            "assigned_classes": assigned_classes,
+            "class_distribution": class_dist_0idx,
+            "distribution": dist,
+            "data_distribution": dist,
+            "vector_10d": vec_10d,
+            "vector": vec_10d,
+            "normalized_vector": vec_10d,
+            "weights": vec_10d,
+            "pos": pos,
+            "coords": {"x": pos["x"], "y": pos["y"]},
+            "x": pos["x"],
+            "y": pos["y"],
+        })
+
+    # Prepare classes list
+    classes_list = []
+    for c in classes_raw:
+        cid = c["id"]
+        c_idx = cid - 1
+        holding_nodes = [f"C{n['id']}" for n in nodes if c_idx in n["assigned_classes"]]
+        classes_list.append({
+            "id": cid,
+            "class_id": c_idx,
+            "class_num": cid,
+            "name": c["name"],
+            "english_name": c["name"],
+            "code": f"C{cid}",
+            "count": len(holding_nodes),
+            "clients": holding_nodes,
+        })
+
+    return {
+        "step": 1,
+        "title": "Step 1: 10-Node CIFAR-10 Physical Ad-Hoc Topology",
+        "phase_badge": "Step 1: Network Creation",
+        "description": "Ad-hoc physical network of 10 edge clients initialized with Non-IID CIFAR-10 data distributions. Status: NOT_ASSIGNED, Role: CLIENT, Zone: null.",
+        "nodes": nodes,
+        "edges": edges,
+        "adjacency_list": {n["id"]: sorted(n["neighbors"]) for n in nodes},
+        "total_nodes": len(nodes),
+        "total_edges": 18,
+        "unique_edges": len(edges),
+        "classes": classes_list,
+        "dataset_classes": classes_list,
+        "active_leaders": [],
+        "terminal_logs": [
+            "[Topology] Initialized 10-node CIFAR-10 ad-hoc network from scenario_data.json.",
+            "[Topology] Configured 18 physical edges with symmetric bidirectional connectivity.",
+            "[Dataset] Loaded Non-IID CIFAR-10 distributions (100% data partitioned across nodes).",
+            "[State] All 10 nodes initialized with role='CLIENT', status='NOT_ASSIGNED', zone_id=null."
+        ]
+    }
+
+
 class SemanticDFLEngine:
     """Engine responsible for physical topology generation and semantic weight modeling."""
+
+    def load_step1_data(self) -> Dict[str, Any]:
+        """Load deterministic 10-node scenario step 1 data."""
+        return load_step1_data()
 
     def __init__(self, seed: Optional[int] = None):
         self.rng = np.random.default_rng(seed)
@@ -196,29 +321,16 @@ class SemanticDFLEngine:
 
     def get_10node_topology(self) -> Dict[str, Any]:
         """Return the strict 10-node CIFAR-10 storyboard topology and data distribution."""
-        return {
-            "nodes": get_10node_nodes(),
-            "edges": get_10node_edges(),
-            "adjacency": STORYBOARD_10_ADJACENCY,
-            "distribution": STORYBOARD_10_DISTRIBUTION,
-            "vectors": STORYBOARD_10_VECTORS,
-            "config": get_10node_config(),
-        }
+        return load_step1_data()
 
     def generate_storyboard_step1(
         self,
         benchmark: str = "Non-IID 10-Class Storyboard",
-        num_nodes: int = 50,
+        num_nodes: int = 10,
     ) -> Dict[str, Any]:
-        """Generate the organic 10-node CIFAR-10 physical ad-hoc network for Step 1.
-
-        - 10 nodes (C1 to C10) with exact symmetric physical adjacency list.
-        - Undirected ad-hoc communication links with 18 physical edges (17 unique pairs).
-        - Pure overlay-free initial state: status='NOT_ASSIGNED', role='CLIENT', zone_id=None.
-        - CIFAR-10 class percentage distributions (summing to 100% per node).
-        """
+        """Generate the deterministic 10-node CIFAR-10 physical ad-hoc network for Step 1 from scenario_data.json."""
         if num_nodes == 10:
-            return get_10node_step_data(1)
+            return load_step1_data()
         # Uniform spatial rejection sampling across [70, 840] x [60, 520] with min distance >= 65px
         rng = np.random.default_rng(10)
         raw_coords = []
