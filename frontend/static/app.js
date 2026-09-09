@@ -1,6 +1,6 @@
 // ==========================================================================
-// SemanticDFL Storyboard Simulator - Step 1, Step 2 & Step 3 Controller
-// ACM 2026 Reference Implementation - Algorithm 2 (SELECTINITIATORS, R=3)
+// SemanticDFL Storyboard Simulator - Step 1, Step 2, Step 3 & Step 4 Controller
+// ACM 2026 Reference Implementation - Algorithm 3 (ZONEFORMATION PROTOCOL)
 // ==========================================================================
 
 let currentStep = 1;
@@ -9,6 +9,7 @@ let simulationData = {};
 let step1Topology = null;
 let step2Data = null;
 let step3Data = null;
+let step4Data = null;
 let cy = null;
 let activeSelectedNodeId = null;
 
@@ -24,6 +25,20 @@ const DATASET_CLASSES = {
   8: { name: "Bird", icon: "🐦", slice: [40, 44] },
   9: { name: "Deer", icon: "🦌", slice: [45, 49] },
 };
+
+// Elegant, distinct pastel/neon color palette for physical zones
+const ZONE_PALETTE = [
+  { fill: "#38bdf8", border: "#0284c7", text: "#0369a1", bgLight: "#f0f9ff", name: "Soft Cyan" },
+  { fill: "#34d399", border: "#059669", text: "#065f46", bgLight: "#ecfdf5", name: "Emerald Green" },
+  { fill: "#a78bfa", border: "#7c3aed", text: "#5b21b6", bgLight: "#f5f3ff", name: "Royal Purple" },
+  { fill: "#fb923c", border: "#ea580c", text: "#9a3412", bgLight: "#fff7ed", name: "Coral Amber" },
+  { fill: "#fb7185", border: "#e11d48", text: "#9f1239", bgLight: "#fff1f2", name: "Rose Crimson" },
+  { fill: "#818cf8", border: "#4f46e5", text: "#3730a3", bgLight: "#eef2ff", name: "Indigo Blue" },
+  { fill: "#2dd4bf", border: "#0d9488", text: "#115e59", bgLight: "#f0fdfa", name: "Teal" },
+  { fill: "#e879f9", border: "#c026d3", text: "#86198f", bgLight: "#fdf4ff", name: "Fuchsia" },
+  { fill: "#facc15", border: "#ca8a04", text: "#854d0e", bgLight: "#fefce8", name: "Golden Amber" },
+  { fill: "#a3e635", border: "#65a30d", text: "#3f6212", bgLight: "#f7fee7", name: "Lime Green" },
+];
 
 document.addEventListener("DOMContentLoaded", () => {
   renderClassLegend();
@@ -82,8 +97,8 @@ function initCytoscape() {
           "text-background-opacity": 0.92,
           "text-background-padding": 2,
           "text-background-shape": "roundrectangle",
-          "background-color": "#2563eb", // Royal blue for all clients
-          "border-color": "#1d4ed8",
+          "background-color": "data(bg_color)",
+          "border-color": "data(border_color)",
           "border-width": 2,
           "width": 26,
           "height": 26,
@@ -92,13 +107,20 @@ function initCytoscape() {
         }
       },
       {
+        selector: "node.boundary-node",
+        style: {
+          "border-style": "dashed",
+          "border-width": 2.8,
+        }
+      },
+      {
         selector: "node.initiator-node",
         style: {
-          "background-color": "#f59e0b", // Amber gold for elected leaders
           "border-color": "#b45309",
-          "border-width": 3.5,
-          "width": 32,
-          "height": 32,
+          "border-width": 4,
+          "border-style": "solid",
+          "width": 34,
+          "height": 34,
           "color": "#92400e",
           "font-size": "10.5px",
           "z-index": 90
@@ -108,9 +130,9 @@ function initCytoscape() {
         selector: "node.selected-node",
         style: {
           "border-color": "#0284c7",
-          "border-width": 4,
-          "width": 34,
-          "height": 34,
+          "border-width": 4.5,
+          "width": 36,
+          "height": 36,
           "z-index": 100
         }
       },
@@ -118,9 +140,9 @@ function initCytoscape() {
         selector: "node.initiator-node.selected-node",
         style: {
           "border-color": "#92400e",
-          "border-width": 4.5,
-          "width": 36,
-          "height": 36,
+          "border-width": 5,
+          "width": 38,
+          "height": 38,
           "z-index": 100
         }
       },
@@ -150,6 +172,26 @@ function initCytoscape() {
           "opacity": 0.50,
           "transition-property": "line-color, width, opacity",
           "transition-duration": "0.2s"
+        }
+      },
+      {
+        selector: "edge.boundary-edge",
+        style: {
+          "line-style": "dashed",
+          "line-color": "#f87171",
+          "line-dash-pattern": [6, 4],
+          "width": 2.4,
+          "opacity": 0.95,
+          "z-index": 60
+        }
+      },
+      {
+        selector: "edge.intra-zone-edge",
+        style: {
+          "line-style": "solid",
+          "line-color": "#94a3b8",
+          "width": 1.5,
+          "opacity": 0.38
         }
       },
       {
@@ -218,7 +260,21 @@ function showNodeModal(nodeData) {
 
   cardNodeId.textContent = `NODE #C${nodeData.peer_id || nodeData.id}`;
 
-  if (currentStep === 3 && isInitiator) {
+  if (currentStep === 4) {
+    const isInit = (nodeData.role === "INITIATOR" || nodeData.peer_id === nodeData.initiator_id || nodeData.id === nodeData.initiator_id);
+    if (isInit) {
+      cardNodeId.innerHTML = `<span class="text-amber-700">👑 NODE #C${nodeData.peer_id || nodeData.id}</span>`;
+      cardStatusBadge.textContent = "ASSIGNED (INITIATOR)";
+      cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300";
+    } else {
+      cardStatusBadge.textContent = "ASSIGNED";
+      cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300";
+    }
+    if (roleElem) {
+      roleElem.textContent = isInit ? "INITIATOR (Zone Root)" : (nodeData.role || "CLIENT");
+      roleElem.className = isInit ? "text-amber-800 font-mono font-bold" : "text-slate-800 font-mono font-bold";
+    }
+  } else if (currentStep === 3 && isInitiator) {
     cardNodeId.innerHTML = `<span class="text-amber-700">👑 NODE #C${nodeData.peer_id || nodeData.id}</span>`;
     cardStatusBadge.textContent = "ASSIGNED (INITIATOR)";
     cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300";
@@ -231,7 +287,7 @@ function showNodeModal(nodeData) {
   }
 
   const roleElem = document.getElementById("cardRole");
-  if (roleElem) {
+  if (roleElem && currentStep !== 4) {
     roleElem.textContent = isInitiator && currentStep === 3 ? "INITIATOR (Zone Root)" : (nodeData.role || "CLIENT");
     roleElem.className = isInitiator && currentStep === 3 ? "text-amber-800 font-mono font-bold" : "text-slate-800 font-mono font-bold";
   }
@@ -326,8 +382,55 @@ function showNodeModal(nodeData) {
     exchangeSec.classList.add("hidden");
   }
 
+  // Step 4 Zone Details Section (Algorithm 3)
+  const zoneSec = document.getElementById("cardZoneSection");
+  if (currentStep === 4 && nodeData.zone_id !== undefined && nodeData.zone_id !== null) {
+    if (zoneSec) zoneSec.classList.remove("hidden");
+    const zoneId = nodeData.zone_id;
+    const initId = (nodeData.initiator_id !== undefined && nodeData.initiator_id !== null) ? nodeData.initiator_id : zoneId;
+    const hopDist = (nodeData.hop_distance !== undefined && nodeData.hop_distance !== null) ? nodeData.hop_distance : 0;
+    const probeSender = (nodeData.parent_probe_sender !== undefined && nodeData.parent_probe_sender !== null) ? nodeData.parent_probe_sender : initId;
+
+    const cardZoneId = document.getElementById("cardZoneId");
+    const cardZoneBadge = document.getElementById("cardZoneBadge");
+    const cardZoneInitiator = document.getElementById("cardZoneInitiator");
+    const cardHopDistance = document.getElementById("cardHopDistance");
+    const cardProbeSender = document.getElementById("cardProbeSender");
+    const cardBoundaryTag = document.getElementById("cardBoundaryTag");
+    const cardBoundaryNeighborsRow = document.getElementById("cardBoundaryNeighborsRow");
+    const cardBoundaryNeighborsList = document.getElementById("cardBoundaryNeighborsList");
+
+    if (cardZoneId) cardZoneId.textContent = `Zone ${zoneId}`;
+    if (cardZoneBadge) cardZoneBadge.textContent = `Zone ${zoneId}`;
+    if (cardZoneInitiator) cardZoneInitiator.textContent = `C${initId} 👑`;
+    if (cardHopDistance) cardHopDistance.textContent = `${hopDist} / 3`;
+    if (cardProbeSender) cardProbeSender.textContent = `C${probeSender}`;
+
+    if (cardBoundaryTag) {
+      if (nodeData.is_boundary) {
+        cardBoundaryTag.innerHTML = `⚡ Boundary Interface`;
+        cardBoundaryTag.className = "text-[9px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 font-bold border border-rose-300";
+        if (cardBoundaryNeighborsRow && cardBoundaryNeighborsList && nodeData.boundary_neighbors && nodeData.boundary_neighbors.length) {
+          cardBoundaryNeighborsRow.classList.remove("hidden");
+          cardBoundaryNeighborsList.innerHTML = nodeData.boundary_neighbors.map(nbId => {
+            return `<span class="inline-block px-1.5 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-700 font-mono mr-1 mb-0.5">Peer C${nbId}</span>`;
+          }).join("");
+        } else if (cardBoundaryNeighborsRow) {
+          cardBoundaryNeighborsRow.classList.add("hidden");
+        }
+      } else {
+        cardBoundaryTag.textContent = `Internal Core`;
+        cardBoundaryTag.className = "text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold border border-slate-200";
+        if (cardBoundaryNeighborsRow) cardBoundaryNeighborsRow.classList.add("hidden");
+      }
+    }
+  } else if (zoneSec) {
+    zoneSec.classList.add("hidden");
+  }
+
   // Draw 50D parameter vector preview
-  renderTooltipVectorPreview(nodeData.weights || [], classId, isInitiator && currentStep === 3);
+  const isLeaderForChart = (currentStep === 4 && (nodeData.role === "INITIATOR" || nodeData.id === nodeData.initiator_id)) || (currentStep === 3 && isInitiator);
+  renderTooltipVectorPreview(nodeData.weights || [], classId, isLeaderForChart);
 
   card.classList.remove("hidden");
 }
@@ -417,7 +520,9 @@ function bindActionButtons() {
   const btnPrev = document.getElementById("btnPrev");
   if (btnPrev) {
     btnPrev.addEventListener("click", () => {
-      if (currentStep === 3) {
+      if (currentStep === 4) {
+        revertToStep3();
+      } else if (currentStep === 3) {
         revertToStep2();
       } else if (currentStep === 2) {
         revertToStep1();
@@ -432,6 +537,8 @@ function bindActionButtons() {
         executeStep2VRF();
       } else if (currentStep === 2) {
         executeStep3Exchange();
+      } else if (currentStep === 3) {
+        executeStep4ZoneProbing();
       }
     });
   }
@@ -708,9 +815,9 @@ function applyStep3UI(data) {
 
   const btnNext = document.getElementById("btnNext");
   if (btnNext) {
-    btnNext.disabled = true; // Disabled until Step 4 (Zones) is implemented
-    btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-    btnNext.innerHTML = `<span>Next Step (Step 4: Zones)</span><span>▶️</span>`;
+    btnNext.disabled = false;
+    btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 shadow-sm transition-colors";
+    btnNext.innerHTML = `<span>Next Step (Step 4: Zone Formation)</span><span>▶️</span>`;
   }
 
   document.getElementById("stepTag").textContent = "STEP 3 / ALGORITHM 2 (R=3)";
@@ -734,17 +841,126 @@ function applyStep3UI(data) {
 
   const leaderLegend = document.getElementById("leaderLegendItem");
   if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
   // Render Mesh: Initiators in Amber, others in Blue, clean labels
   renderMesh(data.nodes, step1Topology ? step1Topology.edges : [], true);
 }
 
+// 6. API Call: Execute Step 4 (Algorithm 3: TTL=3 Zone Formation, First-Wins & Boundary Detection)
+async function executeStep4ZoneProbing() {
+  if (!currentSession) {
+    await initializeNetwork();
+  }
+
+  setNavButtonsDisabled(true);
+  hideNodeModal();
+  logToTerminal("ZONE", "Executing Step 4: Algorithm 3 (ZONEFORMATION) with TTL = 3 and S_Z = 8 cap...");
+
+  try {
+    const res = await fetch("/api/v1/step/zone-probing", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: currentSession, ttl: 3, max_zone_size: 8 })
+    });
+
+    if (!res.ok) {
+      throw new Error(`Zone probing step failed: ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    step4Data = data;
+    simulationData = data;
+
+    applyStep4UI(data);
+
+    if (data.logs && Array.isArray(data.logs)) {
+      data.logs.forEach(l => {
+        const level = l.level === "SUCCESS" ? "ZONE" : (l.level === "WARN" ? "WARN" : "INFO");
+        logToTerminal(level, l.message);
+      });
+    }
+
+    const zoneCount = Object.keys(data.zones || {}).length;
+    const boundaryCount = (data.boundary_edges || []).length;
+    logToTerminal("SUCCESS", `Step 4 Complete: ${zoneCount} balanced zones formed (|Z_I| <= 8). Detected ${boundaryCount} boundary interfaces.`);
+    logToTerminal("INFO", "Click on any node to view its assigned zone, initiator root, hop distance, and boundary interface status.");
+
+  } catch (err) {
+    logToTerminal("ERROR", `Step 4 execution failure: ${err.message}`);
+    console.error("Zone Probing Error:", err);
+  } finally {
+    setNavButtonsDisabled(false);
+  }
+}
+
+// Apply Step 4 UI State (Zones Formed & Boundary Edges Highlighted)
+function applyStep4UI(data) {
+  currentStep = 4;
+  hideNodeModal();
+
+  updateStepper(4);
+
+  const activeBadge = document.getElementById("activeStepBadge");
+  if (activeBadge) {
+    activeBadge.textContent = "Step 4: TTL=3 Zone Formation";
+    activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-800 border border-purple-300";
+  }
+
+  const btnPrev = document.getElementById("btnPrev");
+  if (btnPrev) {
+    btnPrev.disabled = false;
+    btnPrev.innerHTML = `<span>◀️</span><span>Previous Step (Step 3: VRF Scoreboard)</span>`;
+  }
+
+  const btnNext = document.getElementById("btnNext");
+  if (btnNext) {
+    btnNext.disabled = true; // Disabled until Step 5 (Semantic Overlay) is implemented
+    btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
+    btnNext.innerHTML = `<span>Next Step (Step 5: Semantic Overlay)</span><span>▶️</span>`;
+  }
+
+  document.getElementById("stepTag").textContent = "STEP 4 / ALGORITHM 3 (ACM 2026)";
+  document.getElementById("stepTag").className = "px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide rounded bg-purple-100 text-purple-800";
+  document.getElementById("stepTitle").textContent = "TTL=3 Zone Probing, First-Wins Adoption & Boundary Detection";
+  document.getElementById("stepDescription").textContent = "Initiators flood PROBE packets with TTL=3. Peers adopt the first arriving probe (First-Wins). Boundary peers detect adjacent zones.";
+
+  renderSidebarFormula(
+    "Zone Formation (Alg. 3)",
+    "\\text{PROBE}(p, \\text{TTL}=3) \\xrightarrow{\\text{first-wins}} \\text{ASSIGNED}(Z_I), \\quad |Z_I| \\le S_Z",
+    "Initiators flood PROBE packets with TTL=3. Peers adopt the first arriving probe (First-Wins). Boundary peers detect adjacent zones.",
+    "TTL = 3, S_Z = 8",
+    false,
+    "purple"
+  );
+
+  const zoneCount = data.zones ? Object.keys(data.zones).length : 0;
+  const boundaryCount = data.boundary_edges ? data.boundary_edges.length : 0;
+  document.getElementById("statLeaders").textContent = `${zoneCount} Zones (S_Z ≤ 8)`;
+  document.getElementById("statLeaders").className = "text-xs font-bold text-purple-700";
+
+  document.getElementById("canvasViewLabel").textContent = `TTL=3 Zone Formation (${zoneCount} Physical Zones, ${boundaryCount} Boundary Edges)`;
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+
+  // Render Mesh: colored by Zone with dashed red boundary edges
+  renderZoneMesh(data.nodes, step1Topology ? step1Topology.edges : [], data.boundary_edges || [], data.zones || {});
+}
+
 // Render KaTeX Formula inside the Sidebar Formula Card
-function renderSidebarFormula(title, texStr, description, badgeText, isAmber = false) {
+function renderSidebarFormula(title, texStr, description, badgeText, isAmber = false, theme = null) {
   const cardEl = document.getElementById("sidebarFormulaCard");
   if (cardEl) {
-    if (isAmber) cardEl.classList.add("formula-amber");
-    else cardEl.classList.remove("formula-amber");
+    cardEl.classList.remove("formula-amber", "formula-purple");
+    if (theme === "purple") {
+      cardEl.classList.add("formula-purple");
+    } else if (isAmber) {
+      cardEl.classList.add("formula-amber");
+    }
   }
 
   const titleEl = document.getElementById("formulaCardTitle");
@@ -753,9 +969,13 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
   const badgeEl = document.getElementById("formulaCardBadge");
   if (badgeEl) {
     badgeEl.textContent = badgeText;
-    badgeEl.className = isAmber
-      ? "text-[9px] font-mono font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300"
-      : "text-[9px] font-mono font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded";
+    if (theme === "purple") {
+      badgeEl.className = "text-[9px] font-mono font-bold text-purple-800 bg-purple-100 px-1.5 py-0.5 rounded border border-purple-300";
+    } else if (isAmber) {
+      badgeEl.className = "text-[9px] font-mono font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300";
+    } else {
+      badgeEl.className = "text-[9px] font-mono font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded";
+    }
   }
 
   const descEl = document.getElementById("sidebarFormulaDesc");
@@ -780,19 +1000,28 @@ function updateStepper(step) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
-    item.classList.remove("active", "completed", "step-amber");
+    item.classList.remove("active", "completed", "step-amber", "step-purple");
     if (s < step) {
       item.classList.add("completed");
     } else if (s === step) {
       item.classList.add("active");
       if (step === 3) {
         item.classList.add("step-amber");
+      } else if (step === 4) {
+        item.classList.add("step-purple");
       }
     }
   }
 }
 
 // Revert back smoothly
+function revertToStep3() {
+  if (step3Data) {
+    applyStep3UI(step3Data);
+    logToTerminal("INFO", "Reverted to Step 3: VRF Initiator Election view.");
+  }
+}
+
 function revertToStep2() {
   if (step2Data) {
     applyStep2UI(step2Data);
@@ -820,10 +1049,10 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev && currentStep > 1) btnPrev.disabled = disabled;
-  if (btnNext && currentStep < 3) btnNext.disabled = disabled;
+  if (btnNext && currentStep < 4) btnNext.disabled = disabled;
 }
 
-// 6. Render Mesh in Cytoscape
+// 7. Render Mesh in Cytoscape for Steps 1, 2, 3
 // STRICT RULE: Canvas labels are ONLY "C{id} {emoji}". VRF scores are never placed on canvas!
 function renderMesh(nodes, edges, showLeaders = false) {
   if (!cy) return;
@@ -847,6 +1076,8 @@ function renderMesh(nodes, edges, showLeaders = false) {
         label: label,
         status: isInitiator ? "ASSIGNED" : (n.status || "NOT_ASSIGNED"),
         role: isInitiator ? "INITIATOR" : (n.role || "CLIENT"),
+        bg_color: isInitiator ? "#f59e0b" : "#2563eb",
+        border_color: isInitiator ? "#b45309" : "#1d4ed8",
         class_id: classId,
         category_id: classId,
         class_name: cls.name,
@@ -887,7 +1118,100 @@ function renderMesh(nodes, edges, showLeaders = false) {
   cy.fit(undefined, 30);
 }
 
-// 7. Console Terminal Logger Helper
+// 8. Render Zone Mesh in Cytoscape for Step 4
+// Color-coded by physical zone, boundary edges dashed red/amber, boundary nodes dashed border
+function renderZoneMesh(nodes, edges, boundaryEdges, zones) {
+  if (!cy) return;
+
+  // Build sorted zone index mapping for deterministic color assignment
+  const sortedZoneIds = zones ? Object.keys(zones).map(Number).sort((a, b) => a - b) : [];
+  const zoneColorMap = {};
+  sortedZoneIds.forEach((zid, idx) => {
+    zoneColorMap[zid] = ZONE_PALETTE[idx % ZONE_PALETTE.length];
+  });
+
+  // Map boundary edge pairs for quick O(1) lookup
+  const boundaryLookup = new Set();
+  (boundaryEdges || []).forEach(be => {
+    boundaryLookup.add(`${be.source}_${be.target}`);
+    boundaryLookup.add(`${be.target}_${be.source}`);
+  });
+
+  const elements = [];
+
+  nodes.forEach(n => {
+    const isInitiator = (n.role === "INITIATOR" || n.id === n.initiator_id || n.id === n.zone_id);
+    const classId = n.class_id !== undefined ? n.class_id : (n.category_id !== undefined ? n.category_id : (n.category || 0));
+    const cls = DATASET_CLASSES[classId] || { name: "Node", icon: "📦" };
+    const palette = zoneColorMap[n.zone_id] || ZONE_PALETTE[0];
+
+    const label = isInitiator ? `👑 C${n.id} ${cls.icon}` : `C${n.id} ${cls.icon}`;
+
+    let classNames = [];
+    if (isInitiator) classNames.push("initiator-node");
+    if (n.is_boundary) classNames.push("boundary-node");
+
+    elements.push({
+      group: "nodes",
+      classes: classNames.join(" "),
+      data: {
+        id: `node_${n.id}`,
+        peer_id: n.id,
+        label: label,
+        status: n.status || "ASSIGNED",
+        role: isInitiator ? "INITIATOR" : (n.role || "CLIENT"),
+        zone_id: n.zone_id,
+        initiator_id: n.initiator_id || n.zone_id,
+        hop_distance: n.hop_distance !== undefined ? n.hop_distance : 0,
+        parent_probe_sender: n.parent_probe_sender || n.initiator_id || n.id,
+        is_boundary: !!n.is_boundary,
+        boundary_neighbors: n.boundary_neighbors || [],
+        bg_color: palette.fill,
+        border_color: isInitiator ? "#b45309" : palette.border,
+        class_id: classId,
+        category_id: classId,
+        class_name: cls.name,
+        category_name: cls.name,
+        emoji: cls.icon,
+        degree: n.degree || 0,
+        vrf_score: n.vrf_score !== undefined ? n.vrf_score : null,
+        min_score: n.min_score !== undefined ? n.min_score : null,
+        min_peer_id: n.min_peer_id !== undefined ? n.min_peer_id : null,
+        neighborhood_scores: n.neighborhood_scores || [],
+        hops_covered: n.hops_covered || 0,
+        coords: n.coords,
+        weights: n.weights || []
+      },
+      position: {
+        x: n.coords ? n.coords.x : 100,
+        y: n.coords ? n.coords.y : 100
+      }
+    });
+  });
+
+  edges.forEach((e, idx) => {
+    const isBoundary = boundaryLookup.has(`${e.source}_${e.target}`);
+    elements.push({
+      group: "edges",
+      classes: isBoundary ? "boundary-edge" : "intra-zone-edge",
+      data: {
+        id: `edge_${idx}`,
+        source: `node_${e.source}`,
+        target: `node_${e.target}`,
+        distance: e.distance,
+        distance_norm: e.distance_norm,
+        is_boundary: isBoundary
+      }
+    });
+  });
+
+  cy.elements().remove();
+  cy.add(elements);
+  cy.layout({ name: "preset" }).run();
+  cy.fit(undefined, 30);
+}
+
+// 9. Console Terminal Logger Helper
 function logToTerminal(level, message) {
   const terminal = document.getElementById("terminalLogs");
   if (!terminal) return;

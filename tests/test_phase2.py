@@ -402,4 +402,107 @@ def test_storyboard_step3_vrf_exchange():
     assert any("[VRF WINNER]" in log["message"] for log in step3_data["logs"])
 
 
+def test_storyboard_step4_zone_probing():
+    """Verify Step 4 TTL=3 Zone Formation (Algorithm 3 from ACM 2026 paper).
+
+    Assertions:
+    1. Multi-hop wave simulation assigns all connected nodes a valid zone_id.
+    2. Strict zone cardinality cap (|Z_I| <= S_Z = 8) is enforced.
+    3. Boundary edges are cleanly identified between differing zones (zone_a != zone_b).
+    4. FastAPI endpoint /api/v1/step/zone-probing executes deterministically.
+    """
+    engine = SemanticDFLEngine(seed=10)
+    topo = engine.generate_storyboard_step1()
+    nodes = topo["nodes"]
+    adj = topo["adjacency_list"]
+
+    # Compute VRF and run Step 3 VRF exchange
+    engine.compute_local_vrf(nodes=nodes)
+    step3_res = engine.run_vrf_exchange(nodes=nodes, adjacency_list=adj, r_hops=3)
+    initiators = step3_res["initiators"]
+    assert len(initiators) >= 1
+
+    # Execute Step 4 Zone Probing with TTL=3, S_Z=8
+    ttl = 3
+    sz_cap = 8
+    probing_res = engine.run_zone_probing(nodes=nodes, adjacency_list=adj, ttl=ttl, max_zone_size=sz_cap)
+
+    updated_nodes = probing_res["nodes"]
+    zones = probing_res["zones"]
+    boundary_edges = probing_res["boundary_edges"]
+    wave_events = probing_res["packet_wave_events"]
+
+    # 1. Verify every connected node has valid zone_id and ASSIGNED status
+    assert len(updated_nodes) == 50
+    for node in updated_nodes:
+        assert node["status"] == "ASSIGNED"
+        assert node["state"] == "ASSIGNED"
+        assert node["zone_id"] is not None
+        assert isinstance(node["zone_id"], int)
+        assert node["zone_id"] in zones
+        assert node["hop_distance"] is not None
+        assert node["parent_probe_sender"] is not None
+        assert isinstance(node["is_boundary"], bool)
+
+    # Total members across all zones equals total peers (50)
+    total_members = sum(len(mems) for mems in zones.values())
+    assert total_members == 50
+
+    # 2. Strict Zone Cardinality Cap: |Z_I| <= S_Z = 8
+    for zid, members in zones.items():
+        assert len(members) <= sz_cap, (
+            f"Cardinality violation: Zone {zid} has {len(members)} nodes, exceeding S_Z={sz_cap}"
+        )
+
+    # 3. Boundary Edges cleanly identified between differing zones
+    assert len(boundary_edges) > 0
+    node_map = {n["id"]: n for n in updated_nodes}
+    for edge in boundary_edges:
+        assert "source" in edge
+        assert "target" in edge
+        assert "zone_a" in edge
+        assert "zone_b" in edge
+        assert edge["zone_a"] != edge["zone_b"], f"Boundary edge within same zone: {edge}"
+        assert edge["zone_a"] == node_map[edge["source"]]["zone_id"] or edge["zone_a"] == node_map[edge["target"]]["zone_id"]
+        assert edge["zone_b"] == node_map[edge["source"]]["zone_id"] or edge["zone_b"] == node_map[edge["target"]]["zone_id"]
+
+    # Boundary incident nodes must have is_boundary == True
+    b_nodes = set()
+    for edge in boundary_edges:
+        b_nodes.add(edge["source"])
+        b_nodes.add(edge["target"])
+    for node in updated_nodes:
+        if node["id"] in b_nodes:
+            assert node["is_boundary"] is True
+            assert len(node["boundary_neighbors"]) > 0
+
+    # 4. Multi-hop wave events recorded
+    assert len(wave_events) > 0
+    wave_nums = set(ev["wave"] for ev in wave_events)
+    assert 1 in wave_nums
+    assert 2 in wave_nums
+    assert 3 in wave_nums
+
+    # 5. FastAPI endpoint /api/v1/step/zone-probing
+    client = TestClient(app)
+    init_res = client.post("/api/v1/init", json={"benchmark": "Non-IID 10-Class Storyboard"})
+    assert init_res.status_code == 200
+    session_id = init_res.json()["session_id"]
+
+    client.post("/api/v1/step/vrf-compute", json={"session_id": session_id})
+    client.post("/api/v1/step/vrf-exchange", json={"session_id": session_id, "r_hops": 3})
+
+    step4_res = client.post("/api/v1/step/zone-probing", json={"session_id": session_id, "ttl": 3, "max_zone_size": 8})
+    assert step4_res.status_code == 200
+    step4_data = step4_res.json()
+
+    assert "zones" in step4_data
+    assert "boundary_edges" in step4_data
+    assert "packet_wave_events" in step4_data
+    assert all(len(m) <= 8 for m in step4_data["zones"].values())
+    assert all(n["status"] == "ASSIGNED" for n in step4_data["nodes"])
+    assert any("[ZONE FORMATION]" in l["message"] for l in step4_data["logs"])
+
+
+
 

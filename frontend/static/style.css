@@ -115,6 +115,11 @@ body {
   background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
 }
 
+.formula-card.formula-purple {
+  border-left-color: var(--brand-purple);
+  background: linear-gradient(135deg, #faf5ff 0%, #ffffff 100%);
+}
+
 /* Stepper Indicator */
 .step-item {
   display: flex;
@@ -132,6 +137,10 @@ body {
 
 .step-item.active.step-amber {
   color: var(--brand-amber-dark);
+}
+
+.step-item.active.step-purple {
+  color: var(--brand-purple);
 }
 
 .step-item.completed {
@@ -166,6 +175,13 @@ body {
   border-color: var(--brand-amber);
   color: #ffffff;
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+}
+
+.step-item.active.step-purple .step-bubble {
+  background: var(--brand-purple);
+  border-color: var(--brand-purple);
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25);
 }
 
 .step-item.completed .step-bubble {

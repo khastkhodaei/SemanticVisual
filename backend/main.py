@@ -224,6 +224,12 @@ def step_vrf_election(req: VRFStepRequest):
     return step_vrf_exchange(VRFExchangeStepRequest(session_id=req.session_id, r_hops=req.r_hops))
 
 
+class ZoneProbingStepRequest(BaseModel):
+    session_id: str
+    ttl: Optional[int] = Field(default=3, ge=1, le=10)
+    max_zone_size: Optional[int] = Field(default=8, ge=2, le=100)
+
+
 class ZonesStepRequest(BaseModel):
     session_id: str
     r_hops: Optional[int] = Field(default=None, ge=1, le=10)
@@ -236,9 +242,47 @@ class GlobalPStepRequest(BaseModel):
     q: Optional[float] = Field(default=None, ge=0.0, le=1.0)
 
 
+@app.post("/api/v1/step/zone-probing", status_code=status.HTTP_200_OK, tags=["Simulation"])
+def step_zone_probing(req: ZoneProbingStepRequest):
+    """Execute Step 4: TTL=3 Zone Formation (Algorithm 3 from ACM 2026 paper)."""
+    session = session_store.get_session(req.session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {req.session_id} not found")
+
+    engine = SemanticDFLEngine()
+    ttl = req.ttl if req.ttl is not None else 3
+    max_zone_size = req.max_zone_size if req.max_zone_size is not None else 8
+
+    result = engine.run_zone_probing(
+        nodes=session["nodes"],
+        adjacency_list=session["adjacency_list"],
+        ttl=ttl,
+        max_zone_size=max_zone_size,
+    )
+
+    session["nodes"] = result["nodes"]
+    session["zones"] = result["zones"]
+    session["boundary_edges"] = result["boundary_edges"]
+    session["boundaries"] = result["boundaries"]
+    session["packet_hops"] = result["packet_hops"]
+    session["packet_wave_events"] = result["packet_wave_events"]
+    session["logs"].extend(result["logs"])
+
+    return {
+        "session_id": req.session_id,
+        "zones": result["zones"],
+        "boundary_edges": result["boundary_edges"],
+        "boundaries": result["boundaries"],
+        "packet_hops": result["packet_hops"],
+        "packet_wave_events": result["packet_wave_events"],
+        "nodes": result["nodes"],
+        "logs": result["logs"],
+    }
+
+
 @app.post("/api/v1/step/zones", status_code=status.HTTP_200_OK, tags=["Simulation"])
 def step_zone_formation(req: ZonesStepRequest):
-    """Execute TTL-bounded zone probing and deterministic splitting step."""
+    """Execute TTL-bounded zone probing and deterministic splitting step (legacy route)."""
     session = session_store.get_session(req.session_id)
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {req.session_id} not found")
@@ -247,24 +291,28 @@ def step_zone_formation(req: ZonesStepRequest):
     r_hops = req.r_hops if req.r_hops is not None else session["params"].get("r_hops", 2)
     max_zone_size = req.max_zone_size if req.max_zone_size is not None else session["params"].get("max_zone_size", 10)
 
-    result = engine.run_zone_formation(
+    result = engine.run_zone_probing(
         nodes=session["nodes"],
         adjacency_list=session["adjacency_list"],
-        r_hops=r_hops,
+        ttl=r_hops,
         max_zone_size=max_zone_size,
     )
 
     session["nodes"] = result["nodes"]
     session["zones"] = result["zones"]
+    session["boundary_edges"] = result["boundary_edges"]
     session["boundaries"] = result["boundaries"]
     session["packet_hops"] = result["packet_hops"]
+    session["packet_wave_events"] = result["packet_wave_events"]
     session["logs"].extend(result["logs"])
 
     return {
         "session_id": req.session_id,
         "zones": result["zones"],
+        "boundary_edges": result["boundary_edges"],
         "boundaries": result["boundaries"],
         "packet_hops": result["packet_hops"],
+        "packet_wave_events": result["packet_wave_events"],
         "nodes": result["nodes"],
         "logs": result["logs"],
     }

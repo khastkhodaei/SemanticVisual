@@ -674,167 +674,207 @@ class SemanticDFLEngine:
         """Legacy alias delegating to run_vrf_exchange."""
         return self.run_vrf_exchange(nodes, adjacency_list, r_hops)
 
-    def run_zone_formation(
+    def run_zone_probing(
         self,
         nodes: List[Dict[str, Any]],
         adjacency_list: Dict[int, List[int]],
-        r_hops: int = 2,
-        max_zone_size: int = 10,
+        ttl: int = 3,
+        max_zone_size: int = 8,
     ) -> Dict[str, Any]:
-        """Simulate TTL-bounded first-wins zone probing with deterministic splitting.
+        """Simulate deterministic TTL=3 zone formation (Algorithm 3, ACM 2026 paper).
 
-        Implements Algorithm 3 (ZONEFORMATION PROTOCOL):
-        1. Initiators broadcast PROBE packets with TTL = R.
-        2. First-wins: Unassigned nodes adopt the first initiator whose probe arrives.
-        3. Boundary detection: Cross-zone probe arrivals trigger boundary interface alerts.
-        4. Deterministic splitting: Zones exceeding S_Z delegate overflow to next lowest VRF node.
+        Protocol Execution:
+        1. Wave 0: All elected Initiators start with state ASSIGNED, zone_id=self.id,
+           and broadcast PROBE(initiator_id, ttl=3).
+        2. Multi-Hop Wave Simulation (Waves 1..TTL):
+           - Wave 1 (Hop 1, remaining TTL=2): Direct neighbors receive probe.
+             Unassigned nodes adopt zone, set hop_distance=1, and forward with TTL=2.
+           - Wave 2 (Hop 2, remaining TTL=1): 2-hop neighbors adopt first probe,
+             set hop_distance=2, and forward with TTL=1.
+           - Wave 3 (Hop 3, remaining TTL=0): 3-hop neighbors adopt first probe,
+             set hop_distance=3, and terminate forwarding.
+        3. Boundary Edge Detection:
+           - When an assigned node in Zone A receives a probe from Zone B, it drops
+             the packet and records an inter-zone boundary edge:
+             boundary_edges = [{ source, target, zone_a, zone_b }].
+        4. Deterministic Cap Check (S_Z = 8):
+           - Verify no physical zone exceeds S_Z. Zones exceeding cap delegate overflow
+             to the member with the lowest VRF score in the overflow subset.
         """
         node_map = {n["id"]: n for n in nodes}
         packet_hops: List[Dict[str, Any]] = []
-        boundaries: List[Dict[str, Any]] = []
+        packet_wave_events: List[Dict[str, Any]] = []
         logs: List[Dict[str, str]] = []
 
-        # Identify initiators
+        # 1. Identify elected Initiators from Step 3
         initiators = [n["id"] for n in nodes if n.get("role") == "INITIATOR"]
         if not initiators:
-            # Fallback if election not run yet: elect lowest VRF node as initial initiator
-            min_node = min(nodes, key=lambda x: (x["vrf_score"], x["id"]))
+            min_node = min(nodes, key=lambda x: (x.get("vrf_score", 1.0), x["id"]))
             min_node["role"] = "INITIATOR"
-            min_node["state"] = "ASSIGNED"
-            min_node["zone_id"] = min_node["id"]
             initiators = [min_node["id"]]
 
-        # Track hop distance from initiator for split sorting
-        hop_from_initiator: Dict[int, int] = {init_id: 0 for init_id in initiators}
-        seen_boundaries = set()
+        # Initialize node status, hop distance, and parent probe sender
+        for n in nodes:
+            nid = n["id"]
+            if nid in initiators:
+                n["status"] = "ASSIGNED"
+                n["state"] = "ASSIGNED"
+                n["zone_id"] = nid
+                n["initiator_id"] = nid
+                n["hop_distance"] = 0
+                n["parent_probe_sender"] = nid
+            else:
+                n["status"] = "NOT_ASSIGNED"
+                n["state"] = "NOT_ASSIGNED"
+                n["zone_id"] = None
+                n["initiator_id"] = None
+                n["hop_distance"] = None
+                n["parent_probe_sender"] = None
+            n["is_boundary"] = False
+            n["boundary_neighbors"] = []
 
-        # Packet format: (initiator_id, sender_id, receiver_id, ttl)
+        # Wave 0: Initiators start broadcast
+        logs.append({
+            "level": "SUCCESS",
+            "message": f"[WAVE 0] {len(initiators)} Elected Initiators ({', '.join(f'C{i}' for i in sorted(initiators))}) initialize Zone roots and broadcast PROBE(ttl={ttl}).",
+        })
+
+        # Queue items: (initiator_id, sender_id, receiver_id, remaining_ttl)
         current_queue: List[Tuple[int, int, int, int]] = []
         for init_id in sorted(initiators):
             for neighbor in adjacency_list.get(init_id, []):
-                current_queue.append((init_id, init_id, neighbor, r_hops))
+                current_queue.append((init_id, init_id, neighbor, ttl))
 
-        round_num = 0
-        while current_queue and round_num < r_hops + 2:
-            round_num += 1
+        # 2. Multi-Hop Wave Simulation (Waves 1 to ttl)
+        for wave in range(1, ttl + 1):
             next_queue: List[Tuple[int, int, int, int]] = []
-
-            # Sort queue for deterministic execution
+            # Sort deterministically by (initiator_id, sender, receiver)
             current_queue.sort(key=lambda x: (x[0], x[1], x[2]))
 
-            for init_id, sender, receiver, ttl in current_queue:
+            wave_adopted = 0
+            wave_boundaries = 0
+
+            for init_id, sender, receiver, rem_ttl in current_queue:
                 recv_node = node_map[receiver]
 
-                # Case 1: Unassigned node adopts initiator (First-Wins)
-                if recv_node["state"] == "NOT_ASSIGNED":
+                # Case 1: First-Wins Adoption
+                if recv_node["status"] == "NOT_ASSIGNED":
+                    recv_node["status"] = "ASSIGNED"
                     recv_node["state"] = "ASSIGNED"
                     recv_node["zone_id"] = init_id
-                    hop_from_initiator[receiver] = r_hops - ttl + 1
-                    packet_hops.append({
-                        "round": round_num,
+                    recv_node["initiator_id"] = init_id
+                    recv_node["hop_distance"] = wave
+                    recv_node["parent_probe_sender"] = sender
+                    wave_adopted += 1
+
+                    event = {
+                        "wave": wave,
                         "initiator": init_id,
                         "sender": sender,
                         "receiver": receiver,
-                        "ttl": ttl,
+                        "remaining_ttl": rem_ttl - 1,
+                        "action": "ADOPTED",
+                    }
+                    packet_wave_events.append(event)
+                    packet_hops.append({
+                        "round": wave,
+                        "initiator": init_id,
+                        "sender": sender,
+                        "receiver": receiver,
+                        "ttl": rem_ttl,
                         "action": "ADOPTED",
                     })
 
-                    # Forward probe to unvisited physical neighbors if TTL > 1
-                    if ttl > 1:
+                    # Forward probe to neighbors if remaining_ttl > 1
+                    if rem_ttl > 1:
                         for nxt in adjacency_list.get(receiver, []):
                             if nxt != sender and node_map[nxt]["zone_id"] != init_id:
-                                next_queue.append((init_id, receiver, nxt, ttl - 1))
+                                next_queue.append((init_id, receiver, nxt, rem_ttl - 1))
 
-                # Case 2: Already assigned node receives probe from another zone -> Boundary Detection
+                # Case 2: Boundary Collision (Received probe from another zone)
                 elif recv_node["zone_id"] != init_id:
-                    packet_hops.append({
-                        "round": round_num,
+                    wave_boundaries += 1
+                    event = {
+                        "wave": wave,
                         "initiator": init_id,
                         "sender": sender,
                         "receiver": receiver,
-                        "ttl": ttl,
+                        "remaining_ttl": rem_ttl - 1,
+                        "action": "BOUNDARY",
+                    }
+                    packet_wave_events.append(event)
+                    packet_hops.append({
+                        "round": wave,
+                        "initiator": init_id,
+                        "sender": sender,
+                        "receiver": receiver,
+                        "ttl": rem_ttl,
                         "action": "BOUNDARY",
                     })
-                    z_a = min(recv_node["zone_id"], init_id)
-                    z_b = max(recv_node["zone_id"], init_id)
-                    b_key = (z_a, z_b, min(sender, receiver), max(sender, receiver))
-                    if b_key not in seen_boundaries:
-                        seen_boundaries.add(b_key)
-                        boundaries.append({
-                            "zone_a": z_a,
-                            "zone_b": z_b,
-                            "node_a": sender,
-                            "node_b": receiver,
-                        })
 
-                # Case 3: Redundant probe inside same zone
+                # Case 3: Same-zone redundant packet -> drop
                 else:
                     packet_hops.append({
-                        "round": round_num,
+                        "round": wave,
                         "initiator": init_id,
                         "sender": sender,
                         "receiver": receiver,
-                        "ttl": ttl,
+                        "ttl": rem_ttl,
                         "action": "DROPPED_SAME_ZONE",
                     })
 
+            logs.append({
+                "level": "INFO",
+                "message": f"[WAVE {wave}] Hop {wave} (TTL={ttl - wave}): {wave_adopted} peers adopted zones via First-Wins, {wave_boundaries} boundary collisions detected.",
+            })
+
             current_queue = next_queue
 
-        logs.append({
-            "level": "INFO",
-            "message": f"TTL probe propagation finished in {round_num} rounds with {len(packet_hops)} packet transmissions.",
-        })
-        logs.append({
-            "level": "INFO",
-            "message": f"Detected {len(boundaries)} inter-zone boundary interfaces.",
-        })
-
-        # Ensure reachability: If any node remains unassigned (outside R hops),
-        # attach to nearest assigned neighbor or form isolated zone
-        unassigned = [n for n in nodes if n["state"] == "NOT_ASSIGNED"]
+        # 3. Peripheral Reachability Check:
+        # Attach any peripheral peers that were > TTL hops away to the nearest assigned neighbor
+        unassigned = [n for n in nodes if n["status"] == "NOT_ASSIGNED"]
         for un in unassigned:
             uid = un["id"]
-            # Check if any neighbor is assigned
-            assigned_neighbors = [nb for nb in adjacency_list.get(uid, []) if node_map[nb]["state"] == "ASSIGNED"]
+            assigned_neighbors = [nb for nb in adjacency_list.get(uid, []) if node_map[nb]["status"] == "ASSIGNED"]
             if assigned_neighbors:
-                target_zone = node_map[assigned_neighbors[0]]["zone_id"]
+                best_nb = node_map[assigned_neighbors[0]]
+                un["status"] = "ASSIGNED"
                 un["state"] = "ASSIGNED"
-                un["zone_id"] = target_zone
-                hop_from_initiator[uid] = hop_from_initiator.get(assigned_neighbors[0], 1) + 1
+                un["zone_id"] = best_nb["zone_id"]
+                un["initiator_id"] = best_nb.get("initiator_id", best_nb["zone_id"])
+                un["hop_distance"] = (best_nb.get("hop_distance") or ttl) + 1
+                un["parent_probe_sender"] = best_nb["id"]
             else:
+                un["status"] = "ASSIGNED"
                 un["state"] = "ASSIGNED"
                 un["role"] = "INITIATOR"
                 un["zone_id"] = uid
-                hop_from_initiator[uid] = 0
+                un["initiator_id"] = uid
+                un["hop_distance"] = 0
+                un["parent_probe_sender"] = uid
 
-        # Step 4: Deterministic Splitting (S_Z Cap)
-        # Verify no zone exceeds max_zone_size
+        # 4. Deterministic Zone Cardinality Check (S_Z Cap)
         split_occurred = True
         split_count = 0
 
         while split_occurred:
             split_occurred = False
-            # Group nodes by current zone_id
             zones_map: Dict[int, List[Dict[str, Any]]] = {}
             for n in nodes:
-                zid = n["zone_id"]
-                zones_map.setdefault(zid, []).append(n)
+                zones_map.setdefault(n["zone_id"], []).append(n)
 
             for zid, members in list(zones_map.items()):
                 if len(members) > max_zone_size:
                     split_occurred = True
                     split_count += 1
-
-                    # Initiator of this zone
                     curr_leader = zid
 
-                    # Sort members by (hop distance to initiator, Euclidean distance to initiator)
                     leader_coords = np.array([node_map[curr_leader]["coords"]["x"], node_map[curr_leader]["coords"]["y"]])
 
                     def member_distance_key(m):
                         m_coords = np.array([m["coords"]["x"], m["coords"]["y"]])
                         euclid = float(np.linalg.norm(m_coords - leader_coords))
-                        hops = hop_from_initiator.get(m["id"], 999)
+                        hops = m.get("hop_distance", 999)
                         return (hops, euclid)
 
                     sorted_members = sorted(members, key=member_distance_key)
@@ -842,54 +882,105 @@ class SemanticDFLEngine:
                     # Initiator retains closest max_zone_size members
                     # Overflow subset is delegated to node with lowest VRF score in overflow
                     overflow = sorted_members[max_zone_size:]
-                    new_leader = min(overflow, key=lambda m: (m["vrf_score"], m["id"]))
+                    new_leader = min(overflow, key=lambda m: (m.get("vrf_score", 1.0), m["id"]))
                     new_zone_id = new_leader["id"]
 
                     new_leader["role"] = "INITIATOR"
+                    new_leader["zone_id"] = new_zone_id
+                    new_leader["initiator_id"] = new_zone_id
+                    new_leader["hop_distance"] = 0
+                    new_leader["parent_probe_sender"] = new_zone_id
+
                     for m in overflow:
                         m["zone_id"] = new_zone_id
-                        hop_from_initiator[m["id"]] = 1 if m["id"] != new_zone_id else 0
+                        m["initiator_id"] = new_zone_id
+                        if m["id"] != new_zone_id:
+                            m["hop_distance"] = 1
+                            m["parent_probe_sender"] = new_zone_id
 
                     logs.append({
                         "level": "WARN",
-                        "message": f"Zone {zid} cardinality {len(members)} exceeded S_Z={max_zone_size}. Split off {len(overflow)} nodes to new secondary Zone {new_zone_id}.",
+                        "message": f"[CAP SPLIT] Zone {zid} size ({len(members)}) > S_Z={max_zone_size}. Formed secondary Zone {new_zone_id} with {len(overflow)} nodes (Root: C{new_zone_id}).",
                     })
 
-        # Final zone summary & Post-split boundary interface registration
-        final_zones: Dict[int, List[int]] = {}
-        for n in nodes:
-            final_zones.setdefault(n["zone_id"], []).append(n["id"])
+        # 5. Boundary Edge Detection & Inter-Zone Interfaces
+        boundary_edges: List[Dict[str, Any]] = []
+        seen_edge_pairs = set()
 
-        # Detect/finalize all boundary interfaces between distinct zones over physical edges
         for u, neighbors in adjacency_list.items():
             z_u = node_map[u]["zone_id"]
             for v in neighbors:
                 z_v = node_map[v]["zone_id"]
-                if z_u != z_v:
-                    z_a, z_b = min(z_u, z_v), max(z_u, z_v)
-                    n_a, n_b = min(u, v), max(u, v)
-                    b_key = (z_a, z_b, n_a, n_b)
-                    if b_key not in seen_boundaries:
-                        seen_boundaries.add(b_key)
-                        boundaries.append({
-                            "zone_a": z_a,
-                            "zone_b": z_b,
-                            "node_a": n_a,
-                            "node_b": n_b,
+                edge_pair = (min(u, v), max(u, v))
+                if edge_pair not in seen_edge_pairs:
+                    seen_edge_pairs.add(edge_pair)
+                    if z_u != z_v:
+                        boundary_edges.append({
+                            "source": u,
+                            "target": v,
+                            "zone_a": min(z_u, z_v),
+                            "zone_b": max(z_u, z_v),
                         })
+
+        # Mark frontier boundary nodes
+        boundary_node_ids = set()
+        for be in boundary_edges:
+            boundary_node_ids.add(be["source"])
+            boundary_node_ids.add(be["target"])
+
+        for n in nodes:
+            nid = n["id"]
+            n["is_boundary"] = (nid in boundary_node_ids)
+            n["boundary_neighbors"] = [
+                nb for nb in adjacency_list.get(nid, [])
+                if node_map[nb]["zone_id"] != n["zone_id"]
+            ]
+
+        # Summarize final zones
+        final_zones: Dict[int, List[int]] = {}
+        for n in nodes:
+            final_zones.setdefault(n["zone_id"], []).append(n["id"])
+
+        # Format backward-compatible boundaries
+        boundaries = [
+            {
+                "zone_a": be["zone_a"],
+                "zone_b": be["zone_b"],
+                "node_a": be["source"],
+                "node_b": be["target"],
+            }
+            for be in boundary_edges
+        ]
 
         logs.append({
             "level": "SUCCESS",
-            "message": f"Zone formation finalized: {len(final_zones)} zones formed (max size: {max(len(m) for m in final_zones.values())}, S_Z={max_zone_size}, {len(boundaries)} total boundary interfaces).",
+            "message": f"[ZONE FORMATION] Finalized {len(final_zones)} balanced zones (|Z_I| <= {max_zone_size}) with {len(boundary_edges)} inter-zone boundary edges.",
         })
 
         return {
             "nodes": nodes,
             "zones": final_zones,
+            "boundary_edges": boundary_edges,
             "boundaries": boundaries,
             "packet_hops": packet_hops,
+            "packet_wave_events": packet_wave_events,
             "logs": logs,
         }
+
+    def run_zone_formation(
+        self,
+        nodes: List[Dict[str, Any]],
+        adjacency_list: Dict[int, List[int]],
+        r_hops: int = 2,
+        max_zone_size: int = 10,
+    ) -> Dict[str, Any]:
+        """Legacy wrapper delegating to run_zone_probing."""
+        return self.run_zone_probing(
+            nodes=nodes,
+            adjacency_list=adjacency_list,
+            ttl=r_hops,
+            max_zone_size=max_zone_size,
+        )
 
 
     def calculate_global_p_consensus(
