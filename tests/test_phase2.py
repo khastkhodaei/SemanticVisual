@@ -196,3 +196,70 @@ def test_phase2_endpoints():
     # Step 4: Verify error handling on non-existent session
     bad_resp = client.post("/api/v1/step/vrf", json={"session_id": "non-existent-session-id"})
     assert bad_resp.status_code == 404
+
+
+def test_storyboard_step2_vrf_election():
+    """Verify Step 2 VRF Leader Election on the 50-node Storyboard topology.
+
+    Requirements:
+    1. Elects exactly the designated 10 leaders: [2, 7, 13, 17, 22, 28, 32, 37, 42, 47].
+    2. All 10 leaders satisfy R=2 spatial dispersion (pairwise hop distance > 2).
+    3. Leaders have role="INITIATOR", status="ASSIGNED", and VRF score < 0.10.
+    4. Non-leaders have role="CLIENT", status="NOT_ASSIGNED", and VRF score > 0.30.
+    """
+    engine = SemanticDFLEngine(seed=42)
+    step1 = engine.generate_storyboard_step1()
+    nodes = step1["nodes"]
+    adj = step1["adjacency_list"]
+
+    # In Step 1, all nodes must have None vrf_score
+    assert all(n["vrf_score"] is None for n in nodes)
+    assert all(n["role"] == "CLIENT" for n in nodes)
+    assert all(n["status"] == "NOT_ASSIGNED" for n in nodes)
+
+    # Run Step 2 VRF Election
+    vrf_res = engine.run_vrf_election(nodes=nodes, adjacency_list=adj, r_hops=2)
+    initiators = vrf_res["initiators"]
+
+    expected_leaders = [2, 7, 13, 17, 22, 28, 32, 37, 42, 47]
+    assert sorted(initiators) == expected_leaders, (
+        f"Expected leaders {expected_leaders}, got {sorted(initiators)}"
+    )
+
+    # Verify R=2 spatial dispersion between all pairs of leaders
+    for i in range(len(initiators)):
+        leader_a = initiators[i]
+        r2_neighbors = set(engine.get_r_hop_neighborhood(leader_a, adj, r_hops=2))
+        for j in range(i + 1, len(initiators)):
+            leader_b = initiators[j]
+            assert leader_b not in r2_neighbors, (
+                f"Dispersion violation: Leader C{leader_a} and Leader C{leader_b} "
+                f"are within 2 hops of each other!"
+            )
+
+    # Verify node roles, statuses, and scores
+    for n in nodes:
+        nid = n["id"]
+        if nid in expected_leaders:
+            assert n["role"] == "INITIATOR"
+            assert n["status"] == "ASSIGNED"
+            assert n["zone_id"] == nid
+            assert n["vrf_score"] < 0.10
+        else:
+            assert n["role"] == "CLIENT"
+            assert n["status"] == "NOT_ASSIGNED"
+            assert n["zone_id"] is None
+            assert n["vrf_score"] > 0.30
+
+    # Test via FastAPI client
+    client = TestClient(app)
+    init_res = client.post("/api/v1/init", json={"benchmark": "Non-IID 10-Class Storyboard"})
+    assert init_res.status_code == 200
+    session_id = init_res.json()["session_id"]
+
+    step2_res = client.post("/api/v1/step/vrf", json={"session_id": session_id})
+    assert step2_res.status_code == 200
+    step2_data = step2_res.json()
+    assert sorted(step2_data["initiators"]) == expected_leaders
+    assert len(step2_data["logs"]) > 0
+
