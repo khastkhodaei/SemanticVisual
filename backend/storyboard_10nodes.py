@@ -730,6 +730,251 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "boundary_nodes": [1, 6],
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 6:
+        # Step 6: Official Zone Formation & Inter-Zone Boundary Discovery (Algorithm 3, Lines 17-20)
+        # Following First-Wins arrival from Step 5, clients officially adopt their winning initiator's zone identity.
+        # Zone 2 (Leader: C2 👑): Members: Node 1, Node 3 (rendered in Zone 2 color with pastel tone)
+        # Zone 4 (Leader: C4 👑): Members: Node 5, Node 6, Node 7 (rendered in Zone 4 color with pastel tone)
+        # Zone 8 (Leader: C8 👑): Members: Node 9, Node 10 (rendered in Zone 8 color with pastel tone)
+
+        initiators = [2, 4, 8]
+
+        # Zone assignments:
+        zone_members = {
+            2: [1, 2, 3],
+            4: [4, 5, 6, 7],
+            8: [8, 9, 10],
+        }
+
+        node_to_zone = {}
+        for zid, members in zone_members.items():
+            for m in members:
+                node_to_zone[m] = zid
+
+        # Initiator neighbor discovery knowledge
+        discovered_neighbor_zones = {
+            2: ["C4"],
+            4: ["C2", "C8"],
+            8: ["C4"],
+        }
+
+        # Frontier dual boundary notifications (Algorithm 3, L17-L20)
+        sent_boundary_notifications = {
+            1: [
+                {"target": "C2 (Own Initiator)", "introduced_neighbor": "C4"},
+                {"target": "C4 (Competing Initiator)", "introduced_neighbor": "C2"},
+            ],
+            6: [
+                {"target": "C4 (Own Initiator)", "introduced_neighbor": "C8"},
+                {"target": "C8 (Competing Initiator)", "introduced_neighbor": "C4"},
+            ],
+        }
+
+        # Reverse boundary announcement packet events
+        packet_events = [
+            {
+                "packet_id": "boundary_1_to_2",
+                "source": "C1",
+                "target": "C2",
+                "source_num": 1,
+                "target_num": 2,
+                "type": "NEIGHBOR_ALERT",
+                "label": "NEIGHBOR(C4)",
+                "color": "#10b981",
+                "msg": "Node C1 notifies own Initiator C2 of adjacent Initiator C4",
+                "introduced_neighbor": "C4",
+                "target_role": "Own Initiator",
+            },
+            {
+                "packet_id": "boundary_1_to_4",
+                "source": "C1",
+                "target": "C4",
+                "source_num": 1,
+                "target_num": 4,
+                "type": "NEIGHBOR_ALERT",
+                "label": "NEIGHBOR(C2)",
+                "color": "#f97316",
+                "msg": "Node C1 notifies competing Initiator C4 of adjacent Initiator C2",
+                "introduced_neighbor": "C2",
+                "target_role": "Competing Initiator",
+            },
+            {
+                "packet_id": "boundary_6_to_4",
+                "source": "C6",
+                "target": "C4",
+                "source_num": 6,
+                "target_num": 4,
+                "type": "NEIGHBOR_ALERT",
+                "label": "NEIGHBOR(C8)",
+                "color": "#f97316",
+                "msg": "Node C6 notifies own Initiator C4 of adjacent Initiator C8",
+                "introduced_neighbor": "C8",
+                "target_role": "Own Initiator",
+            },
+            {
+                "packet_id": "boundary_6_to_8",
+                "source": "C6",
+                "target": "C8",
+                "source_num": 6,
+                "target_num": 8,
+                "type": "NEIGHBOR_ALERT",
+                "label": "NEIGHBOR(C4)",
+                "color": "#8b5cf6",
+                "msg": "Node C6 notifies competing Initiator C8 of adjacent Initiator C4",
+                "introduced_neighbor": "C4",
+                "target_role": "Competing Initiator",
+            },
+        ]
+
+        step6_nodes = []
+        for n in nodes:
+            nid = n["id"]
+            n_copy = dict(n)
+            zid = node_to_zone[nid]
+            is_init = (nid in initiators)
+
+            # Metadata preservation
+            n_copy["vrf_score"] = STORYBOARD_10_VRF_SCORES[nid]
+            n_copy["vector_10d"] = list(STORYBOARD_10_VECTORS[nid])
+            n_copy["vector"] = list(STORYBOARD_10_VECTORS[nid])
+            n_copy["normalized_vector"] = list(STORYBOARD_10_VECTORS[nid])
+            n_copy["distribution"] = dict(STORYBOARD_10_DISTRIBUTION[nid])
+            n_copy["data_distribution"] = dict(STORYBOARD_10_DISTRIBUTION[nid])
+            n_copy["neighbors"] = sorted(STORYBOARD_10_ADJACENCY[nid])
+            n_copy["neighbors_str"] = [f"C{nb}" for nb in n_copy["neighbors"]]
+
+            # Status & Roles:
+            # Per requirement: "Assert all 10 nodes have status == 'ASSIGNED'"
+            n_copy["status"] = "ASSIGNED"
+            n_copy["role"] = "INITIATOR" if is_init else "CLIENT"
+            n_copy["is_initiator"] = is_init
+            n_copy["assigned_zone"] = zid
+            n_copy["zone_id"] = zid
+            n_copy["leader_id"] = zid
+
+            # Boundary status
+            is_frontier = (nid in (1, 6))
+            n_copy["is_boundary"] = is_frontier
+            n_copy["is_frontier"] = is_frontier
+            if nid == 1:
+                n_copy["boundary_zones"] = [2, 4]
+                n_copy["zone_label"] = "Zone 2 (Frontier)"
+            elif nid == 6:
+                n_copy["boundary_zones"] = [4, 8]
+                n_copy["zone_label"] = "Zone 4 (Frontier)"
+            elif is_init:
+                n_copy["boundary_zones"] = []
+                n_copy["zone_label"] = f"Zone {zid} (Leader)"
+            else:
+                n_copy["boundary_zones"] = []
+                n_copy["zone_label"] = f"Zone {zid} (Member)"
+
+            # Boundary notifications payload
+            if is_init:
+                n_copy["discovered_neighbor_zones"] = list(discovered_neighbor_zones.get(nid, []))
+                n_copy["sent_boundary_notifications"] = []
+            elif is_frontier:
+                n_copy["discovered_neighbor_zones"] = []
+                n_copy["sent_boundary_notifications"] = list(sent_boundary_notifications.get(nid, []))
+            else:
+                n_copy["discovered_neighbor_zones"] = []
+                n_copy["sent_boundary_notifications"] = []
+
+            # Tonal color morphing:
+            # Initiators maintain bold, deep zone color & crown badge (👑)
+            # Members adopt softer pastel tone
+            if is_init:
+                if nid == 2:
+                    n_copy["bg_color"] = "#059669"
+                    n_copy["border_color"] = "#047857"
+                elif nid == 4:
+                    n_copy["bg_color"] = "#ea580c"
+                    n_copy["border_color"] = "#c2410c"
+                elif nid == 8:
+                    n_copy["bg_color"] = "#7c3aed"
+                    n_copy["border_color"] = "#6d28d9"
+                n_copy["border_width"] = 4.5
+                n_copy["color_tone"] = "deep"
+            else:
+                if zid == 2:
+                    n_copy["bg_color"] = "#34d399"
+                    n_copy["border_color"] = "#10b981"
+                elif zid == 4:
+                    n_copy["bg_color"] = "#fb923c"
+                    n_copy["border_color"] = "#f97316"
+                elif zid == 8:
+                    n_copy["bg_color"] = "#a78bfa"
+                    n_copy["border_color"] = "#8b5cf6"
+                n_copy["border_width"] = 2.5
+                n_copy["color_tone"] = "pastel"
+
+            n_copy["color"] = n_copy["bg_color"]
+
+            step6_nodes.append(n_copy)
+
+        # Edges for Step 6:
+        # Inter-zone links between frontier peers (Edge 1-4, Edge 6-8, etc.) styled as dashed boundary lines (#f87171)
+        step6_edges = []
+        for e in edges:
+            e_copy = dict(e)
+            u = e["source_num"]
+            v = e["target_num"]
+            z_u = node_to_zone[u]
+            z_v = node_to_zone[v]
+            is_cross_zone = (z_u != z_v)
+            is_frontier_pair = (min(u, v) == 1 and max(u, v) == 4) or (min(u, v) == 6 and max(u, v) == 8)
+
+            e_copy["is_inter_zone"] = is_cross_zone
+            e_copy["is_boundary_edge"] = is_cross_zone
+            e_copy["is_frontier_edge"] = is_frontier_pair
+            if is_cross_zone:
+                e_copy["style"] = "dashed"
+                e_copy["line_color"] = "#f87171"
+                e_copy["line_style"] = "dashed"
+            else:
+                e_copy["style"] = "solid"
+                e_copy["line_color"] = "#94a3b8"
+                e_copy["line_style"] = "solid"
+            step6_edges.append(e_copy)
+
+        terminal_logs = [
+            "[ZONE FORMATION] All 10 nodes officially assigned (First-Wins adopted).",
+            "Zone 2 (Leader: C2 👑): Members [C1, C3] morphed to Zone 2 Pastel Palette (#34d399).",
+            "Zone 4 (Leader: C4 👑): Members [C5, C6, C7] morphed to Zone 4 Pastel Palette (#fb923c).",
+            "Zone 8 (Leader: C8 👑): Members [C9, C10] morphed to Zone 8 Pastel Palette (#a78bfa).",
+            "[BOUNDARY NOTIFICATIONS] Frontier peers dispatch dual announcements (Algorithm 3, L17-L20):",
+            "Node C1 (Frontier Z2 ∩ Z4): Dispatched dual notifications -> C2 learns C4, C4 learns C2.",
+            "Node C6 (Frontier Z4 ∩ Z8): Dispatched dual notifications -> C4 learns C8, C8 learns C4.",
+            "[DISCOVERY COMPLETE] Initiator C2 discovered: [C4]. Initiator C4 discovered: [C2, C8]. Initiator C8 discovered: [C4].",
+            "[STATUS] Inter-zone boundary overlay established. All 10 peers ready for semantic aggregation.",
+        ]
+
+        return {
+            "step": 6,
+            "title": "Step 6: Official Zone Formation & Inter-Zone Boundary Discovery",
+            "phase_badge": "STEP 6: ZONE CREATION & BOUNDARY DISCOVERY",
+            "description": "Following First-Wins arbitration, clients adopt their winning initiator's zone identity. Frontier peers dispatch dual boundary notifications so initiators learn adjacent zones.",
+            "formula": "\\text{First-Wins} \\rightarrow \\text{ASSIGNED}(Z_I), \\quad \\text{NEIGHBOR}(p, q) \\rightarrow I_p \\text{ learns } I_q",
+            "formula_desc": "Clients morph into their initiator's zone color. Frontier peers send dual notifications so initiators learn adjacent zones.",
+            "nodes": step6_nodes,
+            "edges": step6_edges,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "packet_events": packet_events,
+            "packet_exchanges": packet_events,
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "discovered_neighbor_zones": discovered_neighbor_zones,
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,

@@ -207,6 +207,63 @@ function initCytoscape() {
         }
       },
       {
+        selector: "node.zone-pastel-2",
+        style: {
+          "background-color": "#34d399",
+          "border-color": "#10b981",
+          "shadow-color": "#34d399",
+          "color": "#ffffff"
+        }
+      },
+      {
+        selector: "node.zone-pastel-4",
+        style: {
+          "background-color": "#fb923c",
+          "border-color": "#f97316",
+          "shadow-color": "#fb923c",
+          "color": "#ffffff"
+        }
+      },
+      {
+        selector: "node.zone-pastel-8",
+        style: {
+          "background-color": "#a78bfa",
+          "border-color": "#8b5cf6",
+          "shadow-color": "#a78bfa",
+          "color": "#ffffff"
+        }
+      },
+      {
+        selector: "node.zone-initiator-2",
+        style: {
+          "background-color": "#059669",
+          "border-color": "#f59e0b",
+          "shadow-color": "#059669",
+          "border-width": 4.5,
+          "color": "#ffffff"
+        }
+      },
+      {
+        selector: "node.zone-initiator-4",
+        style: {
+          "background-color": "#ea580c",
+          "border-color": "#f59e0b",
+          "shadow-color": "#ea580c",
+          "border-width": 4.5,
+          "color": "#ffffff"
+        }
+      },
+      {
+        selector: "node.zone-initiator-8",
+        style: {
+          "background-color": "#7c3aed",
+          "border-color": "#f59e0b",
+          "shadow-color": "#7c3aed",
+          "border-width": 4.5,
+          "color": "#ffffff"
+        }
+      },
+      {
         selector: "node.boundary-node-1",
         style: {
           "background-color": "#059669",
@@ -694,6 +751,8 @@ async function loadStep(stepNumber) {
       renderStep4(data);
     } else if (stepNumber === 5) {
       renderStep5(data);
+    } else if (stepNumber === 6) {
+      renderStep6(data);
     }
 
     // Stream initial terminal logs
@@ -706,7 +765,8 @@ async function loadStep(stepNumber) {
         else if (log.startsWith("[Algorithm")) lvl = "VRF";
         else if (log.startsWith("[FIRST-WINS]")) lvl = "SUCCESS";
         else if (log.startsWith("[CONFLICT")) lvl = "WARN";
-        else if (log.startsWith("[PROBE") || log.startsWith("[Zone")) lvl = "ZONE";
+        else if (log.startsWith("[PROBE") || log.startsWith("[Zone") || log.startsWith("[ZONE")) lvl = "ZONE";
+        else if (log.startsWith("[BOUNDARY") || log.startsWith("[DISCOVERY")) lvl = "BOUNDARY";
         logToTerminal(lvl, log);
       });
     }
@@ -770,6 +830,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 5 / ZONE PROBE FLOODING (TTL=1)";
     if (stepTitle) stepTitle.textContent = "Step 5: Zone Creation via PROBE Flooding (TTL = 1)";
     if (stepDesc) stepDesc.textContent = "Elected Initiators (Nodes 2, 4, and 8) broadcast a PROBE packet with TTL=1 strictly to their 1-hop physical neighbors.";
+  } else if (step === 6) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 6: ZONE CREATION & BOUNDARY DISCOVERY";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-800 border border-purple-300";
+    });
+    if (stepTag) stepTag.textContent = "STEP 6 / ZONE FORMATION & BOUNDARY DISCOVERY";
+    if (stepTitle) stepTitle.textContent = "Step 6: Official Zone Formation & Inter-Zone Boundary Discovery";
+    if (stepDesc) stepDesc.textContent = "Clients morph into their initiator's zone color. Frontier peers send dual notifications so initiators learn adjacent zones.";
   }
 }
 
@@ -1231,6 +1299,138 @@ function animateStep5ProbePackets(packets, allNodes) {
   activeAnimationId = requestAnimationFrame(runFrame);
 }
 
+// 8c. Storyboard Step 6: Official Zone Formation & Inter-Zone Boundary Discovery
+function renderStep6(data) {
+  stopCurrentPacketAnimation();
+
+  // Explicitly sync header active step badge
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 6: ZONE CREATION & BOUNDARY DISCOVERY";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-800 border border-purple-300";
+  });
+
+  renderSidebarFormula(
+    "Zone Formation & Boundary Discovery",
+    "\\text{First-Wins} \\rightarrow \\text{ASSIGNED}(Z_I), \\quad \\text{NEIGHBOR}(p, q) \\rightarrow I_p \\text{ learns } I_q",
+    "Clients morph into their initiator's zone color. Frontier peers send dual notifications so initiators learn adjacent zones.",
+    "Step 6: Boundary Discovery",
+    false,
+    "purple"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Step 6: Official Zone Formation & Inter-Zone Boundary Discovery (Algorithm 3)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const zoneLegend = document.getElementById("zoneLegendItem");
+  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>3 Assigned Zones (<span class="text-emerald-700 font-bold">Z2: C1-C3</span>, <span class="text-orange-700 font-bold">Z4: C4-C7</span>, <span class="text-purple-700 font-bold">Z8: C8-C10</span>) | <span class="text-rose-700 font-bold">Boundary Discovery Active</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Render nodes with Tonal Color Morphing & Dashed Boundary Edges
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    showBoundaryEdges: true
+  });
+
+  logToTerminal("ZONE", "[OFFICIAL ZONE FORMATION] All 10 peers officially assigned (First-Wins adopted).");
+  logToTerminal("ZONE", "Zone 2 (Leader C2 👑): C1, C3 adopt pastel emerald tone (#34d399).");
+  logToTerminal("ZONE", "Zone 4 (Leader C4 👑): C5, C6, C7 adopt pastel coral tone (#fb923c).");
+  logToTerminal("ZONE", "Zone 8 (Leader C8 👑): C9, C10 adopt pastel violet tone (#a78bfa).");
+  logToTerminal("BOUNDARY", "[DUAL NOTIFICATIONS] Frontier peers dispatch reverse boundary announcements (Algorithm 3, L17-L20):");
+  logToTerminal("BOUNDARY", "• Node C1: Notifies Initiator C2 of adjacent Initiator C4, and notifies C4 of C2.");
+  logToTerminal("BOUNDARY", "• Node C6: Notifies Initiator C4 of adjacent Initiator C8, and notifies C8 of C4.");
+  logToTerminal("SUCCESS", "[INITIATOR DISCOVERY] Initiator C2 learned: [C4]. Initiator C4 learned: [C2, C8]. Initiator C8 learned: [C4].");
+
+  const packets = data.packet_events || data.packet_exchanges || [];
+  if (packets.length > 0) {
+    animateStep6BoundaryPackets(packets, data.nodes);
+  }
+}
+
+// Directional Reverse Boundary NEIGHBOR Announcement packet animation in Step 6
+function animateStep6BoundaryPackets(packets, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const duration = 2600; // ms
+  const startTime = performance.now();
+  const activeList = packets || [];
+
+  function runFrame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1.0);
+    const ease = easeInOutQuad(progress);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    activeList.forEach(pkt => {
+      const srcId = pkt.source_num || pkt.source;
+      const tgtId = pkt.target_num || pkt.target;
+      const srcNode = getNodeElement(srcId);
+      const tgtNode = getNodeElement(tgtId);
+      if (!srcNode || !tgtNode) return;
+
+      const p1 = srcNode.renderedPosition();
+      const p2 = tgtNode.renderedPosition();
+
+      const curX = p1.x + (p2.x - p1.x) * ease;
+      const curY = p1.y + (p2.y - p1.y) * ease;
+
+      const pktColor = pkt.color || "#8b5cf6";
+      const badgeBg = "rgba(255, 255, 255, 0.96)";
+      const badgeText = "#1e1b4b";
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(curX, curY, 5.0, 0, Math.PI * 2);
+      ctx.fillStyle = pktColor;
+      ctx.shadowBlur = 9;
+      ctx.shadowColor = pktColor;
+      ctx.fill();
+      ctx.restore();
+
+      drawCanvasFloatingBadge(
+        ctx,
+        pkt.label || `NEIGHBOR(${pkt.introduced_neighbor || ""})`,
+        curX,
+        curY - 14,
+        badgeBg,
+        badgeText,
+        pktColor
+      );
+    });
+
+    if (progress < 1.0) {
+      activeAnimationId = requestAnimationFrame(runFrame);
+    } else {
+      setTimeout(() => {
+        if (currentStep === 6) {
+          animateStep6BoundaryPackets(packets, allNodes);
+        }
+      }, 2000);
+    }
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
 // Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
 function animateProbeFloodingWaves(waves, allNodes) {
   stopCurrentPacketAnimation();
@@ -1531,7 +1731,34 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
     let borderColor = "#1d4ed8";
 
     let nodeClasses = "";
-    if (options.useZoneColors && (n.assigned_zone || n.zone_id)) {
+    if (options.useTonalZoneColors && (n.assigned_zone || n.zone_id)) {
+      const zid = n.assigned_zone || n.zone_id;
+      if (isInit) {
+        nodeClasses += `initiator-node zone-initiator-${zid} `;
+        if (zid === 2) {
+          bgColor = "#059669";
+          borderColor = "#f59e0b";
+        } else if (zid === 4) {
+          bgColor = "#ea580c";
+          borderColor = "#f59e0b";
+        } else if (zid === 8) {
+          bgColor = "#7c3aed";
+          borderColor = "#f59e0b";
+        }
+      } else {
+        nodeClasses += `zone-pastel-${zid} `;
+        if (zid === 2) {
+          bgColor = "#34d399";
+          borderColor = "#10b981";
+        } else if (zid === 4) {
+          bgColor = "#fb923c";
+          borderColor = "#f97316";
+        } else if (zid === 8) {
+          bgColor = "#a78bfa";
+          borderColor = "#8b5cf6";
+        }
+      }
+    } else if (options.useZoneColors && (n.assigned_zone || n.zone_id)) {
       const zid = n.assigned_zone || n.zone_id;
       if (zid === 2) {
         bgColor = "#059669";
@@ -1654,7 +1881,7 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   });
 
   edges.forEach((e, idx) => {
-    const isBoundary = options.showBoundaryEdges && !!e.is_inter_zone;
+    const isBoundary = Boolean(e.is_boundary_edge || e.is_inter_zone || (options.showBoundaryEdges && !!e.is_inter_zone));
     elements.push({
       group: "edges",
       classes: isBoundary ? "boundary-edge" : "intra-zone-edge",
@@ -1672,7 +1899,7 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   cy.layout({ name: "preset" }).run();
   cy.fit(undefined, 35);
 
-  if (options.useZoneColors) {
+  if (options.useZoneColors && !options.useTonalZoneColors) {
     nodes.forEach(n => {
       if (n.assigned_zone) {
         applyNodeZoneColor(n.id, n);
@@ -1700,9 +1927,9 @@ function showNodeModal(nodeData) {
 
   const idNum = nodeData.node_id_num || nodeData.id;
 
-  // Header: Node C{id} | Role: INITIATOR / CLIENT | Zone: {assigned_zone} in Step 5
+  // Header: Node C{id} | Role: INITIATOR / CLIENT | Zone: {assigned_zone} in Step 5 & 6
   if (cardNodeId) {
-    if (currentStep === 5) {
+    if (currentStep === 5 || currentStep === 6) {
       const isInit = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
       const roleStr = isInit ? "INITIATOR" : "CLIENT";
       let zStr = "Zone " + (nodeData.assigned_zone || (idNum in {1:1,2:1,3:1} ? 2 : idNum in {4:1,5:1,6:1,7:1} ? 4 : 8));
@@ -1807,10 +2034,10 @@ function showNodeModal(nodeData) {
       vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
     }
 
-    // Mini bar profile for Step 5
+    // Mini bar profile for Step 5 & 6
     const vectorBarsContainer = document.getElementById("cardVectorBarsContainer");
     const vectorBars = document.getElementById("cardVectorBars");
-    if (currentStep === 5 && vectorBarsContainer && vectorBars) {
+    if ((currentStep === 5 || currentStep === 6) && vectorBarsContainer && vectorBars) {
       vectorBarsContainer.classList.remove("hidden");
       vectorBars.innerHTML = "";
       vec.forEach((val, idx) => {
@@ -2142,8 +2369,160 @@ function showNodeModal(nodeData) {
         `;
       }
     }
-  } else {
+  // Step 6: Zone Creation & Inter-Zone Boundary Discovery
+  const bndSection = document.getElementById("cardBoundaryDiscoverySection");
+  const bndBadge = document.getElementById("cardBoundaryDiscoveryBadge");
+  const bndContent = document.getElementById("cardBoundaryDiscoveryContent");
+
+  if (currentStep === 6) {
     if (probeSection) probeSection.classList.add("hidden");
+    if (bndSection) bndSection.classList.remove("hidden");
+
+    const isInitiator = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
+    const isBoundary = Boolean(nodeData.is_boundary || [1, 6].includes(idNum));
+    const assignedZ = nodeData.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
+
+    if (cardStatusBadge) {
+      cardStatusBadge.textContent = "ASSIGNED";
+      cardStatusBadge.className = isInitiator
+        ? "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400"
+        : "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-purple-50 text-purple-800 border-purple-200";
+    }
+
+    if (bndBadge) {
+      if (isInitiator) {
+        bndBadge.textContent = `Zone ${assignedZ} (Initiator Leader 👑)`;
+        bndBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
+      } else if (isBoundary) {
+        bndBadge.textContent = `Zone ${assignedZ} (Frontier Client)`;
+        bndBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-purple-100 text-purple-900 border border-purple-300";
+      } else {
+        bndBadge.textContent = `Zone ${assignedZ} (Member Client)`;
+        bndBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-800 border border-slate-300";
+      }
+    }
+
+    if (bndContent) {
+      bndContent.innerHTML = "";
+      if (isInitiator) {
+        // Initiators: Dedicated highlighted section "Neighbor Zone Initiators Discovered:"
+        const discovered = nodeData.discovered_neighbor_zones || (idNum === 2 ? ["C4"] : idNum === 4 ? ["C2", "C8"] : ["C4"]);
+        const listItems = discovered.map(nbr => `
+          <li class="flex items-center gap-2 text-xs font-mono font-bold text-amber-900 bg-amber-100/70 px-2.5 py-1.5 rounded border border-amber-300/80">
+            <span class="text-amber-600">👑</span>
+            <span>Zone Initiator ${nbr}</span>
+          </li>
+        `).join("");
+
+        bndContent.innerHTML = `
+          <div class="p-3 bg-amber-50/90 rounded-lg border border-amber-300 shadow-xs">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-xs text-amber-950 flex items-center gap-1.5">
+                <span>👑</span>
+                <span>Zone ${assignedZ} Initiator Discovery</span>
+              </span>
+              <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-200 text-amber-900 border border-amber-300">
+                ${discovered.length} Adjacent Zone${discovered.length > 1 ? 's' : ''}
+              </span>
+            </div>
+            <div class="mt-2.5 text-xs text-slate-700 font-semibold">
+              Neighbor Zone Initiators Discovered:
+            </div>
+            <ul class="mt-1.5 space-y-1.5">
+              ${listItems}
+            </ul>
+            <div class="mt-2.5 pt-2 border-t border-amber-200 text-[11px] text-slate-600 font-sans leading-relaxed">
+              Learned via reverse boundary announcements dispatched by frontier peer${idNum === 4 ? 's C1 and C6' : idNum === 2 ? ' C1' : ' C6'}.
+            </div>
+          </div>
+        `;
+      } else if (isBoundary || idNum === 1 || idNum === 6) {
+        // Frontier member: Explicit "Dispatched Boundary Notifications Table"
+        const isNode1 = (idNum === 1);
+        const ownInit = isNode1 ? "C2" : "C4";
+        const adjInit = isNode1 ? "C4" : "C8";
+
+        bndContent.innerHTML = `
+          <div class="p-3 bg-purple-50/80 rounded-lg border border-purple-200">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-xs text-purple-950 flex items-center gap-1.5">
+                <span>⚡</span>
+                <span>Frontier Boundary Client</span>
+              </span>
+              <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800 border border-purple-300">
+                L17-L20 NEIGHBOR
+              </span>
+            </div>
+            <div class="mt-2 text-xs text-slate-700">
+              <span class="font-semibold text-slate-900">Assigned Zone:</span> Zone ${assignedZ} &nbsp;|&nbsp; <span class="font-semibold text-slate-900">Status:</span> <span class="font-bold text-emerald-700">ASSIGNED</span>
+            </div>
+
+            <div class="mt-3 text-xs font-bold text-purple-950 flex items-center gap-1">
+              <span>📬</span>
+              <span>Dispatched Boundary Notifications Table:</span>
+            </div>
+
+            <div class="mt-1.5 overflow-x-auto rounded border border-purple-200">
+              <table class="w-full text-left text-xs font-mono">
+                <thead class="bg-purple-100/70 text-[10px] uppercase text-purple-900">
+                  <tr>
+                    <th class="py-1 px-2">Target Initiator</th>
+                    <th class="py-1 px-2">Introduced Neighbor</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-purple-100 bg-white">
+                  <tr>
+                    <td class="py-1.5 px-2 font-semibold text-amber-900">
+                      To Own Initiator ${ownInit} 👑
+                    </td>
+                    <td class="py-1.5 px-2 text-slate-800">
+                      Introduced adjacent Initiator <span class="font-bold text-amber-800">${adjInit}</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="py-1.5 px-2 font-semibold text-purple-900">
+                      To Neighbor Initiator ${adjInit} 👑
+                    </td>
+                    <td class="py-1.5 px-2 text-slate-800">
+                      Introduced adjacent Initiator <span class="font-bold text-purple-800">${ownInit}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-2.5 pt-2 border-t border-purple-200 text-[11px] text-slate-600 font-sans leading-relaxed">
+              Dispatched reverse boundary announcements over physical links per Algorithm 3 lines 17-20.
+            </div>
+          </div>
+        `;
+      } else {
+        // Regular non-initiator members (C3, C5, C7, C9, C10)
+        bndContent.innerHTML = `
+          <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                <span>✓</span>
+                <span>Official Zone Member</span>
+              </span>
+              <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                ASSIGNED
+              </span>
+            </div>
+            <div class="mt-2 text-xs text-slate-700 space-y-1">
+              <div><span class="font-semibold text-slate-900">Assigned Zone:</span> Zone C${assignedZ}</div>
+              <div><span class="font-semibold text-slate-900">Status:</span> <span class="font-bold text-emerald-700">ASSIGNED</span></div>
+              <div><span class="font-semibold text-slate-900">Zone Leader:</span> Initiator C${assignedZ} 👑</div>
+            </div>
+            <div class="mt-2.5 pt-2 border-t border-slate-200 text-[11px] text-slate-600 font-sans leading-relaxed">
+              Node has fully joined Zone ${assignedZ} with tonal color morphing applied.
+            </div>
+          </div>
+        `;
+      }
+    }
+  } else {
+    if (bndSection) bndSection.classList.add("hidden");
   }
 
   card.classList.remove("hidden");
@@ -2509,7 +2888,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 5; s++) {
+  for (let s = 1; s <= 6; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -2522,6 +2901,8 @@ function updateStepper(step) {
         item.classList.add("step-amber");
       } else if (step === 5) {
         item.classList.add("step-emerald");
+      } else if (step === 6) {
+        item.classList.add("step-purple");
       }
     }
   }
@@ -2551,7 +2932,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 5) {
+    if (step < 6) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -2559,7 +2940,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 5 active (Zone Creation complete)";
+      btnNext.title = "Step 6 active (Zone Formation & Boundary Discovery complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -2572,7 +2953,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 5);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 6);
 }
 
 function bindActionButtons() {
@@ -2596,16 +2977,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 5) {
+      if (currentStep < 6) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 5 is active (Zone Creation complete).");
+        logToTerminal("INFO", "Step 6 is active (Zone Formation complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 5)
-  for (let s = 1; s <= 5; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 6)
+  for (let s = 1; s <= 6; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

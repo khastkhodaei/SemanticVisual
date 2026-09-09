@@ -167,3 +167,32 @@ Peers receiving a probe from an initiator adopt that initiator's zone identity. 
    - **VRF Score:** $\sigma_p$ value.
    - **Probe Status:** Initiator that sent the probe, received TTL, and boundary flags if applicable.
 
+---
+
+## Step 6 — Official Zone Formation & Inter-Zone Boundary Discovery
+
+Following the First-Wins arrival from Step 5, clients officially adopt their winning initiator's zone identity.
+
+### 1. Zone Allocation & Tonal Differentiation
+- **Zone 2 (Leader: C2 👑):**
+  - Members: Node 1, Node 3 (rendered in Zone 2 color with a slightly lighter/pastel tone).
+- **Zone 4 (Leader: C4 👑):**
+  - Members: Node 5, Node 6, Node 7 (rendered in Zone 4 color with a slightly lighter/pastel tone).
+- **Zone 8 (Leader: C8 👑):**
+  - Members: Node 9, Node 10 (rendered in Zone 8 color with a slightly lighter/pastel tone).
+
+### 2. Dual Boundary NEIGHBOR Notifications (Algorithm 3, L17-L20)
+Frontier peers that received overlapping probes in Step 5 dispatch reverse boundary announcements along their physical paths:
+- **Node 1 (Frontier between Zone 2 and Zone 4):**
+  - Sends a notification to **Initiator C2** introducing adjacent **Initiator C4**.
+  - Sends a notification to **Initiator C4** introducing adjacent **Initiator C2**.
+- **Node 6 (Frontier between Zone 4 and Zone 8):**
+  - Sends a notification to **Initiator C4** introducing adjacent **Initiator C8**.
+  - Sends a notification to **Initiator C8** introducing adjacent **Initiator C4**.
+
+### 3. Initiator Boundary Knowledge (Neighbor Zones Discovered)
+As a result of these notifications:
+- **Initiator C2** discovers neighbor initiator: **C4**.
+- **Initiator C4** discovers neighbor initiators: **C2** and **C8**.
+- **Initiator C8** discovers neighbor initiator: **C4**.
+
