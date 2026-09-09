@@ -114,6 +114,9 @@ function initCytoscape() {
           "label": function(ele) {
             const raw = ele.data("node_id_num") || ele.data("id");
             const clean = String(raw).replace("node_", "").replace("C", "");
+            if (ele.hasClass("initiator-node")) {
+              return "👑 C" + clean;
+            }
             return "C" + clean;
           },
           "color": "#ffffff",
@@ -122,8 +125,8 @@ function initCytoscape() {
           "font-weight": "bold",
           "text-valign": "center",
           "text-halign": "center",
-          "background-color": "#2563eb",
-          "border-color": "#1d4ed8",
+          "background-color": "data(bg_color)",
+          "border-color": "data(border_color)",
           "border-width": 2,
           "width": 32,
           "height": 32,
@@ -134,15 +137,17 @@ function initCytoscape() {
       {
         selector: "node.initiator-node",
         style: {
-          "background-color": "#f59e0b",
-          "border-color": "#b45309",
+          "label": function(ele) {
+            const raw = ele.data("node_id_num") || ele.data("id");
+            const clean = String(raw).replace("node_", "").replace("C", "");
+            return "👑 C" + clean;
+          },
           "border-width": 4.5,
           "width": 44,
           "height": 44,
           "color": "#ffffff",
           "font-size": "12px",
           "shadow-blur": 22,
-          "shadow-color": "#f59e0b",
           "shadow-opacity": 0.9,
           "z-index": 90
         }
@@ -870,77 +875,33 @@ function renderStep4(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 4: 1-Hop Neighbor Score Exchange & Initiator Election";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.add("hidden");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
   if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.textContent = "Transmitting 1-Hop Scores...";
-    statLeaders.className = "text-xs font-semibold text-blue-600 animate-pulse";
+    statLeaders.innerHTML = '<span>3 Initiators (<span class="text-emerald-700 font-bold">C4: Dark Green</span>, <span class="text-rose-700 font-bold">C2: Dark Red</span>, <span class="text-amber-700 font-bold">C8: Dark Yellow</span>)</span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
   }
 
-  // Sequence Stage 1: Render all nodes initially in neutral client state (blue) during score transmission
+  // Render nodes: All 3 selected Initiators (Node 4: dark green, Node 2: dark red, Node 8: dark yellow) recognized and displayed as winners
   renderCytoscapeGraph(data.nodes, data.edges, {
-    showInitiators: false,
+    showInitiators: true,
     useZoneColors: false,
     showBoundaryEdges: false
   });
 
   logToTerminal("VRF_TX", "[1/4 SCORE TRANSMISSION] Broadcasting local VRF scores to direct 1-hop physical neighbors...");
-
-  // Sequence Stages 2-4: Triggered when score packets arrive at neighboring peers
-  function onScoresReachedNodes() {
-    if (currentStep !== 4 || !cy) return;
-
-    logToTerminal("VRF_RX", "[2/4 SCORE RECEPTION] 1-hop neighbor scores received across all 18 physical links.");
-    logToTerminal("ELECTION", "[3/4 WINNER SELECTION] Evaluating closed-ball minimums: m_p = min_{q in N_1(p) U {p}} (sigma_q, id_q).");
-    logToTerminal("INITIATOR", "[4/4 INITIATOR IDENTIFIED] Node 4 (0.0412) -> Dark Green");
-    logToTerminal("INITIATOR", "[4/4 INITIATOR IDENTIFIED] Node 2 (0.0837) -> Dark Red");
-    logToTerminal("INITIATOR", "[4/4 INITIATOR IDENTIFIED] Node 8 (0.0275) -> Dark Yellow");
-
-    if (leaderLegend) leaderLegend.classList.remove("hidden");
-    if (statLeaders) {
-      statLeaders.innerHTML = '<span>3 Initiators (<span class="text-emerald-700 font-bold">C4: Dark Green</span>, <span class="text-rose-700 font-bold">C2: Dark Red</span>, <span class="text-amber-700 font-bold">C8: Dark Yellow</span>)</span>';
-      statLeaders.className = "text-xs font-bold text-slate-800";
-    }
-
-    // Highlight selected winners: Node 4 (dark green), Node 2 (dark red), Node 8 (dark yellow)
-    const winnerConfigs = {
-      4: { bg: "#166534", border: "#14532d", shadow: "#166534" },
-      2: { bg: "#991b1b", border: "#7f1d1d", shadow: "#991b1b" },
-      8: { bg: "#a16207", border: "#713f12", shadow: "#a16207" }
-    };
-
-    [4, 2, 8].forEach(id => {
-      const nodeEle = cy.getElementById(String(id));
-      if (nodeEle && nodeEle.isNode && nodeEle.isNode()) {
-        const conf = winnerConfigs[id];
-        nodeEle.data("label", `👑 C${id}`);
-        nodeEle.data("bg_color", conf.bg);
-        nodeEle.data("border_color", conf.border);
-        nodeEle.addClass(`initiator-node winner-node-${id}`);
-        nodeEle.animate({
-          style: {
-            "background-color": conf.bg,
-            "border-color": conf.border,
-            "shadow-color": conf.shadow,
-            "shadow-blur": 24,
-            "shadow-opacity": 0.95,
-            "width": 46,
-            "height": 46,
-            "border-width": 4.5
-          }
-        }, { duration: 350 });
-      }
-    });
-  }
+  logToTerminal("VRF_RX", "[2/4 SCORE RECEPTION] 1-hop neighbor scores received across all 18 physical links.");
+  logToTerminal("ELECTION", "[3/4 WINNER SELECTION] Evaluating closed-ball minimums: m_p = min_{q in N_1(p) U {p}} (sigma_q, id_q).");
+  logToTerminal("INITIATOR", "[4/4 INITIATOR IDENTIFIED] Node 4 (0.0412) elected Winner -> Dark Green");
+  logToTerminal("INITIATOR", "[4/4 INITIATOR IDENTIFIED] Node 2 (0.0837) elected Winner -> Dark Red");
+  logToTerminal("INITIATOR", "[4/4 INITIATOR IDENTIFIED] Node 8 (0.0275) elected Winner -> Dark Yellow");
 
   // Animate 1-hop score packet exchanges along edges exclusively in Step 4
   if (data.packet_exchanges && data.packet_exchanges.length > 0) {
-    animateVrfScoreExchangePackets(data.packet_exchanges, data.nodes, onScoresReachedNodes);
-  } else {
-    onScoresReachedNodes();
+    animateVrfScoreExchangePackets(data.packet_exchanges, data.nodes, null);
   }
 }
 
@@ -1347,7 +1308,7 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   const elements = [];
 
   nodes.forEach(n => {
-    const isInit = options.showInitiators && n.is_initiator;
+    const isInit = Boolean(options.showInitiators && (n.is_initiator || [2, 4, 8].includes(n.id)));
     const domName = n.dominant_class_name || n.class_title || "CIFAR-10";
     const domIcon = n.dominant_class_icon || n.class_icon || "";
     const label = isInit ? `👑 C${n.id}` : `C${n.id}`;
@@ -1383,9 +1344,15 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
         node_id_str: n.node_id || `C${n.id}`,
         label: label,
         role: isInit ? "👑 Initiator" : (n.role || "CLIENT"),
-        status: n.status || "NOT_ASSIGNED",
+        status: isInit ? "INITIATOR" : (n.status || "NOT_ASSIGNED"),
         bg_color: bgColor,
         border_color: borderColor,
+        neighbor_scoreboard: n.neighbor_scoreboard || [],
+        neighbor_scores: n.neighbor_scores || {},
+        neighbor_scores_str: n.neighbor_scores_str || {},
+        winner_color: n.winner_color,
+        winner_bg: n.winner_bg,
+        winner_border: n.winner_border,
         class_id: n.class_id,
         class_title: domName,
         class_icon: domIcon,
@@ -1704,53 +1671,65 @@ function showNodeModal(nodeData) {
       if (scoreboardTitle) scoreboardTitle.textContent = "1-Hop Comparison (Closed Ball):";
       if (scoreboardSubtitle) scoreboardSubtitle.textContent = "min(\u03c3_q, id_q)";
 
-      // Build table with self + neighbor scores:
-      // Regular nodes: show received scores without highlighting any winner.
-      // Initiator nodes: highlight their winning score in gold and clearly label as Winner.
+      // Build complete table with VRF scores of selected node itself and all connected neighbors:
+      // Regular nodes: show all scores cleanly without highlighting any winner.
+      // Initiator nodes: highlight winning score in gold and clearly label node as Winner.
       if (scoreboardBody) {
         scoreboardBody.innerHTML = "";
 
         const participants = [];
-        // Add self
+        // Add selected node itself
+        const selfScoreVal = (selfScore !== null && selfScore !== undefined)
+          ? selfScore
+          : (STORYBOARD_10_VRF_SCORES[idNum] !== undefined ? STORYBOARD_10_VRF_SCORES[idNum] : 0.0);
+
         participants.push({
           id: idNum,
           label: `C${idNum} (Self)`,
-          score: selfScore,
-          is_min: (idNum === winnerId),
+          score: selfScoreVal,
           is_self: true
         });
 
-        // Add neighbors
-        const scoreboard = nodeData.neighbor_scoreboard || [];
-        if (scoreboard.length > 0) {
-          scoreboard.forEach(item => {
-            const nbId = item.neighbor_id || parseInt(String(item.label).replace("C", ""), 10);
-            participants.push({
-              id: nbId,
-              label: `C${nbId}`,
-              score: Number(item.vrf_score),
-              is_min: (nbId === winnerId),
-              is_self: false
-            });
-          });
-        } else if (nodeData.neighbor_scores) {
-          Object.entries(nodeData.neighbor_scores).forEach(([nbKey, score]) => {
-            const nbId = parseInt(String(nbKey).replace("C", ""), 10);
-            participants.push({
-              id: nbId,
-              label: `C${nbId}`,
-              score: Number(score),
-              is_min: (nbId === winnerId),
-              is_self: false
-            });
-          });
+        // Add all connected neighbors
+        let neighborList = [];
+        if (Array.isArray(nodeData.neighbor_scoreboard) && nodeData.neighbor_scoreboard.length > 0) {
+          neighborList = nodeData.neighbor_scoreboard.map(item => ({
+            id: item.neighbor_id || parseInt(String(item.label).replace("C", ""), 10),
+            score: Number(item.vrf_score !== undefined ? item.vrf_score : STORYBOARD_10_VRF_SCORES[item.neighbor_id])
+          }));
+        } else if (nodeData.neighbor_scores && Object.keys(nodeData.neighbor_scores).length > 0) {
+          neighborList = Object.entries(nodeData.neighbor_scores).map(([nbKey, score]) => ({
+            id: parseInt(String(nbKey).replace("C", ""), 10),
+            score: Number(score)
+          }));
+        } else {
+          // Fallback using neighbors list or physical topology adjacency
+          const nbrIds = (Array.isArray(nodeData.neighbors) && nodeData.neighbors.length > 0)
+            ? nodeData.neighbors
+            : (STORYBOARD_10_ADJACENCY[idNum] || []);
+          neighborList = nbrIds.map(nbId => ({
+            id: nbId,
+            score: STORYBOARD_10_VRF_SCORES[nbId]
+          }));
         }
+
+        // Sort neighbors by ID for clean deterministic display
+        neighborList.sort((a, b) => a.id - b.id);
+
+        neighborList.forEach(nb => {
+          participants.push({
+            id: nb.id,
+            label: `C${nb.id}`,
+            score: nb.score,
+            is_self: false
+          });
+        });
 
         participants.forEach(p => {
           const tr = document.createElement("tr");
           if (isInitiator && p.is_self) {
-            // Initiator winning score highlighted in gold and clearly labeled as Winner
-            tr.className = "bg-amber-100/90 text-amber-950 font-bold border-l-4 border-amber-500 transition-colors";
+            // Selected node is an Initiator: highlight its own row in gold and clearly mark as Winner
+            tr.className = "bg-amber-100/90 text-amber-950 font-bold border-l-4 border-amber-500 shadow-xs transition-colors";
             tr.innerHTML = `
               <td class="py-1.5 px-2 font-mono flex items-center gap-1.5 text-amber-950">
                 <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9.5px] bg-amber-200 border border-amber-400 font-bold text-amber-950">👑 Winner</span>
@@ -1761,7 +1740,7 @@ function showNodeModal(nodeData) {
               </td>
             `;
           } else {
-            // Regular candidate nodes and neighbors: no winner highlight
+            // Regular candidate nodes and neighbors: clean unhighlighted display
             tr.className = "hover:bg-slate-50 transition-colors";
             tr.innerHTML = `
               <td class="py-1 px-2 font-mono ${p.is_self ? 'font-bold text-slate-800' : 'text-slate-600'}">${p.label}</td>

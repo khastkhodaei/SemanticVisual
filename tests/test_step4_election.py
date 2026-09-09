@@ -276,3 +276,62 @@ def test_issue4_steps_md_documentation():
     assert "breakdown table below the vector is removed in Step 4" in steps_md
 
 
+def test_issue5_all_initiators_recognized_and_colored():
+    """Verify Issue #5: All 3 Initiators (C4, C2, C8) are recognized and styled as winners in Step 4."""
+    data = get_10node_step_data(4)
+    nodes = {n["id"]: n for n in data["nodes"]}
+
+    # All 3 initiators must be recognized
+    assert data["active_leaders"] == [2, 4, 8]
+    assert nodes[4]["is_initiator"] is True and nodes[4]["winner_color"] == "dark green"
+    assert nodes[2]["is_initiator"] is True and nodes[2]["winner_color"] == "dark red"
+    assert nodes[8]["is_initiator"] is True and nodes[8]["winner_color"] == "dark yellow"
+
+    with open("frontend/static/app.js", "r", encoding="utf-8") as f:
+        js = f.read()
+
+    assert "winner-node-4" in js
+    assert "winner-node-2" in js
+    assert "winner-node-8" in js
+    assert "showInitiators: true" in js
+
+
+def test_issue5_complete_score_table_for_all_10_nodes():
+    """Verify Issue #5: Every node's score table includes itself and ALL connected neighbors."""
+    data = get_10node_step_data(4)
+    nodes = {n["id"]: n for n in data["nodes"]}
+
+    for nid in range(1, 11):
+        node = nodes[nid]
+        expected_neighbors = STORYBOARD_10_ADJACENCY[nid]
+        scoreboard = node["neighbor_scoreboard"]
+
+        # Number of neighbor entries must equal number of connected neighbors
+        assert len(scoreboard) == len(expected_neighbors), f"Node {nid} scoreboard length mismatch"
+
+        # Check neighbor IDs and scores
+        scoreboard_ids = {item["neighbor_id"] for item in scoreboard}
+        assert scoreboard_ids == set(expected_neighbors), f"Node {nid} neighbors mismatch"
+
+        # Check self score
+        assert node["vrf_score"] == STORYBOARD_10_VRF_SCORES[nid]
+
+        # Total peers in complete table = self (1) + connected neighbors
+        total_participants_count = 1 + len(expected_neighbors)
+        assert total_participants_count >= 3  # minimum degree is 2 (nodes 1, 2) + 1 = 3
+
+
+def test_issue5_steps_md_documentation():
+    """Verify STEPS.md documents complete score table and all 3 initiator winners."""
+    with open("STEPS.md", "r", encoding="utf-8") as f:
+        steps_md = f.read()
+
+    assert "Complete Score Table" in steps_md
+    assert "The selected node itself" in steps_md
+    assert "All of its direct connected neighbors" in steps_md
+    assert "Node 4:" in steps_md and "Dark Green" in steps_md
+    assert "Node 2:" in steps_md and "Dark Red" in steps_md
+    assert "Node 8:" in steps_md and "Dark Yellow" in steps_md
+
+
+

@@ -126,10 +126,13 @@ Evaluation across the 10 nodes:
    - Directly below the connected neighbors list, each client's dataset classes are displayed (`Client data classes: ...`).
    - The normalized 10D semantic vector ($\mathbf{w}_i$) is retained in the information box.
    - The breakdown table below the vector is removed in Step 4 to maintain a clean presentation with the scoreboard.
-   - All nodes show their received 1-hop neighbor VRF scores in their detail box.
-   - **Regular Candidate Nodes:** Do **not** highlight the winner in the neighbor-score table.
-   - **Initiator Nodes:** Clearly indicate winning status:
-     - Their winning score is highlighted in **gold** in the scoreboard table.
-     - The node is clearly labeled as the **Winner**.
+   - **Complete Score Table:** The score table in the node information box displays the VRF scores of:
+     1. The selected node itself (`C{id} (Self)`).
+     2. All of its direct connected neighbors.
+   - **Regular Candidate Nodes:** Display all connected neighbor scores cleanly without highlighting any winner.
+   - **Initiator Nodes:** If the selected node is an Initiator (Nodes 2, 4, 8):
+     - Its own row in the table is highlighted in **gold** and clearly marked as **Winner**.
+     - Its winning status and color (Node 4: dark green, Node 2: dark red, Node 8: dark yellow) are prominently highlighted in the status badge and election banner.
    - These connected neighbors, client data classes, and normalized vector representations remain available unchanged in all subsequent steps.
+
 
