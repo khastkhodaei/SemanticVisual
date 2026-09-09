@@ -383,6 +383,43 @@
                   </div>
                   <div id="cardBoundaryNeighborsList" class="font-mono text-slate-800 text-[9px] mt-0.5 space-y-0.5"></div>
                 </div>
+
+                <!-- Dedicated Initiator Discovered Neighbor Zones Section (Algorithm 3 L18-20) -->
+                <div id="cardInitiatorNeighborsSection" class="hidden pt-1.5 border-t border-slate-200 text-[9px] space-y-1">
+                  <div class="flex justify-between items-center text-amber-900 font-bold font-mono">
+                    <span class="flex items-center gap-1">
+                      <span>🌐</span>
+                      <span>Physical Neighbor Zones Discovered:</span>
+                    </span>
+                    <span id="cardInitiatorNeighborsCount" class="px-1.5 py-0.2 rounded bg-amber-100 border border-amber-300 text-[8px] text-amber-800">0 zones</span>
+                  </div>
+                  <div id="cardInitiatorNeighborsList" class="flex flex-wrap gap-1 mt-1">
+                    <!-- Badges for each adjacent zone registered via alerts e.g. Connected to: Zone C6, Zone C26 -->
+                  </div>
+                </div>
+
+                <!-- Frontier Node Boundary Registration (Algorithm 3 L18-19) -->
+                <div id="cardFrontierSection" class="hidden pt-1 border-t border-rose-200 bg-rose-50/60 p-2 rounded-lg border text-[9px] font-mono space-y-1">
+                  <div class="flex justify-between items-center text-rose-800 font-bold">
+                    <span class="flex items-center gap-1">
+                      <span>⚡</span>
+                      <span>Frontier Boundary Node (Alg 3 L18-19)</span>
+                    </span>
+                    <span class="px-1.5 py-0.2 rounded bg-rose-100 border border-rose-300 text-[8px] text-rose-700">CONFLICT</span>
+                  </div>
+                  <div class="flex justify-between text-slate-700">
+                    <span class="text-slate-500">Accepted Probe from:</span>
+                    <span id="cardFrontierAcceptedFrom" class="font-bold text-emerald-700">C1</span>
+                  </div>
+                  <div class="flex justify-between text-slate-700">
+                    <span class="text-slate-500">Rejected Probe from:</span>
+                    <span id="cardFrontierRejectedFrom" class="font-bold text-rose-600">C6</span>
+                  </div>
+                  <div class="flex justify-between text-slate-700">
+                    <span class="text-slate-500">Boundary status:</span>
+                    <span id="cardFrontierStatus" class="font-bold text-amber-800">Dual NEIGHBOR alerts emitted</span>
+                  </div>
+                </div>
               </div>
             </div>
 

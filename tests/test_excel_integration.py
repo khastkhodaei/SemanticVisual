@@ -202,3 +202,81 @@ def test_api_storyboard_step_progression(client):
     # Invalid Step
     s_err = client.get("/api/v1/storyboard/step/5")
     assert s_err.status_code == 400
+
+
+def test_step4_hop1_morphing_and_dual_alerts(client, excel_loader):
+    """Assert Hop 1 color adoption, frontier dual competing alerts, and initiator neighbor discovery."""
+    res = client.get("/api/v1/storyboard/step/4")
+    assert res.status_code == 200
+    d4 = res.json()
+
+    nodes_map = {n["id"]: n for n in d4["nodes"]}
+
+    # 1. Hop 1 peers adopt their respective zone colors upon probe reception
+    wave1 = d4["waves"]["wave1"]
+    assert len(wave1) > 0
+
+    hop1_nodes = [n for n in d4["nodes"] if n["hops_to_initiator"] == 1]
+    assert len(hop1_nodes) > 0
+
+    for n in hop1_nodes:
+        init_id = n["winner_initiator_id"]
+        expected_color = excel_loader.node_vrf[init_id]["zone_color"]
+        assert n["zone_color"] == expected_color
+        assert n["accepted_probe"]["hop"] == 1
+        assert n["accepted_probe"]["from_initiator"] == f"C{init_id}"
+        # Check there is a first-wins transmission in wave1
+        assert any(
+            p["target"] == n["id"] and p["initiator"] == init_id and p["is_first_wins"]
+            for p in wave1
+        )
+
+    # 2. Frontier nodes correctly identify both competing initiators (Algorithm 3 L18-L19)
+    # C5 is reached by C1 (adopted) and C6 (rejected)
+    c5 = nodes_map[5]
+    assert c5["accepted_probe_from"] == "C1"
+    assert "C6" in c5["rejected_probe_from"]
+    assert c5["boundary_status"] == "Dual NEIGHBOR alerts emitted"
+    c5_alerts = c5["dual_neighbor_alerts"]
+    assert len(c5_alerts) >= 2
+    alert_targets = {a["to_initiator"] for a in c5_alerts}
+    assert "C1" in alert_targets and "C6" in alert_targets
+
+    # C50 is reached by C1 (adopted) and C46 (rejected)
+    c50 = nodes_map[50]
+    assert c50["accepted_probe_from"] == "C1"
+    assert "C46" in c50["rejected_probe_from"]
+    c50_alert_targets = {a["to_initiator"] for a in c50["dual_neighbor_alerts"]}
+    assert "C1" in c50_alert_targets and "C46" in c50_alert_targets
+
+    # C10 is reached by C6 (adopted) and C11 (rejected)
+    c10 = nodes_map[10]
+    assert c10["accepted_probe_from"] == "C6"
+    assert "C11" in c10["rejected_probe_from"]
+    c10_alert_targets = {a["to_initiator"] for a in c10["dual_neighbor_alerts"]}
+    assert "C6" in c10_alert_targets and "C11" in c10_alert_targets
+
+    # 3. Initiators successfully register their adjacent zones
+    init_neighbors = d4.get("initiator_neighbors", {})
+    assert len(init_neighbors) == 10
+
+    for init_id in [1, 6, 11, 16, 21, 26, 31, 36, 41, 46]:
+        init_key = f"C{init_id}"
+        assert init_key in init_neighbors
+        discovered = init_neighbors[init_key]
+        assert len(discovered) >= 2, f"Initiator {init_key} discovered fewer than 2 neighbors: {discovered}"
+
+        # Node level discovered zones
+        init_node = nodes_map[init_id]
+        assert len(init_node["discovered_neighbor_zones"]) >= 2
+
+    # Verify Initiator C1 discovered Zone C6 and Zone C26
+    c1_adj = init_neighbors["C1"]
+    assert any("C6" in z for z in c1_adj), f"C1 should discover adjacent Zone C6, got {c1_adj}"
+    assert any("C26" in z for z in c1_adj), f"C1 should discover adjacent Zone C26, got {c1_adj}"
+
+    # 4. Terminal logs verify HOP 1 ACCEPT and NEIGHBOR ALERT traces
+    logs = d4["terminal_logs"]
+    assert any("[HOP 1 ACCEPT]" in log for log in logs)
+    assert any("[NEIGHBOR ALERT]" in log for log in logs)
+

@@ -639,6 +639,8 @@ function animateProbeFloodingWaves(waves, allNodes) {
 
     // Check impact on nodes when progress >= 0.88
     if (easeProgress >= 0.88) {
+      const nodeMap = new Map((allNodes || []).map(n => [n.id, n]));
+
       activePackets.forEach(pkt => {
         const tgtNode = cy.getElementById(`node_${pkt.target}`);
         const p2 = tgtNode && tgtNode.isNode() ? tgtNode.renderedPosition() : null;
@@ -652,6 +654,7 @@ function animateProbeFloodingWaves(waves, allNodes) {
               "background-color": pal.fill,
               "border-color": pal.border
             });
+            tgtNode.data("status", `ASSIGNED (Zone C${pkt.initiator})`);
             ripples.push({
               x: p2.x,
               y: p2.y,
@@ -660,7 +663,11 @@ function animateProbeFloodingWaves(waves, allNodes) {
               color: pal.fill,
               alpha: 0.95
             });
-            logToTerminal("SUCCESS", `[FIRST-WINS] C${pkt.target} adopted Zone C${pkt.initiator} at Hop ${currentWaveIndex}. Color morphed!`);
+            if (currentWaveIndex === 1) {
+              logToTerminal("SUCCESS", `[HOP 1 ACCEPT] C${pkt.target} adopted Zone C${pkt.initiator} via First-Wins.`);
+            } else {
+              logToTerminal("SUCCESS", `[HOP ${currentWaveIndex} ACCEPT] C${pkt.target} accepted PROBE from C${pkt.initiator} at Hop ${currentWaveIndex}. Status: ASSIGNED to Zone C${pkt.initiator}.`);
+            }
           }
         } else if (pkt.is_conflict) {
           const edgeId = pkt.edge_id || `e${Math.min(pkt.source, pkt.target)}_${Math.max(pkt.source, pkt.target)}`;
@@ -679,21 +686,47 @@ function animateProbeFloodingWaves(waves, allNodes) {
               alpha: 1.0
             });
 
-            // Emit reverse boundary alert packet (Alg 3 L17-L19)
-            const srcNode = cy.getElementById(`node_${pkt.source}`);
-            const p1 = srcNode && srcNode.isNode() ? srcNode.renderedPosition() : null;
-            if (p1) {
+            // Algorithm 3 lines 18-19: Dual reverse alerts emitted by frontier node
+            const targetNodeData = nodeMap.get(pkt.target);
+            const ownInitId = targetNodeData ? targetNodeData.winner_initiator_id : null;
+            const compInitId = pkt.initiator;
+
+            // Pulse 1: travels back to Own Initiator
+            if (ownInitId) {
+              const ownNode = cy.getElementById(`node_${ownInitId}`);
+              const pOwn = ownNode && ownNode.isNode() ? ownNode.renderedPosition() : null;
+              if (pOwn) {
+                reverseAlerts.push({
+                  startX: p2.x,
+                  startY: p2.y,
+                  endX: pOwn.x,
+                  endY: pOwn.y,
+                  startTime: now,
+                  duration: 750,
+                  color: "#f59e0b",
+                  label: `Alert ➜ Own C${ownInitId}`,
+                });
+              }
+            }
+
+            // Pulse 2: travels back to Competing Initiator
+            const compNode = cy.getElementById(`node_${pkt.source}`);
+            const pComp = compNode && compNode.isNode() ? compNode.renderedPosition() : null;
+            if (pComp) {
               reverseAlerts.push({
                 startX: p2.x,
                 startY: p2.y,
-                endX: p1.x,
-                endY: p1.y,
+                endX: pComp.x,
+                endY: pComp.y,
                 startTime: now,
-                duration: 650,
-                color: "#8b5cf6"
+                duration: 750,
+                color: "#f43f5e",
+                label: `Alert ➜ Competing C${compInitId}`,
               });
             }
-            logToTerminal("WARN", `[CONFLICT/BOUNDARY] C${pkt.target} dropped delayed PROBE from Zone C${pkt.initiator}. Link dashed red. Reverse alert emitted!`);
+
+            logToTerminal("WARN", `[NEIGHBOR ALERT] Frontier node C${pkt.target} sent boundary notification to its Initiator C${ownInitId}.`);
+            logToTerminal("WARN", `[NEIGHBOR ALERT] Frontier node C${pkt.target} sent boundary notification to competing Initiator C${compInitId}.`);
           }
         }
       });
@@ -746,7 +779,7 @@ function animateProbeFloodingWaves(waves, allNodes) {
       }
     }
 
-    // Render reverse boundary alerts (Alg 3 L17-L19)
+    // Render reverse boundary alerts (Alg 3 L18-L19 dual pulses)
     for (let i = reverseAlerts.length - 1; i >= 0; i--) {
       const a = reverseAlerts[i];
       const aElapsed = now - a.startTime;
@@ -757,9 +790,9 @@ function animateProbeFloodingWaves(waves, allNodes) {
 
       ctx.save();
       ctx.beginPath();
-      ctx.arc(ax, ay, 5.5, 0, Math.PI * 2);
+      ctx.arc(ax, ay, 6.0, 0, Math.PI * 2);
       ctx.fillStyle = a.color;
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 10;
       ctx.shadowColor = a.color;
       ctx.fill();
 
@@ -768,6 +801,18 @@ function animateProbeFloodingWaves(waves, allNodes) {
       ctx.fillStyle = "#ffffff";
       ctx.shadowBlur = 0;
       ctx.fill();
+
+      if (a.label && aProg > 0.15 && aProg < 0.85) {
+        drawCanvasFloatingBadge(
+          ctx,
+          a.label,
+          ax,
+          ay - 14,
+          a.color === "#f59e0b" ? "rgba(254, 243, 199, 0.98)" : "rgba(255, 241, 242, 0.98)",
+          a.color === "#f59e0b" ? "#92400e" : "#9f1239",
+          a.color
+        );
+      }
       ctx.restore();
 
       if (aProg >= 1.0) {
@@ -895,14 +940,21 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
         winner_id: n.winner_id,
         winner_score: n.winner_score,
         winner_initiator: n.winner_initiator,
+        winner_initiator_id: n.winner_initiator_id,
         first_wins_text: n.first_wins_text,
         accepted_probe: n.accepted_probe,
+        accepted_probe_from: n.accepted_probe_from,
         rejected_probes: n.rejected_probes || n.competing_probes_rejected || [],
+        rejected_probe_from: n.rejected_probe_from || [],
         competing_probes_rejected: n.competing_probes_rejected || [],
         forwarded_to: n.forwarded_to || [],
         boundary_notifications_emitted: n.boundary_notifications_emitted || [],
+        dual_neighbor_alerts: n.dual_neighbor_alerts || [],
+        discovered_neighbor_zones: n.discovered_neighbor_zones || [],
+        discovered_neighbor_zone_names: n.discovered_neighbor_zone_names || [],
         is_boundary: n.is_boundary,
         boundary_neighbors: n.boundary_neighbors || [],
+        boundary_status: n.boundary_status,
         status_tag: n.status_tag,
       },
       position: {
@@ -1210,8 +1262,77 @@ function showNodeModal(nodeData) {
         }
       }
 
+      // 5. Initiator Discovered Adjacent Neighbor Zones (Algorithm 3 Lines 18-20)
+      const cardInitNeighborsSec = document.getElementById("cardInitiatorNeighborsSection");
+      const cardInitNeighborsCount = document.getElementById("cardInitiatorNeighborsCount");
+      const cardInitNeighborsList = document.getElementById("cardInitiatorNeighborsList");
+
+      if (cardInitNeighborsSec) {
+        if (isInitiator) {
+          cardInitNeighborsSec.classList.remove("hidden");
+          const discZones = (nodeData.discovered_neighbor_zones && nodeData.discovered_neighbor_zones.length > 0)
+            ? nodeData.discovered_neighbor_zones
+            : (currentStepData?.initiator_neighbor_details?.[nodeData.node_id_str] || currentStepData?.initiator_neighbor_details?.[`C${nodeData.node_id_num}`] || []);
+
+          if (cardInitNeighborsCount) cardInitNeighborsCount.textContent = `${discZones.length} zones`;
+          if (cardInitNeighborsList) {
+            if (discZones.length === 0) {
+              cardInitNeighborsList.innerHTML = '<span class="text-slate-400 italic text-[9px]">No adjacent zones discovered yet</span>';
+            } else {
+              cardInitNeighborsList.innerHTML = discZones.map(z => {
+                const pal = ZONE_PALETTES[z.zone || z.zone_name] || { fill: "#fef3c7", border: "#f59e0b" };
+                return `
+                  <div class="neighbor-zone-badge" style="background-color: ${pal.fill}; border-color: ${pal.border}; color: ${pal.border};">
+                    <span>🌐 Connected to: Zone C${z.initiator_id}</span>
+                    <span class="text-[8px] opacity-80 font-normal">via ${z.frontier_peer}⇄${z.adjacent_peer}</span>
+                  </div>
+                `;
+              }).join("");
+            }
+          }
+        } else {
+          cardInitNeighborsSec.classList.add("hidden");
+        }
+      }
+
+      // 6. Frontier Node Boundary Registration (Algorithm 3 Lines 18-19)
+      const cardFrontierSec = document.getElementById("cardFrontierSection");
+      const cardFrontierAcceptedFrom = document.getElementById("cardFrontierAcceptedFrom");
+      const cardFrontierRejectedFrom = document.getElementById("cardFrontierRejectedFrom");
+      const cardFrontierStatus = document.getElementById("cardFrontierStatus");
+
+      const isFrontier = !isInitiator && (
+        nodeData.is_boundary ||
+        (nodeData.dual_neighbor_alerts && nodeData.dual_neighbor_alerts.length > 0) ||
+        (nodeData.rejected_probes && nodeData.rejected_probes.length > 0)
+      );
+
+      if (cardFrontierSec) {
+        if (isFrontier) {
+          cardFrontierSec.classList.remove("hidden");
+          if (cardFrontierAcceptedFrom) {
+            cardFrontierAcceptedFrom.textContent = nodeData.accepted_probe_from || nodeData.accepted_probe?.from_initiator || `C${nodeData.winner_initiator_id || '?'}`;
+          }
+          if (cardFrontierRejectedFrom) {
+            const rejs = (nodeData.rejected_probe_from && nodeData.rejected_probe_from.length > 0)
+              ? nodeData.rejected_probe_from.join(", ")
+              : (nodeData.rejected_probes?.map(r => r.competing_initiator).join(", ") || "None");
+            cardFrontierRejectedFrom.textContent = rejs;
+          }
+          if (cardFrontierStatus) {
+            cardFrontierStatus.textContent = nodeData.boundary_status || "Dual NEIGHBOR alerts emitted";
+          }
+        } else {
+          cardFrontierSec.classList.add("hidden");
+        }
+      }
+
     } else {
       step4Sec.classList.add("hidden");
+      const cardInitNeighborsSec = document.getElementById("cardInitiatorNeighborsSection");
+      if (cardInitNeighborsSec) cardInitNeighborsSec.classList.add("hidden");
+      const cardFrontierSec = document.getElementById("cardFrontierSection");
+      if (cardFrontierSec) cardFrontierSec.classList.add("hidden");
     }
   }
 
@@ -1453,34 +1574,68 @@ function replaySlowMoNodeTrace(nodeData) {
         }
       });
 
-      bndAlerts.forEach(b => {
-        const parentId = acc?.sender_id || (isInit ? nid : null);
-        if (!parentId) return;
-        const parentNode = cy.getElementById(`node_${parentId}`);
-        const pPos = parentNode && parentNode.isNode() ? parentNode.renderedPosition() : centerPos;
+      // Algorithm 3 lines 18-19: Dual reverse alerts emitted in slow-mo
+      const dualAlerts = nodeData.dual_neighbor_alerts || [];
+      if (dualAlerts.length > 0) {
+        dualAlerts.forEach(da => {
+          const toId = da.to_initiator_id;
+          const targetNode = cy.getElementById(`node_${toId}`);
+          const tPos = targetNode && targetNode.isNode() ? targetNode.renderedPosition() : centerPos;
 
-        const curX = centerPos.x + (pPos.x - centerPos.x) * ease3;
-        const curY = centerPos.y + (pPos.y - centerPos.y) * ease3;
+          const curX = centerPos.x + (tPos.x - centerPos.x) * ease3;
+          const curY = centerPos.y + (tPos.y - centerPos.y) * ease3;
+          const isOwn = (da.target_type === "OWN_INITIATOR");
+          const pulseColor = isOwn ? "#f59e0b" : "#f43f5e";
 
-        ctx.beginPath();
-        ctx.arc(curX, curY, 6, 0, Math.PI * 2);
-        ctx.fillStyle = "#8b5cf6";
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = "#8b5cf6";
-        ctx.fill();
+          ctx.beginPath();
+          ctx.arc(curX, curY, 6.5, 0, Math.PI * 2);
+          ctx.fillStyle = pulseColor;
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = pulseColor;
+          ctx.fill();
 
-        if (p3Progress < 0.9) {
-          drawCanvasFloatingBadge(
-            ctx,
-            `⚡ Reverse Alert to ${b.to_initiator}`,
-            curX,
-            curY - 18,
-            "rgba(250, 245, 255, 0.98)",
-            "#6b21a8",
-            "#8b5cf6"
-          );
-        }
-      });
+          if (p3Progress < 0.88) {
+            drawCanvasFloatingBadge(
+              ctx,
+              isOwn ? `⚡ Alert ➜ Own ${da.to_initiator}` : `⚡ Alert ➜ Competing ${da.to_initiator}`,
+              curX,
+              curY - 18,
+              isOwn ? "rgba(254, 243, 199, 0.98)" : "rgba(255, 241, 242, 0.98)",
+              isOwn ? "#92400e" : "#9f1239",
+              pulseColor
+            );
+          }
+        });
+      } else {
+        bndAlerts.forEach(b => {
+          const parentId = acc?.sender_id || (isInit ? nid : null);
+          if (!parentId) return;
+          const parentNode = cy.getElementById(`node_${parentId}`);
+          const pPos = parentNode && parentNode.isNode() ? parentNode.renderedPosition() : centerPos;
+
+          const curX = centerPos.x + (pPos.x - centerPos.x) * ease3;
+          const curY = centerPos.y + (pPos.y - centerPos.y) * ease3;
+
+          ctx.beginPath();
+          ctx.arc(curX, curY, 6, 0, Math.PI * 2);
+          ctx.fillStyle = "#8b5cf6";
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = "#8b5cf6";
+          ctx.fill();
+
+          if (p3Progress < 0.9) {
+            drawCanvasFloatingBadge(
+              ctx,
+              `⚡ Reverse Alert to ${b.to_initiator}`,
+              curX,
+              curY - 18,
+              "rgba(250, 245, 255, 0.98)",
+              "#6b21a8",
+              "#8b5cf6"
+            );
+          }
+        });
+      }
     }
 
     if (progress < 1.0) {

@@ -490,6 +490,10 @@ class ExcelDataLoader:
         self.first_wins_transmissions: List[Dict[str, Any]] = []
         self.conflict_transmissions: List[Dict[str, Any]] = []
 
+        # Dual NEIGHBOR notifications per Algorithm 3 lines 18-19
+        wave1_dual_alerts: List[Dict[str, Any]] = []
+        self.node_dual_alerts: Dict[int, List[Dict[str, Any]]] = {i: [] for i in range(1, 51)}
+
         step4_logs: List[str] = [
             "[PROBE Flood] 10 Initiators initiate PROBE(initiator_id, TTL=3) waves.",
         ]
@@ -521,7 +525,7 @@ class ExcelDataLoader:
                 if is_first_win:
                     self.first_wins_transmissions.append(item)
                     step4_logs.append(
-                        f"[FIRST-WINS] C{target} accepted PROBE from C{init_id} at Hop 1. Status: ASSIGNED to Zone C{init_id}."
+                        f"[HOP 1 ACCEPT] C{target} adopted Zone C{init_id} via First-Wins."
                     )
                 else:
                     self.conflict_transmissions.append(item)
@@ -535,8 +539,41 @@ class ExcelDataLoader:
                         "competing_zone": f"زون C{init_id}",
                     })
                     curr_zone = self.node_vrf[target]["assigned_zone"]
+                    own_init = self.node_to_initiator[target]
+
+                    # Algorithm 3 lines 18-19: Dual NEIGHBOR alerts
+                    alert_own = {
+                        "frontier_node": target,
+                        "frontier_node_id": f"C{target}",
+                        "to_initiator": f"C{own_init}",
+                        "to_initiator_id": own_init,
+                        "competing_initiator": f"C{init_id}",
+                        "competing_initiator_id": init_id,
+                        "target_type": "OWN_INITIATOR",
+                        "sender_edge": f"e{min(target, own_init)}_{max(target, own_init)}",
+                        "alert_label": f"Alert ➜ Own C{own_init}",
+                    }
+                    alert_comp = {
+                        "frontier_node": target,
+                        "frontier_node_id": f"C{target}",
+                        "to_initiator": f"C{init_id}",
+                        "to_initiator_id": init_id,
+                        "own_initiator": f"C{own_init}",
+                        "own_initiator_id": own_init,
+                        "target_type": "COMPETING_INITIATOR",
+                        "sender_edge": item["edge_id"],
+                        "alert_label": f"Alert ➜ Competing C{init_id}",
+                    }
+                    wave1_dual_alerts.append(alert_own)
+                    wave1_dual_alerts.append(alert_comp)
+                    self.node_dual_alerts[target].append(alert_own)
+                    self.node_dual_alerts[target].append(alert_comp)
+
                     step4_logs.append(
-                        f"[CONFLICT/BOUNDARY] C{target} (already in {curr_zone}) received delayed PROBE from Zone C{init_id}. Packet dropped! Boundary recorded."
+                        f"[NEIGHBOR ALERT] Frontier node C{target} sent boundary notification to its Initiator C{own_init}."
+                    )
+                    step4_logs.append(
+                        f"[NEIGHBOR ALERT] Frontier node C{target} sent boundary notification to competing Initiator C{init_id}."
                     )
 
         # Wave 2 transmissions
@@ -570,7 +607,7 @@ class ExcelDataLoader:
                     if is_first_win:
                         self.first_wins_transmissions.append(item)
                         step4_logs.append(
-                            f"[FIRST-WINS] C{target} accepted PROBE from C{init_id} at Hop 2. Status: ASSIGNED to Zone C{init_id}."
+                            f"[HOP 2 ACCEPT] C{target} accepted PROBE from C{init_id} at Hop 2. Status: ASSIGNED to Zone C{init_id}."
                         )
                     else:
                         self.conflict_transmissions.append(item)
@@ -583,9 +620,36 @@ class ExcelDataLoader:
                             "arrival_wave": 2,
                             "competing_zone": f"زون C{init_id}",
                         })
-                        curr_zone = self.node_vrf[target]["assigned_zone"]
+                        own_init = self.node_to_initiator[target]
+                        alert_own = {
+                            "frontier_node": target,
+                            "frontier_node_id": f"C{target}",
+                            "to_initiator": f"C{own_init}",
+                            "to_initiator_id": own_init,
+                            "competing_initiator": f"C{init_id}",
+                            "competing_initiator_id": init_id,
+                            "target_type": "OWN_INITIATOR",
+                            "sender_edge": f"e{min(target, sender)}_{max(target, sender)}",
+                            "alert_label": f"Alert ➜ Own C{own_init}",
+                        }
+                        alert_comp = {
+                            "frontier_node": target,
+                            "frontier_node_id": f"C{target}",
+                            "to_initiator": f"C{init_id}",
+                            "to_initiator_id": init_id,
+                            "own_initiator": f"C{own_init}",
+                            "own_initiator_id": own_init,
+                            "target_type": "COMPETING_INITIATOR",
+                            "sender_edge": item["edge_id"],
+                            "alert_label": f"Alert ➜ Competing C{init_id}",
+                        }
+                        self.node_dual_alerts[target].append(alert_own)
+                        self.node_dual_alerts[target].append(alert_comp)
                         step4_logs.append(
-                            f"[CONFLICT/BOUNDARY] C{target} (already in {curr_zone}) received delayed PROBE from Zone C{init_id}. Packet dropped! Boundary recorded."
+                            f"[NEIGHBOR ALERT] Frontier node C{target} sent boundary notification to its Initiator C{own_init}."
+                        )
+                        step4_logs.append(
+                            f"[NEIGHBOR ALERT] Frontier node C{target} sent boundary notification to competing Initiator C{init_id}."
                         )
 
         # Wave 3 transmissions
@@ -622,10 +686,74 @@ class ExcelDataLoader:
                         "arrival_wave": 3,
                         "competing_zone": f"زون C{init_id}",
                     })
-                    curr_zone = self.node_vrf[target]["assigned_zone"]
+                    own_init = self.node_to_initiator[target]
+                    alert_own = {
+                        "frontier_node": target,
+                        "frontier_node_id": f"C{target}",
+                        "to_initiator": f"C{own_init}",
+                        "to_initiator_id": own_init,
+                        "competing_initiator": f"C{init_id}",
+                        "competing_initiator_id": init_id,
+                        "target_type": "OWN_INITIATOR",
+                        "sender_edge": f"e{min(target, sender)}_{max(target, sender)}",
+                        "alert_label": f"Alert ➜ Own C{own_init}",
+                    }
+                    alert_comp = {
+                        "frontier_node": target,
+                        "frontier_node_id": f"C{target}",
+                        "to_initiator": f"C{init_id}",
+                        "to_initiator_id": init_id,
+                        "own_initiator": f"C{own_init}",
+                        "own_initiator_id": own_init,
+                        "target_type": "COMPETING_INITIATOR",
+                        "sender_edge": item["edge_id"],
+                        "alert_label": f"Alert ➜ Competing C{init_id}",
+                    }
+                    self.node_dual_alerts[target].append(alert_own)
+                    self.node_dual_alerts[target].append(alert_comp)
                     step4_logs.append(
-                        f"[CONFLICT/BOUNDARY] C{target} (already in {curr_zone}) received delayed PROBE from Zone C{init_id}. Packet dropped! Boundary recorded."
+                        f"[NEIGHBOR ALERT] Frontier node C{target} sent boundary notification to its Initiator C{own_init}."
                     )
+                    step4_logs.append(
+                        f"[NEIGHBOR ALERT] Frontier node C{target} sent boundary notification to competing Initiator C{init_id}."
+                    )
+
+        # Aggregate discovered adjacent neighbor zones per Initiator (Algorithm 3 Lines 18-20)
+        self.initiator_neighbor_zones: Dict[int, List[Dict[str, Any]]] = {i: [] for i in self.initiators}
+        self.initiator_neighbor_zone_names: Dict[int, List[str]] = {i: [] for i in self.initiators}
+
+        for u, v in self.edges_list:
+            zone_u = self.node_vrf[u]["assigned_zone"]
+            zone_v = self.node_vrf[v]["assigned_zone"]
+            if zone_u != zone_v:
+                init_u = self.node_to_initiator[u]
+                init_v = self.node_to_initiator[v]
+                if zone_v not in self.initiator_neighbor_zone_names[init_u]:
+                    self.initiator_neighbor_zone_names[init_u].append(zone_v)
+                    self.initiator_neighbor_zones[init_u].append({
+                        "zone": zone_v,
+                        "zone_name": zone_v,
+                        "initiator": f"C{init_v}",
+                        "initiator_id": init_v,
+                        "color": self.node_vrf[init_v]["zone_color"],
+                        "frontier_peer": f"C{u}",
+                        "adjacent_peer": f"C{v}",
+                    })
+                if zone_u not in self.initiator_neighbor_zone_names[init_v]:
+                    self.initiator_neighbor_zone_names[init_v].append(zone_u)
+                    self.initiator_neighbor_zones[init_v].append({
+                        "zone": zone_u,
+                        "zone_name": zone_u,
+                        "initiator": f"C{init_u}",
+                        "initiator_id": init_u,
+                        "color": self.node_vrf[init_u]["zone_color"],
+                        "frontier_peer": f"C{v}",
+                        "adjacent_peer": f"C{u}",
+                    })
+
+        for i in self.initiators:
+            self.initiator_neighbor_zone_names[i].sort()
+            self.initiator_neighbor_zones[i].sort(key=lambda x: x["initiator_id"])
 
         # Reverse boundary alert notifications back to initiators (Algorithm 3 L17-L19)
         reverse_alerts: List[Dict[str, Any]] = []
@@ -647,12 +775,13 @@ class ExcelDataLoader:
 
         step4_logs.append("[Zone Formation Complete] 50 nodes successfully assigned to 10 physical zones.")
         step4_logs.append(f"[Boundary Interfaces] Identified {len(self.edges_list) - 61} inter-zone boundary bridges.")
-        step4_logs.append("[Algorithm 3 L17-L19] Reverse boundary neighbor alerts emitted to zone initiators.")
+        step4_logs.append("[Algorithm 3 L18-L19] Dual reverse boundary neighbor alerts emitted to both initiators.")
 
         self.step4_waves = {
             "wave1": wave1_list,
             "wave2": wave2_list,
             "wave3": wave3_list,
+            "wave1_dual_alerts": wave1_dual_alerts,
             "boundary_alerts": reverse_alerts,
         }
         self.step4_logs = step4_logs
@@ -898,12 +1027,18 @@ class ExcelDataLoader:
                     "first_wins_hop": n["hops_to_initiator"],
                     "first_wins_text": f"Probe arrived FIRST at Hop {n['hops_to_initiator']}",
                     "accepted_probe": self.node_accepted_probe.get(nid),
+                    "accepted_probe_from": f"C{init_id}",
                     "rejected_probes": self.node_rejected_probes.get(nid, []),
+                    "rejected_probe_from": [r["competing_initiator"] for r in self.node_rejected_probes.get(nid, [])],
                     "competing_probes_rejected": self.node_rejected_probes.get(nid, []),
                     "forwarded_to": self.node_forwarded_to.get(nid, []),
                     "boundary_notifications_emitted": self.node_boundary_notifications.get(nid, []),
+                    "dual_neighbor_alerts": self.node_dual_alerts.get(nid, []),
+                    "discovered_neighbor_zones": self.initiator_neighbor_zones.get(nid, []),
+                    "discovered_neighbor_zone_names": self.initiator_neighbor_zone_names.get(nid, []),
                     "is_boundary": is_bnd,
                     "boundary_neighbors": bnd_neighbors,
+                    "boundary_status": "Dual NEIGHBOR alerts emitted" if (is_bnd and len(self.node_dual_alerts.get(nid, [])) > 0) else ("Boundary Bridge" if is_bnd else "Internal Core Node"),
                     "status_tag": "⚡ ZONE FRONTIER / BOUNDARY" if is_bnd else "ASSIGNED",
                 })
 
@@ -923,6 +1058,11 @@ class ExcelDataLoader:
                     "member_ids": members,
                 }
 
+            initiator_neighbors_map = {
+                f"C{i}": [f"Zone C{z['initiator_id']}" for z in self.initiator_neighbor_zones[i]]
+                for i in self.initiators
+            }
+
             return {
                 "step": 4,
                 "title": "Zone PROBE Flooding & First-Wins Conflict Resolution",
@@ -933,6 +1073,8 @@ class ExcelDataLoader:
                 "edges": all_edges,
                 "initiators": [f"C{x}" for x in self.initiators],
                 "initiator_ids": self.initiators,
+                "initiator_neighbors": initiator_neighbors_map,
+                "initiator_neighbor_details": {f"C{i}": self.initiator_neighbor_zones[i] for i in self.initiators},
                 "zones": zones_dict,
                 "boundary_edges": boundary_edges,
                 "total_boundary_edges": len(boundary_edges),
