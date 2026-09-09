@@ -351,6 +351,97 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "packet_exchanges": packet_exchanges,
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 4:
+        # Step 4: VRF Score Comparison & Initiator Election
+        step4_nodes = []
+        initiators = [2, 4, 8]
+
+        # Evaluation details for each node (closed 1-hop ball minimum)
+        eval_details = {
+            1: {"min_id": 4, "neighbors": [2, 4]},
+            2: {"min_id": 2, "neighbors": [1, 3]},
+            3: {"min_id": 2, "neighbors": [2, 5, 6, 7]},
+            4: {"min_id": 4, "neighbors": [1, 5, 6, 7]},
+            5: {"min_id": 4, "neighbors": [3, 4, 6, 10]},
+            6: {"min_id": 8, "neighbors": [3, 4, 5, 8, 9]},
+            7: {"min_id": 4, "neighbors": [3, 4, 9]},
+            8: {"min_id": 8, "neighbors": [6, 9, 10]},
+            9: {"min_id": 8, "neighbors": [6, 7, 8, 10]},
+            10: {"min_id": 8, "neighbors": [5, 8, 9]},
+        }
+
+        for n in nodes:
+            nid = n["id"]
+            n_copy = dict(n)
+            self_score = STORYBOARD_10_VRF_SCORES[nid]
+            winner_id = eval_details[nid]["min_id"]
+            min_score = STORYBOARD_10_VRF_SCORES[winner_id]
+            is_init = (nid in initiators)
+
+            n_copy["vrf_score"] = self_score
+            n_copy["role"] = "INITIATOR" if is_init else "CLIENT"
+            n_copy["is_initiator"] = is_init
+            n_copy["status"] = "INITIATOR" if is_init else "CANDIDATE"
+            n_copy["winner_id"] = winner_id
+            n_copy["winner_label"] = f"C{winner_id}"
+            n_copy["min_score"] = min_score
+            n_copy["min_score_node"] = winner_id
+
+            if is_init:
+                n_copy["decision_banner"] = "🏆 Self-Elected Initiator (Holds minimum score in 1-hop ball)"
+            else:
+                n_copy["decision_banner"] = f"Candidate Member (Minimum held by C{winner_id} with σ={min_score:.4f})"
+
+            # Build neighbor scoreboard with winning minimum marked
+            neighbor_scoreboard = []
+            for nb_id in eval_details[nid]["neighbors"]:
+                nb_score = STORYBOARD_10_VRF_SCORES[nb_id]
+                neighbor_scoreboard.append({
+                    "neighbor_id": nb_id,
+                    "label": f"C{nb_id}",
+                    "vrf_score": nb_score,
+                    "is_min": (nb_id == winner_id),
+                })
+            n_copy["neighbor_scoreboard"] = neighbor_scoreboard
+            n_copy["neighbor_scores"] = {f"C{item['neighbor_id']}": item["vrf_score"] for item in neighbor_scoreboard}
+            n_copy["self_is_min"] = is_init
+            step4_nodes.append(n_copy)
+
+        terminal_logs = [
+            "[ELECTION] Evaluating 1-hop neighborhood minimums: m_p = min_{q in N_1(p) U {p}} (sigma_q, id_q)."
+        ]
+        for nid in range(1, 11):
+            s = STORYBOARD_10_VRF_SCORES[nid]
+            nbr_str = ", ".join(f"C{q}: {STORYBOARD_10_VRF_SCORES[q]:.4f}" for q in eval_details[nid]["neighbors"])
+            win = eval_details[nid]["min_id"]
+            if nid in initiators:
+                terminal_logs.append(
+                    f"Node C{nid} ({s:.4f}): Neighbors [{nbr_str}]. Min is C{win}. (🏆 INITIATOR)"
+                )
+            else:
+                terminal_logs.append(
+                    f"Node C{nid} ({s:.4f}): Neighbors [{nbr_str}]. Min is C{win}. (Candidate)"
+                )
+
+        terminal_logs.append("[RESULT] Initiator Election Complete: Exactly Nodes C2, C4, and C8 elected as Initiators.")
+
+        return {
+            "step": 4,
+            "title": "Step 4: VRF Score Comparison & Initiator Election",
+            "phase_badge": "Step 4: Initiator Election",
+            "description": "Each node evaluates the minimum VRF score in its closed 1-hop neighborhood. Nodes 2, 4, and 8 hold the minimum score in their respective 1-hop balls and elect themselves as Initiators.",
+            "formula": "m_p = \\min_{q \\in \\mathcal{N}_1(p) \\cup \\{p\\}} (\\sigma_q, id_q)",
+            "formula_desc": "If (sigma_p, id_p) == m_p, node p elects itself as an Initiator. Otherwise, it remains a Candidate Member.",
+            "nodes": step4_nodes,
+            "edges": edges,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -367,3 +458,4 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 f"[Protocol] Executing Step {step_number} on 10-node network."
             ]
         }
+

@@ -75,9 +75,9 @@
         <span>VRF Exchange</span>
       </div>
       <span class="text-slate-300">→</span>
-      <div id="stepNav4" class="step-item text-slate-400">
+      <div id="stepNav4" class="step-item cursor-pointer" title="Jump to Step 4">
         <span class="step-bubble">4</span>
-        <span>Zone Formation</span>
+        <span>Initiator Election</span>
       </div>
     </nav>
 
@@ -328,7 +328,7 @@
               </div>
             </div>
 
-            <!-- Step 3: Local VRF Score & 1-Hop Neighborhood Scoreboard -->
+            <!-- Step 3 & 4: Local VRF Score & 1-Hop Neighborhood Scoreboard / Election -->
             <div id="cardVrfSection" class="hidden pt-2 border-t border-slate-200">
               <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
                 <span class="flex items-center gap-1">
@@ -338,14 +338,18 @@
                 <span id="cardVrfScoreBadge" class="text-[10px] font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-300">&sigma;_self = 0.0000</span>
               </div>
 
+              <!-- Step 4 Election Decision Banner -->
+              <div id="cardElectionBanner" class="hidden mt-2 p-2 rounded-lg text-[10px] font-bold border transition-colors leading-snug">
+              </div>
+
               <!-- 1-Hop Neighborhood Scoreboard Table -->
               <div class="mt-2">
                 <div class="flex justify-between items-center text-[10px] text-slate-500 mb-1 px-0.5">
                   <span class="font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
                     <span>📋</span>
-                    <span>1-Hop Scoreboard:</span>
+                    <span id="cardScoreboardTitle">1-Hop Scoreboard:</span>
                   </span>
-                  <span class="text-[9px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">Received Scores</span>
+                  <span id="cardScoreboardSubtitle" class="text-[9px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">Received Scores</span>
                 </div>
                 <div class="overflow-hidden border border-slate-200 rounded-lg shadow-xs bg-white">
                   <table class="w-full text-[10px] font-mono border-collapse">
