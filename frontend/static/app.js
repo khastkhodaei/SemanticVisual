@@ -414,41 +414,54 @@ function setupClassFilterEvents() {
 
 // Check if a Cytoscape node holds the given class
 function isNodeHoldingClass(n, classId) {
-  const d = n.data();
+  const d = n.data ? n.data() : n;
+  if (!d) return false;
 
-  // 1. 10D Vector checks
-  const vec = d.vector_10d || d.vector || d.normalized_vector || (Array.isArray(d.weights) ? d.weights : null);
-  if (Array.isArray(vec)) {
-    if (classId >= 0 && classId < vec.length && Number(vec[classId]) > 0.001) return true;
-    if (classId >= 1 && classId <= vec.length && Number(vec[classId - 1]) > 0.001) return true;
+  let classNum;
+  if (typeof classId === "string") {
+    classNum = parseInt(classId.replace(/[^0-9]/g, ""), 10);
+  } else {
+    classNum = Number(classId);
   }
 
-  // 2. assigned_classes array checks
-  const assigned = d.assigned_classes;
-  if (Array.isArray(assigned)) {
-    if (assigned.includes(classId)) return true;
-    if (classId >= 1 && assigned.includes(classId - 1)) return true;
-    if (assigned.includes(classId + 1)) return true;
-  }
+  // Determine exact 0-indexed position (0..9) and class code ("C1".."C10")
+  const zeroIdx = classNum === 0 ? 0 : classNum - 1;
+  const targetClassNum = zeroIdx + 1;
+  const classCode = `C${targetClassNum}`;
 
-  // 3. class_distribution dictionary checks
-  const cdist = d.class_distribution;
-  if (cdist && typeof cdist === "object") {
-    if (cdist[classId] > 0 || cdist[String(classId)] > 0) return true;
-    if (classId >= 1 && (cdist[classId - 1] > 0 || cdist[String(classId - 1)] > 0)) return true;
-  }
-
-  // 4. distribution / data_distribution checks
+  // 1. Exact check on data_distribution / distribution (e.g. {"C1": 46, "C2": 17, "C3": 37})
   const dist = d.data_distribution || d.distribution;
   if (dist && typeof dist === "object") {
-    const code0 = `C${classId + 1}`;
-    const code1 = `C${classId}`;
-    if (dist[code0] > 0 || dist[code1] > 0) return true;
+    if (dist[classCode] !== undefined && Number(dist[classCode]) > 0) {
+      return true;
+    }
   }
 
-  // 5. dominant class checks
-  if (d.class_id === classId || d.class_id === classId + 1) return true;
-  if (d.dominant_class_id === classId || d.dominant_class_id === classId + 1) return true;
+  // 2. Exact check on 10D Vector (e.g. [0.46, 0.17, 0.37, 0.0, ...])
+  const vec = d.vector_10d || d.vector || d.normalized_vector || (Array.isArray(d.weights) ? d.weights : null);
+  if (Array.isArray(vec)) {
+    if (zeroIdx >= 0 && zeroIdx < vec.length && Number(vec[zeroIdx]) > 0.001) {
+      return true;
+    }
+  }
+
+  // 3. Exact check on assigned_classes array (e.g. [0, 1, 2])
+  const assigned = d.assigned_classes;
+  if (Array.isArray(assigned)) {
+    if (assigned.includes(zeroIdx)) {
+      return true;
+    }
+  }
+
+  // 4. Exact check on class_distribution dictionary (keys 0..9)
+  const cdist = d.class_distribution;
+  if (cdist && typeof cdist === "object") {
+    if ((cdist[zeroIdx] !== undefined && Number(cdist[zeroIdx]) > 0) ||
+        (cdist[String(zeroIdx)] !== undefined && Number(cdist[String(zeroIdx)]) > 0)) {
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -474,7 +487,14 @@ function highlightNodesByClass(classId, forceReapply = false) {
     }
   });
 
-  const sigColor = CIFAR10_SIGNATURE_COLORS[classId] || CIFAR10_SIGNATURE_COLORS[(classId - 1) % 10] || "#0284c7";
+  let classNum;
+  if (typeof classId === "string") {
+    classNum = parseInt(classId.replace(/[^0-9]/g, ""), 10);
+  } else {
+    classNum = Number(classId);
+  }
+  const zeroIdx = classNum === 0 ? 0 : classNum - 1;
+  const sigColor = CIFAR10_SIGNATURE_COLORS[zeroIdx] || CIFAR10_SIGNATURE_COLORS[zeroIdx % 10] || "#0284c7";
 
   // Find matching nodes holding this class
   const matchingNodes = [];
