@@ -374,33 +374,35 @@ const CIFAR10_SIGNATURE_COLORS = {
 };
 
 // Render Dataset Class Legend in Left Sidebar
-function renderDatasetClassLegend(classes) {
+function renderDatasetClasses(classes) {
   const container = document.getElementById("classList");
   if (!container) return;
   container.innerHTML = "";
 
-  classes.forEach(c => {
-    const item = document.createElement("div");
-    item.className = "class-chip class-item text-slate-700 cursor-pointer select-none transition-all";
-    item.setAttribute("data-class-id", c.class_id);
-    item.dataset.classId = c.class_id;
+  classes.forEach(cls => {
+    const nodeCount = cls.count !== undefined ? cls.count : (cls.clients ? cls.clients.length : 0);
+    const classId = cls.id !== undefined ? cls.id : (cls.class_id !== undefined ? cls.class_id + 1 : 0);
+    const className = cls.name || cls.english_name || `Class ${classId}`;
 
-    const displayCode = c.code || `C${c.class_id + 1}`;
-    item.innerHTML = `
-      <div class="flex items-center space-x-1.5">
-        <span class="text-sm">${c.icon}</span>
-        <span class="font-bold text-[11px] text-slate-800">${c.english_name || c.name}</span>
-        <span class="text-[9px] text-slate-400 font-mono">(${displayCode})</span>
-      </div>
-      <div class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-blue-700 font-semibold">
-        ${c.count} nodes
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = `
+      <div class="class-item flex items-center justify-between p-2 rounded hover:bg-slate-100 cursor-pointer border border-transparent transition" data-class-id="${classId}">
+        <div class="flex items-center space-x-2">
+          <span class="font-bold text-slate-700 text-xs">${className}</span>
+          <span class="text-[10px] text-slate-400 font-mono">(C${classId})</span>
+        </div>
+        <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">${nodeCount} nodes</span>
       </div>
     `;
-
-    container.appendChild(item);
+    const itemEl = wrapper.firstElementChild;
+    container.appendChild(itemEl);
   });
 
   setupClassFilterEvents();
+}
+
+function renderDatasetClassLegend(classes) {
+  renderDatasetClasses(classes);
 }
 
 // 1. Event Listener for Class Items
@@ -612,6 +614,10 @@ async function loadStep(stepNumber) {
     updateUIHeaders(data);
     updateStepper(stepNumber);
     updateNavButtons(stepNumber);
+
+    if (data.classes || data.dataset_classes) {
+      renderDatasetClasses(data.classes || data.dataset_classes);
+    }
 
     if (stepNumber === 1) {
       renderStep1(data);
@@ -1211,6 +1217,7 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   nodes.forEach(n => {
     const isInit = options.showInitiators && n.is_initiator;
     const domName = n.dominant_class_name || n.class_title || "CIFAR-10";
+    const domIcon = n.dominant_class_icon || n.class_icon || "";
     const label = isInit ? `👑 C${n.id}` : `C${n.id}`;
 
     let bgColor = "#2563eb";
@@ -1412,7 +1419,7 @@ function showNodeModal(nodeData) {
     const domName = nodeData.dominant_class_name || nodeData.class_title || "CIFAR-10";
     const domIcon = nodeData.dominant_class_icon || nodeData.class_icon || "";
     const domCode = nodeData.dominant_class || `C${nodeData.class_id}`;
-    cardClass.textContent = `${domName} ${domIcon} (${domCode})`;
+    cardClass.textContent = domIcon ? `${domName} ${domIcon} (${domCode})` : `${domName} (${domCode})`;
   }
 
   // Local Data Distribution breakdown table with percentages
