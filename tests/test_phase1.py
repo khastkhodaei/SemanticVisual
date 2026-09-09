@@ -197,3 +197,75 @@ def test_benchmark_homogeneous_models_and_non_iid_partitions():
         assert data["metadata"]["model_architecture"] == expected_arch
         assert all(n["model_architecture"] == expected_arch for n in data["nodes"])
 
+
+def test_step1_storyboard_topology_and_data_distribution():
+    """Verify Step 1: 50-node overlay-free physical ad-hoc network topology (Figure 3a).
+
+    1. Exactly 50 nodes (C_1 to C_50) generated with status='NOT_ASSIGNED', role='CLIENT', zone_id=None.
+    2. Physical graph is connected (single connected component) with node degrees between 3 and 6.
+    3. Identical classes (e.g. C1, C2, C20, C21, C35 with Cat 🐱) have cosine similarity >= 0.80.
+    4. Disjoint classes have low cosine similarity (< 0.20).
+    5. API endpoint initializes 50-node storyboard session cleanly.
+    """
+    from collections import deque
+
+    engine = SemanticDFLEngine(seed=2026)
+    topo = engine.generate_topology(N=50)
+
+    nodes = topo["nodes"]
+    edges = topo["edges"]
+    adj = topo["adjacency_list"]
+
+    # 1. Exactly 50 nodes, all NOT_ASSIGNED, role CLIENT, zone_id None
+    assert len(nodes) == 50, f"Expected 50 nodes, got {len(nodes)}"
+    for node in nodes:
+        assert node["status"] == "NOT_ASSIGNED"
+        assert node["role"] == "CLIENT"
+        assert node["zone_id"] is None
+        assert len(node["weights"]) == 50
+        assert 3 <= node["degree"] <= 6, f"Node {node['id']} degree {node['degree']} outside [3, 6]"
+        assert "class_name" in node
+        assert "class_icon" in node
+        assert node["label"].startswith(f"C{node['id']} ")
+
+    # 2. Verify graph is connected (single connected component, no isolated singletons)
+    visited = set()
+    queue = deque([nodes[0]["id"]])
+    visited.add(nodes[0]["id"])
+    while queue:
+        curr = queue.popleft()
+        for neighbor in adj[curr]:
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+
+    assert len(visited) == 50, f"Graph is disconnected: reached {len(visited)}/50 nodes"
+    assert len(edges) > 0
+
+    # 3. Verify cosine similarities: identical class pairs >= 0.80, disjoint < 0.20
+    node_map = {n["id"]: n for n in nodes}
+    cat_nodes = [n["id"] for n in nodes if n["class_id"] == 0]
+    assert set(cat_nodes) == {1, 2, 20, 21, 22, 35}, f"Unexpected Cat nodes: {cat_nodes}"
+
+    # Pairwise Cat nodes similarity (including C1 and C20 which are physically separated)
+    sim_c1_c20 = engine.cosine_similarity(node_map[1]["weights"], node_map[20]["weights"])
+    sim_c1_c2 = engine.cosine_similarity(node_map[1]["weights"], node_map[2]["weights"])
+    sim_c21_c35 = engine.cosine_similarity(node_map[21]["weights"], node_map[35]["weights"])
+
+    assert sim_c1_c20 >= 0.80, f"C1 and C20 similarity {sim_c1_c20} < 0.80"
+    assert sim_c1_c2 >= 0.80, f"C1 and C2 similarity {sim_c1_c2} < 0.80"
+    assert sim_c21_c35 >= 0.80, f"C21 and C35 similarity {sim_c21_c35} < 0.80"
+
+    # Disjoint classes (Cat vs Car, Cat vs Dog, etc.)
+    sim_c1_c3 = engine.cosine_similarity(node_map[1]["weights"], node_map[3]["weights"])  # Cat vs Car
+    assert sim_c1_c3 < 0.20, f"C1 (Cat) and C3 (Car) similarity {sim_c1_c3} >= 0.20"
+
+    # 4. API endpoint verification for default 50-node initialization
+    client = TestClient(app)
+    resp = client.post("/api/v1/init", json={"num_nodes": 50})
+    assert resp.status_code == 200
+    api_data = resp.json()
+    assert len(api_data["nodes"]) == 50
+    assert all(n["status"] == "NOT_ASSIGNED" for n in api_data["nodes"])
+
+

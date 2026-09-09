@@ -22,8 +22,8 @@ from backend.engine import SemanticDFLEngine
 
 
 class SimulationInitRequest(BaseModel):
-    benchmark: str = Field(default="FMNIST (CNN)", description="Homogeneous model family and Non-IID benchmark task")
-    num_nodes: int = Field(default=30, ge=2, le=500, description="Number of participating nodes")
+    benchmark: str = Field(default="Non-IID 10-Class Storyboard", description="Homogeneous model family and Non-IID benchmark task")
+    num_nodes: int = Field(default=50, ge=2, le=500, description="Number of participating nodes")
     d_limit: float = Field(default=0.35, gt=0.0, le=1.0, description="Physical Euclidean distance communication cutoff / 900")
     r_hops: int = Field(default=2, ge=1, le=10, description="R-hop neighborhood exploration limit")
     max_zone_size: int = Field(default=10, ge=2, le=100, description="Maximum number of nodes in a semantic zone")

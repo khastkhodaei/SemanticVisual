@@ -40,6 +40,104 @@ BENCHMARK_CONFIGS = {
 DEFAULT_BENCHMARK = "FMNIST (CNN)"
 SEMANTIC_CLASSES = BENCHMARK_CONFIGS[DEFAULT_BENCHMARK]["categories"]
 
+DATASET_CLASSES = {
+    0: {"name": "Cat", "icon": "🐱", "slice": (0, 5)},
+    1: {"name": "Car", "icon": "🚗", "slice": (5, 10)},
+    2: {"name": "Airplane", "icon": "✈️", "slice": (10, 15)},
+    3: {"name": "Dog", "icon": "🐶", "slice": (15, 20)},
+    4: {"name": "Frog", "icon": "🐸", "slice": (20, 25)},
+    5: {"name": "Horse", "icon": "🐴", "slice": (25, 30)},
+    6: {"name": "Ship", "icon": "🚢", "slice": (30, 35)},
+    7: {"name": "Truck", "icon": "🚚", "slice": (35, 40)},
+    8: {"name": "Bird", "icon": "🐦", "slice": (40, 45)},
+    9: {"name": "Deer", "icon": "🦌", "slice": (45, 50)},
+}
+
+# Deterministic class mapping for 50 storyboard nodes (1-indexed: 1..50)
+NODE_CLASSES_50 = {
+    1: 0, 2: 0, 3: 1, 4: 1, 5: 2,
+    6: 2, 7: 3, 8: 3, 9: 4, 10: 4,
+    11: 5, 12: 5, 13: 6, 14: 6, 15: 7,
+    16: 8, 17: 8, 18: 9, 19: 9, 20: 0,
+    21: 0, 22: 0, 23: 1, 24: 1, 25: 3,
+    26: 2, 27: 2, 28: 5, 29: 5, 30: 8,
+    31: 6, 32: 6, 33: 7, 34: 7, 35: 0,
+    36: 3, 37: 3, 38: 4, 39: 4, 40: 9,
+    41: 1, 42: 1, 43: 8, 44: 8, 45: 6,
+    46: 9, 47: 9, 48: 7, 49: 7, 50: 5,
+}
+
+# Predefined deterministic VRF scores guaranteeing designated leaders in R=2
+DETERMINISTIC_VRF_SCORES_50 = {
+    1: 0.42, 2: 0.03, 3: 0.55, 4: 0.71, 5: 0.62,
+    6: 0.48, 7: 0.04, 8: 0.65, 9: 0.78, 10: 0.82,
+    11: 0.51, 12: 0.69, 13: 0.05, 14: 0.73, 15: 0.86,
+    16: 0.58, 17: 0.04, 18: 0.67, 19: 0.79, 20: 0.84,
+    21: 0.45, 22: 0.06, 23: 0.63, 24: 0.74, 25: 0.81,
+    26: 0.52, 27: 0.68, 28: 0.05, 29: 0.76, 30: 0.83,
+    31: 0.49, 32: 0.07, 33: 0.64, 34: 0.75, 35: 0.88,
+    36: 0.53, 37: 0.04, 38: 0.70, 39: 0.82, 40: 0.85,
+    41: 0.57, 42: 0.06, 43: 0.69, 44: 0.77, 45: 0.89,
+    46: 0.54, 47: 0.05, 48: 0.66, 49: 0.78, 50: 0.87,
+}
+
+# 10 spatial regions on 2D plane
+REGION_CENTERS_50 = [
+    (140.0, 140.0),  # Region 1 (Nodes 1-5)
+    (380.0, 130.0),  # Region 2 (Nodes 6-10)
+    (640.0, 130.0),  # Region 3 (Nodes 11-15)
+    (880.0, 150.0),  # Region 4 (Nodes 16-20)
+    (200.0, 310.0),  # Region 5 (Nodes 21-25)
+    (480.0, 300.0),  # Region 6 (Nodes 26-30)
+    (750.0, 310.0),  # Region 7 (Nodes 31-35)
+    (170.0, 480.0),  # Region 8 (Nodes 36-40)
+    (470.0, 480.0),  # Region 9 (Nodes 41-45)
+    (800.0, 480.0),  # Region 10 (Nodes 46-50)
+]
+
+LOCAL_OFFSETS_50 = [
+    (-38.0, -25.0),
+    (38.0, -22.0),
+    (-35.0, 32.0),
+    (35.0, 30.0),
+    (0.0, -3.0),
+]
+
+INTER_REGION_BRIDGES_50 = [
+    # G1 <-> G2
+    (4, 9), (5, 8),
+    # G2 <-> G3
+    (9, 14), (10, 15),
+    # G3 <-> G4
+    (14, 19), (15, 20),
+    # G1 <-> G5
+    (3, 23), (5, 25),
+    # G2 <-> G5
+    (8, 24),
+    # G2 <-> G6
+    (10, 26),
+    # G3 <-> G6
+    (11, 26),
+    # G3 <-> G7
+    (14, 34),
+    # G4 <-> G7
+    (19, 34), (20, 35),
+    # G5 <-> G6
+    (24, 29), (25, 26),
+    # G6 <-> G7
+    (29, 31), (30, 35),
+    # G5 <-> G8
+    (23, 38), (25, 40),
+    # G6 <-> G9
+    (27, 41), (29, 44),
+    # G7 <-> G10
+    (34, 49), (35, 50),
+    # G8 <-> G9
+    (39, 44), (40, 45),
+    # G9 <-> G10
+    (43, 48), (45, 50),
+]
+
 BOOST_SLICES = {
     0: (0, 18),
     1: (16, 34),
@@ -53,22 +151,134 @@ class SemanticDFLEngine:
     def __init__(self, seed: Optional[int] = None):
         self.rng = np.random.default_rng(seed)
 
-    def generate_node_weights(self, category: int) -> List[float]:
+    def generate_node_weights(self, category: int, num_categories: int = 10) -> List[float]:
         """Generate a 50-dimensional parameter vector with category-specific slice boost.
 
-        - Baseline noise: N(0.05, 0.02) across all 50 dimensions.
-        - Category boost: N(0.80, 0.12) injected into slice [start, end).
+        - Baseline noise: N(0.0, 0.02) across all 50 dimensions.
+        - Category boost: N(0.85, 0.05) injected into slice [start, end).
         """
         dim = 50
-        # Baseline noise: N(0.05, 0.02)
-        weights = self.rng.normal(loc=0.05, scale=0.02, size=dim)
-
-        # Slice-correlated parameter boost: N(0.80, 0.12)
-        start, end = BOOST_SLICES[category]
-        boost = self.rng.normal(loc=0.80, scale=0.12, size=end - start)
-        weights[start:end] = boost
+        if num_categories == 10 and category in DATASET_CLASSES:
+            # Storyboard Non-IID CIFAR-10 class slice
+            weights = self.rng.normal(loc=0.0, scale=0.02, size=dim)
+            start, end = DATASET_CLASSES[category]["slice"]
+            boost = self.rng.normal(loc=0.85, scale=0.05, size=end - start)
+            boost = np.clip(boost, 0.75, 0.95)
+            weights[start:end] = boost
+        elif category in BOOST_SLICES:
+            # 3-Category benchmark backward compatibility
+            weights = self.rng.normal(loc=0.05, scale=0.02, size=dim)
+            start, end = BOOST_SLICES[category]
+            boost = self.rng.normal(loc=0.80, scale=0.12, size=end - start)
+            weights[start:end] = boost
+        else:
+            cat_id = category % 10
+            weights = self.rng.normal(loc=0.0, scale=0.02, size=dim)
+            start, end = DATASET_CLASSES[cat_id]["slice"]
+            boost = self.rng.normal(loc=0.85, scale=0.05, size=end - start)
+            boost = np.clip(boost, 0.75, 0.95)
+            weights[start:end] = boost
 
         return [round(float(w), 6) for w in weights]
+
+    def generate_storyboard_topology(
+        self,
+        benchmark: str = "Non-IID 10-Class Storyboard",
+    ) -> Dict[str, Any]:
+        """Generate the exact deterministic 50-node overlay-free physical ad-hoc network.
+
+        Matches Figure 3(a) of the ACM 2026 paper:
+        - 50 nodes (C_1 to C_50) across 10 spatial regions.
+        - Undirected ad-hoc communication links with degree 3 to 6.
+        - Pure overlay-free initial state: status='NOT_ASSIGNED', role='CLIENT', zone_id=None.
+        """
+        coords_map: Dict[int, Tuple[float, float]] = {}
+        for g_idx, (cx, cy) in enumerate(REGION_CENTERS_50):
+            start_id = g_idx * 5 + 1
+            for off_idx, (ox, oy) in enumerate(LOCAL_OFFSETS_50):
+                nid = start_id + off_idx
+                coords_map[nid] = (round(cx + ox, 2), round(cy + oy, 2))
+
+        # Intra-region edges
+        intra_edges: List[Tuple[int, int]] = []
+        for g in range(10):
+            base = g * 5 + 1
+            n1, n2, n3, n4, n5 = base, base + 1, base + 2, base + 3, base + 4
+            intra_edges.extend([
+                (n2, n1), (n2, n3), (n2, n4), (n2, n5),
+                (n1, n3), (n1, n4),
+                (n3, n5), (n4, n5),
+            ])
+
+        all_edge_pairs = set()
+        edges_list: List[Dict[str, Any]] = []
+        adjacency: Dict[int, List[int]] = {i: [] for i in range(1, 51)}
+
+        for u, v in intra_edges + INTER_REGION_BRIDGES_50:
+            pair = (min(u, v), max(u, v))
+            if pair not in all_edge_pairs:
+                all_edge_pairs.add(pair)
+                adjacency[u].append(v)
+                adjacency[v].append(u)
+                c_u = coords_map[u]
+                c_v = coords_map[v]
+                dist = float(np.hypot(c_u[0] - c_v[0], c_u[1] - c_v[1]))
+                edges_list.append({
+                    "source": pair[0],
+                    "target": pair[1],
+                    "distance": round(dist, 4),
+                    "distance_norm": round(dist / 900.0, 6),
+                })
+
+        for nid in adjacency:
+            adjacency[nid].sort()
+
+        # Build 50 deterministic node objects
+        nodes: List[Dict[str, Any]] = []
+        for nid in range(1, 51):
+            class_id = NODE_CLASSES_50[nid]
+            cls_info = DATASET_CLASSES[class_id]
+            weights = self.generate_node_weights(class_id, num_categories=10)
+            vrf_score = DETERMINISTIC_VRF_SCORES_50.get(nid, float(self.rng.uniform(0.35, 0.95)))
+
+            nodes.append({
+                "id": nid,
+                "label": f"C{nid} {cls_info['icon']}",
+                "role": "CLIENT",
+                "status": "NOT_ASSIGNED",
+                "state": "NOT_ASSIGNED",
+                "zone_id": None,
+                "class_id": class_id,
+                "class_name": cls_info["name"],
+                "class_icon": cls_info["icon"],
+                "category": class_id,
+                "category_name": f"{cls_info['name']} {cls_info['icon']}",
+                "benchmark": benchmark,
+                "model_architecture": "Homogeneous Model (M=50)",
+                "weights": weights,
+                "vrf_score": round(vrf_score, 6),
+                "coords": {
+                    "x": coords_map[nid][0],
+                    "y": coords_map[nid][1],
+                },
+                "alive": True,
+                "degree": len(adjacency[nid]),
+            })
+
+        return {
+            "nodes": nodes,
+            "edges": edges_list,
+            "adjacency_list": adjacency,
+            "metadata": {
+                "num_nodes": 50,
+                "num_edges": len(edges_list),
+                "d_limit": 0.35,
+                "avg_degree": round(float(2 * len(edges_list) / 50), 2),
+                "benchmark": benchmark,
+                "model_architecture": "Homogeneous Model (M=50)",
+                "classes": DATASET_CLASSES,
+            },
+        }
 
     def generate_topology(
         self,
@@ -92,6 +302,9 @@ class SemanticDFLEngine:
             raise ValueError("Number of nodes N must be greater than 0.")
         if D_limit <= 0.0:
             raise ValueError("D_limit must be strictly positive.")
+
+        if N == 50:
+            return self.generate_storyboard_topology(benchmark=benchmark)
 
         bench_cfg = BENCHMARK_CONFIGS.get(benchmark, BENCHMARK_CONFIGS[DEFAULT_BENCHMARK])
         model_family = bench_cfg["model_family"]
@@ -194,6 +407,7 @@ class SemanticDFLEngine:
                 "weights": weights,
                 "vrf_score": round(vrf_score, 6),
                 "role": "CLIENT",
+                "status": "NOT_ASSIGNED",
                 "state": "NOT_ASSIGNED",
                 "zone_id": None,
                 "alive": True,

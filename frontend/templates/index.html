@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SemanticDFL Protocol Simulator | ACM 2026</title>
+  <title>SemanticDFL Protocol Simulator | Step 1: Physical Topology</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -42,371 +42,197 @@
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="min-h-screen text-slate-100 flex flex-col">
+<body class="min-h-screen text-slate-100 flex flex-col bg-[#090d16]">
 
-  <!-- Navigation Header -->
+  <!-- Top App Navigation Header -->
   <header class="glass-panel border-b border-cyan-500/20 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
     <div class="flex items-center space-x-3">
-      <div class="w-3 h-3 rounded-full bg-cyan-400 pulse-cyan"></div>
+      <div class="w-3.5 h-3.5 rounded-full bg-cyan-400 pulse-cyan"></div>
       <div>
-        <h1 class="font-bold text-lg tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-emerald-400 to-purple-400">
-          SEMANTIC-DFL PROTOCOL SIMULATOR
+        <h1 class="font-extrabold text-base tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-400">
+          SEMANTIC-DFL STORYBOARD SIMULATOR
         </h1>
-        <p class="text-xs text-slate-400 font-mono">ACM 2026 Reference Implementation | Decentralized Semantic Overlay & Personalized FL</p>
+        <p class="text-[11px] text-slate-400 font-mono">ACM 2026 Reference Implementation • Decentralized Semantic Overlay & Federated Learning</p>
       </div>
     </div>
 
-    <!-- Active Session & Phase Indicator -->
-    <div class="flex items-center space-x-4">
-      <div id="sessionBadge" class="hidden text-xs font-mono bg-slate-800/80 px-3 py-1.5 rounded border border-cyan-500/30 text-cyan-300">
-        SESSION: <span id="sessionVal" class="font-semibold text-slate-100">None</span>
+    <!-- Active Status Badges -->
+    <div class="flex items-center space-x-3">
+      <div class="text-xs font-mono bg-slate-900/90 px-3 py-1.5 rounded-md border border-cyan-500/30 text-cyan-300 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span class="text-slate-400">SESSION:</span>
+        <span id="sessionVal" class="font-bold text-slate-200">Initializing...</span>
       </div>
-      <div id="phaseBadge" class="text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded">
-        PHASE 0: IDLE
+      <div class="text-xs font-bold uppercase tracking-wider bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-3 py-1.5 rounded-md">
+        STEP 1: PHYSICAL AD-HOC MESH
       </div>
     </div>
   </header>
 
-  <!-- Main Content Grid -->
-  <main class="flex-1 grid grid-cols-12 gap-4 p-4">
-
-    <!-- Left Controls & Stepper Sidebar (3 cols) -->
-    <aside class="col-span-12 lg:col-span-3 space-y-4">
-      
-      <!-- Simulation Controls Panel -->
-      <div class="glass-panel p-4 rounded-lg space-y-4">
-        <h2 class="text-sm font-bold text-cyan-400 uppercase tracking-wider flex items-center">
-          <span class="mr-2">⚡</span> Protocol Parameters
-        </h2>
-
-        <div class="space-y-3 text-xs">
-          <!-- Benchmark Task Selector -->
-          <div>
-            <div class="flex justify-between items-center mb-1">
-              <span class="text-slate-300 font-mono text-[11px] flex items-center">
-                Benchmark Task:
-                <span class="has-tooltip ml-1.5" tabindex="0">
-                  <span class="info-badge">i</span>
-                  <span class="tooltip-content">
-                    <span class="tooltip-title">Benchmark Task</span>
-                    Homogeneous model architecture family shared by all peers with Non-IID label skew across clusters (ACM 2026 Sec 5.1).
-                  </span>
-                </span>
-              </span>
-            </div>
-            <select id="param_benchmark" class="w-full bg-slate-900 border border-cyan-500/30 text-cyan-300 rounded px-2 py-1 text-xs font-mono focus:border-cyan-400 focus:outline-none">
-              <option value="FMNIST (CNN)">FMNIST (CNN)</option>
-              <option value="Tiny ImageNet (ResNet-18)">Tiny ImageNet (ResNet-18)</option>
-              <option value="Google Speech (ResNet-18)">Google Speech (ResNet-18)</option>
-            </select>
+  <!-- Story HUD Banner (Heads-Up Display) -->
+  <div class="px-6 pt-4 pb-2">
+    <div class="glass-panel-glow rounded-xl p-4 border border-cyan-500/30 bg-gradient-to-r from-slate-900/90 via-slate-900/80 to-[#0c1427]/90 shadow-xl">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div class="space-y-1 max-w-4xl">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 text-[10px] font-bold font-mono tracking-wider rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+              STEP 1 / FIGURE 3(a)
+            </span>
+            <h2 class="text-base font-bold text-cyan-300">
+              Step 1: Physical Ad-Hoc Network Topology & Non-IID Data Distribution
+            </h2>
           </div>
-
-          <!-- Peers N -->
-          <div>
-            <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300 flex items-center">
-                Nodes (N):
-                <span class="has-tooltip ml-1.5" tabindex="0">
-                  <span class="info-badge">i</span>
-                  <span class="tooltip-content">
-                    <span class="tooltip-title">Peers (N)</span>
-                    Total number of participating decentralized edge clients (10 &le; N &le; 80).
-                  </span>
-                </span>
-              </span>
-              <span id="val_n" class="text-cyan-400 font-bold">30</span>
-            </div>
-            <input id="param_n" type="range" min="15" max="90" value="30" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
-          </div>
-
-          <!-- Radius D_limit -->
-          <div>
-            <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300 flex items-center">
-                Comm Radius (D_limit):
-                <span class="has-tooltip ml-1.5" tabindex="0">
-                  <span class="info-badge">i</span>
-                  <span class="tooltip-content">
-                    <span class="tooltip-title">Connectivity (D_limit)</span>
-                    Maximum physical Euclidean distance threshold for ad-hoc wireless/P2P link establishment.
-                  </span>
-                </span>
-              </span>
-              <span id="val_dlimit" class="text-cyan-400 font-bold">0.35</span>
-            </div>
-            <input id="param_dlimit" type="range" min="0.20" max="0.55" step="0.01" value="0.35" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
-          </div>
-
-          <!-- R-Hops -->
-          <div>
-            <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300 flex items-center">
-                Probing Radius (R-Hops):
-                <span class="has-tooltip ml-1.5" tabindex="0">
-                  <span class="info-badge">i</span>
-                  <span class="tooltip-content">
-                    <span class="tooltip-title">Radius (R hops)</span>
-                    Time-To-Live (TTL) search boundary for decentralized VRF leader election and zone scoping.
-                  </span>
-                </span>
-              </span>
-              <span id="val_rhops" class="text-cyan-400 font-bold">2</span>
-            </div>
-            <input id="param_rhops" type="range" min="1" max="4" value="2" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
-          </div>
-
-          <!-- Max Zone Size S_Z -->
-          <div>
-            <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300 flex items-center">
-                Max Zone Cap (S_Z):
-                <span class="has-tooltip ml-1.5" tabindex="0">
-                  <span class="info-badge">i</span>
-                  <span class="tooltip-content">
-                    <span class="tooltip-title">Max Zone Size (S_Z)</span>
-                    Maximum peer capacity per zone; exceeding this triggers deterministic zone splitting.
-                  </span>
-                </span>
-              </span>
-              <span id="val_sz" class="text-cyan-400 font-bold">8</span>
-            </div>
-            <input id="param_sz" type="range" min="4" max="16" value="8" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
-          </div>
-
-          <!-- Quantile q -->
-          <div>
-            <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300 flex items-center">
-                Quantile Target (q):
-                <span class="has-tooltip ml-1.5" tabindex="0">
-                  <span class="info-badge">i</span>
-                  <span class="tooltip-content">
-                    <span class="tooltip-title">Sparsity Quantile (q)</span>
-                    Quantile of local P_min values selected during gossip consensus to establish the uniform global P.
-                  </span>
-                </span>
-              </span>
-              <span id="val_q" class="text-cyan-400 font-bold">0.20</span>
-            </div>
-            <input id="param_q" type="range" min="0.05" max="0.50" step="0.05" value="0.20" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
-          </div>
-
-          <!-- Sparsity Target theta -->
-          <div>
-            <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300 flex items-center">
-                Sparsity Target (θ):
-                <span class="has-tooltip ml-1.5" tabindex="0">
-                  <span class="info-badge">i</span>
-                  <span class="tooltip-content">
-                    <span class="tooltip-title">Target Cosine (&theta;)</span>
-                    Directional cosine threshold used in binary search to prune weights into sparse signatures.
-                  </span>
-                </span>
-              </span>
-              <span id="val_theta" class="text-cyan-400 font-bold">0.70</span>
-            </div>
-            <input id="param_theta" type="range" min="0.50" max="0.90" step="0.05" value="0.70" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
-          </div>
-
-          <!-- Softmax Temperature kappa -->
-          <div>
-            <div class="flex justify-between font-mono mb-1">
-              <span class="text-slate-300 flex items-center">
-                Softmax Temp (κ):
-                <span class="has-tooltip ml-1.5" tabindex="0">
-                  <span class="info-badge">i</span>
-                  <span class="tooltip-content">
-                    <span class="tooltip-title">Softmax Temperature (&kappa;)</span>
-                    Temperature parameter controlling the sharp vs. smooth exponential weighting of pulled Top-K neighbor models.
-                  </span>
-                </span>
-              </span>
-              <span id="val_kappa" class="text-cyan-400 font-bold">0.50</span>
-            </div>
-            <input id="param_kappa" type="range" min="0.10" max="2.00" step="0.10" value="0.50" class="w-full h-1.5 bg-slate-700 rounded cursor-pointer">
-          </div>
+          <p class="text-xs text-slate-300 leading-relaxed font-sans">
+            50 decentralized clients in an ad-hoc mesh. Each client holds local data from 1 dataset class. Notice that some nodes with identical classes (e.g., C1, C2, C20, C21, C35 with 🐱) are separated across the physical network.
+          </p>
         </div>
 
-
-        <!-- Action Buttons -->
-        <div class="pt-2 space-y-2">
-          <button id="btnInit" class="w-full py-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white text-xs font-bold rounded shadow-lg transition-all duration-200">
-            [1] Bootstrap Simulation
-          </button>
-          
-          <div class="grid grid-cols-2 gap-2">
-            <button id="btnStep" disabled class="py-2 bg-emerald-600/80 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-bold rounded transition-all">
-              Next Step ▶️
-            </button>
-            <button id="btnAuto" disabled class="py-2 bg-purple-600/80 hover:bg-purple-500 disabled:opacity-40 text-white text-xs font-bold rounded transition-all">
-              Auto-Play 🔄
-            </button>
+        <!-- Quick Summary Stats -->
+        <div class="flex flex-wrap items-center gap-2 text-xs font-mono">
+          <div class="bg-slate-950/70 border border-slate-800 px-3 py-1.5 rounded-lg text-center">
+            <div class="text-[10px] text-slate-400">TOTAL PEERS</div>
+            <div id="statNodes" class="text-sm font-bold text-cyan-400">50</div>
           </div>
-
-          <button id="btnReset" class="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono rounded border border-slate-700">
-            Reset Simulator
-          </button>
+          <div class="bg-slate-950/70 border border-slate-800 px-3 py-1.5 rounded-lg text-center">
+            <div class="text-[10px] text-slate-400">CLASSES</div>
+            <div class="text-sm font-bold text-emerald-400">10 Non-IID</div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 px-3 py-1.5 rounded-lg text-center">
+            <div class="text-[10px] text-slate-400">PHYSICAL DEGREE</div>
+            <div id="statDegree" class="text-sm font-bold text-amber-400">3 - 6 (avg 4.4)</div>
+          </div>
+          <div class="bg-slate-950/70 border border-slate-800 px-3 py-1.5 rounded-lg text-center">
+            <div class="text-[10px] text-slate-400">OVERLAY STATE</div>
+            <div class="text-sm font-bold text-purple-400">Pure Mesh</div>
+          </div>
         </div>
       </div>
+    </div>
+  </div>
 
-      <!-- Phase Progress Stepper -->
-      <div class="glass-panel p-4 rounded-lg space-y-2">
-        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Protocol Lifecycle</h3>
-        <ol id="phaseList" class="space-y-1.5 text-xs font-mono">
-          <li id="step_1" class="p-1.5 rounded flex items-center text-slate-400 bg-slate-900/50">
-            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center mr-2 text-[10px]">1</span>
-            <span>RGG Topology & 50D Weights</span>
-          </li>
-          <li id="step_2" class="p-1.5 rounded flex items-center text-slate-400 bg-slate-900/50">
-            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center mr-2 text-[10px]">2</span>
-            <span>VRF Leader Election</span>
-          </li>
-          <li id="step_3" class="p-1.5 rounded flex items-center text-slate-400 bg-slate-900/50">
-            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center mr-2 text-[10px]">3</span>
-            <span>TTL Zone Probing & S_Z Split</span>
-          </li>
-          <li id="step_4" class="p-1.5 rounded flex items-center text-slate-400 bg-slate-900/50">
-            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center mr-2 text-[10px]">4</span>
-            <span>Global-P Binary Search</span>
-          </li>
-          <li id="step_5" class="p-1.5 rounded flex items-center text-slate-400 bg-slate-900/50">
-            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center mr-2 text-[10px]">5</span>
-            <span>Top-P Signatures & AP Clustering</span>
-          </li>
-          <li id="step_6" class="p-1.5 rounded flex items-center text-slate-400 bg-slate-900/50">
-            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center mr-2 text-[10px]">6</span>
-            <span>Hierarchical SON Tree (DAG)</span>
-          </li>
-          <li id="step_7" class="p-1.5 rounded flex items-center text-slate-400 bg-slate-900/50">
-            <span class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center mr-2 text-[10px]">7</span>
-            <span>Personalized FL & Churn Simulation</span>
-          </li>
-        </ol>
+  <!-- Main Content Grid -->
+  <main class="flex-1 grid grid-cols-12 gap-4 px-6 py-2">
+
+    <!-- Left Sidebar: Controls & Dataset Classes (3 cols) -->
+    <aside class="col-span-12 lg:col-span-3 space-y-4 flex flex-col">
+      
+      <!-- Action Control Panel -->
+      <div class="glass-panel p-4 rounded-xl space-y-3">
+        <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center">
+          <span class="mr-2">⚡</span> Network Controller
+        </h3>
+
+        <p class="text-xs text-slate-400 leading-normal">
+          Deploy the ground-truth 50-node ad-hoc mesh with deterministic non-IID class allocations and 50-dimensional parameter vectors.
+        </p>
+
+        <!-- Single Action Button -->
+        <button id="btnInit" class="w-full py-3 px-4 bg-gradient-to-r from-cyan-600 via-cyan-500 to-teal-500 hover:from-cyan-500 hover:to-teal-400 text-white text-xs font-bold font-mono tracking-wider rounded-lg shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/35 transition-all duration-200 transform active:scale-[0.98] flex items-center justify-center gap-2">
+          <span>⚡</span>
+          <span>[Initialize Network]</span>
+        </button>
+      </div>
+
+      <!-- 10 Dataset Classes & Dimension Allocation -->
+      <div class="glass-panel p-4 rounded-xl space-y-3 flex-1 flex flex-col">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center">
+            <span class="mr-2">🏷️</span> Dataset Classes (10)
+          </h3>
+          <span class="text-[10px] font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">M=50 Dims</span>
+        </div>
+
+        <p class="text-[11px] text-slate-400">
+          Each client holds 1 dataset class. The corresponding 5 dimensions receive strong positive parameter boosts ($0.85 \pm 0.05$).
+        </p>
+
+        <!-- Class List Grid -->
+        <div id="classList" class="space-y-1.5 text-xs font-mono overflow-y-auto max-h-[300px] pr-1">
+          <!-- Populated dynamically by JavaScript -->
+        </div>
+
+        <div class="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 font-sans">
+          <span class="text-emerald-400 font-semibold">Intra-class Cosine Sim:</span> &ge; 0.85<br>
+          <span class="text-slate-400 font-semibold">Inter-class Cosine Sim:</span> &approx; 0.00
+        </div>
       </div>
 
     </aside>
 
-    <!-- Center Canvas & Visualization Area (6 cols) -->
-    <section class="col-span-12 lg:col-span-6 flex flex-col space-y-4">
+    <!-- Center Canvas & Visualization Area (9 cols) -->
+    <section class="col-span-12 lg:col-span-9 flex flex-col space-y-4">
       
-      <!-- Visual Canvas Header & View Switcher -->
-      <div class="glass-panel p-2 rounded-lg flex items-center justify-between">
-        <div class="flex space-x-1">
-          <button id="btnViewMesh" class="px-3 py-1 text-xs font-semibold rounded bg-cyan-600 text-white shadow">
-            Physical Mesh (RGG)
-          </button>
-          <button id="btnViewTree" class="px-3 py-1 text-xs font-semibold rounded bg-slate-800 text-slate-400 hover:text-white">
-            Hierarchical SON Tree
-          </button>
+      <!-- Cytoscape Graph Canvas with Floating Tooltip -->
+      <div class="glass-panel relative flex-1 min-h-[560px] rounded-xl overflow-hidden p-2">
+        
+        <!-- Canvas Top Bar -->
+        <div class="absolute top-4 left-4 z-10 flex items-center gap-2 bg-slate-950/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-cyan-500/30 text-xs font-mono">
+          <span class="text-slate-400">VIEW:</span>
+          <span class="font-bold text-cyan-300">Physical Ad-Hoc Topology (50 Peers, 110 Edges)</span>
         </div>
 
-        <div id="churnBanner" class="hidden text-xs font-mono text-rose-400 bg-rose-950/40 px-2 py-0.5 rounded border border-rose-500/30">
-          ⚡ CLICK ANY NODE TO INJECT CHURN FAILURE
-        </div>
-      </div>
+        <!-- Cytoscape Container -->
+        <div id="cy" class="w-full h-full min-h-[540px]"></div>
 
-      <!-- Cytoscape Graph Canvas -->
-      <div class="glass-panel relative flex-1 min-h-[460px] rounded-lg overflow-hidden p-2">
-        <div id="cy"></div>
+        <!-- High-Tech Glass Tooltip Card (Hover on Node) -->
+        <div id="nodeInfoCard" class="hidden absolute top-4 right-4 glass-panel p-4 rounded-xl text-xs font-mono w-72 pointer-events-none z-20 border border-cyan-500/50 shadow-2xl bg-slate-900/90 backdrop-blur-lg">
+          <div class="flex items-center justify-between border-b border-cyan-500/20 pb-2 mb-2">
+            <div class="text-cyan-400 font-bold text-sm tracking-wider" id="cardNodeId">NODE #C1</div>
+            <span id="cardStatusBadge" class="text-[10px] font-semibold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40">NOT_ASSIGNED</span>
+          </div>
 
-        <!-- Node Hover Info Card -->
-        <div id="nodeInfoCard" class="hidden absolute top-4 right-4 glass-panel p-3 rounded text-xs font-mono w-48 pointer-events-none z-10 border border-cyan-500/40">
-          <div class="text-cyan-400 font-bold border-b border-cyan-500/20 pb-1 mb-1" id="cardNodeId">NODE #--</div>
-          <div class="space-y-0.5 text-[11px] text-slate-300">
-            <div>Role: <span id="cardRole" class="text-emerald-400 font-semibold">-</span></div>
-            <div>Zone: <span id="cardZone" class="text-slate-100">-</span></div>
-            <div>VRF: <span id="cardVRF" class="text-amber-400">-</span></div>
-            <div>Class: <span id="cardClass" class="text-purple-400">-</span></div>
-            <div>Status: <span id="cardStatus" class="text-emerald-400">-</span></div>
+          <div class="space-y-1.5 text-[11px] text-slate-300">
+            <div class="flex justify-between">
+              <span class="text-slate-400">Assigned Class:</span>
+              <span id="cardClass" class="text-slate-100 font-bold">Cat 🐱 (Class 0)</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Active Slice:</span>
+              <span id="cardSlice" class="text-emerald-400 font-bold">Dims [0 - 4]</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">Physical Degree:</span>
+              <span id="cardDegree" class="text-amber-400 font-bold">4 neighbors</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-400">VRF Score (&sigma;):</span>
+              <span id="cardVRF" class="text-slate-200 font-mono">0.4200</span>
+            </div>
+          </div>
+
+          <!-- 50D Vector Bar Chart Snapshot -->
+          <div class="mt-3 pt-2 border-t border-slate-800">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Model Vector Preview (M=50)</span>
+              <span class="text-[9px] text-cyan-400 font-mono">Spike: ~0.85</span>
+            </div>
+            <div class="bg-slate-950/80 rounded-md p-1 border border-slate-800 flex items-center justify-center">
+              <canvas id="tooltipVectorCanvas" width="240" height="46" class="w-full h-[46px]"></canvas>
+            </div>
+            <div class="flex justify-between text-[9px] text-slate-500 font-mono mt-0.5">
+              <span>Dim 0</span>
+              <span>Dim 25</span>
+              <span>Dim 49</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Live Terminal Console -->
-      <div class="glass-panel rounded-lg overflow-hidden flex flex-col h-40">
-        <div class="bg-slate-900/90 px-3 py-1 border-b border-slate-800 flex items-center justify-between text-xs font-mono text-slate-400">
-          <span class="flex items-center"><span class="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-2"></span>CONSOLE LOGS</span>
-          <button id="btnClearLogs" class="hover:text-cyan-400">clear</button>
+      <!-- Live Terminal Console Logs -->
+      <div class="glass-panel rounded-xl overflow-hidden flex flex-col h-32">
+        <div class="bg-slate-900/90 px-4 py-1.5 border-b border-slate-800 flex items-center justify-between text-xs font-mono text-slate-400">
+          <span class="flex items-center">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-2 animate-pulse"></span>
+            CONSOLE LOGS
+          </span>
+          <button id="btnClearLogs" class="hover:text-cyan-400 transition-colors">clear</button>
         </div>
-        <div id="terminalLogs" class="terminal-window p-2.5 overflow-y-auto flex-1 space-y-1">
-          <div class="text-slate-500">[SYSTEM] Simulator idle. Click 'Bootstrap Simulation' to begin.</div>
+        <div id="terminalLogs" class="terminal-window p-3 overflow-y-auto flex-1 space-y-1 text-xs">
+          <div class="text-slate-500">[SYSTEM] Storyboard simulator ready. Initializing ad-hoc physical mesh...</div>
         </div>
       </div>
 
     </section>
-
-    <!-- Right Side Panels (3 cols): Sandbox & Convergence -->
-    <aside class="col-span-12 lg:col-span-3 space-y-4 flex flex-col">
-
-      <!-- Phase 5 Signature Sandbox Panel -->
-      <div id="panelSandbox" class="glass-panel p-4 rounded-lg space-y-3 flex-1">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center">
-            <span class="mr-1.5">🔬</span> Signature Sandbox
-          </h3>
-          <span class="text-[10px] font-mono bg-cyan-950/60 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/30">Top-P Sparse</span>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div>
-            <label class="text-[11px] text-slate-400 block mb-1">Node A:</label>
-            <select id="selectNodeA" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200"></select>
-          </div>
-          <div>
-            <label class="text-[11px] text-slate-400 block mb-1">Node B:</label>
-            <select id="selectNodeB" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200"></select>
-          </div>
-        </div>
-
-        <!-- Dual Bar Chart Canvas -->
-        <div class="h-36 bg-slate-950/60 rounded p-1">
-          <canvas id="chartSignatures"></canvas>
-        </div>
-
-        <!-- Live KaTeX Math Derivation -->
-        <div class="bg-slate-950/80 p-2 rounded border border-slate-800 text-[11px] font-mono space-y-1.5">
-          <div class="text-slate-400 font-semibold text-[10px] uppercase">Sparse Cosine Math</div>
-          <div id="katexFormula" class="overflow-x-auto py-1 text-cyan-300"></div>
-          <div class="flex justify-between pt-1 border-t border-slate-800 text-xs">
-            <span class="text-slate-400">Cosine Score:</span>
-            <span id="valCosineSim" class="font-bold text-emerald-400">--</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Phase 7 FL Convergence Dashboard Panel -->
-      <div id="panelConvergence" class="glass-panel p-4 rounded-lg space-y-3 flex-1">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center">
-            <span class="mr-1.5">📈</span> FL Convergence
-          </h3>
-          <span class="text-[10px] font-mono bg-emerald-950/60 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">Non-IID Accuracy</span>
-        </div>
-
-        <!-- Convergence Metrics Cards -->
-        <div class="grid grid-cols-3 gap-1.5 text-center text-xs font-mono">
-          <div class="bg-slate-900/80 p-1.5 rounded border border-emerald-500/20">
-            <div class="text-[10px] text-slate-400">SemanticDFL</div>
-            <div id="metricSemantic" class="font-bold text-emerald-400">--%</div>
-          </div>
-          <div class="bg-slate-900/80 p-1.5 rounded border border-rose-500/20">
-            <div class="text-[10px] text-slate-400">FedAvg</div>
-            <div id="metricFedavg" class="font-bold text-rose-400">--%</div>
-          </div>
-          <div class="bg-slate-900/80 p-1.5 rounded border border-slate-700">
-            <div class="text-[10px] text-slate-400">Solo</div>
-            <div id="metricSolo" class="font-bold text-slate-400">--%</div>
-          </div>
-        </div>
-
-        <!-- Chart.js Line Plot -->
-        <div class="h-44 bg-slate-950/60 rounded p-1">
-          <canvas id="chartConvergence"></canvas>
-        </div>
-      </div>
-
-    </aside>
 
   </main>
 
