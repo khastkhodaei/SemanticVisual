@@ -123,8 +123,13 @@ Evaluation across the 10 nodes:
    - **Node 8:** **Dark Yellow** (`#a16207`, border `#713f12`)
    - Non-initiator nodes remain in standard client styling.
 3. **Information Box & Scoreboard Display Rules:**
+   - Directly below the connected neighbors list, each client's dataset classes are displayed (`Client data classes: ...`).
+   - The normalized 10D semantic vector ($\mathbf{w}_i$) is retained in the information box.
+   - The breakdown table below the vector is removed in Step 4 to maintain a clean presentation with the scoreboard.
    - All nodes show their received 1-hop neighbor VRF scores in their detail box.
    - **Regular Candidate Nodes:** Do **not** highlight the winner in the neighbor-score table.
    - **Initiator Nodes:** Clearly indicate winning status:
      - Their winning score is highlighted in **gold** in the scoreboard table.
      - The node is clearly labeled as the **Winner**.
+   - These connected neighbors, client data classes, and normalized vector representations remain available unchanged in all subsequent steps.
+

@@ -1510,6 +1510,25 @@ function showNodeModal(nodeData) {
     cardNeighbors.textContent = neighArr.length ? neighArr.join(", ") : "None";
   }
 
+  // Client dataset classes directly below connected neighbors (Issue #4)
+  const cardClientClasses = document.getElementById("cardClientClasses");
+  if (cardClientClasses) {
+    let activeClasses = [];
+    const dist = nodeData.data_distribution || nodeData.distribution || {};
+    const entries = Object.entries(dist).filter(([_, pct]) => Number(pct) > 0);
+    if (entries.length > 0) {
+      activeClasses = entries.map(([clsKey]) => getCifarClass(clsKey).name);
+    } else {
+      const vec = nodeData.vector_10d || nodeData.normalized_vector || nodeData.vector || STORYBOARD_10_VECTORS[idNum] || [];
+      vec.forEach((val, idx) => {
+        if (Number(val) > 0) {
+          activeClasses.push(getCifarClass(idx + 1).name);
+        }
+      });
+    }
+    cardClientClasses.textContent = activeClasses.length > 0 ? activeClasses.join(", ") : "None";
+  }
+
   // Local Data Distribution: Clean percentage table showing ONLY classes this client actually holds
   // In Steps 2, 3, and 4, remove redundant data percentage from node information box to free up space (Issue #1)
   const distSection = document.getElementById("cardDataDistributionSection");
@@ -1542,12 +1561,13 @@ function showNodeModal(nodeData) {
     }
   }
 
-  // Step 2 & Step 3: Normalized 10D Semantic Vector (w_i) - Kept in Step 3 per Issue #2
+  // Step 2, Step 3, Step 4+: Normalized 10D Semantic Vector (w_i) - Kept in Step 4+ per Issue #4
   const vectorSection = document.getElementById("cardVectorSection");
   const vectorArrayEl = document.getElementById("cardVectorArray");
+  const vectorBreakdownContainer = document.getElementById("cardVectorBreakdownContainer");
   const vectorBreakdownBody = document.getElementById("cardVectorBreakdownBody");
 
-  if (currentStep === 2 || currentStep === 3) {
+  if (currentStep >= 2) {
     if (cardStatusBadge && currentStep === 2) {
       cardStatusBadge.textContent = "LOCAL_TRAINED";
       cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-cyan-50 text-cyan-800 border border-cyan-300";
@@ -1564,25 +1584,31 @@ function showNodeModal(nodeData) {
       vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
     }
 
-    if (vectorBreakdownBody) {
-      vectorBreakdownBody.innerHTML = "";
-      vec.forEach((val, idx) => {
-        const classId = idx + 1;
-        const cls = getCifarClass(classId);
-        const numVal = Number(val);
-        const tr = document.createElement("tr");
-        tr.className = numVal > 0
-          ? "bg-cyan-50/40 hover:bg-cyan-50 font-semibold transition-colors"
-          : "text-slate-400 hover:bg-slate-50 transition-colors";
-        tr.innerHTML = `
-          <td class="py-1 px-2 font-mono ${numVal > 0 ? "text-cyan-700 font-bold" : "text-slate-400"}">C${classId}</td>
-          <td class="py-1 px-2 font-sans ${numVal > 0 ? "text-slate-800" : "text-slate-400"}">${cls.name}</td>
-          <td class="py-1 px-2 text-right font-mono">
-            <span class="inline-block px-1.5 py-0.2 rounded ${numVal > 0 ? "bg-cyan-100 text-cyan-900 border border-cyan-300 font-bold" : "bg-slate-100 text-slate-400"}">${numVal.toFixed(2)}</span>
-          </td>
-        `;
-        vectorBreakdownBody.appendChild(tr);
-      });
+    // In Step 4 and subsequent steps, remove the breakdown table below the vector per Issue #4
+    if (currentStep >= 4) {
+      if (vectorBreakdownContainer) vectorBreakdownContainer.classList.add("hidden");
+    } else {
+      if (vectorBreakdownContainer) vectorBreakdownContainer.classList.remove("hidden");
+      if (vectorBreakdownBody) {
+        vectorBreakdownBody.innerHTML = "";
+        vec.forEach((val, idx) => {
+          const classId = idx + 1;
+          const cls = getCifarClass(classId);
+          const numVal = Number(val);
+          const tr = document.createElement("tr");
+          tr.className = numVal > 0
+            ? "bg-cyan-50/40 hover:bg-cyan-50 font-semibold transition-colors"
+            : "text-slate-400 hover:bg-slate-50 transition-colors";
+          tr.innerHTML = `
+            <td class="py-1 px-2 font-mono ${numVal > 0 ? "text-cyan-700 font-bold" : "text-slate-400"}">C${classId}</td>
+            <td class="py-1 px-2 font-sans ${numVal > 0 ? "text-slate-800" : "text-slate-400"}">${cls.name}</td>
+            <td class="py-1 px-2 text-right font-mono">
+              <span class="inline-block px-1.5 py-0.2 rounded ${numVal > 0 ? "bg-cyan-100 text-cyan-900 border border-cyan-300 font-bold" : "bg-slate-100 text-slate-400"}">${numVal.toFixed(2)}</span>
+            </td>
+          `;
+          vectorBreakdownBody.appendChild(tr);
+        });
+      }
     }
   } else {
     if (vectorSection) vectorSection.classList.add("hidden");

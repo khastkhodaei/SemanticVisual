@@ -273,6 +273,12 @@
               <div id="cardNeighbors" class="text-[11px] font-mono text-slate-800 bg-slate-50 p-2 rounded-lg border border-slate-200 break-words leading-relaxed font-semibold">
                 C2, C4
               </div>
+
+              <!-- Client Dataset Classes (Issue #4) -->
+              <div class="mt-2 text-[10.5px] bg-slate-50 p-2 rounded-lg border border-slate-200 leading-snug">
+                <span class="font-bold text-slate-700">Client data classes:</span>
+                <span id="cardClientClasses" class="font-medium text-slate-800 ml-1">Airplane, Automobile, Bird</span>
+              </div>
             </div>
 
             <!-- Local Data Distribution: Clean minimal percentage table showing ONLY non-zero classes -->
@@ -314,8 +320,8 @@
                 [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]
               </div>
 
-              <!-- Vector Component Breakdown -->
-              <div class="overflow-hidden border border-slate-200 rounded-lg shadow-xs bg-white">
+              <!-- Vector Component Breakdown (Hidden in Step 4+ per Issue #4) -->
+              <div id="cardVectorBreakdownContainer" class="overflow-hidden border border-slate-200 rounded-lg shadow-xs bg-white">
                 <table class="w-full text-[10px] font-mono border-collapse">
                   <thead>
                     <tr class="bg-slate-100 text-slate-600 border-b border-slate-200 text-left">

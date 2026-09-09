@@ -236,3 +236,43 @@ def test_issue3_frontend_winner_classes_and_sequence():
     assert "[3/4 WINNER SELECTION]" in js
     assert "[4/4 INITIATOR IDENTIFIED]" in js
 
+
+def test_issue4_step4_preserves_vectors_in_backend_data():
+    """Verify Issue #4: Step 4 nodes preserve normalized 10D semantic vectors."""
+    data = get_10node_step_data(4)
+    nodes = {n["id"]: n for n in data["nodes"]}
+
+    for nid in range(1, 11):
+        node = nodes[nid]
+        assert "vector_10d" in node, f"Node {nid} missing vector_10d in Step 4"
+        assert len(node["vector_10d"]) == 10
+        assert sum(node["vector_10d"]) == pytest.approx(1.0, abs=1e-3)
+
+
+def test_issue4_frontend_client_classes_and_vector_retention():
+    """Verify Issue #4: HTML and JS support client data classes and vector retention without breakdown table in Step 4."""
+    with open("frontend/templates/index.html", "r", encoding="utf-8") as f:
+        html = f.read()
+
+    assert 'id="cardClientClasses"' in html
+    assert 'Client data classes:' in html
+    assert 'id="cardVectorBreakdownContainer"' in html
+
+    with open("frontend/static/app.js", "r", encoding="utf-8") as f:
+        js = f.read()
+
+    assert "cardClientClasses" in js
+    assert "cardVectorBreakdownContainer" in js
+    assert "currentStep >= 4" in js
+
+
+def test_issue4_steps_md_documentation():
+    """Verify STEPS.md documents client data classes and vector retention without breakdown table."""
+    with open("STEPS.md", "r", encoding="utf-8") as f:
+        steps_md = f.read()
+
+    assert "Client data classes:" in steps_md
+    assert "normalized 10D semantic vector" in steps_md
+    assert "breakdown table below the vector is removed in Step 4" in steps_md
+
+
