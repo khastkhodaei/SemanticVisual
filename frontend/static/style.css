@@ -18,23 +18,32 @@
   --brand-blue-hover: #1d4ed8;
   --brand-sky: #0284c7;      /* sky-600 */
   --brand-amber: #d97706;    /* amber-600 */
-  --brand-amber-light: #fef3c7; /* amber-100 */
   --brand-emerald: #059669;  /* emerald-600 */
   --brand-rose: #e11d48;     /* rose-600 */
   --brand-purple: #7c3aed;   /* purple-600 */
   
-  --edge-color: #94a3b8;     /* slate-400 */
+  --edge-color: #64748b;     /* slate-500 */
   --edge-highlight: #2563eb; /* blue-600 */
 }
 
-/* Base Body Styles */
+/* Enforce Unscrollable Fixed Viewport Container */
+html, body {
+  height: 100vh;
+  width: 100vw;
+  max-height: 100vh;
+  max-width: 100vw;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
   background-color: var(--bg-page);
   color: var(--text-primary);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  overflow-x: hidden;
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.03) 0%, transparent 60%),
+    radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.02) 0%, transparent 60%),
     linear-gradient(#f1f5f9 1px, transparent 1px),
     linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
   background-size: 100% 100%, 24px 24px, 24px 24px;
@@ -46,14 +55,14 @@ body {
   border: 1px solid var(--border-light);
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease-in-out;
+  transition: all 0.15s ease-in-out;
 }
 
 .paper-card-elevated {
   background: var(--bg-card);
   border: 1px solid var(--border-light);
   border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
 }
 
 .paper-header {
@@ -63,10 +72,10 @@ body {
   border-bottom: 1px solid var(--border-light);
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar for Inner Containers Only */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: #f1f5f9;
@@ -84,22 +93,21 @@ body {
   width: 100%;
   height: 100%;
   background: #ffffff;
-  background-image: 
-    radial-gradient(#e2e8f0 1.2px, transparent 1.2px);
+  background-image: radial-gradient(#e2e8f0 1.2px, transparent 1.2px);
   background-size: 24px 24px;
   border-radius: 0.5rem;
 }
 
-/* KaTeX Formula Banner Box */
-.formula-box {
+/* Formula Box in Sidebar */
+.formula-card {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border: 1px solid #cbd5e1;
-  border-left: 4px solid var(--brand-amber);
+  border: 1px solid var(--border-strong);
+  border-left: 3.5px solid var(--brand-blue);
   border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem;
 }
 
-/* Stepper Navigation Indicator */
+/* Stepper Indicator */
 .step-item {
   display: flex;
   align-items: center;
@@ -119,13 +127,13 @@ body {
 }
 
 .step-bubble {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1.4rem;
+  height: 1.4rem;
   border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-family: ui-monospace, monospace;
   font-weight: 700;
   border: 2px solid #cbd5e1;
@@ -138,14 +146,7 @@ body {
   background: var(--brand-blue);
   border-color: var(--brand-blue);
   color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-}
-
-.step-item.active.step-amber .step-bubble {
-  background: var(--brand-amber);
-  border-color: var(--brand-amber);
-  color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.25);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
 }
 
 .step-item.completed .step-bubble {
@@ -154,33 +155,15 @@ body {
   color: #ffffff;
 }
 
-/* Amber Leader Halo Animation */
-@keyframes initiator-halo {
-  0% {
-    box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.6);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(217, 119, 6, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(217, 119, 6, 0);
-  }
-}
-
-.pulse-amber {
-  animation: initiator-halo 2s infinite;
-}
-
 /* Terminal logs styling - Clean Academic Console */
 .terminal-window {
   font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  font-size: 0.75rem;
+  font-size: 0.73rem;
   background-color: #0f172a;
   color: #e2e8f0;
-  border-radius: 0 0 0.75rem 0.75rem;
 }
 
-.tag-vrf { color: #f59e0b; font-weight: bold; }
+.tag-vrf { color: #38bdf8; font-weight: bold; }
 .tag-leader { color: #fbbf24; font-weight: bold; }
 .tag-client { color: #38bdf8; font-weight: bold; }
 .tag-system { color: #94a3b8; font-weight: bold; }
@@ -190,7 +173,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
+  padding: 5px 8px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
@@ -247,16 +230,4 @@ body {
 .btn-secondary:disabled, .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.btn-amber {
-  background: linear-gradient(180deg, #d97706 0%, #b45309 100%);
-  color: #ffffff;
-  border: 1px solid #b45309;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  transition: all 0.15s ease-in-out;
-}
-.btn-amber:hover:not(:disabled) {
-  background: linear-gradient(180deg, #b45309 0%, #92400e 100%);
-  box-shadow: 0 2px 4px 0 rgba(217, 119, 6, 0.25);
 }

@@ -7,7 +7,6 @@ let currentStep = 1;
 let currentSession = null;
 let simulationData = {};
 let step1Topology = null;
-let vrfElectionResult = null;
 let cy = null;
 
 const DATASET_CLASSES = {
@@ -27,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderClassLegend();
   initCytoscape();
   bindActionButtons();
-  // Auto-bootstrap Step 1
+  // Auto-initialize Step 1
   initializeNetwork();
 });
 
@@ -44,24 +43,23 @@ function renderClassLegend() {
     item.dataset.classId = cid;
 
     item.innerHTML = `
-      <div class="flex items-center space-x-2">
+      <div class="flex items-center space-x-1.5">
         <span class="text-sm">${cls.icon}</span>
-        <span class="font-bold text-xs text-slate-800">${cls.name}</span>
-        <span class="text-[10px] text-slate-400 font-mono">(C${cid})</span>
+        <span class="font-bold text-[11px] text-slate-800">${cls.name}</span>
+        <span class="text-[9px] text-slate-400 font-mono">(C${cid})</span>
       </div>
-      <div class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-blue-700 font-semibold">
-        Dims ${cls.slice[0]}-${cls.slice[1]}
+      <div class="text-[9px] font-mono px-1 py-0.5 rounded bg-slate-100 border border-slate-200 text-blue-700 font-semibold">
+        [${cls.slice[0]}-${cls.slice[1]}]
       </div>
     `;
 
-    // Interactive filter highlight on hover
     item.addEventListener("mouseenter", () => highlightClassNodes(cid));
     item.addEventListener("mouseleave", () => resetNodeHighlights());
     container.appendChild(item);
   }
 }
 
-// 1. Initialize Cytoscape Canvas with Clean Paper Styles
+// 1. Initialize Cytoscape Canvas with Academic Paper Styling
 function initCytoscape() {
   cy = cytoscape({
     container: document.getElementById("cy"),
@@ -72,35 +70,32 @@ function initCytoscape() {
         style: {
           "label": "data(label)",
           "color": "#0f172a",
-          "font-size": "10px",
+          "font-size": "9.5px",
           "font-family": "ui-monospace, monospace",
           "font-weight": "bold",
           "text-valign": "bottom",
-          "text-margin-y": 5,
-          "text-background-color": "rgba(255, 255, 255, 0.85)",
-          "text-background-opacity": 0.9,
+          "text-margin-y": 4,
+          "text-background-color": "rgba(255, 255, 255, 0.90)",
+          "text-background-opacity": 0.92,
           "text-background-padding": 2,
           "text-background-shape": "roundrectangle",
-          "background-color": "#2563eb", // Royal blue for clients
+          "background-color": "#2563eb", // Royal blue for all clients
           "border-color": "#1d4ed8",
           "border-width": 2,
-          "width": 28,
-          "height": 28,
+          "width": 26,
+          "height": 26,
           "transition-property": "background-color, border-color, width, height, border-width, opacity",
-          "transition-duration": "0.25s"
+          "transition-duration": "0.2s"
         }
       },
       {
-        selector: "node.initiator-node",
+        selector: "node.step2-node",
         style: {
-          "background-color": "#d97706", // Amber gold for leaders
-          "border-color": "#92400e",
-          "border-width": 3.5,
-          "width": 34,
-          "height": 34,
-          "color": "#92400e",
-          "font-size": "11px",
-          "z-index": 80
+          "background-color": "#2563eb",
+          "border-color": "#0284c7",
+          "border-width": 2.5,
+          "width": 28,
+          "height": 28
         }
       },
       {
@@ -109,8 +104,8 @@ function initCytoscape() {
           "background-color": "#0284c7",
           "border-color": "#0369a1",
           "border-width": 3.5,
-          "width": 34,
-          "height": 34,
+          "width": 32,
+          "height": 32,
           "z-index": 99
         }
       },
@@ -123,10 +118,10 @@ function initCytoscape() {
       {
         selector: "edge",
         style: {
-          "width": 1.8,
-          "line-color": "#94a3b8", // Crisp slate lines for physical links
+          "width": 1.5,
+          "line-color": "#64748b", // Clear slate links
           "curve-style": "straight",
-          "opacity": 0.65,
+          "opacity": 0.50,
           "transition-property": "line-color, width, opacity",
           "transition-duration": "0.2s"
         }
@@ -135,7 +130,7 @@ function initCytoscape() {
         selector: "edge.highlighted",
         style: {
           "line-color": "#2563eb",
-          "width": 2.6,
+          "width": 2.2,
           "opacity": 0.95,
           "z-index": 50
         }
@@ -155,7 +150,7 @@ function initCytoscape() {
     maxZoom: 2.5
   });
 
-  // Node Hover Tooltip
+  // Node Hover Tooltip Interactions
   cy.on("mouseover", "node", (evt) => {
     const n = evt.target.data();
     showNodeTooltip(n);
@@ -171,32 +166,28 @@ function showNodeTooltip(nodeData) {
   const card = document.getElementById("nodeInfoCard");
   if (!card) return;
 
-  const isInitiator = nodeData.role === "INITIATOR";
   const cardNodeId = document.getElementById("cardNodeId");
   const cardStatusBadge = document.getElementById("cardStatusBadge");
 
   cardNodeId.textContent = `NODE #C${nodeData.peer_id || nodeData.id}`;
-  if (isInitiator) {
-    cardNodeId.innerHTML = `<span class="text-amber-700">👑 NODE #C${nodeData.peer_id || nodeData.id}</span>`;
-    cardStatusBadge.textContent = "ASSIGNED (INITIATOR)";
-    cardStatusBadge.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300";
+  
+  if (currentStep >= 2 && nodeData.vrf_score !== null && nodeData.vrf_score !== undefined) {
+    cardStatusBadge.textContent = "COMPUTED (Awaiting Exchange)";
+    cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200";
   } else {
-    cardNodeId.className = "text-blue-700 font-bold text-sm tracking-tight";
     cardStatusBadge.textContent = nodeData.status || "NOT_ASSIGNED";
-    cardStatusBadge.className = "text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200";
+    cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200";
   }
 
   const roleElem = document.getElementById("cardRole");
   if (roleElem) {
     roleElem.textContent = nodeData.role || "CLIENT";
-    roleElem.className = isInitiator ? "text-amber-800 font-mono font-bold" : "text-slate-800 font-mono font-bold";
   }
 
   const classId = nodeData.class_id !== undefined ? nodeData.class_id : (nodeData.category_id || 0);
   const cls = DATASET_CLASSES[classId] || { name: "Class", icon: "📦", slice: [0, 4] };
 
   document.getElementById("cardClass").textContent = `${cls.name} ${cls.icon} (Class ${classId})`;
-  document.getElementById("cardSlice").textContent = `Dims [${cls.slice[0]} - ${cls.slice[1]}]`;
   document.getElementById("cardDegree").textContent = `${nodeData.degree || 0} neighbors`;
 
   const x = nodeData.coords ? Math.round(nodeData.coords.x) : (nodeData.x ? Math.round(nodeData.x) : "-");
@@ -204,20 +195,24 @@ function showNodeTooltip(nodeData) {
   const cardCoords = document.getElementById("cardCoords");
   if (cardCoords) cardCoords.textContent = `(${x}, ${y})`;
 
-  // Step 2: Show VRF Score if available
-  const vrfRow = document.getElementById("cardVrfRow");
-  const cardVrf = document.getElementById("cardVrf");
+  // Step 2 VRF Computation Section
+  const vrfSection = document.getElementById("cardVrfSection");
+  const vrfScoreVal = document.getElementById("cardVrfScoreVal");
   if (currentStep >= 2 && nodeData.vrf_score !== null && nodeData.vrf_score !== undefined) {
-    if (vrfRow) vrfRow.classList.remove("hidden");
-    if (cardVrf) cardVrf.textContent = Number(nodeData.vrf_score).toFixed(3);
+    if (vrSection()) vrfSection.classList.remove("hidden");
+    if (vrfScoreVal) vrfScoreVal.textContent = Number(nodeData.vrf_score).toFixed(4);
   } else {
-    if (vrfRow) vrfRow.classList.add("hidden");
+    if (vrfSection) vrfSection.classList.add("hidden");
   }
 
   // Draw 50D parameter vector preview
-  renderTooltipVectorPreview(nodeData.weights || [], classId, isInitiator);
+  renderTooltipVectorPreview(nodeData.weights || [], classId);
 
   card.classList.remove("hidden");
+}
+
+function vrSection() {
+  return document.getElementById("cardVrfSection");
 }
 
 function hideNodeTooltip() {
@@ -226,7 +221,7 @@ function hideNodeTooltip() {
 }
 
 // Render Mini 50-Dimension Vector Bar Chart Preview
-function renderTooltipVectorPreview(weights, classId, isInitiator = false) {
+function renderTooltipVectorPreview(weights, classId) {
   const canvas = document.getElementById("tooltipVectorCanvas");
   if (!canvas) return;
 
@@ -236,12 +231,11 @@ function renderTooltipVectorPreview(weights, classId, isInitiator = false) {
 
   ctx.clearRect(0, 0, width, height);
 
-  // Baseline axis
   ctx.strokeStyle = "rgba(203, 213, 225, 0.8)";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(0, height - 4);
-  ctx.lineTo(width, height - 4);
+  ctx.moveTo(0, height - 3);
+  ctx.lineTo(width, height - 3);
   ctx.stroke();
 
   const numBars = 50;
@@ -255,14 +249,14 @@ function renderTooltipVectorPreview(weights, classId, isInitiator = false) {
     const val = weights[i] !== undefined ? Math.abs(weights[i]) : 0;
     const isActive = (i >= activeStart && i < activeEnd);
 
-    const barHeight = Math.max(2, Math.min(height - 6, val * (height - 6)));
-    const y = (height - 4) - barHeight;
+    const barHeight = Math.max(2, Math.min(height - 5, val * (height - 5)));
+    const y = (height - 3) - barHeight;
 
     if (isActive) {
-      ctx.fillStyle = isInitiator ? "#d97706" : "#2563eb";
+      ctx.fillStyle = "#2563eb";
       ctx.fillRect(x, y, totalBarWidth, barHeight);
-      ctx.fillStyle = isInitiator ? "#fef3c7" : "#dbeafe";
-      ctx.fillRect(x, y, totalBarWidth, 1.5);
+      ctx.fillStyle = "#dbeafe";
+      ctx.fillRect(x, y, totalBarWidth, 1);
     } else {
       ctx.fillStyle = "#cbd5e1";
       ctx.fillRect(x, y, totalBarWidth, barHeight);
@@ -333,7 +327,7 @@ function bindActionButtons() {
 // 3. API Call: Initialize 50-Node Storyboard Network (Step 1)
 async function initializeNetwork() {
   setNavButtonsDisabled(true);
-  logToTerminal("INIT", "Requesting ground-truth 50-node ad-hoc mesh from backend engine...");
+  logToTerminal("INIT", "Deploying ground-truth 50-node ad-hoc mesh from backend engine...");
 
   try {
     const payload = {
@@ -360,14 +354,12 @@ async function initializeNetwork() {
     currentSession = data.session_id;
     simulationData = data;
     step1Topology = JSON.parse(JSON.stringify(data));
-    vrfElectionResult = null;
 
-    // Set UI for Step 1
     applyStep1UI(data);
 
     logToTerminal("SUCCESS", `Step 1 Base Topology deployed: 50 nodes, ${data.edges.length} undirected physical links.`);
     logToTerminal("INFO", "Non-IID Class Allocation: Cat 🐱 (C1, C2, C20, C21, C22, C35 separated across network).");
-    logToTerminal("INFO", "Pure overlay-free mesh: All nodes are in CLIENT role with status NOT_ASSIGNED.");
+    logToTerminal("INFO", "Pure overlay-free mesh: All nodes in CLIENT role with status NOT_ASSIGNED. VRF scores null.");
 
   } catch (err) {
     logToTerminal("ERROR", `Initialization failure: ${err.message}`);
@@ -384,7 +376,7 @@ function applyStep1UI(data) {
   // Session Badge
   const sessionVal = document.getElementById("sessionVal");
   if (sessionVal) {
-    sessionVal.textContent = currentSession.substring(0, 8) + "...";
+    sessionVal.textContent = currentSession ? currentSession.substring(0, 8) + "..." : "Active";
   }
 
   // Stepper Indicator
@@ -393,7 +385,7 @@ function applyStep1UI(data) {
   // Active step badge & button labels
   const activeBadge = document.getElementById("activeStepBadge");
   if (activeBadge) {
-    activeBadge.textContent = "Step 1: Physical Mesh";
+    activeBadge.textContent = "Step 1: Physical Mesh Setup";
     activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200";
   }
 
@@ -407,57 +399,61 @@ function applyStep1UI(data) {
   if (btnNext) {
     btnNext.disabled = false;
     btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 shadow-sm transition-colors";
-    btnNext.innerHTML = `<span>Next Step (Step 2: VRF)</span><span>▶️</span>`;
+    btnNext.innerHTML = `<span>Next Step (Step 2: VRF Compute)</span><span>▶️</span>`;
   }
 
   // Narrative Banner
   document.getElementById("stepTag").textContent = "STEP 1 / FIGURE 3(a)";
-  document.getElementById("stepTag").className = "px-2 py-0.5 text-[11px] font-bold font-mono tracking-wide rounded bg-blue-100 text-blue-800";
+  document.getElementById("stepTag").className = "px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide rounded bg-blue-100 text-blue-800";
   document.getElementById("stepTitle").textContent = "Physical Ad-Hoc Network Topology & Non-IID Data Distribution";
-  document.getElementById("stepDescription").textContent = "50 decentralized clients in an ad-hoc mesh. Each client holds local data from 1 dataset class. Nodes with identical classes are dispersed across the physical network.";
+  document.getElementById("stepDescription").textContent = "50 decentralized clients in an ad-hoc mesh. Each client holds local data from 1 dataset class. VRF scores are uncomputed.";
 
-  // Hide Step 2 specific components
-  document.getElementById("formulaBanner").classList.add("hidden");
-  document.getElementById("initiatorBox").classList.add("hidden");
-  const legendLeader = document.getElementById("legendLeaderItem");
-  if (legendLeader) legendLeader.classList.add("hidden");
+  // Render Step 1 Formula in Sidebar
+  renderSidebarFormula(
+    "Network Topology Model",
+    "G = (V, E), \\quad \\mathbf{w}_i \\in \\mathbb{R}^{50}",
+    "Physical ad-hoc mesh. Each peer holds local dataset samples and a 50-dimensional parameter vector.",
+    "Overlay-Free"
+  );
 
   // Summary Stats
   document.getElementById("statNodes").textContent = data.nodes ? data.nodes.length : 50;
   if (data.metadata) {
     document.getElementById("statDegree").textContent = `${data.metadata.avg_degree || 3.9} (3-6)`;
   }
-  document.getElementById("statLeaders").textContent = "0 Initiators";
-  document.getElementById("statLeaders").className = "text-sm font-bold text-slate-400";
+  document.getElementById("statVrfStatus").textContent = "Uncomputed";
+  document.getElementById("statVrfStatus").className = "text-xs font-bold text-slate-400";
 
   document.getElementById("canvasViewLabel").textContent = `Physical Ad-Hoc Mesh (50 Nodes, ${data.edges.length} Edges)`;
 
-  // Render Step 1 Mesh (All Royal Blue)
+  const legendVrf = document.getElementById("vrfComputedLegend");
+  if (legendVrf) legendVrf.classList.add("hidden");
+
+  // Render Mesh
   renderMesh(data.nodes, data.edges, false);
 }
 
-// 4. API Call: Execute Step 2 (VRF Leader Election)
+// 4. API Call: Execute Step 2 (Pure Local VRF Computation)
 async function executeStep2VRF() {
   if (!currentSession) {
     await initializeNetwork();
   }
 
   setNavButtonsDisabled(true);
-  logToTerminal("VRF", "Initiating Step 2: Verifiable Random Function (VRF) leader election protocol...");
+  logToTerminal("VRF", "Executing Step 2: Local Verifiable Random Function (VRF) score calculation...");
 
   try {
-    const res = await fetch("/api/v1/step/vrf", {
+    const res = await fetch("/api/v1/step/vrf-compute", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session_id: currentSession })
     });
 
     if (!res.ok) {
-      throw new Error(`VRF step failed: ${res.statusText}`);
+      throw new Error(`VRF compute step failed: ${res.statusText}`);
     }
 
     const data = await res.json();
-    vrfElectionResult = data;
     simulationData = data;
 
     // Apply Step 2 UI
@@ -465,21 +461,21 @@ async function executeStep2VRF() {
 
     // Stream logs to console
     if (data.logs && Array.isArray(data.logs)) {
-      data.logs.forEach(l => logToTerminal(l.level || "VRF", l.message));
+      data.logs.forEach(l => logToTerminal("VRF", l.message));
     }
 
-    logToTerminal("SUCCESS", `Step 2 Complete: 10 Initiators elected deterministically with pairwise hop distance > 2.`);
-    logToTerminal("INFO", "Initiators: C2, C7, C13, C17, C22, C28, C32, C37, C42, C47.");
+    logToTerminal("SUCCESS", "Step 2 Complete: All 50 peers evaluated local verifiable VRF scores σ_p ∈ [0, 1).");
+    logToTerminal("INFO", "No messages sent yet. Peers await neighborhood exchange in Step 3.");
 
   } catch (err) {
     logToTerminal("ERROR", `Step 2 execution failure: ${err.message}`);
-    console.error("VRF Step Error:", err);
+    console.error("VRF Compute Error:", err);
   } finally {
     setNavButtonsDisabled(false);
   }
 }
 
-// Apply Step 2 UI State
+// Apply Step 2 UI State (Pure Local Computation)
 function applyStep2UI(data) {
   currentStep = 2;
 
@@ -489,8 +485,8 @@ function applyStep2UI(data) {
   // Active step badge & button labels
   const activeBadge = document.getElementById("activeStepBadge");
   if (activeBadge) {
-    activeBadge.textContent = "Step 2: VRF Leader Election";
-    activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 border border-amber-300";
+    activeBadge.textContent = "Step 2: VRF Local Calculation";
+    activeBadge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-800 border border-blue-300";
   }
 
   const btnPrev = document.getElementById("btnPrev");
@@ -503,86 +499,58 @@ function applyStep2UI(data) {
   if (btnNext) {
     btnNext.disabled = true; // Disabled until Step 3 is implemented
     btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-    btnNext.innerHTML = `<span>Next Step (Step 3: Zones)</span><span>▶️</span>`;
+    btnNext.innerHTML = `<span>Next Step (Step 3: Exchange)</span><span>▶️</span>`;
   }
 
   // Narrative Banner
-  document.getElementById("stepTag").textContent = "STEP 2 / VRF ELECTION";
-  document.getElementById("stepTag").className = "px-2 py-0.5 text-[11px] font-bold font-mono tracking-wide rounded bg-amber-100 text-amber-800";
-  document.getElementById("stepTitle").textContent = "Verifiable Random Function (VRF) Leader Election";
-  document.getElementById("stepDescription").textContent = "Each node evaluates a pseudo-random VRF score σ_p. Nodes possessing the local minimum in their 2-hop neighborhood self-promote to INITIATOR to act as zone seeds.";
+  document.getElementById("stepTag").textContent = "STEP 2 / LOCAL COMPUTATION";
+  document.getElementById("stepTag").className = "px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide rounded bg-blue-100 text-blue-800";
+  document.getElementById("stepTitle").textContent = "Local Verifiable Random Function (VRF) Score Calculation";
+  document.getElementById("stepDescription").textContent = "Each peer locally computes its verifiable score σ_p using its secret key and epoch seed. No messages are sent and no leaders are elected yet.";
 
-  // Render KaTeX Formula Banner
-  renderKaTeXBanner();
-
-  // Show Initiator Box in Sidebar
-  renderInitiatorList(data.initiators || []);
-
-  // Show Leader Legend
-  const legendLeader = document.getElementById("legendLeaderItem");
-  if (legendLeader) legendLeader.classList.remove("hidden");
+  // Render Step 2 Formula in Sidebar
+  renderSidebarFormula(
+    "VRF Local Score (Eq. 1)",
+    "\\sigma_p = \\text{VRF}_{sk_p}(\\text{seed}_{e-1}) \\in [0, 1)",
+    "Peers locally compute a verifiable pseudorandom score using their private key and epoch seed. No messages are sent yet.",
+    "Local Computation"
+  );
 
   // Update Summary Stats
-  document.getElementById("statLeaders").textContent = `${data.initiators ? data.initiators.length : 10} Initiators`;
-  document.getElementById("statLeaders").className = "text-sm font-bold text-amber-600";
+  document.getElementById("statVrfStatus").textContent = "50 Evaluated";
+  document.getElementById("statVrfStatus").className = "text-xs font-bold text-blue-600";
 
-  document.getElementById("canvasViewLabel").textContent = "VRF Leaders Elected (10 Initiators, 40 Clients)";
+  document.getElementById("canvasViewLabel").textContent = "VRF Local Calculation (50 Peers, All Roles = CLIENT)";
 
-  // Update Cytoscape Mesh with Amber Initiators
+  const legendVrf = document.getElementById("vrfComputedLegend");
+  if (legendVrf) legendVrf.classList.remove("hidden");
+
+  // Render Mesh with VRF scores visible on nodes, preserving exact topology
   renderMesh(data.nodes, step1Topology ? step1Topology.edges : [], true);
 }
 
-// Render KaTeX Formula in Banner
-function renderKaTeXBanner() {
-  const formulaBox = document.getElementById("formulaBanner");
-  if (!formulaBox) return;
+// Render KaTeX Formula inside the Sidebar Formula Card
+function renderSidebarFormula(title, texStr, description, badgeText) {
+  const titleEl = document.getElementById("formulaCardTitle");
+  if (titleEl) titleEl.textContent = title;
 
-  formulaBox.classList.remove("hidden");
+  const badgeEl = document.getElementById("formulaCardBadge");
+  if (badgeEl) badgeEl.textContent = badgeText;
 
-  const katexContainer = document.getElementById("katexFormula");
-  if (katexContainer && window.katex) {
-    const texStr = "\\sigma_p = \\text{VRF}_{sk_p}(\\text{seed}_{e-1}), \\quad m_p = \\min_{q \\in N_R(p)} (\\sigma_q, id_q)";
+  const descEl = document.getElementById("sidebarFormulaDesc");
+  if (descEl) descEl.textContent = description;
+
+  const mathEl = document.getElementById("sidebarFormula");
+  if (mathEl && window.katex) {
     try {
-      window.katex.render(texStr, katexContainer, {
+      window.katex.render(texStr, mathEl, {
         displayMode: true,
         throwOnError: false
       });
     } catch (e) {
-      katexContainer.textContent = "σ_p = VRF_{sk_p}(seed_{e-1}),  m_p = min_{q ∈ N_R(p)} (σ_q, id_q)";
+      mathEl.textContent = texStr;
     }
   }
-}
-
-// Render List of Elected Initiators in Sidebar
-function renderInitiatorList(initiators) {
-  const box = document.getElementById("initiatorBox");
-  const list = document.getElementById("initiatorList");
-  if (!box || !list) return;
-
-  box.classList.remove("hidden");
-  list.innerHTML = "";
-
-  initiators.forEach(id => {
-    const chip = document.createElement("div");
-    chip.className = "px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded text-xs font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors";
-    chip.innerHTML = `<span>👑</span><span>C${id}</span>`;
-    chip.title = `Click to center on Initiator C${id}`;
-
-    chip.addEventListener("click", () => {
-      if (!cy) return;
-      const target = cy.$(`#node_${id}`);
-      if (target.length) {
-        cy.animate({
-          center: { eles: target },
-          zoom: 1.4,
-          duration: 400
-        });
-        target.flashClass("highlighted", 1200);
-      }
-    });
-
-    list.appendChild(chip);
-  });
 }
 
 // Stepper Navigation Indicator update
@@ -591,19 +559,16 @@ function updateStepper(step) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
-    item.classList.remove("active", "completed", "step-amber");
+    item.classList.remove("active", "completed");
     if (s < step) {
       item.classList.add("completed");
     } else if (s === step) {
       item.classList.add("active");
-      if (step === 2) {
-        item.classList.add("step-amber");
-      }
     }
   }
 }
 
-// Revert from Step 2 to Step 1 smoothly
+// Revert smoothly from Step 2 to Step 1
 function revertToStep1() {
   if (!step1Topology) {
     initializeNetwork();
@@ -629,28 +594,30 @@ function setNavButtonsDisabled(disabled) {
 }
 
 // 5. Render Mesh in Cytoscape
-function renderMesh(nodes, edges, showLeaders = false) {
+function renderMesh(nodes, edges, showScores = false) {
   if (!cy) return;
 
   const elements = [];
 
   nodes.forEach(n => {
-    const isInitiator = showLeaders && (n.role === "INITIATOR" || n.status === "ASSIGNED");
     const classId = n.class_id !== undefined ? n.class_id : (n.category_id !== undefined ? n.category_id : (n.category || 0));
     const cls = DATASET_CLASSES[classId] || { name: "Node", icon: "📦" };
     
-    // Label format: 👑 C{id} in Step 2 for leaders, or C{id}
-    const label = isInitiator ? `👑 C${n.id} ${cls.icon}` : `C${n.id} ${cls.icon}`;
+    // In Step 2, display C{id} (σ: {score})
+    const scoreStr = (showScores && n.vrf_score !== null && n.vrf_score !== undefined) 
+      ? ` (σ:${Number(n.vrf_score).toFixed(3)})` 
+      : "";
+    const label = `C${n.id}${scoreStr} ${cls.icon}`;
 
     elements.push({
       group: "nodes",
-      classes: isInitiator ? "initiator-node" : "",
+      classes: showScores ? "step2-node" : "",
       data: {
         id: `node_${n.id}`,
         peer_id: n.id,
         label: label,
-        status: isInitiator ? "ASSIGNED" : (n.status || "NOT_ASSIGNED"),
-        role: isInitiator ? "INITIATOR" : (n.role || "CLIENT"),
+        status: n.status || "NOT_ASSIGNED",
+        role: "CLIENT", // Strictly CLIENT in Step 2
         class_id: classId,
         category_id: classId,
         class_name: cls.name,
@@ -702,7 +669,7 @@ function logToTerminal(level, message) {
   if (level === "ERROR") badgeColor = "text-rose-400";
   else if (level === "SUCCESS") badgeColor = "text-emerald-400";
   else if (level === "WARN") badgeColor = "text-amber-400";
-  else if (level === "VRF" || level === "LEADER") badgeColor = "text-amber-300";
+  else if (level === "VRF") badgeColor = "text-sky-400";
 
   row.innerHTML = `
     <span class="text-slate-500 select-none">[${timeStr}]</span>

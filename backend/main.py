@@ -157,6 +157,30 @@ def init_simulation(req: SimulationInitRequest):
         )
 
 
+class VRFComputeStepRequest(BaseModel):
+    session_id: str
+
+
+@app.post("/api/v1/step/vrf-compute", status_code=status.HTTP_200_OK, tags=["Simulation"])
+def step_vrf_compute(req: VRFComputeStepRequest):
+    """Execute Step 2: Local VRF score calculation without neighbor exchange or leader election."""
+    session = session_store.get_session(req.session_id)
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Session {req.session_id} not found")
+
+    engine = SemanticDFLEngine()
+    result = engine.compute_local_vrf(nodes=session["nodes"])
+
+    session["nodes"] = result["nodes"]
+    session["logs"].extend(result["logs"])
+
+    return {
+        "session_id": req.session_id,
+        "nodes": result["nodes"],
+        "logs": result["logs"],
+    }
+
+
 class VRFStepRequest(BaseModel):
     session_id: str
     r_hops: Optional[int] = Field(default=None, ge=1, le=10)

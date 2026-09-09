@@ -498,6 +498,52 @@ class SemanticDFLEngine:
 
         return list(visited.keys())
 
+    def compute_local_vrf(
+        self,
+        nodes: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        """Execute Step 2: Local VRF calculation only.
+
+        Each node p locally evaluates sigma_p = VRF_{sk_p}(seed_{e-1}) in [0, 1).
+        No neighbor messages, no minimization, no leader election.
+        All nodes remain strictly in role='CLIENT' and status='NOT_ASSIGNED'.
+        """
+        STORYBOARD_SCORES = {
+            2: 0.0412, 7: 0.0524, 13: 0.0381, 17: 0.0475, 22: 0.0353,
+            28: 0.0592, 32: 0.0441, 37: 0.0394, 42: 0.0493, 47: 0.0427,
+        }
+
+        logs: List[Dict[str, str]] = []
+        for node in nodes:
+            nid = node["id"]
+            if nid in STORYBOARD_SCORES:
+                score = STORYBOARD_SCORES[nid]
+            elif len(nodes) == 50:
+                score = round(0.35 + (nid % 10) * 0.05 + ((nid * 7) % 13) * 0.0123, 4)
+            else:
+                score = round(float(self.rng.uniform(0.01, 0.99)), 4)
+
+            node["vrf_score"] = score
+            node["role"] = "CLIENT"
+            node["status"] = "NOT_ASSIGNED"
+            node["state"] = "NOT_ASSIGNED"
+            node["zone_id"] = None
+
+            logs.append({
+                "level": "INFO",
+                "message": f"[VRF COMPUTE] Peer C{nid} generated verifiable score σ = {score:.4f}",
+            })
+
+        logs.append({
+            "level": "SUCCESS",
+            "message": f"[VRF COMPUTE] All {len(nodes)} peers evaluated local VRF scores. Awaiting neighborhood exchange in Step 3.",
+        })
+
+        return {
+            "nodes": nodes,
+            "logs": logs,
+        }
+
     def run_vrf_election(
         self,
         nodes: List[Dict[str, Any]],
@@ -511,8 +557,8 @@ class SemanticDFLEngine:
         If (vrf_score_p, id_p) == m_p, node p elects itself as INITIATOR.
         """
         STORYBOARD_SCORES = {
-            2: 0.041, 7: 0.052, 13: 0.038, 17: 0.047, 22: 0.035,
-            28: 0.059, 32: 0.044, 37: 0.039, 42: 0.049, 47: 0.042,
+            2: 0.0412, 7: 0.0524, 13: 0.0381, 17: 0.0475, 22: 0.0353,
+            28: 0.0592, 32: 0.0441, 37: 0.0394, 42: 0.0493, 47: 0.0427,
         }
 
         # If VRF scores are not yet assigned (e.g. Step 1 initial unassigned state), assign them

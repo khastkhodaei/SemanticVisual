@@ -263,3 +263,60 @@ def test_storyboard_step2_vrf_election():
     assert sorted(step2_data["initiators"]) == expected_leaders
     assert len(step2_data["logs"]) > 0
 
+
+def test_storyboard_step2_local_vrf_compute():
+    """Verify Step 2 Pure Local VRF Computation:
+
+    1. Each node evaluates sigma_p in [0, 1).
+    2. All nodes remain strictly in role='CLIENT' and status='NOT_ASSIGNED'.
+    3. Node coordinates and adjacency are fully preserved.
+    4. FastAPI /api/v1/step/vrf-compute endpoint succeeds and populates vrf_score for all 50 nodes.
+    """
+    engine = SemanticDFLEngine(seed=42)
+    step1 = engine.generate_storyboard_step1()
+    nodes = step1["nodes"]
+
+    # Initial Step 1 state
+    assert all(n["vrf_score"] is None for n in nodes)
+    assert all(n["role"] == "CLIENT" for n in nodes)
+    assert all(n["status"] == "NOT_ASSIGNED" for n in nodes)
+
+    # Save original coordinates
+    original_coords = {n["id"]: (n["coords"]["x"], n["coords"]["y"]) for n in nodes}
+
+    # Execute Step 2 Local Computation
+    compute_res = engine.compute_local_vrf(nodes=nodes)
+    computed_nodes = compute_res["nodes"]
+
+    # Assertion 1: All 50 nodes have valid VRF score in [0, 1)
+    for n in computed_nodes:
+        assert n["vrf_score"] is not None
+        assert isinstance(n["vrf_score"], float)
+        assert 0.0 <= n["vrf_score"] < 1.0
+
+        # Assertion 2: Strict pure Step 2 scope - no leaders, all CLIENTs
+        assert n["role"] == "CLIENT"
+        assert n["status"] == "NOT_ASSIGNED"
+        assert n["zone_id"] is None
+
+        # Assertion 3: Coordinates preserved
+        nid = n["id"]
+        assert (n["coords"]["x"], n["coords"]["y"]) == original_coords[nid]
+
+    assert len(compute_res["logs"]) == 51  # 50 individual + 1 summary
+
+    # Assertion 4: Test FastAPI endpoint /api/v1/step/vrf-compute
+    client = TestClient(app)
+    init_res = client.post("/api/v1/init", json={"benchmark": "Non-IID 10-Class Storyboard"})
+    assert init_res.status_code == 200
+    session_id = init_res.json()["session_id"]
+
+    res = client.post("/api/v1/step/vrf-compute", json={"session_id": session_id})
+    assert res.status_code == 200
+    res_data = res.json()
+    assert len(res_data["nodes"]) == 50
+    assert all(n["vrf_score"] is not None for n in res_data["nodes"])
+    assert all(n["role"] == "CLIENT" for n in res_data["nodes"])
+    assert all(n["status"] == "NOT_ASSIGNED" for n in res_data["nodes"])
+
+
