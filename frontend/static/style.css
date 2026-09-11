@@ -151,9 +151,18 @@ body {
   color: var(--brand-blue);
 }
 
+.step-item.active.step-indigo {
+  color: #4f46e5;
+}
+
 .formula-card.formula-blue {
   border-left-color: var(--brand-blue);
   background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+}
+
+.formula-card.formula-indigo {
+  border-left-color: #4f46e5;
+  background: linear-gradient(135deg, #eef2ff 0%, #ffffff 100%);
 }
 
 .step-item.completed {
@@ -202,6 +211,13 @@ body {
   border-color: #059669;
   color: #ffffff;
   box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.25);
+}
+
+.step-item.active.step-indigo .step-bubble {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
 }
 
 .step-item.completed .step-bubble {

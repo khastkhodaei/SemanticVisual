@@ -1672,6 +1672,250 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "tau": 0.80,
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 9:
+        # Step 9: Inter-Initiator P_min Exchange via Boundary Gateways & Global Quantile Consensus
+        # Initiators (C2, C4, C8) mutually exchange zone proposals via boundary peers (C1 and C6)
+        # to reach consensus on Global P = 3.
+        initiators = [2, 4, 8]
+        node_to_zone = {
+            1: 2, 2: 2, 3: 2,
+            4: 4, 5: 4, 6: 4, 7: 4,
+            8: 8, 9: 8, 10: 8,
+        }
+
+        discovered_neighbor_zones = {
+            2: ["C4"],
+            4: ["C2", "C8"],
+            8: ["C4"],
+        }
+
+        local_zone_proposals = {
+            2: 2,
+            4: 3,
+            8: 3,
+        }
+
+        received_neighbor_p_map = {
+            2: {"C4": 3},
+            4: {"C2": 2, "C8": 3},
+            8: {"C4": 3},
+        }
+
+        # Multi-hop exchange traces via boundary gateway nodes
+        packet_events = [
+            # C2 -> C1 -> C4 (P=2)
+            {
+                "packet_id": "pkt_exchange_2_1_4",
+                "source": "C2",
+                "target": "C4",
+                "source_num": 2,
+                "target_num": 4,
+                "relay": "C1",
+                "relay_num": 1,
+                "path": ["C2", "C1", "C4"],
+                "path_nums": [2, 1, 4],
+                "type": "INTER_INITIATOR_EXCHANGE",
+                "p_val": 2,
+                "p_min": 2,
+                "label": "P=2",
+                "color": "#059669",
+                "route_label": "C2 -> C1 -> C4",
+                "zone_id": 2,
+                "payload": {"msg": "PROPOSAL_EXCHANGE", "p_val": 2, "from_zone": 2, "relay": 1, "to_zone": 4},
+            },
+            # C4 -> C1 -> C2 (P=3)
+            {
+                "packet_id": "pkt_exchange_4_1_2",
+                "source": "C4",
+                "target": "C2",
+                "source_num": 4,
+                "target_num": 2,
+                "relay": "C1",
+                "relay_num": 1,
+                "path": ["C4", "C1", "C2"],
+                "path_nums": [4, 1, 2],
+                "type": "INTER_INITIATOR_EXCHANGE",
+                "p_val": 3,
+                "p_min": 3,
+                "label": "P=3",
+                "color": "#ea580c",
+                "route_label": "C4 -> C1 -> C2",
+                "zone_id": 4,
+                "payload": {"msg": "PROPOSAL_EXCHANGE", "p_val": 3, "from_zone": 4, "relay": 1, "to_zone": 2},
+            },
+            # C4 -> C6 -> C8 (P=3)
+            {
+                "packet_id": "pkt_exchange_4_6_8",
+                "source": "C4",
+                "target": "C8",
+                "source_num": 4,
+                "target_num": 8,
+                "relay": "C6",
+                "relay_num": 6,
+                "path": ["C4", "C6", "C8"],
+                "path_nums": [4, 6, 8],
+                "type": "INTER_INITIATOR_EXCHANGE",
+                "p_val": 3,
+                "p_min": 3,
+                "label": "P=3",
+                "color": "#ea580c",
+                "route_label": "C4 -> C6 -> C8",
+                "zone_id": 4,
+                "payload": {"msg": "PROPOSAL_EXCHANGE", "p_val": 3, "from_zone": 4, "relay": 6, "to_zone": 8},
+            },
+            # C8 -> C6 -> C4 (P=3)
+            {
+                "packet_id": "pkt_exchange_8_6_4",
+                "source": "C8",
+                "target": "C4",
+                "source_num": 8,
+                "target_num": 4,
+                "relay": "C6",
+                "relay_num": 6,
+                "path": ["C8", "C6", "C4"],
+                "path_nums": [8, 6, 4],
+                "type": "INTER_INITIATOR_EXCHANGE",
+                "p_val": 3,
+                "p_min": 3,
+                "label": "P=3",
+                "color": "#7c3aed",
+                "route_label": "C8 -> C6 -> C4",
+                "zone_id": 8,
+                "payload": {"msg": "PROPOSAL_EXCHANGE", "p_val": 3, "from_zone": 8, "relay": 6, "to_zone": 4},
+            },
+        ]
+
+        # Prior evaluation data from Step 8 for metadata preservation
+        step8_data = get_10node_step_data(8)
+        step8_nodes_map = {n["id"]: n for n in step8_data["nodes"]}
+
+        step9_nodes = []
+        for n in nodes:
+            nid = n["id"]
+            n_copy = dict(step8_nodes_map[nid])
+            is_init = (nid in initiators)
+            zid = node_to_zone[nid]
+
+            # Set global consensus agreement
+            n_copy["agreed_global_p"] = 3
+            n_copy["consensus_status"] = "AGREED"
+
+            if is_init:
+                n_copy["local_zone_p"] = local_zone_proposals[nid]
+                n_copy["received_neighbor_p"] = dict(received_neighbor_p_map[nid])
+                n_copy["relay_active"] = False
+                n_copy["relayed_packets"] = []
+                if nid == 2:
+                    n_copy["negotiation_table"] = {
+                        "local_zone_proposal": 2,
+                        "received_from_neighbors": [{"neighbor": "C4", "via": "C1 (Boundary Gateway)", "p_val": 3}],
+                        "proposals_considered": [2, 3],
+                        "formula": "max(2, 3) = 3 (global 80% quantile)",
+                        "agreed_p": 3,
+                        "status": "AGREED",
+                    }
+                elif nid == 4:
+                    n_copy["negotiation_table"] = {
+                        "local_zone_proposal": 3,
+                        "received_from_neighbors": [
+                            {"neighbor": "C2", "via": "C1 (Boundary Gateway)", "p_val": 2},
+                            {"neighbor": "C8", "via": "C6 (Boundary Gateway)", "p_val": 3},
+                        ],
+                        "proposals_considered": [2, 3, 3],
+                        "formula": "max(2, 3, 3) = 3 (global 80% quantile)",
+                        "agreed_p": 3,
+                        "status": "AGREED",
+                    }
+                elif nid == 8:
+                    n_copy["negotiation_table"] = {
+                        "local_zone_proposal": 3,
+                        "received_from_neighbors": [{"neighbor": "C4", "via": "C6 (Boundary Gateway)", "p_val": 3}],
+                        "proposals_considered": [3, 3],
+                        "formula": "max(3, 3) = 3 (global 80% quantile)",
+                        "agreed_p": 3,
+                        "status": "AGREED",
+                    }
+            elif nid == 1:
+                n_copy["relay_active"] = True
+                n_copy["relayed_packets"] = [
+                    {"packet": "P_Z2=2", "from": "C2", "to": "C4", "p_val": 2, "label": "P=2", "route": "C2 -> C1 -> C4"},
+                    {"packet": "P_Z4=3", "from": "C4", "to": "C2", "p_val": 3, "label": "P=3", "route": "C4 -> C1 -> C2"},
+                ]
+                n_copy["relay_description"] = "Active Gateway forwarding proposal exchanges between Initiator C2 (P=2) and Initiator C4 (P=3)."
+            elif nid == 6:
+                n_copy["relay_active"] = True
+                n_copy["relayed_packets"] = [
+                    {"packet": "P_Z4=3", "from": "C4", "to": "C8", "p_val": 3, "label": "P=3", "route": "C4 -> C6 -> C8"},
+                    {"packet": "P_Z8=3", "from": "C8", "to": "C4", "p_val": 3, "label": "P=3", "route": "C8 -> C6 -> C4"},
+                ]
+                n_copy["relay_description"] = "Active Gateway forwarding proposal exchanges between Initiator C4 (P=3) and Initiator C8 (P=3)."
+            else:
+                n_copy["relay_active"] = False
+                n_copy["relayed_packets"] = []
+                n_copy["member_status"] = "Awaiting Step 10 Global-P Broadcast from Initiator"
+
+            step9_nodes.append(n_copy)
+
+        # Edges for Step 9: All 18 physical links remain solid slate lines
+        step9_edges = []
+        for e in edges:
+            e_copy = dict(e)
+            u = e["source_num"]
+            v = e["target_num"]
+            z_u = node_to_zone[u]
+            z_v = node_to_zone[v]
+            is_cross_zone = (z_u != z_v)
+            e_copy["is_inter_zone"] = is_cross_zone
+            e_copy["is_boundary"] = is_cross_zone
+            e_copy["is_boundary_edge"] = is_cross_zone
+            e_copy["style"] = "solid"
+            e_copy["line_color"] = "#64748b"
+            e_copy["line_style"] = "solid"
+            step9_edges.append(e_copy)
+
+        terminal_logs = [
+            "[STEP 9] Inter-Initiator P_min Exchange & Global Consensus initialized (q = 0.80).",
+            "[BOUNDARY ROUTING] Initiators utilize boundary gateway nodes C1 and C6 discovered in Step 6.",
+            "[RELAY C1] Node C1 relayed Packet P_Z2=2 (C2 -> C1 -> C4) and Packet P_Z4=3 (C4 -> C1 -> C2).",
+            "[RELAY C6] Node C6 relayed Packet P_Z4=3 (C4 -> C6 -> C8) and Packet P_Z8=3 (C8 -> C6 -> C4).",
+            "[NEGOTIATION] Initiator C2 received neighbor proposal from C4: P=3 (holds local P=2).",
+            "[NEGOTIATION] Initiator C4 received neighbor proposals from C2: P=2, C8: P=3 (holds local P=3).",
+            "[NEGOTIATION] Initiator C8 received neighbor proposal from C4: P=3 (holds local P=3).",
+            "[CONSENSUS] P = min(Quantile_0.8({P_min^i}), P_max) = max(2, 3, 3) = 3.",
+            "[CONSENSUS] All 3 Zone Initiators (C2, C4, C8) reached unanimous consensus on Global P = 3.",
+            "[READY] Prepared for Step 10: Global-P Broadcast & Signature Extraction.",
+        ]
+
+        return {
+            "step": 9,
+            "title": "Step 9: Inter-Initiator P_min Exchange via Boundary Gateways & Global Consensus",
+            "phase_badge": "ACTIVE PHASE: STEP 9: INTER-INITIATOR CONSENSUS EXCHANGE",
+            "description": "Initiators exchange zone proposals via boundary peers C1 and C6, reaching unanimous global consensus on unified signature length P = 3.",
+            "formula": "P = \\min(\\text{Quantile}_{0.8}(\\{P_{\\min}^i\\}), P_{\\max}) = 3, \\quad I_p \\xleftrightarrow{\\text{Frontier}} I_q",
+            "formula_desc": "Initiators relay their zone proposals through boundary nodes C1 and C6 to agree on a unified global P=3.",
+            "nodes": step9_nodes,
+            "edges": step9_edges,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "packet_events": packet_events,
+            "packet_exchanges": packet_events,
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "discovered_neighbor_zones": discovered_neighbor_zones,
+            "agreed_global_p": 3,
+            "consensus_status": "AGREED",
+            "tau": 0.80,
+            "quantile_q": 0.80,
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,

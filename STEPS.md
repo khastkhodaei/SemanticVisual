@@ -237,3 +237,24 @@ $$P_{\min}^i = \min \{ p \in [1, 10] \mid \text{QualityRatio}(\mathbf{w}_i, p) \
 | Node 10 | [0.43, 0.33, 0.12, 0.12] | 75.7% | 95.4% | 97.7% | 2 | 3 |
 
 Each member transmits a lightweight response packet carrying its local $P_{\min}^i$ back to its zone initiator.
+
+---
+
+## Step 9 — Inter-Initiator Exchange via Boundary Peers & Global Consensus
+
+Following the internal zone reporting in Step 8, each initiator holds its local zone proposal:
+- **Zone 2 (Initiator C2):** Local proposed $P = 2$
+- **Zone 4 (Initiator C4):** Local proposed $P = 3$
+- **Zone 8 (Initiator C8):** Local proposed $P = 3$
+
+### 1. Boundary Relay Routes (Using Adjacencies Discovered in Step 6):
+Initiators exchange these values across zone boundaries using the gateway peers:
+- **C2 <---> C4 route:** Messages relay through **Node 1** (Physical links: C2 <-> C1 and C1 <-> C4).
+- **C4 <---> C8 route:** Messages relay through **Node 6** (Physical links: C4 <-> C6 and C6 <-> C8).
+
+### 2. Global Quantile Consensus:
+According to the protocol formula:
+$$P = \min(\text{Quantile}_q(\{P_{\min}^i\}_{i \in V}), P_{\max}) = 3 \quad (q = 0.80)$$
+
+Initiators compare the collected zone values ($[2, 3, 3]$) and take $\max(2, 3, 3) = 3$ (80th quantile across all 10 nodes).
+**Result:** All three initiators reach unanimous agreement on **$P = 3$**.

@@ -718,7 +718,7 @@ function getNodeElement(id) {
 
 // 4. Main Step Loading Function (Steps 1 to 6)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 8) return;
+  if (stepNumber < 1 || stepNumber > 9) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -769,6 +769,13 @@ async function loadStep(stepNumber) {
       } catch (renderErr) {
         console.error("Step 8 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 8 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 9) {
+      try {
+        renderStep9(data);
+      } catch (renderErr) {
+        console.error("Step 9 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 9 Render Error: ${renderErr.message}`);
       }
     }
 
@@ -871,6 +878,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 8 / LOCAL BINARY SEARCH & REPORTING";
     if (stepTitle) stepTitle.textContent = "Step 8: Local Binary Search & P_min^i Reporting";
     if (stepDesc) stepDesc.textContent = "Each client executes local binary search on interval p in [1, 10] on sorted absolute weights to find minimal P_min retaining 80% quality, then reports to zone initiator.";
+  } else if (step === 9) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 9: INTER-INITIATOR CONSENSUS EXCHANGE";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-300";
+    });
+    if (stepTag) stepTag.textContent = "STEP 9 / INTER-INITIATOR CONSENSUS";
+    if (stepTitle) stepTitle.textContent = "Step 9: Inter-Initiator Exchange via Boundary Gateways & Global Consensus";
+    if (stepDesc) stepDesc.textContent = "Initiators relay their zone proposals through boundary nodes C1 and C6 to agree on a unified global P=3.";
   }
 }
 
@@ -1880,6 +1895,222 @@ function animateStep8ReportPackets(packets, allNodes) {
   activeAnimationId = requestAnimationFrame(runFrame);
 }
 
+// 8f. Storyboard Step 9: Inter-Initiator Exchange via Boundary Peers & Global Consensus
+function renderStep9(data) {
+  stopCurrentPacketAnimation();
+
+  // Explicitly sync header active step badge
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 9: INTER-INITIATOR CONSENSUS EXCHANGE";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-300";
+  });
+
+  renderSidebarFormula(
+    "Step 9: Inter-Initiator Exchange & Global Consensus",
+    "P = \\min(\\text{Quantile}_{0.8}(\\{P_{\\min}^i\\}), P_{\\max}) = 3, \\quad I_p \\xleftrightarrow{\\text{Frontier}} I_q",
+    "Initiators relay their zone proposals through boundary nodes C1 and C6 to agree on a unified global P=3.",
+    "Step 9: Consensus",
+    false,
+    "indigo"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Step 9: Multi-Hop Inter-Initiator Exchange via Boundary Peers (Agreed P = 3)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const zoneLegend = document.getElementById("zoneLegendItem");
+  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>3 Initiators in Consensus (<span class="text-emerald-700 font-bold">C2: P=2</span>, <span class="text-orange-700 font-bold">C4: P=3</span>, <span class="text-purple-700 font-bold">C8: P=3</span>) → <span class="text-indigo-700 font-bold">Global P = 3</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Render nodes with Tonal Zone colors and clean solid slate physical links
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    showBoundaryEdges: false
+  });
+
+  logToTerminal("ZONE", "[STEP 9] Inter-Initiator P_min Exchange & Global Consensus initialized (q = 0.80).");
+  logToTerminal("INFO", "Route C2 <-> C4: Relayed through Boundary Gateway Node C1 (P=2 from C2, P=3 from C4).");
+  logToTerminal("INFO", "Route C4 <-> C8: Relayed through Boundary Gateway Node C6 (P=3 from C4, P=3 from C8).");
+  logToTerminal("SUCCESS", "Initiators computed max(2, 3, 3) = 3 (80th quantile across network).");
+  logToTerminal("SUCCESS", "All 3 Zone Initiators (C2, C4, C8) reached unanimous agreement on Global P = 3.");
+
+  const packets = data.packet_events || data.packet_exchanges || [];
+  if (packets.length > 0) {
+    animateStep9ConsensusRelays(packets, data.nodes);
+  }
+}
+
+// Traveling Multi-Hop Reverse Inter-Initiator Relay animation in Step 9
+function animateStep9ConsensusRelays(packets, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const duration = 3200; // ms for full 2-hop round trip
+  const startTime = performance.now();
+  const activeList = packets || [];
+
+  function runFrame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1.0);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Subtle gateway glow on C1 and C6 when relaying (active around progress 0.35 to 0.65)
+    if (progress >= 0.35 && progress <= 0.65) {
+      const midProg = (progress - 0.35) / 0.30;
+      const glowAlpha = Math.sin(midProg * Math.PI) * 0.9;
+      [1, 6].forEach(gwId => {
+        const gwEl = getNodeElement(gwId);
+        if (gwEl) {
+          const pos = gwEl.renderedPosition();
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 24 + midProg * 8, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(59, 130, 246, ${glowAlpha})`;
+          ctx.lineWidth = 3.0;
+          ctx.shadowColor = "#3b82f6";
+          ctx.shadowBlur = 14;
+          ctx.stroke();
+
+          // Inner gateway pulse dot
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 6.0, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(147, 197, 253, ${glowAlpha * 0.8})`;
+          ctx.fill();
+          ctx.restore();
+        }
+      });
+    }
+
+    // Destination arrival pulse on initiators near the end
+    if (progress >= 0.88) {
+      const arrProg = (progress - 0.88) / 0.12;
+      const arrAlpha = Math.sin(arrProg * Math.PI) * 0.85;
+      [2, 4, 8].forEach(initId => {
+        const initEl = getNodeElement(initId);
+        if (initEl) {
+          const pos = initEl.renderedPosition();
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 26 + arrProg * 10, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(99, 102, 241, ${arrAlpha})`;
+          ctx.lineWidth = 3.5;
+          ctx.shadowColor = "#6366f1";
+          ctx.shadowBlur = 12;
+          ctx.stroke();
+          ctx.restore();
+        }
+      });
+    }
+
+    // Animate multi-hop packets
+    let badgeAlpha = 1.0;
+    if (progress < 0.08) {
+      badgeAlpha = progress / 0.08;
+    } else if (progress > 0.88) {
+      badgeAlpha = Math.max(0, (1.0 - progress) / 0.12);
+    }
+
+    activeList.forEach(pkt => {
+      const pathNums = pkt.path_nums || [pkt.source_num, pkt.relay_num, pkt.target_num];
+      if (!pathNums || pathNums.length < 3) return;
+
+      const n0 = getNodeElement(pathNums[0]);
+      const n1 = getNodeElement(pathNums[1]); // Relay Gateway
+      const n2 = getNodeElement(pathNums[2]); // Destination
+      if (!n0 || !n1 || !n2) return;
+
+      const p0 = n0.renderedPosition();
+      const p1 = n1.renderedPosition();
+      const p2 = n2.renderedPosition();
+
+      let curX, curY;
+      if (progress < 0.5) {
+        // Hop 1: n0 -> n1
+        const subProgress = progress / 0.5;
+        const subEase = easeInOutQuad(subProgress);
+        curX = p0.x + (p1.x - p0.x) * subEase;
+        curY = p0.y + (p1.y - p0.y) * subEase;
+      } else {
+        // Hop 2: n1 -> n2
+        const subProgress = (progress - 0.5) / 0.5;
+        const subEase = easeInOutQuad(subProgress);
+        curX = p1.x + (p2.x - p1.x) * subEase;
+        curY = p1.y + (p2.y - p1.y) * subEase;
+      }
+
+      const pktColor = pkt.color || "#4f46e5";
+
+      // Animated traveling packet particle
+      ctx.save();
+      ctx.globalAlpha = Math.min(1.0, badgeAlpha + 0.2);
+      ctx.beginPath();
+      ctx.arc(curX, curY, 5.5, 0, Math.PI * 2);
+      ctx.fillStyle = pktColor;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = pktColor;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(curX, curY, 2.2, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+      ctx.restore();
+
+      // Synchronized floating pill badge above particle
+      if (badgeAlpha > 0.05) {
+        const badgeLabel = pkt.label || `P=${pkt.p_val || 3}`;
+        const badgeBg = `rgba(15, 23, 42, ${0.90 * badgeAlpha})`;
+        const textColor = pkt.p_val === 2 ? "#34d399" : "#fdba74";
+        const borderColor = pkt.p_val === 2 ? `rgba(52, 211, 153, ${0.8 * badgeAlpha})` : `rgba(251, 146, 60, ${0.8 * badgeAlpha})`;
+
+        ctx.save();
+        ctx.globalAlpha = badgeAlpha;
+        drawCanvasFloatingBadge(
+          ctx,
+          badgeLabel,
+          curX,
+          curY - 17,
+          badgeBg,
+          textColor,
+          borderColor
+        );
+        ctx.restore();
+      }
+    });
+
+    if (progress < 1.0) {
+      activeAnimationId = requestAnimationFrame(runFrame);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setTimeout(() => {
+        if (currentStep === 9) {
+          animateStep9ConsensusRelays(packets, allNodes);
+        }
+      }, 1900);
+    }
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
 // Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
 function animateProbeFloodingWaves(waves, allNodes) {
   stopCurrentPacketAnimation();
@@ -2471,10 +2702,10 @@ function showNodeModal(nodeData) {
       vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
     }
 
-    // Mini bar profile for Step 5, 6, 7 & 8
+    // Mini bar profile for Step 5, 6, 7, 8 & 9
     const vectorBarsContainer = document.getElementById("cardVectorBarsContainer");
     const vectorBars = document.getElementById("cardVectorBars");
-    if ((currentStep === 5 || currentStep === 6 || currentStep === 7 || currentStep === 8) && vectorBarsContainer && vectorBars) {
+    if ((currentStep === 5 || currentStep === 6 || currentStep === 7 || currentStep === 8 || currentStep === 9) && vectorBarsContainer && vectorBars) {
       vectorBarsContainer.classList.remove("hidden");
       vectorBars.innerHTML = "";
       vec.forEach((val, idx) => {
@@ -3229,6 +3460,193 @@ function showNodeModal(nodeData) {
     if (bsSection) bsSection.classList.add("hidden");
   }
 
+  // Step 9: Inter-Initiator P_min Exchange & Global Consensus
+  const consensusSection = document.getElementById("cardConsensusSection");
+  const consensusBadge = document.getElementById("cardConsensusBadge");
+  const consensusContent = document.getElementById("cardConsensusContent");
+
+  if (currentStep === 9) {
+    if (probeSection) probeSection.classList.add("hidden");
+    if (bndSection) bndSection.classList.add("hidden");
+    if (pminSection) pminSection.classList.add("hidden");
+    if (bsSection) bsSection.classList.add("hidden");
+    if (consensusSection) consensusSection.classList.remove("hidden");
+
+    const isInitiator = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
+    const isBoundary = Boolean(nodeData.is_boundary || [1, 6].includes(idNum));
+    const assignedZ = nodeData.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
+
+    if (cardStatusBadge) {
+      if (isInitiator) {
+        cardStatusBadge.textContent = "👑 INITIATOR (CONSENSUS REACHED)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+      } else if (isBoundary) {
+        cardStatusBadge.textContent = "🌐 BOUNDARY GATEWAY (ACTIVE RELAY)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-blue-100 text-blue-900 border-blue-400";
+      } else {
+        cardStatusBadge.textContent = "CLIENT (ZONE MEMBER)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-purple-50 text-purple-800 border-purple-200";
+      }
+    }
+
+    if (consensusBadge) {
+      if (isInitiator) {
+        consensusBadge.textContent = `Zone ${assignedZ} Initiator (Agreed P = 3)`;
+        consensusBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
+      } else if (isBoundary) {
+        consensusBadge.textContent = `Boundary Relay Gateway (C${idNum})`;
+        consensusBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-blue-100 text-blue-900 border border-blue-300";
+      } else {
+        consensusBadge.textContent = `Zone ${assignedZ} Member`;
+        consensusBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-800 border border-slate-300";
+      }
+    }
+
+    if (consensusContent) {
+      consensusContent.innerHTML = "";
+
+      if (isInitiator) {
+        const localP = nodeData.local_zone_p || (idNum === 2 ? 2 : 3);
+        const receivedMap = nodeData.received_neighbor_p || (idNum === 2 ? {"C4": 3} : idNum === 4 ? {"C2": 2, "C8": 3} : {"C4": 3});
+        const receivedEntries = Object.entries(receivedMap).map(([nbr, pVal]) => `
+          <tr class="hover:bg-amber-50/50">
+            <td class="py-1 px-2 font-bold text-amber-950 font-mono">${nbr}</td>
+            <td class="py-1 px-2 text-slate-600 font-mono">${nbr === 'C2' || (idNum === 2 && nbr === 'C4') ? 'Node C1' : 'Node C6'}</td>
+            <td class="py-1 px-2 text-right">
+              <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold border border-amber-300 text-[10px] font-mono">
+                P = ${pVal}
+              </span>
+            </td>
+          </tr>
+        `).join("");
+
+        consensusContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-amber-200 shadow-xs space-y-2.5">
+            <div>
+              <div class="font-bold text-[10.5px] text-amber-950 flex items-center gap-1 mb-1">
+                <span>🤝</span>
+                <span>Inter-Zone Negotiation Table:</span>
+              </div>
+              <div class="overflow-x-auto rounded border border-amber-100">
+                <table class="w-full text-left text-[10px] font-mono">
+                  <thead class="bg-amber-100/70 text-amber-900">
+                    <tr>
+                      <th class="py-1 px-2">Source Initiator</th>
+                      <th class="py-1 px-2">Relay Gateway</th>
+                      <th class="py-1 px-2 text-right">Proposed P</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-amber-100 bg-white">
+                    <tr class="bg-amber-50/40">
+                      <td class="py-1 px-2 font-bold text-emerald-800 font-mono">C${idNum} (Local Zone)</td>
+                      <td class="py-1 px-2 text-slate-500 font-mono">Direct Self</td>
+                      <td class="py-1 px-2 text-right">
+                        <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-bold border border-emerald-300 text-[10px] font-mono">
+                          P = ${localP}
+                        </span>
+                      </td>
+                    </tr>
+                    ${receivedEntries}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Consensus Computation Box -->
+            <div class="p-2.5 bg-gradient-to-r from-amber-50 to-indigo-50 rounded-lg border border-indigo-200 space-y-1">
+              <div class="text-[10.5px] font-bold text-indigo-950 flex items-center justify-between">
+                <span>🎯 Quantile Consensus Formula:</span>
+                <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-300 text-[10px] font-mono">✓ Consensus Reached</span>
+              </div>
+              <div class="text-[10px] font-mono text-slate-700 bg-white/80 p-1.5 rounded border border-indigo-100">
+                P = min(Quantile_0.8({P_min^i}), P_max) = max(2, 3, 3) = 3
+              </div>
+              <div class="flex items-center justify-between pt-1">
+                <span class="text-[10px] font-bold text-slate-700">Agreed Global Dimension:</span>
+                <span class="px-3 py-0.5 rounded-md bg-indigo-600 text-white font-bold text-xs font-mono shadow-xs">
+                  Global P = 3
+                </span>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (isBoundary) {
+        const relayPackets = nodeData.relayed_packets || (idNum === 1 ? [
+          {packet: "P_Z2=2", from: "C2", to: "C4", p_val: 2, route: "C2 -> C1 -> C4"},
+          {packet: "P_Z4=3", from: "C4", to: "C2", p_val: 3, route: "C4 -> C1 -> C2"}
+        ] : [
+          {packet: "P_Z4=3", from: "C4", to: "C8", p_val: 3, route: "C4 -> C6 -> C8"},
+          {packet: "P_Z8=3", from: "C8", to: "C4", p_val: 3, route: "C8 -> C6 -> C4"}
+        ]);
+
+        const relayRows = relayPackets.map(r => `
+          <tr class="hover:bg-blue-50/50">
+            <td class="py-1 px-2 font-mono font-bold text-blue-900">${r.from} → ${r.to}</td>
+            <td class="py-1 px-2 font-mono text-slate-600">${r.route}</td>
+            <td class="py-1 px-2 text-right">
+              <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-900 font-bold border border-blue-300 text-[10px] font-mono">
+                P = ${r.p_val}
+              </span>
+            </td>
+          </tr>
+        `).join("");
+
+        consensusContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-blue-200 shadow-xs space-y-2.5">
+            <div>
+              <div class="font-bold text-[10.5px] text-blue-950 flex items-center gap-1 mb-1">
+                <span>🌐</span>
+                <span>Active Gateway Relay Log:</span>
+              </div>
+              <div class="overflow-x-auto rounded border border-blue-100">
+                <table class="w-full text-left text-[10px] font-mono">
+                  <thead class="bg-blue-100/70 text-blue-900">
+                    <tr>
+                      <th class="py-1 px-2">Initiator Exchange</th>
+                      <th class="py-1 px-2">Physical Route</th>
+                      <th class="py-1 px-2 text-right">Payload</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-blue-100 bg-white">
+                    ${relayRows}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="p-2 bg-blue-50/90 rounded border border-blue-200 text-[10px] text-slate-700 leading-relaxed font-sans">
+              <span class="font-bold text-blue-950">Gateway Role:</span> Peer C${idNum} is the critical inter-zone boundary bridge forwarding proposal packets between neighboring initiators.
+            </div>
+
+            <div class="flex items-center justify-between p-2 bg-indigo-50 rounded border border-indigo-200">
+              <span class="text-[10px] font-bold text-indigo-950">Network Consensus Result:</span>
+              <span class="px-2.5 py-0.5 rounded bg-indigo-600 text-white font-bold text-xs font-mono">
+                Global P = 3
+              </span>
+            </div>
+          </div>
+        `;
+      } else {
+        consensusContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2">
+            <div class="text-[10.5px] font-bold text-slate-900 flex items-center gap-1">
+              <span>⏳</span>
+              <span>Member Status:</span>
+            </div>
+            <div class="p-2.5 bg-slate-50 rounded border border-slate-200 text-[10.5px] text-slate-700 space-y-1">
+              <div>Zone: <span class="font-bold text-slate-900">Zone ${assignedZ}</span></div>
+              <div>Reported in Step 8: <span class="font-mono font-bold text-purple-700">P_min = ${nodeData.p_min_reported || 2}</span></div>
+              <div>Initiators Status: <span class="text-emerald-700 font-bold">Unanimously Agreed on P = 3</span></div>
+              <div class="text-slate-500 pt-1 text-[9.5px]">Awaiting Step 10 Global-P Broadcast from Zone Initiator.</div>
+            </div>
+          </div>
+        `;
+      }
+    }
+  } else {
+    if (consensusSection) consensusSection.classList.add("hidden");
+  }
+
   card.classList.remove("hidden");
 }
 
@@ -3594,11 +4012,11 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 8; s++) {
+  for (let s = 1; s <= 9; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
-    item.classList.remove("active", "completed", "step-amber", "step-purple", "step-emerald", "step-blue");
+    item.classList.remove("active", "completed", "step-amber", "step-purple", "step-emerald", "step-blue", "step-indigo");
     if (s < step) {
       item.classList.add("completed");
     } else if (s === step) {
@@ -3611,6 +4029,8 @@ function updateStepper(step) {
         item.classList.add("step-purple");
       } else if (step === 7) {
         item.classList.add("step-blue");
+      } else if (step === 9) {
+        item.classList.add("step-indigo");
       }
     }
   }
@@ -3640,7 +4060,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 8) {
+    if (step < 9) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -3648,7 +4068,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 8 active (Local Binary Search & Reporting complete)";
+      btnNext.title = "Step 9 active (Inter-Initiator Consensus complete on P=3)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -3661,7 +4081,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 8);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 9);
 }
 
 function bindActionButtons() {
@@ -3685,16 +4105,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 8) {
+      if (currentStep < 9) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 8 is active (Local Binary Search & Reporting complete).");
+        logToTerminal("INFO", "Step 9 is active (Inter-Initiator Consensus complete on P=3).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 8)
-  for (let s = 1; s <= 8; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 9)
+  for (let s = 1; s <= 9; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {
