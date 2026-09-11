@@ -214,3 +214,26 @@ $$\text{REQ\_P\_MIN}(\text{target\_zone} = Z_I, \tau = 0.80)$$
 - **Initiator C8 (Zone 8)** sends request to: Node 9 and Node 10.
 
 Peers receive the query and prepare to execute the local binary search in the next step.
+
+---
+
+## Step 8 — Local Binary Search & P_min^i Reporting
+
+Each client executes a local binary search on interval $p \in [1, 10]$ on sorted absolute weights to find:
+$$P_{\min}^i = \min \{ p \in [1, 10] \mid \text{QualityRatio}(\mathbf{w}_i, p) \ge 0.80 \}$$
+
+### Evaluation Results across the 10 Nodes:
+| Node | Sorted Non-Zero Weights | Ratio p=1 | Ratio p=2 | Ratio p=3 | P_min (Cosine >= 80%) | P_min (Energy >= 80%) |
+|---|---|---|---|---|:---:|:---:|
+| Node 1 | [0.46, 0.37, 0.17] | 74.9% | 96.1% | 100.0% | 2 | 2 |
+| Node 2 (Init) | [0.57, 0.24, 0.19] | 88.1% | 95.6% | 100.0% | 1 | 2 |
+| Node 3 | [0.46, 0.34, 0.20] | 75.9% | 94.4% | 100.0% | 2 | 2 |
+| Node 4 (Init) | [0.62, 0.21, 0.17] | 91.7% | 96.8% | 100.0% | 1 | 2 |
+| Node 5 | [0.53, 0.35, 0.12] | 82.0% | 98.3% | 100.0% | 1 | 2 |
+| Node 6 | [0.34, 0.24, 0.23, 0.19] | 66.4% | 81.3% | 92.9% | 2 | 3 |
+| Node 7 | [0.41, 0.27, 0.21, 0.11] | 75.2% | 90.1% | 97.9% | 2 | 3 |
+| Node 8 (Init) | [0.38, 0.32, 0.30] | 65.5% | 85.6% | 100.0% | 2 | 3 |
+| Node 9 | [0.45, 0.32, 0.23] | 75.2% | 92.3% | 100.0% | 2 | 3 |
+| Node 10 | [0.43, 0.33, 0.12, 0.12] | 75.7% | 95.4% | 97.7% | 2 | 3 |
+
+Each member transmits a lightweight response packet carrying its local $P_{\min}^i$ back to its zone initiator.

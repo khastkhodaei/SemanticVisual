@@ -1206,6 +1206,112 @@ class SemanticDFLEngine:
             "logs": logs,
         }
 
+    def run_local_binary_search(
+        self,
+        nodes: List[Dict[str, Any]],
+        tau: float = 0.80,
+    ) -> Dict[str, Any]:
+        """Execute local binary search on each node to determine minimal dimension P_min^i.
+
+        For each peer i with parameter vector w_i:
+        1. Sort non-zero components by absolute weight magnitude.
+        2. Binary search on p in [1, len(w_i)]:
+           Cosine ratio = sqrt(sum_{m=1}^p w_{sorted}^2) / ||w_i||_2 >= tau.
+           Weight energy ratio = (sum_{m=1}^p w_{sorted}^2) / (||w_i||_2^2) >= tau.
+        3. Dispatch reverse report packets from members to their zone initiator.
+        """
+        logs: List[Dict[str, str]] = []
+        updated_nodes = []
+        packet_events = []
+
+        for n in nodes:
+            n_copy = dict(n)
+            nid = n_copy["id"]
+            zid = n_copy.get("assigned_zone") or n_copy.get("zone_id")
+            vec = n_copy.get("vector_10d") or n_copy.get("normalized_vector") or n_copy.get("vector") or []
+            
+            non_zero_sorted = sorted([abs(v) for v in vec if abs(v) > 1e-6], reverse=True)
+            if not non_zero_sorted:
+                non_zero_sorted = [1.0]
+
+            sq_total = sum(x * x for x in non_zero_sorted)
+            norm_total = np.sqrt(sq_total) if sq_total > 0 else 1.0
+
+            # Binary search for Cosine
+            low, high = 1, len(vec)
+            best_cos = high
+            trace = []
+            step_cnt = 1
+
+            while low <= high:
+                mid = (low + high) // 2
+                cur_sq = sum(x * x for x in non_zero_sorted[:mid])
+                cos_val = np.sqrt(cur_sq) / norm_total if norm_total > 0 else 1.0
+                meets = bool(cos_val >= tau)
+                action = f"Ratio {cos_val*100:.1f}% >= {tau*100:.0f}% -> search left" if meets else f"Ratio {cos_val*100:.1f}% < {tau*100:.0f}% -> search right"
+                trace.append({
+                    "step": step_cnt,
+                    "low": low,
+                    "high": high,
+                    "mid": mid,
+                    "ratio": round(float(cos_val), 4),
+                    "ratio_pct": f"{cos_val*100:.1f}%",
+                    "meets": meets,
+                    "action": action,
+                })
+                step_cnt += 1
+                if meets:
+                    best_cos = mid
+                    high = mid - 1
+                else:
+                    low = mid + 1
+
+            # Energy P_min
+            best_energy = len(vec)
+            for p in range(1, len(vec) + 1):
+                cur_sq = sum(x * x for x in non_zero_sorted[:p])
+                energy_val = cur_sq / sq_total if sq_total > 0 else 1.0
+                if energy_val >= tau:
+                    best_energy = p
+                    break
+
+            n_copy["p_min_cosine"] = best_cos
+            n_copy["p_min_energy"] = best_energy
+            n_copy["p_min"] = best_cos
+            n_copy["p_min_reported"] = best_cos
+            n_copy["binary_search_steps"] = trace
+
+            is_init = bool(n_copy.get("is_initiator"))
+            if not is_init and zid is not None:
+                packet_events.append({
+                    "packet_id": f"report_{nid}_to_{zid}",
+                    "source": f"C{nid}",
+                    "target": f"C{zid}",
+                    "source_num": nid,
+                    "target_num": zid,
+                    "type": "REPORT_P_MIN",
+                    "p_min": best_cos,
+                    "p_min_cosine": best_cos,
+                    "p_min_energy": best_energy,
+                    "label": f"P_min = {best_cos}",
+                    "color": n_copy.get("color", "#2563eb"),
+                    "zone_id": zid,
+                    "payload": {"msg": "REPORT_P_MIN", "p_min": best_cos, "source_id": nid},
+                })
+                logs.append({
+                    "level": "INFO",
+                    "message": f"Client C{nid} reported P_min = {best_cos} to Zone Initiator C{zid}."
+                })
+
+            updated_nodes.append(n_copy)
+
+        return {
+            "nodes": updated_nodes,
+            "packet_events": packet_events,
+            "tau": tau,
+            "logs": logs,
+        }
+
     def calculate_global_p_consensus(
         self,
         nodes: List[Dict[str, Any]],

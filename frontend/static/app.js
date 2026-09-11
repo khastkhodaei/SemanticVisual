@@ -718,7 +718,7 @@ function getNodeElement(id) {
 
 // 4. Main Step Loading Function (Steps 1 to 6)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 7) return;
+  if (stepNumber < 1 || stepNumber > 8) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -762,6 +762,13 @@ async function loadStep(stepNumber) {
       } catch (renderErr) {
         console.error("Step 7 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 7 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 8) {
+      try {
+        renderStep8(data);
+      } catch (renderErr) {
+        console.error("Step 8 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 8 Render Error: ${renderErr.message}`);
       }
     }
 
@@ -856,6 +863,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 7 / INITIATOR P_MIN QUERY";
     if (stepTitle) stepTitle.textContent = "Step 7: Initiator P_min Query Request";
     if (stepDesc) stepDesc.textContent = "Zone Initiators prompt zone members to evaluate the minimum signature length P_min^i needed to retain 80% model quality.";
+  } else if (step === 8) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 8: LOCAL BINARY SEARCH & P_MIN REPORTING";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-800 border border-purple-300";
+    });
+    if (stepTag) stepTag.textContent = "STEP 8 / LOCAL BINARY SEARCH & REPORTING";
+    if (stepTitle) stepTitle.textContent = "Step 8: Local Binary Search & P_min^i Reporting";
+    if (stepDesc) stepDesc.textContent = "Each client executes local binary search on interval p in [1, 10] on sorted absolute weights to find minimal P_min retaining 80% quality, then reports to zone initiator.";
   }
 }
 
@@ -1683,6 +1698,188 @@ function animateStep7PminPackets(packets, allNodes) {
   activeAnimationId = requestAnimationFrame(runFrame);
 }
 
+// 8e. Storyboard Step 8: Local Binary Search & P_min Reporting
+function renderStep8(data) {
+  stopCurrentPacketAnimation();
+
+  // Explicitly sync header active step badge
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 8: LOCAL BINARY SEARCH & P_MIN REPORTING";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-800 border border-purple-300";
+  });
+
+  renderSidebarFormula(
+    "Step 8: Local Binary Search & P_min^i Reporting",
+    "\\text{BinarySearch}(p \\in [1, 10]) \\rightarrow P_{\\min}^i, \\quad \\text{REPORT}(P_{\\min}^i) \\rightarrow I_{Z}",
+    "Each client executes local binary search on interval p in [1, 10] on sorted absolute weights to find minimal P_min retaining 80% quality.",
+    "Step 8: Binary Search",
+    false,
+    "purple"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Step 8: Reverse P_min Reporting to Zone Initiators (τ = 80%)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const zoneLegend = document.getElementById("zoneLegendItem");
+  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>3 Initiators Receiving Reports (<span class="text-emerald-700 font-bold">C2</span>, <span class="text-orange-700 font-bold">C4</span>, <span class="text-purple-700 font-bold">C8</span>) | <span class="text-purple-700 font-bold">Reverse P_min Reports In-Flight</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Render nodes with Tonal Colors and solid slate physical links
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    showBoundaryEdges: false
+  });
+
+  logToTerminal("ZONE", "[STEP 8] Local Binary Search & P_min Reporting initialized (tau = 0.80).");
+  logToTerminal("INFO", "Zone 2: C1 (P_min=2), C3 (P_min=2) reporting to Initiator C2 👑.");
+  logToTerminal("INFO", "Zone 4: C5 (P_min=1 [cos] / 2 [energy]), C6 (P_min=2 [cos] / 3 [energy]), C7 (P_min=2 [cos] / 3 [energy]) reporting to Initiator C4 👑.");
+  logToTerminal("INFO", "Zone 8: C9 (P_min=2 [cos] / 3 [energy]), C10 (P_min=2 [cos] / 3 [energy]) reporting to Initiator C8 👑.");
+  logToTerminal("SUCCESS", "All 10 nodes finalized local binary search and dispatched P_min reports.");
+
+  const packets = data.packet_events || data.packet_exchanges || [];
+  if (packets.length > 0) {
+    animateStep8ReportPackets(packets, data.nodes);
+  }
+}
+
+// Traveling Reverse P_min REPORT packet animation in Step 8
+function animateStep8ReportPackets(packets, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const duration = 2500; // ms
+  const startTime = performance.now();
+  const activeList = packets || [];
+  let arrivalPulseTriggered = false;
+
+  function runFrame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1.0);
+    const ease = easeInOutQuad(progress);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Calculate fade multiplier as packet nears destination (fades out completely between 85% and 100%)
+    let badgeAlpha = 1.0;
+    if (progress < 0.1) {
+      badgeAlpha = progress / 0.1;
+    } else if (progress > 0.85) {
+      badgeAlpha = Math.max(0, (1.0 - progress) / 0.15);
+    }
+
+    activeList.forEach(pkt => {
+      const srcId = pkt.source_num || pkt.source;
+      const tgtId = pkt.target_num || pkt.target;
+      const srcNode = getNodeElement(srcId);
+      const tgtNode = getNodeElement(tgtId);
+      if (!srcNode || !tgtNode) return;
+
+      const p1 = srcNode.renderedPosition();
+      const p2 = tgtNode.renderedPosition();
+
+      const curX = p1.x + (p2.x - p1.x) * ease;
+      const curY = p1.y + (p2.y - p1.y) * ease;
+
+      const pktColor = pkt.color || "#8b5cf6";
+
+      // Animated traveling packet particle
+      ctx.save();
+      ctx.globalAlpha = Math.min(1.0, badgeAlpha + 0.2);
+      ctx.beginPath();
+      ctx.arc(curX, curY, 5.0, 0, Math.PI * 2);
+      ctx.fillStyle = pktColor;
+      ctx.shadowBlur = 9;
+      ctx.shadowColor = pktColor;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(curX, curY, 2.0, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+      ctx.restore();
+
+      // Floating pill badge moving synchronously above particle dot
+      if (badgeAlpha > 0.05) {
+        const badgeLabel = pkt.label || `P_min = ${pkt.p_min || 2}`;
+        const badgeBg = `rgba(15, 23, 42, ${0.88 * badgeAlpha})`;
+        const textColor = "#a78bfa"; // Soft purple text
+        const borderColor = `rgba(167, 139, 250, ${0.75 * badgeAlpha})`;
+
+        ctx.save();
+        ctx.globalAlpha = badgeAlpha;
+        drawCanvasFloatingBadge(
+          ctx,
+          badgeLabel,
+          curX,
+          curY - 16,
+          badgeBg,
+          textColor,
+          borderColor
+        );
+        ctx.restore();
+      }
+    });
+
+    // When packets arrive (progress near 0.92-1.0), pulse receiving zone initiator nodes
+    if (progress >= 0.92) {
+      const pulseProg = (progress - 0.92) / 0.08;
+      const pulseAlpha = Math.sin(pulseProg * Math.PI) * 0.85;
+      const targetInitiatorIds = [2, 4, 8];
+
+      ctx.save();
+      targetInitiatorIds.forEach(id => {
+        const nodeEl = getNodeElement(id);
+        if (nodeEl) {
+          const pos = nodeEl.renderedPosition();
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 25 + pulseProg * 10, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(245, 158, 11, ${pulseAlpha})`;
+          ctx.lineWidth = 3.5;
+          ctx.shadowColor = "#f59e0b";
+          ctx.shadowBlur = 12;
+          ctx.stroke();
+        }
+      });
+      ctx.restore();
+
+      if (!arrivalPulseTriggered) {
+        arrivalPulseTriggered = true;
+      }
+    }
+
+    if (progress < 1.0) {
+      activeAnimationId = requestAnimationFrame(runFrame);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setTimeout(() => {
+        if (currentStep === 8) {
+          animateStep8ReportPackets(packets, allNodes);
+        }
+      }, 1900);
+    }
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
 // Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
 function animateProbeFloodingWaves(waves, allNodes) {
   stopCurrentPacketAnimation();
@@ -2274,10 +2471,10 @@ function showNodeModal(nodeData) {
       vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
     }
 
-    // Mini bar profile for Step 5, 6 & 7
+    // Mini bar profile for Step 5, 6, 7 & 8
     const vectorBarsContainer = document.getElementById("cardVectorBarsContainer");
     const vectorBars = document.getElementById("cardVectorBars");
-    if ((currentStep === 5 || currentStep === 6 || currentStep === 7) && vectorBarsContainer && vectorBars) {
+    if ((currentStep === 5 || currentStep === 6 || currentStep === 7 || currentStep === 8) && vectorBarsContainer && vectorBars) {
       vectorBarsContainer.classList.remove("hidden");
       vectorBars.innerHTML = "";
       vec.forEach((val, idx) => {
@@ -2865,6 +3062,173 @@ function showNodeModal(nodeData) {
     if (pminSection) pminSection.classList.add("hidden");
   }
 
+  // Step 8: Local Binary Search & P_min Reporting
+  const bsSection = document.getElementById("cardBinarySearchSection");
+  const bsBadge = document.getElementById("cardBinarySearchBadge");
+  const bsContent = document.getElementById("cardBinarySearchContent");
+
+  if (currentStep === 8) {
+    if (probeSection) probeSection.classList.add("hidden");
+    if (bndSection) bndSection.classList.add("hidden");
+    if (pminSection) pminSection.classList.add("hidden");
+    if (bsSection) bsSection.classList.remove("hidden");
+
+    const isInitiator = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
+    const assignedZ = nodeData.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
+
+    if (cardStatusBadge) {
+      cardStatusBadge.textContent = isInitiator ? "👑 INITIATOR" : "CLIENT";
+      cardStatusBadge.className = isInitiator
+        ? "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400"
+        : "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-purple-50 text-purple-800 border-purple-200";
+    }
+
+    if (bsBadge) {
+      if (isInitiator) {
+        bsBadge.textContent = `Zone ${assignedZ} Leader 👑 (P_min=${nodeData.p_min_cosine || 1})`;
+        bsBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
+      } else {
+        bsBadge.textContent = `Zone ${assignedZ} Member (Reported P_min=${nodeData.p_min_cosine || 2})`;
+        bsBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-purple-100 text-purple-900 border border-purple-300";
+      }
+    }
+
+    if (bsContent) {
+      bsContent.innerHTML = "";
+      const trace = nodeData.binary_search_steps || nodeData.binary_search_trace || [];
+      const traceRows = trace.map(t => `
+        <tr class="hover:bg-purple-50/50">
+          <td class="py-1 px-2 font-bold text-slate-700">Step ${t.step}</td>
+          <td class="py-1 px-2 font-mono text-purple-900 font-semibold">mid = ${t.mid}</td>
+          <td class="py-1 px-2 font-mono">${t.ratio_pct}</td>
+          <td class="py-1 px-2 text-right">
+            <span class="inline-block px-1.5 py-0.2 rounded text-[9px] font-mono font-bold ${t.meets ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'}">
+              ${t.meets ? '✓ ≥ 80%' : '✕ < 80%'}
+            </span>
+          </td>
+        </tr>
+      `).join("");
+
+      const rCos = nodeData.ratios_cosine || {};
+      const rEn = nodeData.ratios_energy || {};
+      const pMinCos = nodeData.p_min_cosine || nodeData.p_min || 2;
+      const pMinEn = nodeData.p_min_energy || 2;
+
+      let reportDetailsHtml = "";
+      if (isInitiator) {
+        const receivedMap = nodeData.received_reports || (idNum === 2 ? {1: 2, 3: 2} : idNum === 4 ? {5: 1, 6: 2, 7: 2} : {9: 2, 10: 2});
+        const reportEntries = Object.entries(receivedMap).map(([mId, pVal]) => `
+          <li class="flex items-center justify-between text-[10px] font-mono bg-white p-1.5 rounded border border-amber-200">
+            <span class="font-bold text-slate-800">Node C${mId}:</span>
+            <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold border border-amber-300">P_min = ${pVal}</span>
+          </li>
+        `).join("");
+
+        reportDetailsHtml = `
+          <div class="mt-2.5 p-2.5 bg-amber-50 rounded border border-amber-300 space-y-1.5">
+            <div class="text-[10px] font-bold text-amber-900 flex items-center justify-between">
+              <span>📥 Received Member Reports:</span>
+              <span class="font-mono text-slate-600 font-normal">Self P_min = ${pMinCos}</span>
+            </div>
+            <ul class="space-y-1">
+              ${reportEntries}
+            </ul>
+          </div>
+        `;
+      } else {
+        reportDetailsHtml = `
+          <div class="mt-2.5 p-2 bg-purple-50 rounded border border-purple-200 flex items-center justify-between text-[10.5px]">
+            <span class="text-slate-700 font-medium">📬 Reverse Report Destination:</span>
+            <span class="font-mono font-bold text-purple-900 px-2 py-0.5 rounded bg-purple-100 border border-purple-300">Initiator C${assignedZ} 👑</span>
+          </div>
+        `;
+      }
+
+      bsContent.innerHTML = `
+        <div class="p-3 bg-white rounded-lg border border-purple-200 shadow-xs space-y-2.5">
+          <!-- Trace Steps -->
+          <div>
+            <div class="font-bold text-[10.5px] text-purple-950 flex items-center gap-1 mb-1">
+              <span>⚡</span>
+              <span>Local Binary Search Execution (Interval p ∈ [1, 10]):</span>
+            </div>
+            <div class="overflow-x-auto rounded border border-purple-100">
+              <table class="w-full text-left text-[10px] font-mono">
+                <thead class="bg-purple-100/60 text-purple-900">
+                  <tr>
+                    <th class="py-1 px-2">Iteration</th>
+                    <th class="py-1 px-2">Pivot</th>
+                    <th class="py-1 px-2">Cosine Ratio</th>
+                    <th class="py-1 px-2 text-right">Evaluation</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-purple-100 bg-white">
+                  ${traceRows}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Quality Retention Table -->
+          <div>
+            <div class="font-bold text-[10.5px] text-slate-900 flex items-center gap-1 mb-1">
+              <span>📊</span>
+              <span>Quality Retention Ratio Profile:</span>
+            </div>
+            <div class="overflow-x-auto rounded border border-slate-200">
+              <table class="w-full text-left text-[10px] font-mono">
+                <thead class="bg-slate-100 text-slate-800">
+                  <tr>
+                    <th class="py-1 px-2">Dimension (p)</th>
+                    <th class="py-1 px-2">Cosine Quality</th>
+                    <th class="py-1 px-2">Energy Quality</th>
+                    <th class="py-1 px-2 text-right">Meets τ=80%</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                  <tr>
+                    <td class="py-1 px-2 font-bold text-slate-700">p = 1</td>
+                    <td class="py-1 px-2 text-slate-800">${(Number(rCos[1] || 0)*100).toFixed(1)}%</td>
+                    <td class="py-1 px-2 text-slate-600">${(Number(rEn[1] || 0)*100).toFixed(1)}%</td>
+                    <td class="py-1 px-2 text-right font-bold ${rCos[1] >= 0.8 ? 'text-emerald-700' : 'text-slate-400'}">${rCos[1] >= 0.8 ? '✓ Yes' : '✕ No'}</td>
+                  </tr>
+                  <tr>
+                    <td class="py-1 px-2 font-bold text-slate-700">p = 2</td>
+                    <td class="py-1 px-2 text-slate-800">${(Number(rCos[2] || 0)*100).toFixed(1)}%</td>
+                    <td class="py-1 px-2 text-slate-600">${(Number(rEn[2] || 0)*100).toFixed(1)}%</td>
+                    <td class="py-1 px-2 text-right font-bold ${rCos[2] >= 0.8 ? 'text-emerald-700' : 'text-slate-400'}">${rCos[2] >= 0.8 ? '✓ Yes' : '✕ No'}</td>
+                  </tr>
+                  <tr>
+                    <td class="py-1 px-2 font-bold text-slate-700">p = 3</td>
+                    <td class="py-1 px-2 text-slate-800">${(Number(rCos[3] || 0)*100).toFixed(1)}%</td>
+                    <td class="py-1 px-2 text-slate-600">${(Number(rEn[3] || 0)*100).toFixed(1)}%</td>
+                    <td class="py-1 px-2 text-right font-bold ${rCos[3] >= 0.8 ? 'text-emerald-700' : 'text-slate-400'}">${rCos[3] >= 0.8 ? '✓ Yes' : '✕ No'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Final Result Card -->
+          <div class="p-2 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200 flex items-center justify-between">
+            <div class="text-[10px] text-purple-950 font-sans">
+              <span class="font-bold">Minimal Cardinality:</span>
+              <span class="font-mono text-purple-700 font-bold ml-1">P_min (Cosine) = ${pMinCos}</span>
+              <span class="text-slate-500 font-mono ml-2">| Energy = ${pMinEn}</span>
+            </div>
+            <span class="px-2.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-600 text-white shadow-xs">
+              P_min = ${pMinCos}
+            </span>
+          </div>
+
+          ${reportDetailsHtml}
+        </div>
+      `;
+    }
+  } else {
+    if (bsSection) bsSection.classList.add("hidden");
+  }
+
   card.classList.remove("hidden");
 }
 
@@ -3230,7 +3594,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 7; s++) {
+  for (let s = 1; s <= 8; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -3243,7 +3607,7 @@ function updateStepper(step) {
         item.classList.add("step-amber");
       } else if (step === 5) {
         item.classList.add("step-emerald");
-      } else if (step === 6) {
+      } else if (step === 6 || step === 8) {
         item.classList.add("step-purple");
       } else if (step === 7) {
         item.classList.add("step-blue");
@@ -3276,7 +3640,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 7) {
+    if (step < 8) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -3284,7 +3648,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 7 active (Initiator P_min Query complete)";
+      btnNext.title = "Step 8 active (Local Binary Search & Reporting complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -3297,7 +3661,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 7);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 8);
 }
 
 function bindActionButtons() {
@@ -3321,16 +3685,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 7) {
+      if (currentStep < 8) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 7 is active (Initiator P_min Query complete).");
+        logToTerminal("INFO", "Step 8 is active (Local Binary Search & Reporting complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 7)
-  for (let s = 1; s <= 7; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 8)
+  for (let s = 1; s <= 8; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

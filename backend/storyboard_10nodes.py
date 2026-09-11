@@ -1239,6 +1239,439 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "tau": 0.80,
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 8:
+        # Step 8: Local Binary Search & P_min^i Reporting
+        # Each client executes local binary search on interval p in [1, 10] to find minimal P_min^i for tau=0.80
+        # Zone members then dispatch reverse report packets back to their zone initiator.
+        initiators = [2, 4, 8]
+        node_to_zone = {
+            1: 2, 2: 2, 3: 2,
+            4: 4, 5: 4, 6: 4, 7: 4,
+            8: 8, 9: 8, 10: 8,
+        }
+
+        discovered_neighbor_zones = {
+            2: ["C4"],
+            4: ["C2", "C8"],
+            8: ["C4"],
+        }
+
+        step8_eval_data = {
+            1: {
+                "sorted_weights": [0.46, 0.37, 0.17],
+                "ratios_cosine": {1: 0.749, 2: 0.961, 3: 1.000},
+                "ratios_energy": {1: 0.561, 2: 0.923, 3: 1.000},
+                "ratio_p1": 0.749, "ratio_p2": 0.961, "ratio_p3": 1.000,
+                "p_min_cosine": 2, "p_min_energy": 2, "p_min": 2, "p_min_reported": 2,
+                "target_initiator": 2,
+                "binary_search_steps": [
+                    {"step": 1, "low": 1, "high": 10, "mid": 5, "ratio": 1.000, "ratio_pct": "100.0%", "meets": True, "action": "Ratio 100% >= 80% -> search left (R=4)"},
+                    {"step": 2, "low": 1, "high": 4, "mid": 2, "ratio": 0.961, "ratio_pct": "96.1%", "meets": True, "action": "Ratio 96.1% >= 80% -> search left (R=1)"},
+                    {"step": 3, "low": 1, "high": 1, "mid": 1, "ratio": 0.749, "ratio_pct": "74.9%", "meets": False, "action": "Boundary test: Ratio 74.9% < 80% -> search right (L=2)"},
+                ]
+            },
+            2: {
+                "sorted_weights": [0.57, 0.24, 0.19],
+                "ratios_cosine": {1: 0.881, 2: 0.956, 3: 1.000},
+                "ratios_energy": {1: 0.776, 2: 0.914, 3: 1.000},
+                "ratio_p1": 0.881, "ratio_p2": 0.956, "ratio_p3": 1.000,
+                "p_min_cosine": 1, "p_min_energy": 2, "p_min": 1, "p_min_reported": 1,
+                "target_initiator": 2,
+                "binary_search_steps": [
+                    {"step": 1, "low": 1, "high": 10, "mid": 5, "ratio": 1.000, "ratio_pct": "100.0%", "meets": True, "action": "Ratio 100% >= 80% -> search left (R=4)"},
+                    {"step": 2, "low": 1, "high": 4, "mid": 2, "ratio": 0.956, "ratio_pct": "95.6%", "meets": True, "action": "Ratio 95.6% >= 80% -> search left (R=1)"},
+                    {"step": 3, "low": 1, "high": 1, "mid": 1, "ratio": 0.881, "ratio_pct": "88.1%", "meets": True, "action": "Boundary test: Ratio 88.1% >= 80% -> search left (R=0)"},
+                ]
+            },
+            3: {
+                "sorted_weights": [0.46, 0.34, 0.20],
+                "ratios_cosine": {1: 0.759, 2: 0.944, 3: 1.000},
+                "ratios_energy": {1: 0.576, 2: 0.891, 3: 1.000},
+                "ratio_p1": 0.759, "ratio_p2": 0.944, "ratio_p3": 1.000,
+                "p_min_cosine": 2, "p_min_energy": 2, "p_min": 2, "p_min_reported": 2,
+                "target_initiator": 2,
+                "binary_search_steps": [
+                    {"step": 1, "low": 1, "high": 10, "mid": 5, "ratio": 1.000, "ratio_pct": "100.0%", "meets": True, "action": "Ratio 100% >= 80% -> search left (R=4)"},
+                    {"step": 2, "low": 1, "high": 4, "mid": 2, "ratio": 0.944, "ratio_pct": "94.4%", "meets": True, "action": "Ratio 94.4% >= 80% -> search left (R=1)"},
+                    {"step": 3, "low": 1, "high": 1, "mid": 1, "ratio": 0.759, "ratio_pct": "75.9%", "meets": False, "action": "Boundary test: Ratio 75.9% < 80% -> search right (L=2)"},
+                ]
+            },
+            4: {
+                "sorted_weights": [0.62, 0.21, 0.17],
+                "ratios_cosine": {1: 0.917, 2: 0.968, 3: 1.000},
+                "ratios_energy": {1: 0.841, 2: 0.938, 3: 1.000},
+                "ratio_p1": 0.917, "ratio_p2": 0.968, "ratio_p3": 1.000,
+                "p_min_cosine": 1, "p_min_energy": 2, "p_min": 1, "p_min_reported": 1,
+                "target_initiator": 4,
+                "binary_search_steps": [
+                    {"step": 1, "low": 1, "high": 10, "mid": 5, "ratio": 1.000, "ratio_pct": "100.0%", "meets": True, "action": "Ratio 100% >= 80% -> search left (R=4)"},
+                    {"step": 2, "low": 1, "high": 4, "mid": 2, "ratio": 0.968, "ratio_pct": "96.8%", "meets": True, "action": "Ratio 96.8% >= 80% -> search left (R=1)"},
+                    {"step": 3, "low": 1, "high": 1, "mid": 1, "ratio": 0.917, "ratio_pct": "91.7%", "meets": True, "action": "Boundary test: Ratio 91.7% >= 80% -> search left (R=0)"},
+                ]
+            },
+            5: {
+                "sorted_weights": [0.53, 0.35, 0.12],
+                "ratios_cosine": {1: 0.820, 2: 0.983, 3: 1.000},
+                "ratios_energy": {1: 0.672, 2: 0.965, 3: 1.000},
+                "ratio_p1": 0.820, "ratio_p2": 0.983, "ratio_p3": 1.000,
+                "p_min_cosine": 1, "p_min_energy": 2, "p_min": 1, "p_min_reported": 1,
+                "target_initiator": 4,
+                "binary_search_steps": [
+                    {"step": 1, "low": 1, "high": 10, "mid": 5, "ratio": 1.000, "ratio_pct": "100.0%", "meets": True, "action": "Ratio 100% >= 80% -> search left (R=4)"},
+                    {"step": 2, "low": 1, "high": 4, "mid": 2, "ratio": 0.983, "ratio_pct": "98.3%", "meets": True, "action": "Ratio 98.3% >= 80% -> search left (R=1)"},
+                    {"step": 3, "low": 1, "high": 1, "mid": 1, "ratio": 0.820, "ratio_pct": "82.0%", "meets": True, "action": "Boundary test: Ratio 82.0% >= 80% -> search left (R=0)"},
+                ]
+            },
+            6: {
+                "sorted_weights": [0.34, 0.24, 0.23, 0.19],
+                "ratios_cosine": {1: 0.664, 2: 0.813, 3: 0.929, 4: 1.000},
+                "ratios_energy": {1: 0.441, 2: 0.661, 3: 0.862, 4: 1.000},
+                "ratio_p1": 0.664, "ratio_p2": 0.813, "ratio_p3": 0.929,
+                "p_min_cosine": 2, "p_min_energy": 3, "p_min": 2, "p_min_reported": 2,
+                "target_initiator": 4,
+                "binary_search_steps": [
+                    {"step": 1, "low": 1, "high": 10, "mid": 5, "ratio": 1.000, "ratio_pct": "100.0%", "meets": True, "action": "Ratio 100% >= 80% -> search left (R=4)"},
+                    {"step": 2, "low": 1, "high": 4, "mid": 2, "ratio": 0.813, "ratio_pct": "81.3%", "meets": True, "action": "Ratio 81.3% >= 80% -> search left (R=1)"},
+                    {"step": 3, "low": 1, "high": 1, "mid": 1, "ratio": 0.664, "ratio_pct": "66.4%", "meets": False, "action": "Boundary test: Ratio 66.4% < 80% -> search right (L=2)"},
+                ]
+            },
+            7: {
+                "sorted_weights": [0.41, 0.27, 0.21, 0.11],
+                "ratios_cosine": {1: 0.752, 2: 0.901, 3: 0.979, 4: 1.000},
+                "ratios_energy": {1: 0.565, 2: 0.812, 3: 0.959, 4: 1.000},
+                "ratio_p1": 0.752, "ratio_p2": 0.901, "ratio_p3": 0.979,
+                "p_min_cosine": 2, "p_min_energy": 3, "p_min": 2, "p_min_reported": 2,
+                "target_initiator": 4,
+                "binary_search_steps": [
+                    {"step": 1, "low": 1, "high": 10, "mid": 5, "ratio": 1.000, "ratio_pct": "100.0%", "meets": True, "action": "Ratio 100% >= 80% -> search left (R=4)"},
+                    {"step": 2, "low": 1, "high": 4, "mid": 2, "ratio": 0.901, "ratio_pct": "90.1%", "meets": True, "action": "Ratio 90.1% >= 80% -> search left (R=1)"},
+                    {"step": 3, "low": 1, "high": 1, "mid": 1, "ratio": 0.752, "ratio_pct": "75.2%", "meets": False, "action": "Boundary test: Ratio 75.2% < 80% -> search right (L=2)"},
+                ]
+            },
+            8: {
+                "sorted_weights": [0.38, 0.32, 0.30],
+                "ratios_cosine": {1: 0.655, 2: 0.856, 3: 1.000},
+                "ratios_energy": {1: 0.429, 2: 0.733, 3: 1.000},
+                "ratio_p1": 0.655, "ratio_p2": 0.856, "ratio_p3": 1.000,
+                "p_min_cosine": 2, "p_min_energy": 3, "p_min": 2, "p_min_reported": 2,
+                "target_initiator": 8,
+                "binary_search_steps": [
+                    {"step": 1, "low": 1, "high": 10, "mid": 5, "ratio": 1.000, "ratio_pct": "100.0%", "meets": True, "action": "Ratio 100% >= 80% -> search left (R=4)"},
+                    {"step": 2, "low": 1, "high": 4, "mid": 2, "ratio": 0.856, "ratio_pct": "85.6%", "meets": True, "action": "Ratio 85.6% >= 80% -> search left (R=1)"},
+                    {"step": 3, "low": 1, "high": 1, "mid": 1, "ratio": 0.655, "ratio_pct": "65.5%", "meets": False, "action": "Boundary test: Ratio 65.5% < 80% -> search right (L=2)"},
+                ]
+            },
+            9: {
+                "sorted_weights": [0.45, 0.32, 0.23],
+                "ratios_cosine": {1: 0.752, 2: 0.923, 3: 1.000},
+                "ratios_energy": {1: 0.565, 2: 0.852, 3: 1.000},
+                "ratio_p1": 0.752, "ratio_p2": 0.923, "ratio_p3": 1.000,
+                "p_min_cosine": 2, "p_min_energy": 3, "p_min": 2, "p_min_reported": 2,
+                "target_initiator": 8,
+                "binary_search_steps": [
+                    {"step": 1, "low": 1, "high": 10, "mid": 5, "ratio": 1.000, "ratio_pct": "100.0%", "meets": True, "action": "Ratio 100% >= 80% -> search left (R=4)"},
+                    {"step": 2, "low": 1, "high": 4, "mid": 2, "ratio": 0.923, "ratio_pct": "92.3%", "meets": True, "action": "Ratio 92.3% >= 80% -> search left (R=1)"},
+                    {"step": 3, "low": 1, "high": 1, "mid": 1, "ratio": 0.752, "ratio_pct": "75.2%", "meets": False, "action": "Boundary test: Ratio 75.2% < 80% -> search right (L=2)"},
+                ]
+            },
+            10: {
+                "sorted_weights": [0.43, 0.33, 0.12, 0.12],
+                "ratios_cosine": {1: 0.757, 2: 0.954, 3: 0.977, 4: 1.000},
+                "ratios_energy": {1: 0.573, 2: 0.910, 3: 0.955, 4: 1.000},
+                "ratio_p1": 0.757, "ratio_p2": 0.954, "ratio_p3": 0.977,
+                "p_min_cosine": 2, "p_min_energy": 3, "p_min": 2, "p_min_reported": 2,
+                "target_initiator": 8,
+                "binary_search_steps": [
+                    {"step": 1, "low": 1, "high": 10, "mid": 5, "ratio": 1.000, "ratio_pct": "100.0%", "meets": True, "action": "Ratio 100% >= 80% -> search left (R=4)"},
+                    {"step": 2, "low": 1, "high": 4, "mid": 2, "ratio": 0.954, "ratio_pct": "95.4%", "meets": True, "action": "Ratio 95.4% >= 80% -> search left (R=1)"},
+                    {"step": 3, "low": 1, "high": 1, "mid": 1, "ratio": 0.757, "ratio_pct": "75.7%", "meets": False, "action": "Boundary test: Ratio 75.7% < 80% -> search right (L=2)"},
+                ]
+            },
+        }
+
+        # Reverse report packet traces from members to zone initiators
+        packet_events = [
+            # Zone 2: Node 1 -> C2, Node 3 -> C2
+            {
+                "packet_id": "report_1_to_2",
+                "source": "C1",
+                "target": "C2",
+                "source_num": 1,
+                "target_num": 2,
+                "type": "REPORT_P_MIN",
+                "p_min": 2,
+                "p_min_cosine": 2,
+                "p_min_energy": 2,
+                "label": "P_min = 2",
+                "color": "#059669",
+                "zone_id": 2,
+                "payload": {"msg": "REPORT_P_MIN", "p_min": 2, "p_min_cosine": 2, "p_min_energy": 2, "source_id": 1},
+            },
+            {
+                "packet_id": "report_3_to_2",
+                "source": "C3",
+                "target": "C2",
+                "source_num": 3,
+                "target_num": 2,
+                "type": "REPORT_P_MIN",
+                "p_min": 2,
+                "p_min_cosine": 2,
+                "p_min_energy": 2,
+                "label": "P_min = 2",
+                "color": "#059669",
+                "zone_id": 2,
+                "payload": {"msg": "REPORT_P_MIN", "p_min": 2, "p_min_cosine": 2, "p_min_energy": 2, "source_id": 3},
+            },
+            # Zone 4: Node 5 -> C4, Node 6 -> C4, Node 7 -> C4
+            {
+                "packet_id": "report_5_to_4",
+                "source": "C5",
+                "target": "C4",
+                "source_num": 5,
+                "target_num": 4,
+                "type": "REPORT_P_MIN",
+                "p_min": 1,
+                "p_min_cosine": 1,
+                "p_min_energy": 2,
+                "label": "P_min = 1",
+                "color": "#ea580c",
+                "zone_id": 4,
+                "payload": {"msg": "REPORT_P_MIN", "p_min": 1, "p_min_cosine": 1, "p_min_energy": 2, "source_id": 5},
+            },
+            {
+                "packet_id": "report_6_to_4",
+                "source": "C6",
+                "target": "C4",
+                "source_num": 6,
+                "target_num": 4,
+                "type": "REPORT_P_MIN",
+                "p_min": 2,
+                "p_min_cosine": 2,
+                "p_min_energy": 3,
+                "label": "P_min = 2",
+                "color": "#ea580c",
+                "zone_id": 4,
+                "payload": {"msg": "REPORT_P_MIN", "p_min": 2, "p_min_cosine": 2, "p_min_energy": 3, "source_id": 6},
+            },
+            {
+                "packet_id": "report_7_to_4",
+                "source": "C7",
+                "target": "C4",
+                "source_num": 7,
+                "target_num": 4,
+                "type": "REPORT_P_MIN",
+                "p_min": 2,
+                "p_min_cosine": 2,
+                "p_min_energy": 3,
+                "label": "P_min = 2",
+                "color": "#ea580c",
+                "zone_id": 4,
+                "payload": {"msg": "REPORT_P_MIN", "p_min": 2, "p_min_cosine": 2, "p_min_energy": 3, "source_id": 7},
+            },
+            # Zone 8: Node 9 -> C8, Node 10 -> C8
+            {
+                "packet_id": "report_9_to_8",
+                "source": "C9",
+                "target": "C8",
+                "source_num": 9,
+                "target_num": 8,
+                "type": "REPORT_P_MIN",
+                "p_min": 2,
+                "p_min_cosine": 2,
+                "p_min_energy": 3,
+                "label": "P_min = 2",
+                "color": "#7c3aed",
+                "zone_id": 8,
+                "payload": {"msg": "REPORT_P_MIN", "p_min": 2, "p_min_cosine": 2, "p_min_energy": 3, "source_id": 9},
+            },
+            {
+                "packet_id": "report_10_to_8",
+                "source": "C10",
+                "target": "C8",
+                "source_num": 10,
+                "target_num": 8,
+                "type": "REPORT_P_MIN",
+                "p_min": 2,
+                "p_min_cosine": 2,
+                "p_min_energy": 3,
+                "label": "P_min = 2",
+                "color": "#7c3aed",
+                "zone_id": 8,
+                "payload": {"msg": "REPORT_P_MIN", "p_min": 2, "p_min_cosine": 2, "p_min_energy": 3, "source_id": 10},
+            },
+        ]
+
+        step8_nodes = []
+        for n in nodes:
+            nid = n["id"]
+            n_copy = dict(n)
+            zid = node_to_zone[nid]
+            is_init = (nid in initiators)
+            ev = step8_eval_data[nid]
+
+            # Full metadata preservation
+            n_copy["vrf_score"] = STORYBOARD_10_VRF_SCORES[nid]
+            n_copy["vector_10d"] = list(STORYBOARD_10_VECTORS[nid])
+            n_copy["vector"] = list(STORYBOARD_10_VECTORS[nid])
+            n_copy["normalized_vector"] = list(STORYBOARD_10_VECTORS[nid])
+            n_copy["distribution"] = dict(STORYBOARD_10_DISTRIBUTION[nid])
+            n_copy["data_distribution"] = dict(STORYBOARD_10_DISTRIBUTION[nid])
+            n_copy["neighbors"] = sorted(STORYBOARD_10_ADJACENCY[nid])
+            n_copy["neighbors_str"] = [f"C{nb}" for nb in n_copy["neighbors"]]
+
+            # Status & Roles
+            n_copy["status"] = "ASSIGNED"
+            n_copy["role"] = "INITIATOR" if is_init else "CLIENT"
+            n_copy["is_initiator"] = is_init
+            n_copy["assigned_zone"] = zid
+            n_copy["zone_id"] = zid
+            n_copy["leader_id"] = zid
+
+            # Boundary status preserved
+            is_frontier = (nid in (1, 6))
+            n_copy["is_boundary"] = is_frontier
+            n_copy["is_frontier"] = is_frontier
+            if nid == 1:
+                n_copy["boundary_zones"] = [2, 4]
+                n_copy["zone_label"] = "Zone 2 (Frontier)"
+            elif nid == 6:
+                n_copy["boundary_zones"] = [4, 8]
+                n_copy["zone_label"] = "Zone 4 (Frontier)"
+            elif is_init:
+                n_copy["boundary_zones"] = []
+                n_copy["zone_label"] = f"Zone {zid} (Leader)"
+            else:
+                n_copy["boundary_zones"] = []
+                n_copy["zone_label"] = f"Zone {zid} (Member)"
+
+            if is_init:
+                n_copy["discovered_neighbor_zones"] = list(discovered_neighbor_zones.get(nid, []))
+            else:
+                n_copy["discovered_neighbor_zones"] = []
+
+            # Step 8 Local Binary Search & P_min evaluation attributes
+            n_copy["sorted_weights"] = list(ev["sorted_weights"])
+            n_copy["ratios_cosine"] = dict(ev["ratios_cosine"])
+            n_copy["ratios_energy"] = dict(ev["ratios_energy"])
+            n_copy["ratio_p1"] = ev["ratio_p1"]
+            n_copy["ratio_p2"] = ev["ratio_p2"]
+            n_copy["ratio_p3"] = ev["ratio_p3"]
+            n_copy["p_min_cosine"] = ev["p_min_cosine"]
+            n_copy["p_min_energy"] = ev["p_min_energy"]
+            n_copy["p_min"] = ev["p_min"]
+            n_copy["p_min_reported"] = ev["p_min_reported"]
+            n_copy["binary_search_steps"] = list(ev["binary_search_steps"])
+            n_copy["binary_search_trace"] = list(ev["binary_search_steps"])
+            n_copy["target_initiator"] = f"C{zid}"
+            n_copy["target_initiator_id"] = zid
+            n_copy["binary_search"] = {
+                "sorted_non_zero_weights": list(ev["sorted_weights"]),
+                "quality_ratios_cosine": {k: round(v * 100.0, 1) for k, v in ev["ratios_cosine"].items()},
+                "quality_ratios_energy": {k: round(v * 100.0, 1) for k, v in ev["ratios_energy"].items()},
+                "p_min_cosine": ev["p_min_cosine"],
+                "p_min_energy": ev["p_min_energy"],
+                "steps": list(ev["binary_search_steps"]),
+            }
+
+            if is_init:
+                n_copy["is_reporting"] = False
+                n_copy["self_p_min"] = ev["p_min"]
+                if nid == 2:
+                    n_copy["received_reports"] = {1: 2, 3: 2}
+                elif nid == 4:
+                    n_copy["received_reports"] = {5: 1, 6: 2, 7: 2}
+                elif nid == 8:
+                    n_copy["received_reports"] = {9: 2, 10: 2}
+            else:
+                n_copy["is_reporting"] = True
+                n_copy["reported_to_initiator"] = zid
+
+            # Tonal colors preserved
+            if is_init:
+                if nid == 2:
+                    n_copy["bg_color"] = "#059669"
+                    n_copy["border_color"] = "#047857"
+                elif nid == 4:
+                    n_copy["bg_color"] = "#ea580c"
+                    n_copy["border_color"] = "#c2410c"
+                elif nid == 8:
+                    n_copy["bg_color"] = "#7c3aed"
+                    n_copy["border_color"] = "#6d28d9"
+                n_copy["border_width"] = 4.5
+                n_copy["color_tone"] = "deep"
+            else:
+                if zid == 2:
+                    n_copy["bg_color"] = "#34d399"
+                    n_copy["border_color"] = "#10b981"
+                elif zid == 4:
+                    n_copy["bg_color"] = "#fb923c"
+                    n_copy["border_color"] = "#f97316"
+                elif zid == 8:
+                    n_copy["bg_color"] = "#a78bfa"
+                    n_copy["border_color"] = "#8b5cf6"
+                n_copy["border_width"] = 2.5
+                n_copy["color_tone"] = "pastel"
+
+            n_copy["color"] = n_copy["bg_color"]
+            step8_nodes.append(n_copy)
+
+        # Edges for Step 8: All 18 physical links remain solid slate lines
+        step8_edges = []
+        for e in edges:
+            e_copy = dict(e)
+            u = e["source_num"]
+            v = e["target_num"]
+            z_u = node_to_zone[u]
+            z_v = node_to_zone[v]
+            is_cross_zone = (z_u != z_v)
+            e_copy["is_inter_zone"] = is_cross_zone
+            e_copy["is_boundary"] = is_cross_zone
+            e_copy["is_boundary_edge"] = is_cross_zone
+            e_copy["style"] = "solid"
+            e_copy["line_color"] = "#64748b"
+            e_copy["line_style"] = "solid"
+            step8_edges.append(e_copy)
+
+        terminal_logs = [
+            "[STEP 8] Local Binary Search & P_min Reporting initialized (tau = 0.80).",
+            "[EVALUATION] All 10 nodes executed binary search on interval p in [1, 10] over sorted parameter weights.",
+            "[REPORT] Zone 2 Member C1 reported P_min = 2 to Initiator C2 👑.",
+            "[REPORT] Zone 2 Member C3 reported P_min = 2 to Initiator C2 👑.",
+            "[REPORT] Zone 4 Member C5 reported P_min = 1 [cos] / 2 [energy] to Initiator C4 👑.",
+            "[REPORT] Zone 4 Member C6 reported P_min = 2 [cos] / 3 [energy] to Initiator C4 👑.",
+            "[REPORT] Zone 4 Member C7 reported P_min = 2 [cos] / 3 [energy] to Initiator C4 👑.",
+            "[REPORT] Zone 8 Member C9 reported P_min = 2 [cos] / 3 [energy] to Initiator C8 👑.",
+            "[REPORT] Zone 8 Member C10 reported P_min = 2 [cos] / 3 [energy] to Initiator C8 👑.",
+            "[STATUS] Zone Initiators C2, C4, C8 gathered member P_min reports and prepared for consensus.",
+        ]
+
+        return {
+            "step": 8,
+            "title": "Step 8: Local Binary Search & P_min^i Reporting",
+            "phase_badge": "ACTIVE PHASE: STEP 8: LOCAL BINARY SEARCH & P_MIN REPORTING",
+            "description": "Each client executes local binary search over parameter dimension p in [1, 10] to find minimal signature length retaining 80% quality, then reports to zone initiator.",
+            "formula": "\\text{BinarySearch}(p \\in [1, 10]) \\rightarrow P_{\\min}^i, \\quad \\text{REPORT}(P_{\\min}^i) \\rightarrow I_{Z}",
+            "formula_desc": "Each client executes local binary search on interval p in [1, 10] on sorted absolute weights to find minimal P_min retaining 80% quality.",
+            "nodes": step8_nodes,
+            "edges": step8_edges,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "packet_events": packet_events,
+            "packet_exchanges": packet_events,
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "discovered_neighbor_zones": discovered_neighbor_zones,
+            "tau": 0.80,
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -1255,5 +1688,6 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 f"[Protocol] Executing Step {step_number} on 10-node network."
             ]
         }
+
 
 
