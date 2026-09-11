@@ -716,9 +716,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 6)
+// 4. Main Step Loading Function (Steps 1 to 11)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 10) return;
+  if (stepNumber < 1 || stepNumber > 11) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -3089,10 +3089,10 @@ function showNodeModal(nodeData) {
       vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
     }
 
-    // Mini bar profile for Step 5, 6, 7, 8, 9 & 10
+    // Mini bar profile for Step 5, 6, 7, 8, 9, 10 & 11
     const vectorBarsContainer = document.getElementById("cardVectorBarsContainer");
     const vectorBars = document.getElementById("cardVectorBars");
-    if ((currentStep >= 5 && currentStep <= 10) && vectorBarsContainer && vectorBars) {
+    if ((currentStep >= 5 && currentStep <= 11) && vectorBarsContainer && vectorBars) {
       vectorBarsContainer.classList.remove("hidden");
       vectorBars.innerHTML = "";
       vec.forEach((val, idx) => {
