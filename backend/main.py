@@ -192,28 +192,40 @@ def post_storyboard_step_9():
     return get_10node_step_data(9)
 
 
+@app.get("/api/v1/storyboard/step/10", tags=["Storyboard"])
+def get_storyboard_step_10():
+    """Returns deterministic data for Storyboard Step 10 (Initiator Extraction Order Broadcast)."""
+    return get_10node_step_data(10)
+
+
+@app.post("/api/v1/storyboard/step/10", tags=["Storyboard"])
+def post_storyboard_step_10():
+    """Execute / return deterministic data for Storyboard Step 10."""
+    return get_10node_step_data(10)
+
+
 @app.get("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
 def get_storyboard_step(step_number: int):
-    """Returns deterministic data for Storyboard Step (1 to 9) for 10-node simulation."""
+    """Returns deterministic data for Storyboard Step (1 to 10) for 10-node simulation."""
     if step_number == 1:
         return load_step1_data()
-    if step_number not in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
+    if step_number not in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid step number {step_number}. Must be between 1 and 9.",
+            detail=f"Invalid step number {step_number}. Must be between 1 and 10.",
         )
     return get_10node_step_data(step_number)
 
 
 @app.post("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
 def post_storyboard_step(step_number: int):
-    """Execute / return deterministic data for Storyboard Step (1 to 9) for 10-node simulation."""
+    """Execute / return deterministic data for Storyboard Step (1 to 10) for 10-node simulation."""
     if step_number == 1:
         return load_step1_data()
-    if step_number not in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
+    if step_number not in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid step number {step_number}. Must be between 1 and 9.",
+            detail=f"Invalid step number {step_number}. Must be between 1 and 10.",
         )
     return get_10node_step_data(step_number)
 

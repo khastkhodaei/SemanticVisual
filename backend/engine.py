@@ -1463,6 +1463,82 @@ class SemanticDFLEngine:
             "logs": logs,
         }
 
+    def broadcast_extraction_orders(
+        self,
+        nodes: List[Dict[str, Any]],
+        target_p: int = 3,
+    ) -> Dict[str, Any]:
+        """Broadcast ORDER_EXTRACT(P=3) from zone initiators to their respective zone members.
+
+        1. Initiators C2, C4, C8 broadcast directive ORDER_EXTRACT(P=target_p) to intra-zone members.
+        2. All 10 nodes set target_signature_length = target_p, order_status = 'READY_TO_EXTRACT'.
+        """
+        logs: List[Dict[str, str]] = []
+        updated_nodes = []
+        packet_events = []
+
+        zone_members = {
+            2: [1, 3],
+            4: [5, 6, 7],
+            8: [9, 10],
+        }
+
+        initiator_colors = {
+            2: "#059669",
+            4: "#ea580c",
+            8: "#7c3aed",
+        }
+
+        for init_id, members in zone_members.items():
+            for m_id in members:
+                packet_events.append({
+                    "packet_id": f"order_{init_id}_to_{m_id}",
+                    "source": f"C{init_id}",
+                    "target": f"C{m_id}",
+                    "source_num": init_id,
+                    "target_num": m_id,
+                    "type": "ORDER_EXTRACT",
+                    "target_p": target_p,
+                    "label": f"ORDER: P={target_p}",
+                    "color": initiator_colors[init_id],
+                    "zone_id": init_id,
+                    "payload": {"cmd": "ORDER_EXTRACT", "target_p": target_p, "from_initiator": init_id},
+                })
+                logs.append({
+                    "level": "INFO",
+                    "message": f"Zone {init_id} Initiator C{init_id} dispatched ORDER_EXTRACT(P={target_p}) to Member C{m_id}."
+                })
+
+        node_to_init = {
+            1: 2, 2: 2, 3: 2,
+            4: 4, 5: 4, 6: 4, 7: 4,
+            8: 8, 9: 8, 10: 8,
+        }
+
+        for n in nodes:
+            n_copy = dict(n)
+            nid = n_copy["id"]
+            init_id = node_to_init.get(nid, 2)
+            n_copy["target_signature_length"] = target_p
+            n_copy["order_received_from"] = f"C{init_id}"
+            n_copy["order_received_from_id"] = init_id
+            n_copy["order_status"] = "READY_TO_EXTRACT"
+            n_copy["agreed_global_p"] = target_p
+            n_copy["consensus_status"] = "AGREED"
+            updated_nodes.append(n_copy)
+
+        logs.append({
+            "level": "SUCCESS",
+            "message": f"All 10 nodes locked target signature length to P = {target_p} (READY_TO_EXTRACT)."
+        })
+
+        return {
+            "nodes": updated_nodes,
+            "packet_events": packet_events,
+            "target_p": target_p,
+            "logs": logs,
+        }
+
     def calculate_global_p_consensus(
         self,
         nodes: List[Dict[str, Any]],

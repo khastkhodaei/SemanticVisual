@@ -1916,6 +1916,233 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "quantile_q": 0.80,
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 10:
+        # Step 10: Initiator Extraction Order Broadcast (ORDER_EXTRACT P=3)
+        # With global consensus locked at P=3, each Zone Initiator broadcasts an official directive to its members:
+        # ORDER_EXTRACT(P = 3)
+        initiators = [2, 4, 8]
+        node_to_zone = {
+            1: 2, 2: 2, 3: 2,
+            4: 4, 5: 4, 6: 4, 7: 4,
+            8: 8, 9: 8, 10: 8,
+        }
+
+        zone_members = {
+            2: [1, 3],
+            4: [5, 6, 7],
+            8: [9, 10],
+        }
+
+        discovered_neighbor_zones = {
+            2: ["C4"],
+            4: ["C2", "C8"],
+            8: ["C4"],
+        }
+
+        initiator_colors = {
+            2: "#059669",
+            4: "#ea580c",
+            8: "#7c3aed",
+        }
+
+        # Outgoing intra-zone order packets from Initiators to zone members
+        packet_events = [
+            # Zone 2: C2 -> [1, 3]
+            {
+                "packet_id": "order_2_to_1",
+                "source": "C2",
+                "target": "C1",
+                "source_num": 2,
+                "target_num": 1,
+                "type": "ORDER_EXTRACT",
+                "target_p": 3,
+                "label": "ORDER: P=3",
+                "color": "#059669",
+                "zone_id": 2,
+                "payload": {"cmd": "ORDER_EXTRACT", "target_p": 3, "from_initiator": 2},
+            },
+            {
+                "packet_id": "order_2_to_3",
+                "source": "C2",
+                "target": "C3",
+                "source_num": 2,
+                "target_num": 3,
+                "type": "ORDER_EXTRACT",
+                "target_p": 3,
+                "label": "ORDER: P=3",
+                "color": "#059669",
+                "zone_id": 2,
+                "payload": {"cmd": "ORDER_EXTRACT", "target_p": 3, "from_initiator": 2},
+            },
+            # Zone 4: C4 -> [5, 6, 7]
+            {
+                "packet_id": "order_4_to_5",
+                "source": "C4",
+                "target": "C5",
+                "source_num": 4,
+                "target_num": 5,
+                "type": "ORDER_EXTRACT",
+                "target_p": 3,
+                "label": "ORDER: P=3",
+                "color": "#ea580c",
+                "zone_id": 4,
+                "payload": {"cmd": "ORDER_EXTRACT", "target_p": 3, "from_initiator": 4},
+            },
+            {
+                "packet_id": "order_4_to_6",
+                "source": "C4",
+                "target": "C6",
+                "source_num": 4,
+                "target_num": 6,
+                "type": "ORDER_EXTRACT",
+                "target_p": 3,
+                "label": "ORDER: P=3",
+                "color": "#ea580c",
+                "zone_id": 4,
+                "payload": {"cmd": "ORDER_EXTRACT", "target_p": 3, "from_initiator": 4},
+            },
+            {
+                "packet_id": "order_4_to_7",
+                "source": "C4",
+                "target": "C7",
+                "source_num": 4,
+                "target_num": 7,
+                "type": "ORDER_EXTRACT",
+                "target_p": 3,
+                "label": "ORDER: P=3",
+                "color": "#ea580c",
+                "zone_id": 4,
+                "payload": {"cmd": "ORDER_EXTRACT", "target_p": 3, "from_initiator": 4},
+            },
+            # Zone 8: C8 -> [9, 10]
+            {
+                "packet_id": "order_8_to_9",
+                "source": "C8",
+                "target": "C9",
+                "source_num": 8,
+                "target_num": 9,
+                "type": "ORDER_EXTRACT",
+                "target_p": 3,
+                "label": "ORDER: P=3",
+                "color": "#7c3aed",
+                "zone_id": 8,
+                "payload": {"cmd": "ORDER_EXTRACT", "target_p": 3, "from_initiator": 8},
+            },
+            {
+                "packet_id": "order_8_to_10",
+                "source": "C8",
+                "target": "C10",
+                "source_num": 8,
+                "target_num": 10,
+                "type": "ORDER_EXTRACT",
+                "target_p": 3,
+                "label": "ORDER: P=3",
+                "color": "#7c3aed",
+                "zone_id": 8,
+                "payload": {"cmd": "ORDER_EXTRACT", "target_p": 3, "from_initiator": 8},
+            },
+        ]
+
+        # Preserve metadata from Step 9
+        step9_data = get_10node_step_data(9)
+        step9_nodes_map = {n["id"]: n for n in step9_data["nodes"]}
+
+        step10_nodes = []
+        for n in nodes:
+            nid = n["id"]
+            n_copy = dict(step9_nodes_map[nid])
+            is_init = (nid in initiators)
+            zid = node_to_zone[nid]
+
+            # Step 10 extraction order attributes on all 10 nodes
+            n_copy["target_signature_length"] = 3
+            n_copy["order_received_from"] = f"C{zid}"
+            n_copy["order_received_from_id"] = zid
+            n_copy["order_status"] = "READY_TO_EXTRACT"
+            n_copy["agreed_global_p"] = 3
+            n_copy["consensus_status"] = "AGREED"
+
+            if is_init:
+                n_copy["order_directive"] = f"Broadcasted ORDER_EXTRACT(P=3) to Zone {zid} members"
+                n_copy["target_members"] = zone_members[nid]
+                n_copy["extraction_details"] = {
+                    "role": "ZONE_INITIATOR",
+                    "action": "BROADCAST_ORDER",
+                    "command": "ORDER_EXTRACT",
+                    "target_p": 3,
+                    "target_members": [f"C{m}" for m in zone_members[nid]],
+                    "status": "READY_TO_EXTRACT",
+                }
+            else:
+                n_copy["order_directive"] = f"Received ORDER_EXTRACT(P=3) from Initiator C{zid} 👑"
+                n_copy["extraction_details"] = {
+                    "role": "ZONE_MEMBER",
+                    "action": "LOCK_DIMENSION",
+                    "command": "ORDER_EXTRACT",
+                    "target_p": 3,
+                    "received_from": f"C{zid}",
+                    "status": "READY_TO_EXTRACT",
+                }
+
+            step10_nodes.append(n_copy)
+
+        # Edges for Step 10: All 18 physical links remain solid slate lines
+        step10_edges = []
+        for e in edges:
+            e_copy = dict(e)
+            u = e["source_num"]
+            v = e["target_num"]
+            z_u = node_to_zone[u]
+            z_v = node_to_zone[v]
+            is_cross_zone = (z_u != z_v)
+            e_copy["is_inter_zone"] = is_cross_zone
+            e_copy["is_boundary"] = is_cross_zone
+            e_copy["is_boundary_edge"] = is_cross_zone
+            e_copy["style"] = "solid"
+            e_copy["line_color"] = "#64748b"
+            e_copy["line_style"] = "solid"
+            step10_edges.append(e_copy)
+
+        terminal_logs = [
+            "[STEP 10] Initiator Extraction Order Broadcast initialized (Global P = 3).",
+            "[BROADCAST] Zone 2 Initiator C2 dispatched ORDER_EXTRACT(P=3) to members [C1, C3].",
+            "[BROADCAST] Zone 4 Initiator C4 dispatched ORDER_EXTRACT(P=3) to members [C5, C6, C7].",
+            "[BROADCAST] Zone 8 Initiator C8 dispatched ORDER_EXTRACT(P=3) to members [C9, C10].",
+            "[LOCK] All 10 edge nodes locked target signature length to P = 3.",
+            "[STATUS] All 10 nodes status updated to READY_TO_EXTRACT.",
+            "[READY] Prepared for Step 11: Local Compact Top-P Signature Extraction.",
+        ]
+
+        return {
+            "step": 10,
+            "title": "Step 10: Initiator Extraction Order Broadcast (ORDER_EXTRACT P=3)",
+            "phase_badge": "ACTIVE PHASE: STEP 10: EXTRACTION ORDER BROADCAST (P=3)",
+            "description": "Zone Initiators broadcast official extraction order directive ORDER_EXTRACT(P=3) to all zone members, locking signature length across all 10 nodes.",
+            "formula": "\\text{ORDER\\_EXTRACT}(P = 3) \\quad \\forall i \\in Z_I",
+            "formula_desc": "Initiators broadcast the agreed global length P=3 down to all zone peers.",
+            "nodes": step10_nodes,
+            "edges": step10_edges,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "packet_events": packet_events,
+            "packet_exchanges": packet_events,
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "discovered_neighbor_zones": discovered_neighbor_zones,
+            "agreed_global_p": 3,
+            "target_p": 3,
+            "order_status": "READY_TO_EXTRACT",
+            "tau": 0.80,
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,

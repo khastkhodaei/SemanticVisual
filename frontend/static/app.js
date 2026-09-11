@@ -718,7 +718,7 @@ function getNodeElement(id) {
 
 // 4. Main Step Loading Function (Steps 1 to 6)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 9) return;
+  if (stepNumber < 1 || stepNumber > 10) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -776,6 +776,13 @@ async function loadStep(stepNumber) {
       } catch (renderErr) {
         console.error("Step 9 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 9 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 10) {
+      try {
+        renderStep10(data);
+      } catch (renderErr) {
+        console.error("Step 10 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 10 Render Error: ${renderErr.message}`);
       }
     }
 
@@ -886,6 +893,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 9 / INTER-INITIATOR CONSENSUS";
     if (stepTitle) stepTitle.textContent = "Step 9: Inter-Initiator Exchange via Boundary Gateways & Global Consensus";
     if (stepDesc) stepDesc.textContent = "Initiators relay their zone proposals through boundary nodes C1 and C6 to agree on a unified global P=3.";
+  } else if (step === 10) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 10: EXTRACTION ORDER BROADCAST (P=3)";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-300";
+    });
+    if (stepTag) stepTag.textContent = "STEP 10 / EXTRACTION ORDER BROADCAST";
+    if (stepTitle) stepTitle.textContent = "Step 10: Initiator Extraction Order Broadcast (ORDER_EXTRACT P=3)";
+    if (stepDesc) stepDesc.textContent = "Initiators broadcast the agreed global length P=3 down to all zone peers.";
   }
 }
 
@@ -2111,6 +2126,184 @@ function animateStep9ConsensusRelays(packets, allNodes) {
   activeAnimationId = requestAnimationFrame(runFrame);
 }
 
+// 8g. Storyboard Step 10: Initiator Extraction Order Broadcast (ORDER_EXTRACT P=3)
+function renderStep10(data) {
+  stopCurrentPacketAnimation();
+
+  // Explicitly sync header active step badge
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 10: EXTRACTION ORDER BROADCAST (P=3)";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-300";
+  });
+
+  renderSidebarFormula(
+    "Step 10: Extraction Order Broadcast (P = 3)",
+    "\\text{ORDER\\_EXTRACT}(P = 3) \\quad \\forall i \\in Z_I",
+    "Initiators broadcast the agreed global length P=3 down to all zone peers.",
+    "Step 10: Order Extract",
+    false,
+    "emerald"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Step 10: Intra-Zone Extraction Order Broadcast (Locked P = 3)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const zoneLegend = document.getElementById("zoneLegendItem");
+  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>3 Initiators Broadcasting Directive (<span class="text-emerald-700 font-bold">C2</span>, <span class="text-orange-700 font-bold">C4</span>, <span class="text-purple-700 font-bold">C8</span>) → <span class="text-emerald-700 font-bold font-mono">ORDER_EXTRACT(P=3)</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Render nodes with Tonal Zone colors and clean solid slate physical links
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    showBoundaryEdges: false
+  });
+
+  logToTerminal("ZONE", "[STEP 10] Initiator Extraction Order Broadcast initialized (Global P = 3).");
+  logToTerminal("INFO", "Zone 2 Initiator C2 dispatched ORDER_EXTRACT(P=3) to members [C1, C3].");
+  logToTerminal("INFO", "Zone 4 Initiator C4 dispatched ORDER_EXTRACT(P=3) to members [C5, C6, C7].");
+  logToTerminal("INFO", "Zone 8 Initiator C8 dispatched ORDER_EXTRACT(P=3) to members [C9, C10].");
+  logToTerminal("SUCCESS", "All 10 edge nodes locked target signature length to P = 3.");
+  logToTerminal("SUCCESS", "All 10 nodes status updated to READY_TO_EXTRACT.");
+
+  const packets = data.packet_events || data.packet_exchanges || [];
+  if (packets.length > 0) {
+    animateStep10OrderPackets(packets, data.nodes);
+  }
+}
+
+// Traveling Intra-Zone Extraction Order Broadcast animation in Step 10
+function animateStep10OrderPackets(packets, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const duration = 2500; // ms
+  const startTime = performance.now();
+  const activeList = packets || [];
+
+  function runFrame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1.0);
+    const ease = easeInOutQuad(progress);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Calculate fade multiplier as packet nears destination
+    let badgeAlpha = 1.0;
+    if (progress < 0.1) {
+      badgeAlpha = progress / 0.1;
+    } else if (progress > 0.85) {
+      badgeAlpha = Math.max(0, (1.0 - progress) / 0.15);
+    }
+
+    activeList.forEach(pkt => {
+      const srcId = pkt.source_num || pkt.source;
+      const tgtId = pkt.target_num || pkt.target;
+      const srcNode = getNodeElement(srcId);
+      const tgtNode = getNodeElement(tgtId);
+      if (!srcNode || !tgtNode) return;
+
+      const p1 = srcNode.renderedPosition();
+      const p2 = tgtNode.renderedPosition();
+
+      const curX = p1.x + (p2.x - p1.x) * ease;
+      const curY = p1.y + (p2.y - p1.y) * ease;
+
+      const pktColor = pkt.color || "#059669";
+
+      // Animated traveling packet particle
+      ctx.save();
+      ctx.globalAlpha = Math.min(1.0, badgeAlpha + 0.2);
+      ctx.beginPath();
+      ctx.arc(curX, curY, 5.0, 0, Math.PI * 2);
+      ctx.fillStyle = pktColor;
+      ctx.shadowBlur = 9;
+      ctx.shadowColor = pktColor;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(curX, curY, 2.0, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+      ctx.restore();
+
+      // Floating pill badge moving synchronously above particle dot
+      if (badgeAlpha > 0.05) {
+        const badgeLabel = pkt.label || "ORDER: P=3";
+        const badgeBg = `rgba(15, 23, 42, ${0.90 * badgeAlpha})`;
+        const textColor = "#34d399"; // Bright emerald
+        const borderColor = `rgba(52, 211, 153, ${0.8 * badgeAlpha})`;
+
+        ctx.save();
+        ctx.globalAlpha = badgeAlpha;
+        drawCanvasFloatingBadge(
+          ctx,
+          badgeLabel,
+          curX,
+          curY - 16,
+          badgeBg,
+          textColor,
+          borderColor
+        );
+        ctx.restore();
+      }
+    });
+
+    // When packets arrive (progress near 0.90-1.0), pulse receiving member nodes
+    if (progress >= 0.90) {
+      const pulseProg = (progress - 0.90) / 0.10;
+      const pulseAlpha = Math.sin(pulseProg * Math.PI) * 0.85;
+      const memberIds = [1, 3, 5, 6, 7, 9, 10];
+
+      ctx.save();
+      memberIds.forEach(id => {
+        const nodeEl = getNodeElement(id);
+        if (nodeEl) {
+          const pos = nodeEl.renderedPosition();
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 22 + pulseProg * 8, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(16, 185, 129, ${pulseAlpha})`;
+          ctx.lineWidth = 3.0;
+          ctx.shadowColor = "#10b981";
+          ctx.shadowBlur = 10;
+          ctx.stroke();
+        }
+      });
+      ctx.restore();
+    }
+
+    if (progress < 1.0) {
+      activeAnimationId = requestAnimationFrame(runFrame);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setTimeout(() => {
+        if (currentStep === 10) {
+          animateStep10OrderPackets(packets, allNodes);
+        }
+      }, 1900);
+    }
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
 // Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
 function animateProbeFloodingWaves(waves, allNodes) {
   stopCurrentPacketAnimation();
@@ -2702,10 +2895,10 @@ function showNodeModal(nodeData) {
       vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
     }
 
-    // Mini bar profile for Step 5, 6, 7, 8 & 9
+    // Mini bar profile for Step 5, 6, 7, 8, 9 & 10
     const vectorBarsContainer = document.getElementById("cardVectorBarsContainer");
     const vectorBars = document.getElementById("cardVectorBars");
-    if ((currentStep === 5 || currentStep === 6 || currentStep === 7 || currentStep === 8 || currentStep === 9) && vectorBarsContainer && vectorBars) {
+    if ((currentStep >= 5 && currentStep <= 10) && vectorBarsContainer && vectorBars) {
       vectorBarsContainer.classList.remove("hidden");
       vectorBars.innerHTML = "";
       vec.forEach((val, idx) => {
@@ -3647,6 +3840,140 @@ function showNodeModal(nodeData) {
     if (consensusSection) consensusSection.classList.add("hidden");
   }
 
+  // Step 10: Initiator Extraction Order Broadcast (ORDER_EXTRACT P=3)
+  const orderSection = document.getElementById("cardOrderExtractSection");
+  const orderBadge = document.getElementById("cardOrderExtractBadge");
+  const orderContent = document.getElementById("cardOrderExtractContent");
+
+  if (currentStep === 10) {
+    if (probeSection) probeSection.classList.add("hidden");
+    if (bndSection) bndSection.classList.add("hidden");
+    if (pminSection) pminSection.classList.add("hidden");
+    if (bsSection) bsSection.classList.add("hidden");
+    if (consensusSection) consensusSection.classList.add("hidden");
+    if (orderSection) orderSection.classList.remove("hidden");
+
+    const isInitiator = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
+    const assignedZ = nodeData.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
+
+    if (cardStatusBadge) {
+      if (isInitiator) {
+        cardStatusBadge.textContent = "👑 INITIATOR (DIRECTIVE ISSUER)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+      } else {
+        cardStatusBadge.textContent = "CLIENT (ORDER RECEIVED)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-emerald-50 text-emerald-800 border-emerald-300";
+      }
+    }
+
+    if (orderBadge) {
+      if (isInitiator) {
+        orderBadge.textContent = `Zone ${assignedZ} Initiator (P=3 Directive)`;
+        orderBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
+      } else {
+        orderBadge.textContent = `Zone ${assignedZ} Member (Locked P=3)`;
+        orderBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
+      }
+    }
+
+    if (orderContent) {
+      orderContent.innerHTML = "";
+
+      if (isInitiator) {
+        const zoneMembersMap = {
+          2: ["C1", "C3"],
+          4: ["C5", "C6", "C7"],
+          8: ["C9", "C10"]
+        };
+        const membersList = zoneMembersMap[idNum] || (nodeData.target_members ? nodeData.target_members.map(m => `C${m}`) : []);
+
+        orderContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-amber-200 shadow-xs space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-[10.5px] text-amber-950 flex items-center gap-1.5">
+                <span>👑</span>
+                <span>Broadcast Extraction Order:</span>
+              </span>
+              <span class="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                ORDER_EXTRACT
+              </span>
+            </div>
+
+            <div class="p-2.5 bg-amber-50 rounded border border-amber-300 space-y-1.5 text-[10px] font-mono">
+              <div class="font-bold text-slate-800 flex items-center justify-between">
+                <span>Directive Command:</span>
+                <span class="text-amber-900 font-bold">ORDER_EXTRACT(P = 3)</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Target Members:</span>
+                <span class="font-bold text-amber-900">${membersList.join(", ")}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Target Dimensionality:</span>
+                <span class="font-bold text-emerald-700 bg-white px-2 py-0.2 rounded border border-emerald-200">P = 3 (Locked)</span>
+              </div>
+            </div>
+
+            <div class="p-2 bg-emerald-50 rounded border border-emerald-200 flex items-center justify-between text-[10.5px]">
+              <span class="text-slate-700 font-medium">Local Initiator State:</span>
+              <span class="font-mono font-bold text-emerald-800 px-2 py-0.5 rounded bg-emerald-100 border border-emerald-300">
+                READY_TO_EXTRACT
+              </span>
+            </div>
+
+            <div class="text-[10px] text-slate-600 font-sans leading-relaxed">
+              Following global consensus agreement on P=3 in Step 9, Initiator C${idNum} commands all zone peers to lock their signature truncation dimension to exactly P = 3.
+            </div>
+          </div>
+        `;
+      } else {
+        const fromInit = nodeData.order_received_from || `C${assignedZ}`;
+
+        orderContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-emerald-200 shadow-xs space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-[10.5px] text-emerald-950 flex items-center gap-1.5">
+                <span>📥</span>
+                <span>Directive Notice:</span>
+              </span>
+              <span class="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                RECEIVED ORDER
+              </span>
+            </div>
+
+            <div class="p-2.5 bg-emerald-50 rounded border border-emerald-300 space-y-1.5 text-[10px] font-mono">
+              <div class="font-bold text-slate-800 flex items-center justify-between">
+                <span>Received From:</span>
+                <span class="text-emerald-900 font-bold">Initiator ${fromInit} 👑</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Protocol Payload:</span>
+                <span class="text-slate-800 bg-white px-1.5 py-0.2 rounded border border-emerald-200">{"cmd": "ORDER_EXTRACT", "target_p": 3}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Target Signature Dimensionality:</span>
+                <span class="font-bold text-emerald-700 bg-white px-2 py-0.2 rounded border border-emerald-200">P = 3 (Locked)</span>
+              </div>
+            </div>
+
+            <div class="p-2 bg-emerald-50/90 rounded border border-emerald-200 flex items-center justify-between text-[10.5px]">
+              <span class="text-slate-700 font-medium">Peer Extraction Readiness:</span>
+              <span class="font-mono font-bold text-emerald-800 px-2 py-0.5 rounded bg-emerald-100 border border-emerald-300">
+                READY_TO_EXTRACT
+              </span>
+            </div>
+
+            <div class="text-[10px] text-slate-600 font-sans leading-relaxed">
+              Peer C${idNum} has locked its parameter extraction target to P = 3 and is fully primed to extract its top-3 compact signature in Step 11.
+            </div>
+          </div>
+        `;
+      }
+    }
+  } else {
+    if (orderSection) orderSection.classList.add("hidden");
+  }
+
   card.classList.remove("hidden");
 }
 
@@ -4012,7 +4339,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 9; s++) {
+  for (let s = 1; s <= 10; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -4023,7 +4350,7 @@ function updateStepper(step) {
       item.classList.add("active");
       if (step === 3 || step === 4) {
         item.classList.add("step-amber");
-      } else if (step === 5) {
+      } else if (step === 5 || step === 10) {
         item.classList.add("step-emerald");
       } else if (step === 6 || step === 8) {
         item.classList.add("step-purple");
@@ -4060,7 +4387,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 9) {
+    if (step < 10) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -4068,7 +4395,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 9 active (Inter-Initiator Consensus complete on P=3)";
+      btnNext.title = "Step 10 active (Extraction Order Broadcast complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -4081,7 +4408,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 9);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 10);
 }
 
 function bindActionButtons() {
@@ -4105,16 +4432,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 9) {
+      if (currentStep < 10) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 9 is active (Inter-Initiator Consensus complete on P=3).");
+        logToTerminal("INFO", "Step 10 is active (Extraction Order Broadcast complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 9)
-  for (let s = 1; s <= 9; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 10)
+  for (let s = 1; s <= 10; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

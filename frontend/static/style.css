@@ -165,6 +165,11 @@ body {
   background: linear-gradient(135deg, #eef2ff 0%, #ffffff 100%);
 }
 
+.formula-card.formula-emerald {
+  border-left-color: #059669;
+  background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);
+}
+
 .step-item.completed {
   color: var(--brand-emerald);
 }

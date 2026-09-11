@@ -258,3 +258,16 @@ $$P = \min(\text{Quantile}_q(\{P_{\min}^i\}_{i \in V}), P_{\max}) = 3 \quad (q =
 
 Initiators compare the collected zone values ($[2, 3, 3]$) and take $\max(2, 3, 3) = 3$ (80th quantile across all 10 nodes).
 **Result:** All three initiators reach unanimous agreement on **$P = 3$**.
+
+---
+
+## Step 10 — Initiator Extraction Order Broadcast (ORDER_EXTRACT P=3)
+
+With global consensus locked at $P = 3$, each Zone Initiator broadcasts an official directive to its members:
+$$\text{ORDER\_EXTRACT}(P = 3) \quad \forall i \in Z_I$$
+
+- **Initiator C2 (Zone 2)** sends order to: Node 1 and Node 3.
+- **Initiator C4 (Zone 4)** sends order to: Node 5, Node 6, and Node 7.
+- **Initiator C8 (Zone 8)** sends order to: Node 9 and Node 10.
+
+Upon receipt, all clients lock their target signature length to $P = 3$.
