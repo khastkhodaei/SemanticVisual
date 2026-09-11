@@ -2143,6 +2143,325 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "tau": 0.80,
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 11:
+        # Step 11: Top-P Signature Extraction with Dual Representation (Network Indices vs. Visual Bitmask)
+        # Highlight the core engineering contrast from the SemanticDFL paper:
+        # 1. Network Reality: Peers dispatch lightweight integer index sets without values (e.g. indices = [1, 2, 3])
+        #    to save bandwidth (3 Bytes vs 40 Bytes) and preserve data privacy (zero parameter leakage).
+        # 2. Pedagogical Visualization: The UI expands these indices into an interactive 10-cell binary mask for clear visual tracking.
+        initiators = [2, 4, 8]
+        node_to_zone = {
+            1: 2, 2: 2, 3: 2,
+            4: 4, 5: 4, 6: 4, 7: 4,
+            8: 8, 9: 8, 10: 8,
+        }
+
+        zone_members = {
+            2: [1, 3],
+            4: [5, 6, 7],
+            8: [9, 10],
+        }
+
+        # Deterministic Top-3 active class IDs (1-indexed CIFAR-10 classes) per node
+        # Consistent with non-zero coordinates in STORYBOARD_10_VECTORS & prompt specification
+        top_p_indices_map = {
+            1: [1, 2, 3],
+            2: [1, 2, 3],
+            3: [4, 5, 6],
+            4: [4, 5, 6],
+            5: [4, 5, 6],
+            6: [7, 9, 10],
+            7: [8, 9, 10],
+            8: [4, 5, 6],
+            9: [1, 2, 3],
+            10: [8, 9, 10],
+        }
+
+        # 10D binary indicator mask m_i in {0, 1}^10
+        binary_masks_map = {}
+        for nid, idx_set in top_p_indices_map.items():
+            mask = [1 if (c in idx_set) else 0 for c in range(1, 11)]
+            binary_masks_map[nid] = mask
+
+        # Zone Signature Registries on Initiators: { peer_id: top_p_indices }
+        zone_collected_registries = {
+            2: {
+                1: top_p_indices_map[1],
+                2: top_p_indices_map[2],
+                3: top_p_indices_map[3],
+            },
+            4: {
+                4: top_p_indices_map[4],
+                5: top_p_indices_map[5],
+                6: top_p_indices_map[6],
+                7: top_p_indices_map[7],
+            },
+            8: {
+                8: top_p_indices_map[8],
+                9: top_p_indices_map[9],
+                10: top_p_indices_map[10],
+            },
+        }
+
+        initiator_colors = {
+            2: "#059669",
+            4: "#ea580c",
+            8: "#7c3aed",
+        }
+
+        # Wire packet traces from members to zone initiators
+        # Payload explicitly carries: {"type": "TOP_P_SIG", "indices": node.top_p_indices}
+        packet_events = [
+            # Zone 2 members -> C2
+            {
+                "packet_id": "sig_1_to_2",
+                "source": "C1",
+                "target": "C2",
+                "source_num": 1,
+                "target_num": 2,
+                "type": "TOP_P_SIG",
+                "indices": top_p_indices_map[1],
+                "label": "SIG: {C1, C2, C3}",
+                "color": "#059669",
+                "zone_id": 2,
+                "payload": {
+                    "type": "TOP_P_SIG",
+                    "indices": top_p_indices_map[1],
+                    "source_node": 1,
+                    "target_initiator": 2,
+                    "payload_bytes": 3,
+                },
+            },
+            {
+                "packet_id": "sig_3_to_2",
+                "source": "C3",
+                "target": "C2",
+                "source_num": 3,
+                "target_num": 2,
+                "type": "TOP_P_SIG",
+                "indices": top_p_indices_map[3],
+                "label": "SIG: {C4, C5, C6}",
+                "color": "#059669",
+                "zone_id": 2,
+                "payload": {
+                    "type": "TOP_P_SIG",
+                    "indices": top_p_indices_map[3],
+                    "source_node": 3,
+                    "target_initiator": 2,
+                    "payload_bytes": 3,
+                },
+            },
+            # Zone 4 members -> C4
+            {
+                "packet_id": "sig_5_to_4",
+                "source": "C5",
+                "target": "C4",
+                "source_num": 5,
+                "target_num": 4,
+                "type": "TOP_P_SIG",
+                "indices": top_p_indices_map[5],
+                "label": "SIG: {C4, C5, C6}",
+                "color": "#ea580c",
+                "zone_id": 4,
+                "payload": {
+                    "type": "TOP_P_SIG",
+                    "indices": top_p_indices_map[5],
+                    "source_node": 5,
+                    "target_initiator": 4,
+                    "payload_bytes": 3,
+                },
+            },
+            {
+                "packet_id": "sig_6_to_4",
+                "source": "C6",
+                "target": "C4",
+                "source_num": 6,
+                "target_num": 4,
+                "type": "TOP_P_SIG",
+                "indices": top_p_indices_map[6],
+                "label": "SIG: {C7, C9, C10}",
+                "color": "#ea580c",
+                "zone_id": 4,
+                "payload": {
+                    "type": "TOP_P_SIG",
+                    "indices": top_p_indices_map[6],
+                    "source_node": 6,
+                    "target_initiator": 4,
+                    "payload_bytes": 3,
+                },
+            },
+            {
+                "packet_id": "sig_7_to_4",
+                "source": "C7",
+                "target": "C4",
+                "source_num": 7,
+                "target_num": 4,
+                "type": "TOP_P_SIG",
+                "indices": top_p_indices_map[7],
+                "label": "SIG: {C8, C9, C10}",
+                "color": "#ea580c",
+                "zone_id": 4,
+                "payload": {
+                    "type": "TOP_P_SIG",
+                    "indices": top_p_indices_map[7],
+                    "source_node": 7,
+                    "target_initiator": 4,
+                    "payload_bytes": 3,
+                },
+            },
+            # Zone 8 members -> C8
+            {
+                "packet_id": "sig_9_to_8",
+                "source": "C9",
+                "target": "C8",
+                "source_num": 9,
+                "target_num": 8,
+                "type": "TOP_P_SIG",
+                "indices": top_p_indices_map[9],
+                "label": "SIG: {C1, C2, C3}",
+                "color": "#7c3aed",
+                "zone_id": 8,
+                "payload": {
+                    "type": "TOP_P_SIG",
+                    "indices": top_p_indices_map[9],
+                    "source_node": 9,
+                    "target_initiator": 8,
+                    "payload_bytes": 3,
+                },
+            },
+            {
+                "packet_id": "sig_10_to_8",
+                "source": "C10",
+                "target": "C8",
+                "source_num": 10,
+                "target_num": 8,
+                "type": "TOP_P_SIG",
+                "indices": top_p_indices_map[10],
+                "label": "SIG: {C8, C9, C10}",
+                "color": "#7c3aed",
+                "zone_id": 8,
+                "payload": {
+                    "type": "TOP_P_SIG",
+                    "indices": top_p_indices_map[10],
+                    "source_node": 10,
+                    "target_initiator": 8,
+                    "payload_bytes": 3,
+                },
+            },
+        ]
+
+        # Preserve metadata from Step 10
+        step10_data = get_10node_step_data(10)
+        step10_nodes_map = {n["id"]: n for n in step10_data["nodes"]}
+
+        step11_nodes = []
+        for n in nodes:
+            nid = n["id"]
+            n_copy = dict(step10_nodes_map[nid])
+            is_init = (nid in initiators)
+            zid = node_to_zone[nid]
+
+            # Dual representation attributes
+            indices = top_p_indices_map[nid]
+            mask_10d = binary_masks_map[nid]
+            n_copy["top_p_indices"] = indices
+            n_copy["binary_mask_10d"] = mask_10d
+            n_copy["dispatched_payload_bytes"] = 3  # 3 x sizeof(uint8)
+            n_copy["raw_weights_bytes"] = 40       # 10 x sizeof(float32)
+            n_copy["bandwidth_reduction_pct"] = 92.5
+            n_copy["wire_format"] = "uint8[3]"
+            n_copy["zero_parameter_leakage"] = True
+            n_copy["target_signature_length"] = 3
+            n_copy["signature_extracted"] = True
+            n_copy["status"] = "INITIATOR" if is_init else "CLIENT"
+
+            # Active CIFAR-10 class tags for visual bitmask
+            n_copy["active_classes"] = [
+                {
+                    "class_id": cid,
+                    "code": CIFAR10_CLASSES[cid]["code"],
+                    "name": CIFAR10_CLASSES[cid]["name"],
+                    "icon": CIFAR10_CLASSES[cid]["icon"],
+                }
+                for cid in indices
+            ]
+
+            if is_init:
+                # Initiator holds collected zone registry
+                n_copy["zone_collected_signatures"] = zone_collected_registries[nid]
+                n_copy["signature_role"] = "ZONE_INITIATOR"
+                n_copy["signature_summary"] = (
+                    f"Initiator C{nid} extracted local signature {indices} and collected "
+                    f"signatures from Zone {zid} members: {list(zone_collected_registries[nid].keys())}."
+                )
+            else:
+                n_copy["zone_collected_signatures"] = {}
+                n_copy["signature_role"] = "ZONE_MEMBER"
+                n_copy["signature_summary"] = (
+                    f"Member C{nid} extracted signature {indices} (3 Bytes) and dispatched "
+                    f"to Zone {zid} Initiator C{zid}."
+                )
+
+            step11_nodes.append(n_copy)
+
+        # Edges for Step 11: All 18 physical links remain clean solid slate lines
+        step11_edges = []
+        for e in edges:
+            e_copy = dict(e)
+            u = e["source_num"]
+            v = e["target_num"]
+            z_u = node_to_zone[u]
+            z_v = node_to_zone[v]
+            is_cross_zone = (z_u != z_v)
+            e_copy["is_inter_zone"] = is_cross_zone
+            e_copy["is_boundary"] = is_cross_zone
+            e_copy["is_boundary_edge"] = is_cross_zone
+            e_copy["style"] = "solid"
+            e_copy["line_color"] = "#64748b"
+            e_copy["line_style"] = "solid"
+            step11_edges.append(e_copy)
+
+        terminal_logs = [
+            "[STEP 11] Top-P Signature Extraction initialized (Consensus P = 3).",
+            "[EXTRACTION] All 10 edge peers extracted top-3 unweighted coordinate indices.",
+            "[PRIVACY] Transmitted payloads contain zero floating-point weights (zero parameter leakage).",
+            "[BANDWIDTH] Wire payload size: 3 Bytes (3 × uint8) vs. 40 Bytes raw vector (92.5% reduction).",
+            "[DISPATCH] Zone 2 members [C1, C3] dispatched signatures to Initiator C2.",
+            "[DISPATCH] Zone 4 members [C5, C6, C7] dispatched signatures to Initiator C4.",
+            "[DISPATCH] Zone 8 members [C9, C10] dispatched signatures to Initiator C8.",
+            "[REGISTRY] Initiators C2, C4, C8 successfully aggregated all zone signatures.",
+            "[READY] Prepared for Step 12: Intra-Zone Semantic Affinity Clustering.",
+        ]
+
+        return {
+            "step": 11,
+            "title": "Step 11: Top-P Signature Extraction with Dual Representation (Network Indices vs. Visual Bitmask)",
+            "phase_badge": "ACTIVE PHASE: STEP 11: SIGNATURE EXTRACTION & DISPATCH",
+            "description": "Peers extract compact unweighted 3-index sets (3 Bytes) to eliminate parameter leakage, while the dashboard renders 10D binary indicator masks.",
+            "formula": "S_i = \\text{Top-}3(\\text{indices of } |\\mathbf{w}_i|) \\subset \\{1, \\dots, 10\\}, \\quad \\mathbf{m}_i \\in \\{0, 1\\}^{10}",
+            "formula_desc": "Network layer transmits raw index sets (zero weights attached). Dashboard renders 10D binary indicators for visual clarity.",
+            "nodes": step11_nodes,
+            "edges": step11_edges,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "packet_events": packet_events,
+            "packet_exchanges": packet_events,
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "agreed_global_p": 3,
+            "target_p": 3,
+            "zone_collected_registries": zone_collected_registries,
+            "tau": 0.80,
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -2159,6 +2478,7 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 f"[Protocol] Executing Step {step_number} on 10-node network."
             ]
         }
+
 
 
 

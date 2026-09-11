@@ -271,3 +271,45 @@ $$\text{ORDER\_EXTRACT}(P = 3) \quad \forall i \in Z_I$$
 - **Initiator C8 (Zone 8)** sends order to: Node 9 and Node 10.
 
 Upon receipt, all clients lock their target signature length to $P = 3$.
+
+---
+
+## Step 11 — Top-P Signature Extraction with Dual Representation (Network Indices vs. Visual Bitmask)
+
+Following the extraction order directive from Step 10 ($P = 3$), every edge peer extracts its compact model signature.
+SemanticDFL introduces a fundamental distinction between the **protocol wire transmission** and the **pedagogical visualization**:
+
+### 1. Protocol Reality (Network Wire Footprint & Privacy)
+- **Zero Value / Weight Leakage:** Clients **never** transmit floating-point model weights or magnitudes ($w_{i, r}$).
+- **Unweighted Integer Sets:** Each client extracts strictly the set of coordinate indices corresponding to its top-$P$ largest absolute weights:
+  $$S_i = \text{Top-}P(\text{indices of } |\mathbf{w}_i|) \subset \{1, 2, \dots, 10\}$$
+- **Ultra-Compact Bandwidth:** Transmitted over the wire as a lightweight array of $P$ unsigned integers:
+  $$\text{Dispatched Payload} = 3 \times \text{sizeof}(\text{uint8}) = 3\text{ Bytes}$$
+  In comparison, the raw vector would consume $10 \times \text{sizeof}(\text{float32}) = 40\text{ Bytes}$ ($>92.5\%$ bandwidth savings), and full neural network parameters would consume tens of megabytes.
+
+### 2. Pedagogical Simulator Representation (Visual Bitmask)
+To make sparse overlap visually intuitive, the dashboard expands each peer's transmitted integer set into an interactive 10-cell binary indicator bitmask:
+$$\mathbf{m}_i = (m_{i, 1}, m_{i, 2}, \dots, m_{i, 10}) \in \{0, 1\}^{10}, \quad m_{i, c} = \begin{cases} 1 & \text{if } c \in S_i \\ 0 & \text{otherwise} \end{cases}$$
+
+### 10-Node Extraction & Transmission Registry ($P = 3$):
+| Node | Local Zone | Top-3 Active Classes ($S_i$) | Dispatched Wire Payload | 10D Binary Mask ($\mathbf{m}_i$) | Wire Size vs. Raw Vector | Destination Initiator |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Node 1 | Zone 2 | {C1, C2, C3} (Airplane, Automobile, Bird) | `[1, 2, 3]` | `[1, 1, 1, 0, 0, 0, 0, 0, 0, 0]` | 3 B vs 40 B (-92.5%) | Initiator C2 |
+| Node 2 (Init) | Zone 2 | {C1, C2, C3} (Airplane, Automobile, Bird) | `[1, 2, 3]` (Local) | `[1, 1, 1, 0, 0, 0, 0, 0, 0, 0]` | Local Storage | Zone 2 Registry |
+| Node 3 | Zone 2 | {C4, C5, C6} (Cat, Deer, Dog) | `[4, 5, 6]` | `[0, 0, 0, 1, 1, 1, 0, 0, 0, 0]` | 3 B vs 40 B (-92.5%) | Initiator C2 |
+| Node 4 (Init) | Zone 4 | {C4, C5, C6} (Cat, Deer, Dog) | `[4, 5, 6]` (Local) | `[0, 0, 0, 1, 1, 1, 0, 0, 0, 0]` | Local Storage | Zone 4 Registry |
+| Node 5 | Zone 4 | {C4, C5, C6} (Cat, Deer, Dog) | `[4, 5, 6]` | `[0, 0, 0, 1, 1, 1, 0, 0, 0, 0]` | 3 B vs 40 B (-92.5%) | Initiator C4 |
+| Node 6 | Zone 4 | {C7, C9, C10} (Frog, Ship, Truck) | `[7, 9, 10]` | `[0, 0, 0, 0, 0, 0, 1, 0, 1, 1]` | 3 B vs 40 B (-92.5%) | Initiator C4 |
+| Node 7 | Zone 4 | {C8, C9, C10} (Horse, Ship, Truck) | `[8, 9, 10]` | `[0, 0, 0, 0, 0, 0, 0, 1, 1, 1]` | 3 B vs 40 B (-92.5%) | Initiator C4 |
+| Node 8 (Init) | Zone 8 | {C4, C5, C6} (Cat, Deer, Dog) | `[4, 5, 6]` (Local) | `[0, 0, 0, 1, 1, 1, 0, 0, 0, 0]` | Local Storage | Zone 8 Registry |
+| Node 9 | Zone 8 | {C1, C2, C3} (Airplane, Automobile, Bird) | `[1, 2, 3]` | `[1, 1, 1, 0, 0, 0, 0, 0, 0, 0]` | 3 B vs 40 B (-92.5%) | Initiator C8 |
+| Node 10 | Zone 8 | {C8, C9, C10} (Horse, Ship, Truck) | `[8, 9, 10]` | `[0, 0, 0, 0, 0, 0, 0, 1, 1, 1]` | 3 B vs 40 B (-92.5%) | Initiator C8 |
+
+### Intra-Zone Dispatch & Initiator Registries:
+Zone members transmit their signature packet `{"type": "TOP_P_SIG", "indices": node.top_p_indices}` inward to their elected zone initiator:
+- **Initiator C2 Registry:** Holds $\{1: [1, 2, 3], 2: [1, 2, 3], 3: [4, 5, 6]\}$.
+- **Initiator C4 Registry:** Holds $\{4: [4, 5, 6], 5: [4, 5, 6], 6: [7, 9, 10], 7: [8, 9, 10]\}$.
+- **Initiator C8 Registry:** Holds $\{8: [4, 5, 6], 9: [1, 2, 3], 10: [8, 9, 10]\}$.
+
+All zone signatures are successfully aggregated at initiators, primed for intra-zone semantic clustering in Step 12.
+

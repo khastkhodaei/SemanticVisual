@@ -784,6 +784,13 @@ async function loadStep(stepNumber) {
         console.error("Step 10 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 10 Render Error: ${renderErr.message}`);
       }
+    } else if (stepNumber === 11) {
+      try {
+        renderStep11(data);
+      } catch (renderErr) {
+        console.error("Step 11 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 11 Render Error: ${renderErr.message}`);
+      }
     }
 
     // Stream initial terminal logs
@@ -901,6 +908,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 10 / EXTRACTION ORDER BROADCAST";
     if (stepTitle) stepTitle.textContent = "Step 10: Initiator Extraction Order Broadcast (ORDER_EXTRACT P=3)";
     if (stepDesc) stepDesc.textContent = "Initiators broadcast the agreed global length P=3 down to all zone peers.";
+  } else if (step === 11) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 11: SIGNATURE EXTRACTION & DISPATCH";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-cyan-50 text-cyan-800 border border-cyan-300";
+    });
+    if (stepTag) stepTag.textContent = "STEP 11 / SIGNATURE EXTRACTION & DISPATCH";
+    if (stepTitle) stepTitle.textContent = "Step 11: Top-P Signature Extraction with Dual Representation";
+    if (stepDesc) stepDesc.textContent = "Peers extract compact unweighted 3-index sets (3 Bytes) to eliminate parameter leakage, while the dashboard renders 10D binary indicator masks.";
   }
 }
 
@@ -2296,6 +2311,185 @@ function animateStep10OrderPackets(packets, allNodes) {
       setTimeout(() => {
         if (currentStep === 10) {
           animateStep10OrderPackets(packets, allNodes);
+        }
+      }, 1900);
+    }
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+// 8h. Storyboard Step 11: Top-P Signature Extraction with Dual Representation
+function renderStep11(data) {
+  stopCurrentPacketAnimation();
+
+  // Explicitly sync header active step badge
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 11: SIGNATURE EXTRACTION & DISPATCH";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-cyan-50 text-cyan-800 border border-cyan-300";
+  });
+
+  renderSidebarFormula(
+    "Step 11: Top-P Signature Extraction",
+    "S_i = \\text{Top-}3(\\text{indices of } |\\mathbf{w}_i|) \\subset \\{1, \\dots, 10\\}, \\quad \\mathbf{m}_i \\in \\{0, 1\\}^{10}",
+    "Network layer transmits raw index sets (zero weights attached). Dashboard renders 10D binary indicators for visual clarity.",
+    "Step 11: Signatures",
+    false,
+    "cyan"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Step 11: Top-P Signature Extraction & Wire Dispatch (P = 3)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const zoneLegend = document.getElementById("zoneLegendItem");
+  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>3 Initiator Registries (<span class="text-emerald-700 font-bold">C2</span>: 3, <span class="text-orange-700 font-bold">C4</span>: 4, <span class="text-purple-700 font-bold">C8</span>: 3) ← <span class="text-cyan-700 font-bold font-mono">3-Byte Index Sets</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Render nodes with Tonal Zone colors and clean solid slate physical links
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    showBoundaryEdges: false
+  });
+
+  logToTerminal("ZONE", "[STEP 11] Top-P Signature Extraction initialized (Consensus P = 3).");
+  logToTerminal("INFO", "All 10 edge peers extracted top-3 unweighted coordinate indices.");
+  logToTerminal("INFO", "Transmitted payloads contain zero floating-point weights (zero parameter leakage).");
+  logToTerminal("INFO", "Wire payload size: 3 Bytes (3 × uint8) vs. 40 Bytes raw vector (92.5% reduction).");
+  logToTerminal("SUCCESS", "Zone 2 members [C1, C3] dispatched signatures to Initiator C2.");
+  logToTerminal("SUCCESS", "Zone 4 members [C5, C6, C7] dispatched signatures to Initiator C4.");
+  logToTerminal("SUCCESS", "Zone 8 members [C9, C10] dispatched signatures to Initiator C8.");
+  logToTerminal("SUCCESS", "Initiators C2, C4, C8 successfully aggregated all zone signatures.");
+
+  const packets = data.packet_events || data.packet_exchanges || [];
+  if (packets.length > 0) {
+    animateStep11SignaturePackets(packets, data.nodes);
+  }
+}
+
+// Traveling Intra-Zone Signature Packets animation in Step 11
+function animateStep11SignaturePackets(packets, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const duration = 2500; // ms
+  const startTime = performance.now();
+  const activeList = packets || [];
+
+  function runFrame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1.0);
+    const ease = easeInOutQuad(progress);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    let badgeAlpha = 1.0;
+    if (progress < 0.1) {
+      badgeAlpha = progress / 0.1;
+    } else if (progress > 0.85) {
+      badgeAlpha = Math.max(0, (1.0 - progress) / 0.15);
+    }
+
+    activeList.forEach(pkt => {
+      const srcId = pkt.source_num || pkt.source;
+      const tgtId = pkt.target_num || pkt.target;
+      const srcNode = getNodeElement(srcId);
+      const tgtNode = getNodeElement(tgtId);
+      if (!srcNode || !tgtNode) return;
+
+      const p1 = srcNode.renderedPosition();
+      const p2 = tgtNode.renderedPosition();
+
+      const curX = p1.x + (p2.x - p1.x) * ease;
+      const curY = p1.y + (p2.y - p1.y) * ease;
+
+      const pktColor = pkt.color || "#0891b2";
+
+      // Animated traveling packet particle
+      ctx.save();
+      ctx.globalAlpha = Math.min(1.0, badgeAlpha + 0.2);
+      ctx.beginPath();
+      ctx.arc(curX, curY, 5.0, 0, Math.PI * 2);
+      ctx.fillStyle = pktColor;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = pktColor;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(curX, curY, 2.0, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+      ctx.restore();
+
+      // Floating pill badge moving synchronously above particle dot
+      if (badgeAlpha > 0.05) {
+        const badgeLabel = pkt.label || "SIG: {...}";
+        const badgeBg = `rgba(15, 23, 42, ${0.90 * badgeAlpha})`;
+        const textColor = "#22d3ee"; // Bright cyan
+        const borderColor = `rgba(34, 211, 238, ${0.8 * badgeAlpha})`;
+
+        ctx.save();
+        ctx.globalAlpha = badgeAlpha;
+        drawCanvasFloatingBadge(
+          ctx,
+          badgeLabel,
+          curX,
+          curY - 16,
+          badgeBg,
+          textColor,
+          borderColor
+        );
+        ctx.restore();
+      }
+    });
+
+    // When packets arrive (progress near 0.90-1.0), pulse receiving initiator nodes
+    if (progress >= 0.90) {
+      const pulseProg = (progress - 0.90) / 0.10;
+      const pulseAlpha = Math.sin(pulseProg * Math.PI) * 0.9;
+      const initiatorIds = [2, 4, 8];
+
+      ctx.save();
+      initiatorIds.forEach(id => {
+        const nodeEl = getNodeElement(id);
+        if (nodeEl) {
+          const pos = nodeEl.renderedPosition();
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 24 + pulseProg * 10, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(6, 182, 212, ${pulseAlpha})`;
+          ctx.lineWidth = 3.5;
+          ctx.shadowColor = "#06b6d4";
+          ctx.shadowBlur = 12;
+          ctx.stroke();
+        }
+      });
+      ctx.restore();
+    }
+
+    if (progress < 1.0) {
+      activeAnimationId = requestAnimationFrame(runFrame);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setTimeout(() => {
+        if (currentStep === 11) {
+          animateStep11SignaturePackets(packets, allNodes);
         }
       }, 1900);
     }
@@ -3974,6 +4168,201 @@ function showNodeModal(nodeData) {
     if (orderSection) orderSection.classList.add("hidden");
   }
 
+  // Step 11: Top-P Signature Extraction with Dual Representation
+  const sigSection = document.getElementById("cardSignatureSection");
+  const sigBadge = document.getElementById("cardSignatureBadge");
+  const sigContent = document.getElementById("cardSignatureContent");
+
+  if (currentStep === 11) {
+    if (probeSection) probeSection.classList.add("hidden");
+    if (bndSection) bndSection.classList.add("hidden");
+    if (pminSection) pminSection.classList.add("hidden");
+    if (bsSection) bsSection.classList.add("hidden");
+    if (consensusSection) consensusSection.classList.add("hidden");
+    if (orderSection) orderSection.classList.add("hidden");
+    if (sigSection) sigSection.classList.remove("hidden");
+
+    const isInitiator = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
+    const assignedZ = nodeData.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
+
+    // Fallback top_p_indices and binary_mask_10d if not directly on nodeData
+    const defaultIndicesMap = {
+      1: [1, 2, 3], 2: [1, 2, 3], 3: [4, 5, 6],
+      4: [4, 5, 6], 5: [4, 5, 6], 6: [7, 9, 10],
+      7: [8, 9, 10], 8: [4, 5, 6], 9: [1, 2, 3],
+      10: [8, 9, 10]
+    };
+    const topPIndices = nodeData.top_p_indices || defaultIndicesMap[idNum] || [1, 2, 3];
+    const binaryMask = nodeData.binary_mask_10d || Array.from({ length: 10 }, (_, i) => topPIndices.includes(i + 1) ? 1 : 0);
+
+    if (cardStatusBadge) {
+      if (isInitiator) {
+        cardStatusBadge.textContent = "👑 INITIATOR (ZONE REGISTRY)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+      } else {
+        cardStatusBadge.textContent = "CLIENT (SIGNATURE DISPATCHED)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-cyan-50 text-cyan-800 border-cyan-300";
+      }
+    }
+
+    if (sigBadge) {
+      if (isInitiator) {
+        sigBadge.textContent = `Zone ${assignedZ} Initiator (Registry Ready)`;
+        sigBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
+      } else {
+        sigBadge.textContent = `Zone ${assignedZ} Member (Wire Dispatched)`;
+        sigBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-cyan-100 text-cyan-800 border border-cyan-300";
+      }
+    }
+
+    if (sigContent) {
+      sigContent.innerHTML = "";
+
+      // 1. 10-Cell Interactive Binary Strip
+      let stripCells = "";
+      for (let c = 1; c <= 10; c++) {
+        const isBitActive = binaryMask[c - 1] === 1;
+        const cl = CIFAR10_CLASSES[c] || { code: `C${c}`, icon: "", name: "" };
+        if (isBitActive) {
+          stripCells += `
+            <div class="flex flex-col items-center justify-center py-1 px-0.5 rounded border border-emerald-400 bg-emerald-500 text-white font-bold shadow-xs transition-all hover:scale-105" title="${cl.code}: ${cl.name} (Active bit = 1)">
+              <span class="text-[8px] font-mono leading-tight">${cl.code}</span>
+              <span class="text-xs font-mono font-black">1</span>
+            </div>
+          `;
+        } else {
+          stripCells += `
+            <div class="flex flex-col items-center justify-center py-1 px-0.5 rounded border border-slate-200 bg-slate-100 text-slate-400 font-mono opacity-80" title="${cl.code}: ${cl.name} (Inactive bit = 0)">
+              <span class="text-[8px] font-mono leading-tight text-slate-400">${cl.code}</span>
+              <span class="text-xs font-mono font-medium">0</span>
+            </div>
+          `;
+        }
+      }
+
+      // Active Class Tag Badges
+      const activeTags = topPIndices.map(cid => {
+        const cl = CIFAR10_CLASSES[cid] || { code: `C${cid}`, icon: "📦", name: `Class ${cid}` };
+        return `
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold font-mono text-[9.5px]">
+            <span>${cl.icon}</span>
+            <span>${cl.code}: ${cl.name}</span>
+          </span>
+        `;
+      }).join("");
+
+      // Initiator Zone Signature Registry Table
+      let registrySectionHtml = "";
+      if (isInitiator) {
+        const fallbackRegistries = {
+          2: { 1: [1, 2, 3], 2: [1, 2, 3], 3: [4, 5, 6] },
+          4: { 4: [4, 5, 6], 5: [4, 5, 6], 6: [7, 9, 10], 7: [8, 9, 10] },
+          8: { 8: [4, 5, 6], 9: [1, 2, 3], 10: [8, 9, 10] }
+        };
+        const registryData = nodeData.zone_collected_signatures && Object.keys(nodeData.zone_collected_signatures).length > 0
+          ? nodeData.zone_collected_signatures
+          : (fallbackRegistries[idNum] || {});
+
+        registrySectionHtml = `
+          <div class="pt-2 border-t border-cyan-200 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-[10px] text-cyan-950 flex items-center gap-1">
+                <span>📚</span>
+                <span>Zone ${assignedZ} Signature Registry:</span>
+              </span>
+              <span class="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                Ready for Step 12
+              </span>
+            </div>
+            <div class="overflow-hidden border border-cyan-200 rounded-md bg-white shadow-xs">
+              <table class="w-full text-[9.5px] font-mono">
+                <thead>
+                  <tr class="bg-cyan-50/80 text-cyan-900 border-b border-cyan-200 text-left">
+                    <th class="py-1 px-2 font-bold">Node</th>
+                    <th class="py-1 px-2 font-bold">Role</th>
+                    <th class="py-1 px-2 font-bold">Received Indices</th>
+                    <th class="py-1 px-2 font-bold text-right">Wire Size</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${Object.entries(registryData).map(([peerId, idxs]) => {
+                    const isSelf = parseInt(peerId) === idNum;
+                    const idxStr = idxs.map(c => `C${c}`).join(", ");
+                    return `
+                      <tr class="${isSelf ? 'bg-amber-50/60 font-semibold' : 'hover:bg-slate-50'}">
+                        <td class="py-1 px-2 font-bold text-slate-800">C${peerId}</td>
+                        <td class="py-1 px-2 text-slate-600">${isSelf ? '👑 Initiator' : 'Member'}</td>
+                        <td class="py-1 px-2 text-emerald-700 font-bold">{${idxStr}}</td>
+                        <td class="py-1 px-2 text-right text-slate-500">3 Bytes</td>
+                      </tr>
+                    `;
+                  }).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+      sigContent.innerHTML = `
+        <div class="p-3 bg-white rounded-lg border border-cyan-200 shadow-xs space-y-2.5">
+          <!-- 1. Wire Transmission (Paper Specification) -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-[10.5px] text-cyan-950 flex items-center gap-1.5">
+                <span>📡</span>
+                <span>Wire Transmission (Paper Spec):</span>
+              </span>
+              <span class="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded bg-cyan-100 text-cyan-800 border border-cyan-300">
+                INDEX SET
+              </span>
+            </div>
+            <div class="p-2.5 bg-slate-50 rounded border border-cyan-300 space-y-1.5 text-[10px] font-mono">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Transmitted Payload:</span>
+                <span class="font-bold text-cyan-900 bg-white px-2 py-0.5 rounded border border-cyan-200">
+                  Unweighted Index Set {${topPIndices.map(c => `C${c}`).join(", ")}}
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Bandwidth Footprint:</span>
+                <span class="font-bold text-emerald-700">3 integers (100% weight-free, zero parameter leakage)</span>
+              </div>
+              <div class="flex items-center justify-between text-[9px] pt-1 border-t border-slate-200 text-slate-500">
+                <span>Payload Comparison:</span>
+                <span class="text-slate-700 font-semibold font-mono">3 Bytes (uint8[3]) vs. 40 Bytes (float32[10]) → <strong class="text-emerald-700">92.5% savings</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Visual Bitmask Representation (Simulator View) -->
+          <div class="space-y-1.5 pt-2 border-t border-slate-200">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-[10.5px] text-slate-800 flex items-center gap-1.5">
+                <span>👁️</span>
+                <span>Visual Bitmask (Simulator View):</span>
+              </span>
+              <span class="text-[9px] font-mono font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">
+                10-Cell Indicator
+              </span>
+            </div>
+            <div class="grid grid-cols-10 gap-1 my-1.5">
+              ${stripCells}
+            </div>
+            <div class="flex flex-wrap gap-1 mt-1">
+              ${activeTags}
+            </div>
+          </div>
+
+          <!-- 3. Initiator Registry (if Initiator) -->
+          ${registrySectionHtml}
+        </div>
+      `;
+    }
+  } else {
+    if (sigSection) sigSection.classList.add("hidden");
+  }
+
   card.classList.remove("hidden");
 }
 
@@ -4339,11 +4728,11 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 10; s++) {
+  for (let s = 1; s <= 11; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
-    item.classList.remove("active", "completed", "step-amber", "step-purple", "step-emerald", "step-blue", "step-indigo");
+    item.classList.remove("active", "completed", "step-amber", "step-purple", "step-emerald", "step-blue", "step-indigo", "step-cyan");
     if (s < step) {
       item.classList.add("completed");
     } else if (s === step) {
@@ -4358,6 +4747,8 @@ function updateStepper(step) {
         item.classList.add("step-blue");
       } else if (step === 9) {
         item.classList.add("step-indigo");
+      } else if (step === 11) {
+        item.classList.add("step-cyan");
       }
     }
   }
@@ -4387,7 +4778,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 10) {
+    if (step < 11) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -4395,7 +4786,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 10 active (Extraction Order Broadcast complete)";
+      btnNext.title = "Step 11 active (Signature Extraction complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -4408,7 +4799,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 10);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 11);
 }
 
 function bindActionButtons() {
@@ -4432,16 +4823,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 10) {
+      if (currentStep < 11) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 10 is active (Extraction Order Broadcast complete).");
+        logToTerminal("INFO", "Step 11 is active (Signature Extraction complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 10)
-  for (let s = 1; s <= 10; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 11)
+  for (let s = 1; s <= 11; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

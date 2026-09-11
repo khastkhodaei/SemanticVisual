@@ -1649,6 +1649,59 @@ class SemanticDFLEngine:
             "nodes": nodes,
         }
 
+    def extract_top_p_signatures_10nodes(
+        self,
+        nodes: Optional[List[Dict[str, Any]]] = None,
+        p: int = 3,
+    ) -> Dict[str, Any]:
+        """Extract Top-P compact model signatures for the 10-node CIFAR-10 storyboard network.
+
+        Highlights the core SemanticDFL distinction:
+        1. Protocol Wire Reality: Unweighted 1-indexed class ID sets without parameter values
+           (e.g., [1, 2, 3]), consuming 3 bytes (3 x uint8) vs 40 bytes (10 x float32) with zero parameter leakage.
+        2. Pedagogical Visualization: 10-dimensional binary indicator mask m_i in {0, 1}^10.
+        """
+        if nodes is None:
+            data = get_10node_step_data(11)
+            return {
+                "p": p,
+                "nodes": data["nodes"],
+                "packet_events": data["packet_events"],
+                "zones": data["zones"],
+                "zone_collected_registries": data["zone_collected_registries"],
+            }
+
+        top_p_indices_map = {
+            1: [1, 2, 3],
+            2: [1, 2, 3],
+            3: [4, 5, 6],
+            4: [4, 5, 6],
+            5: [4, 5, 6],
+            6: [7, 9, 10],
+            7: [8, 9, 10],
+            8: [4, 5, 6],
+            9: [1, 2, 3],
+            10: [8, 9, 10],
+        }
+
+        for n in nodes:
+            nid = n.get("id", n.get("node_id", 1))
+            indices = top_p_indices_map.get(nid, [1, 2, 3])
+            mask = [1 if (c in indices) else 0 for c in range(1, 11)]
+            n["top_p_indices"] = indices
+            n["binary_mask_10d"] = mask
+            n["dispatched_payload_bytes"] = len(indices) * 1
+            n["raw_weights_bytes"] = 40
+            n["bandwidth_reduction_pct"] = 92.5
+            n["wire_format"] = f"uint8[{len(indices)}]"
+            n["zero_parameter_leakage"] = True
+
+        return {
+            "p": p,
+            "nodes": nodes,
+        }
+
+
     @staticmethod
     def sparse_cosine_similarity(sig_a: Dict[str, Any], sig_b: Dict[str, Any]) -> float:
         r"""Compute cosine similarity over sparse masked vectors in O(P) time via index intersection.
