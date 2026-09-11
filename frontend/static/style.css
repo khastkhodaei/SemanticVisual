@@ -147,6 +147,15 @@ body {
   color: #059669;
 }
 
+.step-item.active.step-blue {
+  color: var(--brand-blue);
+}
+
+.formula-card.formula-blue {
+  border-left-color: var(--brand-blue);
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+}
+
 .step-item.completed {
   color: var(--brand-emerald);
 }

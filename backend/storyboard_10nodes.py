@@ -971,6 +971,274 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "discovered_neighbor_zones": discovered_neighbor_zones,
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 7:
+        # Step 7: Initiator P_min Query Request
+        # Elected Zone Initiators (C2, C4, C8) broadcast REQ_P_MIN strictly within their zones
+        zone_members = {
+            2: [1, 3],
+            4: [5, 6, 7],
+            8: [9, 10],
+        }
+
+        initiators = [2, 4, 8]
+        node_to_zone = {
+            1: 2, 2: 2, 3: 2,
+            4: 4, 5: 4, 6: 4, 7: 4,
+            8: 8, 9: 8, 10: 8,
+        }
+
+        discovered_neighbor_zones = {
+            2: ["C4"],
+            4: ["C2", "C8"],
+            8: ["C4"],
+        }
+
+        # Packet dispatch events strictly within each zone
+        packet_events = [
+            # Zone 2: Initiator 2 -> [1, 3]
+            {
+                "packet_id": "pmin_2_to_1",
+                "source": "C2",
+                "target": "C1",
+                "source_num": 2,
+                "target_num": 1,
+                "type": "REQ_P_MIN",
+                "label": "REQ(τ=80%)",
+                "color": "#059669",
+                "zone_id": 2,
+                "payload": {"msg": "REQ_P_MIN", "tau": 0.80},
+                "msg": "REQ_P_MIN",
+                "tau": 0.80,
+            },
+            {
+                "packet_id": "pmin_2_to_3",
+                "source": "C2",
+                "target": "C3",
+                "source_num": 2,
+                "target_num": 3,
+                "type": "REQ_P_MIN",
+                "label": "REQ(τ=80%)",
+                "color": "#059669",
+                "zone_id": 2,
+                "payload": {"msg": "REQ_P_MIN", "tau": 0.80},
+                "msg": "REQ_P_MIN",
+                "tau": 0.80,
+            },
+            # Zone 4: Initiator 4 -> [5, 6, 7]
+            {
+                "packet_id": "pmin_4_to_5",
+                "source": "C4",
+                "target": "C5",
+                "source_num": 4,
+                "target_num": 5,
+                "type": "REQ_P_MIN",
+                "label": "REQ(τ=80%)",
+                "color": "#ea580c",
+                "zone_id": 4,
+                "payload": {"msg": "REQ_P_MIN", "tau": 0.80},
+                "msg": "REQ_P_MIN",
+                "tau": 0.80,
+            },
+            {
+                "packet_id": "pmin_4_to_6",
+                "source": "C4",
+                "target": "C6",
+                "source_num": 4,
+                "target_num": 6,
+                "type": "REQ_P_MIN",
+                "label": "REQ(τ=80%)",
+                "color": "#ea580c",
+                "zone_id": 4,
+                "payload": {"msg": "REQ_P_MIN", "tau": 0.80},
+                "msg": "REQ_P_MIN",
+                "tau": 0.80,
+            },
+            {
+                "packet_id": "pmin_4_to_7",
+                "source": "C4",
+                "target": "C7",
+                "source_num": 4,
+                "target_num": 7,
+                "type": "REQ_P_MIN",
+                "label": "REQ(τ=80%)",
+                "color": "#ea580c",
+                "zone_id": 4,
+                "payload": {"msg": "REQ_P_MIN", "tau": 0.80},
+                "msg": "REQ_P_MIN",
+                "tau": 0.80,
+            },
+            # Zone 8: Initiator 8 -> [9, 10]
+            {
+                "packet_id": "pmin_8_to_9",
+                "source": "C8",
+                "target": "C9",
+                "source_num": 8,
+                "target_num": 9,
+                "type": "REQ_P_MIN",
+                "label": "REQ(τ=80%)",
+                "color": "#7c3aed",
+                "zone_id": 8,
+                "payload": {"msg": "REQ_P_MIN", "tau": 0.80},
+                "msg": "REQ_P_MIN",
+                "tau": 0.80,
+            },
+            {
+                "packet_id": "pmin_8_to_10",
+                "source": "C8",
+                "target": "C10",
+                "source_num": 8,
+                "target_num": 10,
+                "type": "REQ_P_MIN",
+                "label": "REQ(τ=80%)",
+                "color": "#7c3aed",
+                "zone_id": 8,
+                "payload": {"msg": "REQ_P_MIN", "tau": 0.80},
+                "msg": "REQ_P_MIN",
+                "tau": 0.80,
+            },
+        ]
+
+        step7_nodes = []
+        for n in nodes:
+            nid = n["id"]
+            n_copy = dict(n)
+            zid = node_to_zone[nid]
+            is_init = (nid in initiators)
+
+            # Metadata preservation
+            n_copy["vrf_score"] = STORYBOARD_10_VRF_SCORES[nid]
+            n_copy["vector_10d"] = list(STORYBOARD_10_VECTORS[nid])
+            n_copy["vector"] = list(STORYBOARD_10_VECTORS[nid])
+            n_copy["normalized_vector"] = list(STORYBOARD_10_VECTORS[nid])
+            n_copy["distribution"] = dict(STORYBOARD_10_DISTRIBUTION[nid])
+            n_copy["data_distribution"] = dict(STORYBOARD_10_DISTRIBUTION[nid])
+            n_copy["neighbors"] = sorted(STORYBOARD_10_ADJACENCY[nid])
+            n_copy["neighbors_str"] = [f"C{nb}" for nb in n_copy["neighbors"]]
+
+            # Status & Roles
+            n_copy["status"] = "ASSIGNED"
+            n_copy["role"] = "INITIATOR" if is_init else "CLIENT"
+            n_copy["is_initiator"] = is_init
+            n_copy["assigned_zone"] = zid
+            n_copy["zone_id"] = zid
+            n_copy["leader_id"] = zid
+
+            # Boundary status preserved
+            is_frontier = (nid in (1, 6))
+            n_copy["is_boundary"] = is_frontier
+            n_copy["is_frontier"] = is_frontier
+            if nid == 1:
+                n_copy["boundary_zones"] = [2, 4]
+                n_copy["zone_label"] = "Zone 2 (Frontier)"
+            elif nid == 6:
+                n_copy["boundary_zones"] = [4, 8]
+                n_copy["zone_label"] = "Zone 4 (Frontier)"
+            elif is_init:
+                n_copy["boundary_zones"] = []
+                n_copy["zone_label"] = f"Zone {zid} (Leader)"
+            else:
+                n_copy["boundary_zones"] = []
+                n_copy["zone_label"] = f"Zone {zid} (Member)"
+
+            # Discovered neighbor zones preserved
+            if is_init:
+                n_copy["discovered_neighbor_zones"] = list(discovered_neighbor_zones.get(nid, []))
+            else:
+                n_copy["discovered_neighbor_zones"] = []
+
+            # Step 7 specific state flags:
+            if is_init:
+                n_copy["pending_query"] = None
+                n_copy["dispatched_query"] = "Broadcasted REQ_P_MIN (τ=0.80) to zone members"
+                n_copy["active_query"] = "REQ_P_MIN (tau=0.80)"
+                n_copy["target_members"] = zone_members[nid]
+            else:
+                n_copy["pending_query"] = "REQ_P_MIN (tau=0.80)"
+                n_copy["query_from_initiator"] = zid
+                n_copy["target_tau"] = 0.80
+
+            # Tonal colors preserved
+            if is_init:
+                if nid == 2:
+                    n_copy["bg_color"] = "#059669"
+                    n_copy["border_color"] = "#047857"
+                elif nid == 4:
+                    n_copy["bg_color"] = "#ea580c"
+                    n_copy["border_color"] = "#c2410c"
+                elif nid == 8:
+                    n_copy["bg_color"] = "#7c3aed"
+                    n_copy["border_color"] = "#6d28d9"
+                n_copy["border_width"] = 4.5
+                n_copy["color_tone"] = "deep"
+            else:
+                if zid == 2:
+                    n_copy["bg_color"] = "#34d399"
+                    n_copy["border_color"] = "#10b981"
+                elif zid == 4:
+                    n_copy["bg_color"] = "#fb923c"
+                    n_copy["border_color"] = "#f97316"
+                elif zid == 8:
+                    n_copy["bg_color"] = "#a78bfa"
+                    n_copy["border_color"] = "#8b5cf6"
+                n_copy["border_width"] = 2.5
+                n_copy["color_tone"] = "pastel"
+
+            n_copy["color"] = n_copy["bg_color"]
+            step7_nodes.append(n_copy)
+
+        # Edges for Step 7: All 18 physical links remain solid slate lines
+        step7_edges = []
+        for e in edges:
+            e_copy = dict(e)
+            u = e["source_num"]
+            v = e["target_num"]
+            z_u = node_to_zone[u]
+            z_v = node_to_zone[v]
+            is_cross_zone = (z_u != z_v)
+            e_copy["is_inter_zone"] = is_cross_zone
+            e_copy["is_boundary"] = is_cross_zone
+            e_copy["is_boundary_edge"] = is_cross_zone
+            e_copy["style"] = "solid"
+            e_copy["line_color"] = "#64748b"
+            e_copy["line_style"] = "solid"
+            step7_edges.append(e_copy)
+
+        terminal_logs = [
+            "[STEP 7] Initiator P_min Query Request initialized (tau = 0.80).",
+            "[BROADCAST] Initiator C2 (Zone 2) dispatched REQ_P_MIN(tau=0.80) to zone members [C1, C3].",
+            "[BROADCAST] Initiator C4 (Zone 4) dispatched REQ_P_MIN(tau=0.80) to zone members [C5, C6, C7].",
+            "[BROADCAST] Initiator C8 (Zone 8) dispatched REQ_P_MIN(tau=0.80) to zone members [C9, C10].",
+            "[STATUS] All zone members received query and set pending_query = 'REQ_P_MIN (tau=0.80)'.",
+            "[READY] All 10 peers ready for local binary search of P_min^i in Step 8.",
+        ]
+
+        return {
+            "step": 7,
+            "title": "Step 7: Initiator P_min Query Request",
+            "phase_badge": "ACTIVE PHASE: STEP 7: INITIATOR P_MIN QUERY",
+            "description": "Zone Initiators prompt zone members to evaluate the minimum signature length P_min^i needed to retain 80% model quality.",
+            "formula": "\\text{REQ\\_P\\_MIN}(\\tau = 0.80) \\quad \\forall i \\in Z_I",
+            "formula_desc": "Zone Initiators prompt zone members to evaluate the minimum signature length P_min^i needed to retain 80% model quality.",
+            "nodes": step7_nodes,
+            "edges": step7_edges,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "packet_events": packet_events,
+            "packet_exchanges": packet_events,
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "discovered_neighbor_zones": discovered_neighbor_zones,
+            "tau": 0.80,
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -987,4 +1255,5 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 f"[Protocol] Executing Step {step_number} on 10-node network."
             ]
         }
+
 

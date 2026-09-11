@@ -1139,6 +1139,72 @@ class SemanticDFLEngine:
             max_zone_size=max_zone_size,
         )
 
+    def run_pmin_query(
+        self,
+        nodes: List[Dict[str, Any]],
+        zones: Optional[Dict[int, List[int]]] = None,
+        tau: float = 0.80,
+    ) -> Dict[str, Any]:
+        """Dispatch REQ_P_MIN query from elected zone initiators to their intra-zone members.
+
+        Elected Zone Initiators broadcast a lightweight control packet asking members
+        to compute their local minimum signature length P_min^i for model quality retention
+        threshold tau (default 0.80).
+        """
+        logs: List[Dict[str, str]] = []
+        node_map = {n["id"]: dict(n) for n in nodes}
+
+        # Derive zones if not provided
+        if not zones:
+            zones = {}
+            for nid, node in node_map.items():
+                zid = node.get("assigned_zone") or node.get("zone_id")
+                if zid is not None:
+                    zones.setdefault(zid, []).append(nid)
+
+        packet_events = []
+        for zid, member_ids in zones.items():
+            initiator_id = zid
+            if initiator_id in node_map:
+                node_map[initiator_id]["pending_query"] = None
+                node_map[initiator_id]["dispatched_query"] = f"Broadcasted REQ_P_MIN (τ={tau:.2f}) to zone members"
+                node_map[initiator_id]["active_query"] = f"REQ_P_MIN (tau={tau:.2f})"
+
+            for m in member_ids:
+                if m == initiator_id:
+                    continue
+                if m in node_map:
+                    node_map[m]["pending_query"] = f"REQ_P_MIN (tau={tau:.2f})"
+                    node_map[m]["query_from_initiator"] = initiator_id
+                    node_map[m]["target_tau"] = tau
+
+                packet_events.append({
+                    "packet_id": f"pmin_{initiator_id}_to_{m}",
+                    "source": f"C{initiator_id}",
+                    "target": f"C{m}",
+                    "source_num": initiator_id,
+                    "target_num": m,
+                    "type": "REQ_P_MIN",
+                    "label": f"REQ(τ={int(tau*100)}%)",
+                    "color": node_map[initiator_id].get("color", "#059669") if initiator_id in node_map else "#059669",
+                    "zone_id": zid,
+                    "payload": {"msg": "REQ_P_MIN", "tau": tau},
+                    "msg": "REQ_P_MIN",
+                    "tau": tau,
+                })
+                logs.append({
+                    "level": "INFO",
+                    "message": f"Initiator C{initiator_id} dispatched REQ_P_MIN(tau={tau:.2f}) to member C{m} in Zone {zid}."
+                })
+
+        updated_nodes = list(node_map.values())
+        return {
+            "nodes": updated_nodes,
+            "packet_events": packet_events,
+            "zones": zones,
+            "tau": tau,
+            "logs": logs,
+        }
 
     def calculate_global_p_consensus(
         self,

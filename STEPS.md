@@ -202,3 +202,15 @@ As a result of these notifications:
 - Upon arrival at the destination initiator node, the floating label smoothly fades away and a subtle golden pulse flashes on the initiator node.
 - All physical communication links remain clean, solid slate lines throughout the visualization.
 
+---
+
+## Step 7 — Initiator P_min Query Request
+
+Each elected Zone Initiator broadcasts a lightweight `REQ_P_MIN` control packet strictly to the members of its own zone:
+$$\text{REQ\_P\_MIN}(\text{target\_zone} = Z_I, \tau = 0.80)$$
+
+- **Initiator C2 (Zone 2)** sends request to: Node 1 and Node 3.
+- **Initiator C4 (Zone 4)** sends request to: Node 5, Node 6, and Node 7.
+- **Initiator C8 (Zone 8)** sends request to: Node 9 and Node 10.
+
+Peers receive the query and prepare to execute the local binary search in the next step.

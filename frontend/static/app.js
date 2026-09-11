@@ -718,7 +718,7 @@ function getNodeElement(id) {
 
 // 4. Main Step Loading Function (Steps 1 to 6)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 6) return;
+  if (stepNumber < 1 || stepNumber > 7) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -755,6 +755,13 @@ async function loadStep(stepNumber) {
       } catch (renderErr) {
         console.error("Step 6 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 6 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 7) {
+      try {
+        renderStep7(data);
+      } catch (renderErr) {
+        console.error("Step 7 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 7 Render Error: ${renderErr.message}`);
       }
     }
 
@@ -841,6 +848,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 6 / ZONE FORMATION & BOUNDARY DISCOVERY";
     if (stepTitle) stepTitle.textContent = "Step 6: Official Zone Formation & Inter-Zone Boundary Discovery";
     if (stepDesc) stepDesc.textContent = "Clients morph into their initiator's zone color. Frontier peers send dual notifications so initiators learn adjacent zones.";
+  } else if (step === 7) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 7: INITIATOR P_MIN QUERY";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-800 border border-blue-300";
+    });
+    if (stepTag) stepTag.textContent = "STEP 7 / INITIATOR P_MIN QUERY";
+    if (stepTitle) stepTitle.textContent = "Step 7: Initiator P_min Query Request";
+    if (stepDesc) stepDesc.textContent = "Zone Initiators prompt zone members to evaluate the minimum signature length P_min^i needed to retain 80% model quality.";
   }
 }
 
@@ -1486,6 +1501,188 @@ function animateStep6BoundaryPackets(packets, allNodes) {
   activeAnimationId = requestAnimationFrame(runFrame);
 }
 
+// 8d. Storyboard Step 7: Initiator P_min Query Request
+function renderStep7(data) {
+  stopCurrentPacketAnimation();
+
+  // Explicitly sync header active step badge
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 7: INITIATOR P_MIN QUERY";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-800 border border-blue-300";
+  });
+
+  renderSidebarFormula(
+    "Step 7: Initiator P_min Query Request",
+    "\\text{REQ\\_P\\_MIN}(\\tau = 0.80) \\quad \\forall i \\in Z_I",
+    "Zone Initiators prompt zone members to evaluate the minimum signature length P_min^i needed to retain 80% model quality.",
+    "Step 7: P_min Query",
+    false,
+    "blue"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Step 7: Initiator P_min Query Broadcast (REQ_P_MIN, τ = 80%)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const zoneLegend = document.getElementById("zoneLegendItem");
+  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>3 Active Initiators (<span class="text-emerald-700 font-bold">C2</span>, <span class="text-orange-700 font-bold">C4</span>, <span class="text-purple-700 font-bold">C8</span>) | <span class="text-blue-700 font-bold">REQ_P_MIN Broadcast Active (τ = 80%)</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Render nodes with Tonal Colors and solid slate physical links
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    showBoundaryEdges: false
+  });
+
+  logToTerminal("ZONE", "[STEP 7] Initiator P_min Query Request initialized (tau = 0.80).");
+  logToTerminal("INFO", "Initiator C2 (Zone 2) dispatched REQ_P_MIN(tau=0.80) to zone members [C1, C3].");
+  logToTerminal("INFO", "Initiator C4 (Zone 4) dispatched REQ_P_MIN(tau=0.80) to zone members [C5, C6, C7].");
+  logToTerminal("INFO", "Initiator C8 (Zone 8) dispatched REQ_P_MIN(tau=0.80) to zone members [C9, C10].");
+  logToTerminal("SUCCESS", "All zone members received REQ_P_MIN and set pending_query = 'REQ_P_MIN (tau=0.80)'.");
+
+  const packets = data.packet_events || data.packet_exchanges || [];
+  if (packets.length > 0) {
+    animateStep7PminPackets(packets, data.nodes);
+  }
+}
+
+// Traveling REQ_P_MIN packet animation in Step 7
+function animateStep7PminPackets(packets, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const duration = 2400; // ms
+  const startTime = performance.now();
+  const activeList = packets || [];
+  let arrivalPulseTriggered = false;
+
+  function runFrame(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1.0);
+    const ease = easeInOutQuad(progress);
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Calculate fade multiplier as packet nears destination (fades out completely between 85% and 100%)
+    let badgeAlpha = 1.0;
+    if (progress < 0.1) {
+      badgeAlpha = progress / 0.1;
+    } else if (progress > 0.85) {
+      badgeAlpha = Math.max(0, (1.0 - progress) / 0.15);
+    }
+
+    activeList.forEach(pkt => {
+      const srcId = pkt.source_num || pkt.source;
+      const tgtId = pkt.target_num || pkt.target;
+      const srcNode = getNodeElement(srcId);
+      const tgtNode = getNodeElement(tgtId);
+      if (!srcNode || !tgtNode) return;
+
+      const p1 = srcNode.renderedPosition();
+      const p2 = tgtNode.renderedPosition();
+
+      const curX = p1.x + (p2.x - p1.x) * ease;
+      const curY = p1.y + (p2.y - p1.y) * ease;
+
+      const pktColor = pkt.color || "#2563eb";
+
+      // Animated traveling packet particle
+      ctx.save();
+      ctx.globalAlpha = Math.min(1.0, badgeAlpha + 0.2);
+      ctx.beginPath();
+      ctx.arc(curX, curY, 5.0, 0, Math.PI * 2);
+      ctx.fillStyle = pktColor;
+      ctx.shadowBlur = 9;
+      ctx.shadowColor = pktColor;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(curX, curY, 2.0, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+      ctx.restore();
+
+      // Floating pill badge moving synchronously above particle dot
+      if (badgeAlpha > 0.05) {
+        const badgeLabel = pkt.label || "REQ(τ=80%)";
+        const badgeBg = `rgba(15, 23, 42, ${0.88 * badgeAlpha})`;
+        const textColor = "#38bdf8"; // Light sky-blue for clear visibility
+        const borderColor = `rgba(56, 189, 248, ${0.75 * badgeAlpha})`;
+
+        ctx.save();
+        ctx.globalAlpha = badgeAlpha;
+        drawCanvasFloatingBadge(
+          ctx,
+          badgeLabel,
+          curX,
+          curY - 16,
+          badgeBg,
+          textColor,
+          borderColor
+        );
+        ctx.restore();
+      }
+    });
+
+    // When packets arrive (progress near 0.92-1.0), briefly pulse the member nodes receiving the query
+    if (progress >= 0.92) {
+      const pulseProg = (progress - 0.92) / 0.08;
+      const pulseAlpha = Math.sin(pulseProg * Math.PI) * 0.85;
+      const memberIds = [1, 3, 5, 6, 7, 9, 10];
+
+      ctx.save();
+      memberIds.forEach(id => {
+        const nodeEl = getNodeElement(id);
+        if (nodeEl) {
+          const pos = nodeEl.renderedPosition();
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, 22 + pulseProg * 8, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(59, 130, 246, ${pulseAlpha})`;
+          ctx.lineWidth = 3.0;
+          ctx.shadowColor = "#3b82f6";
+          ctx.shadowBlur = 10;
+          ctx.stroke();
+        }
+      });
+      ctx.restore();
+
+      if (!arrivalPulseTriggered) {
+        arrivalPulseTriggered = true;
+      }
+    }
+
+    if (progress < 1.0) {
+      activeAnimationId = requestAnimationFrame(runFrame);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setTimeout(() => {
+        if (currentStep === 7) {
+          animateStep7PminPackets(packets, allNodes);
+        }
+      }, 1800);
+    }
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
 // Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
 function animateProbeFloodingWaves(waves, allNodes) {
   stopCurrentPacketAnimation();
@@ -2077,10 +2274,10 @@ function showNodeModal(nodeData) {
       vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
     }
 
-    // Mini bar profile for Step 5 & 6
+    // Mini bar profile for Step 5, 6 & 7
     const vectorBarsContainer = document.getElementById("cardVectorBarsContainer");
     const vectorBars = document.getElementById("cardVectorBars");
-    if ((currentStep === 5 || currentStep === 6) && vectorBarsContainer && vectorBars) {
+    if ((currentStep === 5 || currentStep === 6 || currentStep === 7) && vectorBarsContainer && vectorBars) {
       vectorBarsContainer.classList.remove("hidden");
       vectorBars.innerHTML = "";
       vec.forEach((val, idx) => {
@@ -2572,6 +2769,102 @@ function showNodeModal(nodeData) {
     if (bndSection) bndSection.classList.add("hidden");
   }
 
+  // Step 7: Initiator P_min Query Request
+  const pminSection = document.getElementById("cardPminQuerySection");
+  const pminBadge = document.getElementById("cardPminQueryBadge");
+  const pminContent = document.getElementById("cardPminQueryContent");
+
+  if (currentStep === 7) {
+    if (probeSection) probeSection.classList.add("hidden");
+    if (bndSection) bndSection.classList.add("hidden");
+    if (pminSection) pminSection.classList.remove("hidden");
+
+    const isInitiator = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
+    const assignedZ = nodeData.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
+
+    if (cardStatusBadge) {
+      cardStatusBadge.textContent = isInitiator ? "👑 INITIATOR" : "CLIENT";
+      cardStatusBadge.className = isInitiator
+        ? "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400"
+        : "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-blue-50 text-blue-800 border-blue-200";
+    }
+
+    if (pminBadge) {
+      if (isInitiator) {
+        pminBadge.textContent = `Zone ${assignedZ} (Initiator Leader 👑)`;
+        pminBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
+      } else {
+        pminBadge.textContent = `Zone ${assignedZ} (Member Client)`;
+        pminBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-blue-100 text-blue-900 border border-blue-300";
+      }
+    }
+
+    if (pminContent) {
+      pminContent.innerHTML = "";
+      if (isInitiator) {
+        const zoneMembersMap = {
+          2: ["C1", "C3"],
+          4: ["C5", "C6", "C7"],
+          8: ["C9", "C10"]
+        };
+        const membersList = zoneMembersMap[idNum] || (nodeData.target_members ? nodeData.target_members.map(m => `C${m}`) : []);
+        pminContent.innerHTML = `
+          <div class="p-3 bg-blue-50/90 rounded-lg border border-blue-300 shadow-xs">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-xs text-blue-950 flex items-center gap-1.5">
+                <span>👑</span>
+                <span>Active Dispatched Query:</span>
+              </span>
+              <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-300">
+                REQ_P_MIN
+              </span>
+            </div>
+            <div class="mt-2 text-xs font-bold text-slate-800">
+              Broadcasted REQ_P_MIN (τ=0.80) to zone members
+            </div>
+            <div class="mt-2 text-xs text-slate-700">
+              <span class="font-semibold text-slate-900">Target Members:</span> <span class="font-bold font-mono text-blue-900">${membersList.join(", ")}</span>
+            </div>
+            <div class="mt-2 text-xs font-mono text-slate-600 bg-white/70 p-1.5 rounded border border-blue-100">
+              Payload: {"msg": "REQ_P_MIN", "tau": 0.80}
+            </div>
+            <div class="mt-2.5 pt-2 border-t border-blue-200 text-[11px] text-slate-600 font-sans leading-relaxed">
+              Initiator prompts zone members to evaluate the minimum signature length P_min^i needed to retain 80% model quality.
+            </div>
+          </div>
+        `;
+      } else {
+        const initId = assignedZ;
+        pminContent.innerHTML = `
+          <div class="p-3 bg-blue-50/90 rounded-lg border border-blue-300 shadow-xs">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-xs text-blue-950 flex items-center gap-1.5">
+                <span>📥</span>
+                <span>Query Notification Banner:</span>
+              </span>
+              <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                PENDING
+              </span>
+            </div>
+            <div class="mt-2 text-xs font-bold text-blue-900">
+              📥 Received REQ_P_MIN from Initiator C${initId} (Target τ=80%)
+            </div>
+            <div class="mt-2 text-xs font-mono text-slate-700 bg-white/80 p-2 rounded border border-blue-100 space-y-1">
+              <div><span class="font-semibold text-slate-900">Pending Query:</span> <span class="font-bold text-blue-700">REQ_P_MIN (tau=0.80)</span></div>
+              <div><span class="font-semibold text-slate-900">Quality Retention:</span> &tau; = 0.80 (80%)</div>
+              <div><span class="font-semibold text-slate-900">Status:</span> Prepared for Step 8 Local Binary Search</div>
+            </div>
+            <div class="mt-2.5 pt-2 border-t border-blue-200 text-[11px] text-slate-600 font-sans leading-relaxed">
+              Peers receive the query and prepare to execute the local binary search in the next step.
+            </div>
+          </div>
+        `;
+      }
+    }
+  } else {
+    if (pminSection) pminSection.classList.add("hidden");
+  }
+
   card.classList.remove("hidden");
 }
 
@@ -2894,9 +3187,11 @@ function replaySlowMoNodeTrace(nodeData) {
 function renderSidebarFormula(title, texStr, description, badgeText, isAmber = false, theme = null) {
   const cardEl = document.getElementById("sidebarFormulaCard");
   if (cardEl) {
-    cardEl.classList.remove("formula-amber", "formula-purple");
+    cardEl.classList.remove("formula-amber", "formula-purple", "formula-blue");
     if (theme === "purple") {
       cardEl.classList.add("formula-purple");
+    } else if (theme === "blue") {
+      cardEl.classList.add("formula-blue");
     } else if (isAmber) {
       cardEl.classList.add("formula-amber");
     }
@@ -2935,11 +3230,11 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 6; s++) {
+  for (let s = 1; s <= 7; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
-    item.classList.remove("active", "completed", "step-amber", "step-purple", "step-emerald");
+    item.classList.remove("active", "completed", "step-amber", "step-purple", "step-emerald", "step-blue");
     if (s < step) {
       item.classList.add("completed");
     } else if (s === step) {
@@ -2950,6 +3245,8 @@ function updateStepper(step) {
         item.classList.add("step-emerald");
       } else if (step === 6) {
         item.classList.add("step-purple");
+      } else if (step === 7) {
+        item.classList.add("step-blue");
       }
     }
   }
@@ -2979,7 +3276,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 6) {
+    if (step < 7) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -2987,7 +3284,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 6 active (Zone Formation & Boundary Discovery complete)";
+      btnNext.title = "Step 7 active (Initiator P_min Query complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -3000,7 +3297,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 6);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 7);
 }
 
 function bindActionButtons() {
@@ -3024,16 +3321,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 6) {
+      if (currentStep < 7) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 6 is active (Zone Formation complete).");
+        logToTerminal("INFO", "Step 7 is active (Initiator P_min Query complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 6)
-  for (let s = 1; s <= 6; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 7)
+  for (let s = 1; s <= 7; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {
