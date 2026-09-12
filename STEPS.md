@@ -553,4 +553,73 @@ Total Registered Clusters: **7 Clusters**.
 - **Member Nodes ($C_3, C_5, C_7, C_9, C_{10}$)**:
   - Maintain intra-zone cluster profiles, ready for inter-cluster semantic pairing and cross-zone model aggregation in subsequent phases.
 
+---
+
+## Step 17 — Inter-Zone Meta-Clustering & Global Super-Cluster Formation
+
+### Objective
+Super-Initiator $C_4$ evaluates the pairwise Cosine Similarity across the 7 ingested cluster profile masks to form a $7 \times 7$ similarity matrix. Using this affinity matrix, $C_4$ partitions the clusters into **3 Global Super-Clusters ($\mathcal{SC}_1, \mathcal{SC}_2, \mathcal{SC}_3$)**, linking semantically aligned nodes across disparate topological zones for global model coordination.
+
+### Mathematical Formulation
+$$S_{a, b} = \frac{|\mathbf{m}_a \cap \mathbf{m}_b|}{\|\mathbf{m}_a\|_2 \|\mathbf{m}_b\|_2} \longrightarrow S_{7 \times 7} \in [0, 1]^{7 \times 7}$$
+
+$$S_{7 \times 7} = \frac{|\mathbf{m}_a \cap \mathbf{m}_b|}{3} \longrightarrow \{\mathcal{SC}_1, \mathcal{SC}_2, \mathcal{SC}_3\}$$
+
+Where:
+- $\mathbf{m}_a, \mathbf{m}_b \in \{0, 1\}^{10}$ are the 10-dimensional binary profile masks of clusters $a$ and $b$.
+- Intra-super-cluster similarity threshold $\tau \ge 0.85$.
+
+### 7x7 Inter-Cluster Similarity Matrix ($S_{7 \times 7}$)
+The evaluated pairwise Cosine Similarities between the 7 cluster profile masks:
+
+| Cluster | 2-A | 2-B | 4-A | 4-B | 8-A | 8-B | 8-C | Super-Cluster | Dominant Classes |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **2-A** | **1.000** | 0.000 | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | **$\mathcal{SC}_1$** | Classes 1, 2, 3 (Aviation & Vehicles) |
+| **2-B** | 0.000 | **1.000** | **1.000** | 0.000 | **1.000** | 0.000 | 0.000 | **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Animals) |
+| **4-A** | 0.000 | **1.000** | **1.000** | 0.000 | **1.000** | 0.000 | 0.000 | **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Animals) |
+| **4-B** | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | 0.000 | **0.866** | **$\mathcal{SC}_3$** | Classes 8, 9, 10 (Heavy Transport & Amphibians) |
+| **8-A** | 0.000 | **1.000** | **1.000** | 0.000 | **1.000** | 0.000 | 0.000 | **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Animals) |
+| **8-B** | **1.000** | 0.000 | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | **$\mathcal{SC}_1$** | Classes 1, 2, 3 (Aviation & Vehicles) |
+| **8-C** | 0.000 | 0.000 | 0.000 | **0.866** | 0.000 | 0.000 | **1.000** | **$\mathcal{SC}_3$** | Classes 8, 9, 10 (Heavy Transport & Amphibians) |
+
+### Global Super-Clusters Specification
+1. **Super-Cluster 1 ($\mathcal{SC}_1$) — Aviation & Vehicles (C1–C3)**:
+   - **Clusters**: `{"2-A", "8-B"}`
+   - **Member Clients / Peers**: $\{C_1, C_2, C_9\}$
+   - **Exemplar Nodes**: $\{C_1, C_9\}$
+   - **Dominant Semantic Features**: Classes 1, 2, 3 (Airplane, Automobile, Bird)
+   - **Visual Accent**: Glowing Sky Blue (`#38bdf8`)
+
+2. **Super-Cluster 2 ($\mathcal{SC}_2$) — Animals (C4–C6)**:
+   - **Clusters**: `{"2-B", "4-A", "8-A"}`
+   - **Member Clients / Peers**: $\{C_3, C_4, C_5, C_8\}$
+   - **Exemplar Nodes**: $\{C_3, C_5, C_8\}$
+   - **Dominant Semantic Features**: Classes 4, 5, 6 (Deer, Dog, Frog)
+   - **Visual Accent**: Glowing Amber/Orange (`#fbbf24`)
+
+3. **Super-Cluster 3 ($\mathcal{SC}_3$) — Heavy Transport & Amphibians (C7–C10)**:
+   - **Clusters**: `{"4-B", "8-C"}`
+   - **Member Clients / Peers**: $\{C_6, C_7, C_{10}\}$
+   - **Exemplar Nodes**: $\{C_7, C_{10}\}$
+   - **Dominant Semantic Features**: Classes 8, 9, 10 (Horse, Ship, Truck)
+   - **Visual Accent**: Glowing Violet/Magenta (`#c084fc`)
+
+### Node States & Lifecycle in Step 17
+- **Node 4 ($C_4$ — Super-Initiator)**:
+  - Computes and stores the $7 \times 7$ similarity matrix `similarity_matrix_7x7`.
+  - Discovers the 3 Global Super-Clusters: `super_clusters = [SC-1, SC-2, SC-3]`.
+  - Belongs to $\mathcal{SC}_2$ (`assigned_super_cluster: "SC-2"`).
+- **Nodes 1, 2, 9**:
+  - `assigned_super_cluster`: `"SC-1"`
+  - `cross_zone_semantic_peers`: Peers within $\mathcal{SC}_1$.
+- **Nodes 3, 4, 5, 8**:
+  - `assigned_super_cluster`: `"SC-2"`
+  - `cross_zone_semantic_peers`: Peers within $\mathcal{SC}_2$.
+- **Nodes 6, 7, 10**:
+  - `assigned_super_cluster`: `"SC-3"`
+  - `cross_zone_semantic_peers`: Peers within $\mathcal{SC}_3$.
+- **Ad-Hoc Network Topology**:
+  - Base physical links remain clean solid slate lines while nodes display subtle glowing hulls or aura badges indicating their cross-zone super-cluster affinities.
+
+
 

@@ -205,6 +205,39 @@ function initCytoscape() {
         }
       },
       {
+        selector: "node.super-cluster-sc1",
+        style: {
+          "border-color": "#38bdf8",
+          "border-width": 4.5,
+          "shadow-blur": 26,
+          "shadow-color": "#38bdf8",
+          "shadow-opacity": 0.95,
+          "z-index": 110
+        }
+      },
+      {
+        selector: "node.super-cluster-sc2",
+        style: {
+          "border-color": "#fbbf24",
+          "border-width": 4.5,
+          "shadow-blur": 26,
+          "shadow-color": "#fbbf24",
+          "shadow-opacity": 0.95,
+          "z-index": 110
+        }
+      },
+      {
+        selector: "node.super-cluster-sc3",
+        style: {
+          "border-color": "#c084fc",
+          "border-width": 4.5,
+          "shadow-blur": 26,
+          "shadow-color": "#c084fc",
+          "shadow-opacity": 0.95,
+          "z-index": 110
+        }
+      },
+      {
         selector: "node.winner-node-4",
         style: {
           "background-color": "#166534",
@@ -939,6 +972,13 @@ async function loadStep(stepNumber) {
         console.error("Step 16 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 16 Render Error: ${renderErr.message}`);
       }
+    } else if (stepNumber === 17) {
+      try {
+        renderStep17(data);
+      } catch (renderErr) {
+        console.error("Step 17 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 17 Render Error: ${renderErr.message}`);
+      }
     }
 
 
@@ -1105,6 +1145,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 16 / ZONE CATALOG RESPONSE & SIGNATURE INGESTION";
     if (stepTitle) stepTitle.textContent = "Step 16: Zone Catalog Response & Signature Ingestion at C4";
     if (stepDesc) stepDesc.textContent = "Base initiators transmit exemplar profiles and binary masks inward to Super-Initiator C4, assembling the 7-cluster Global Semantic Registry.";
+  } else if (step === 17) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 17: GLOBAL SUPER-CLUSTER FORMATION";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-sky-50 text-sky-900 border border-sky-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 17 / GLOBAL SUPER-CLUSTER FORMATION";
+    if (stepTitle) stepTitle.textContent = "Step 17: Inter-Zone Meta-Clustering & Global Super-Cluster Formation";
+    if (stepDesc) stepDesc.textContent = "C4 evaluates pairwise Cosine Similarities across cluster masks to form a 7x7 matrix, partitioning the network into 3 cross-zone Super-Clusters.";
   }
 }
 
@@ -4205,6 +4253,180 @@ function animateStep16CatalogResponse(packets, allNodes) {
   activeAnimationId = requestAnimationFrame(runFrame);
 }
 
+// 5.17 STEP 17: Inter-Zone Meta-Clustering & Global Super-Cluster Formation
+function renderStep17(data) {
+  stopCurrentPacketAnimation();
+
+  // Explicitly sync header active step badge
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 17: GLOBAL SUPER-CLUSTER FORMATION";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-sky-50 text-sky-900 border border-sky-400";
+  });
+
+  renderSidebarFormula(
+    "Step 17: Global Super-Cluster Formation",
+    "S_{7 \\times 7} = \\frac{|\\mathbf{m}_a \\cap \\mathbf{m}_b|}{3} \\longrightarrow \\{\\mathcal{SC}_1, \\mathcal{SC}_2, \\mathcal{SC}_3\\}",
+    "C4 executes meta-clustering over cluster profile masks, partitioning the network into 3 cross-zone Super-Clusters.",
+    "Step 17: Super-Clusters",
+    false,
+    "sky"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Step 17: Inter-Zone Meta-Clustering & 3 Global Super-Clusters Formed";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const zoneLegend = document.getElementById("zoneLegendItem");
+  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Super-Initiator <span class="text-amber-600 font-bold">👑👑 C4</span> formed <span class="text-sky-700 font-bold font-mono">3 Global Super-Clusters</span>: SC-1 (Sky Blue), SC-2 (Amber), SC-3 (Violet)</span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Render Cytoscape network with isStep17: true
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    showBoundaryEdges: false,
+    clusterHalos: true,
+    isStep17: true,
+    isStep16: true,
+    isStep15: true,
+    isStep13Exemplars: true
+  });
+
+  logToTerminal("ZONE", "[STEP 17] Inter-Zone Meta-Clustering & Super-Cluster Formation initialized.");
+  logToTerminal("INFO", "Super-Initiator C4 computes pairwise Cosine Similarity over 7 ingested cluster profile masks.");
+  logToTerminal("SUCCESS", "Evaluated 7x7 Inter-Cluster Similarity Matrix S_{7x7} (threshold τ >= 0.85).");
+  logToTerminal("SUCCESS", "Super-Cluster 1 (SC-1) formed: Clusters {2-A, 8-B} -> Nodes {C1, C2, C9} (Aviation & Vehicles).");
+  logToTerminal("SUCCESS", "Super-Cluster 2 (SC-2) formed: Clusters {2-B, 4-A, 8-A} -> Nodes {C3, C4, C5, C8} (Animals).");
+  logToTerminal("SUCCESS", "Super-Cluster 3 (SC-3) formed: Clusters {4-B, 8-C} -> Nodes {C6, C7, C10} (Heavy Transport & Amphibians).");
+  logToTerminal("INFO", "Network topology partitioned into 3 cross-zone semantic federations while preserving physical 1-hop mesh.");
+
+  animateStep17SuperClusters(data.nodes);
+}
+
+// Animate Step 17: Glowing colored hulls, node halos, and floating badge overlays for SC-1, SC-2, SC-3
+function animateStep17SuperClusters(allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const duration = 4000;
+  const startTime = performance.now();
+
+  function runFrame(now) {
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 1000) * Math.PI) + 1) / 2; // 0..1 smooth breathing pulse
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const scGroups = [
+      { id: "SC-1", name: "Aviation & Vehicles", nodes: [1, 2, 9], color: "#38bdf8", rgb: "56, 189, 248" },
+      { id: "SC-2", name: "Animals", nodes: [3, 4, 5, 8], color: "#fbbf24", rgb: "251, 191, 36" },
+      { id: "SC-3", name: "Heavy Transport & Amphibians", nodes: [6, 7, 10], color: "#c084fc", rgb: "192, 132, 252" },
+    ];
+
+    scGroups.forEach(sc => {
+      const positions = sc.nodes.map(id => {
+        const ele = getNodeElement(id);
+        return ele ? ele.renderedPosition() : null;
+      }).filter(Boolean);
+
+      if (positions.length === 0) return;
+
+      // 1. Draw glowing aura rings around each node in this Super-Cluster
+      positions.forEach(p => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 28 + pulse * 6, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(${sc.rgb}, ${0.35 + pulse * 0.45})`;
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = sc.color;
+        ctx.shadowBlur = 18 + pulse * 10;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 34 + pulse * 4, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(${sc.rgb}, ${0.15 + pulse * 0.25})`;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      // 2. Draw subtle hull connecting nodes of this SC
+      if (positions.length >= 2) {
+        ctx.save();
+        const cx = positions.reduce((sum, p) => sum + p.x, 0) / positions.length;
+        const cy_pos = positions.reduce((sum, p) => sum + p.y, 0) / positions.length;
+
+        const sorted = [...positions].sort((a, b) => {
+          return Math.atan2(a.y - cy_pos, a.x - cx) - Math.atan2(b.y - cy_pos, b.x - cx);
+        });
+
+        ctx.beginPath();
+        sorted.forEach((p, idx) => {
+          const dx = p.x - cx;
+          const dy = p.y - cy_pos;
+          const dist = Math.hypot(dx, dy);
+          const push = dist > 0 ? 32 : 0;
+          const px = p.x + (dx / dist) * push;
+          const py = p.y + (dy / dist) * push;
+          if (idx === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        });
+        ctx.closePath();
+
+        ctx.fillStyle = `rgba(${sc.rgb}, 0.05)`;
+        ctx.fill();
+        ctx.strokeStyle = `rgba(${sc.rgb}, ${0.4 + pulse * 0.3})`;
+        ctx.lineWidth = 1.6;
+        ctx.setLineDash([6, 5]);
+        ctx.lineDashOffset = -now / 40;
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 3. Floating Super-Cluster identifier badge
+        ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+        const tagText = `🌌 ${sc.id}: ${sc.name}`;
+        const tW = ctx.measureText(tagText).width;
+        const tagY = cy_pos - 12;
+
+        ctx.fillStyle = `rgba(15, 23, 42, 0.88)`;
+        ctx.strokeStyle = sc.color;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.roundRect(cx - tW / 2 - 7, tagY - 9, tW + 14, 18, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = sc.color;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(tagText, cx, tagY);
+        ctx.restore();
+      }
+    });
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+
 
 
 // Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
@@ -4499,6 +4721,16 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
     let nodeClasses = "";
     if (isExemplar) {
       nodeClasses += "exemplar-node ";
+    }
+    if (options.isStep17) {
+      const scId = n.assigned_super_cluster || ([1, 2, 9].includes(n.id) ? "SC-1" : ([3, 4, 5, 8].includes(n.id) ? "SC-2" : "SC-3"));
+      if (scId === "SC-1") {
+        nodeClasses += "super-cluster-sc1 ";
+      } else if (scId === "SC-2") {
+        nodeClasses += "super-cluster-sc2 ";
+      } else if (scId === "SC-3") {
+        nodeClasses += "super-cluster-sc3 ";
+      }
     }
 
     if (options.useTonalZoneColors && (n.assigned_zone || n.zone_id)) {
@@ -7214,6 +7446,209 @@ function renderNodeModal(node, stepData = currentStepData) {
     if (globalCatalogSection) globalCatalogSection.classList.add("hidden");
   }
 
+  // Step 17: Inter-Zone Meta-Clustering & Super-Clusters
+  const superClusterSection = document.getElementById("cardSuperClusterSection");
+  const superClusterBadge = document.getElementById("cardSuperClusterBadge");
+  const superClusterContent = document.getElementById("cardSuperClusterContent");
+
+  if (currentStep === 17) {
+    if (probeSection) probeSection.classList.add("hidden");
+    if (bndSection) bndSection.classList.add("hidden");
+    if (pminSection) pminSection.classList.add("hidden");
+    if (bsSection) bsSection.classList.add("hidden");
+    if (consensusSection) consensusSection.classList.add("hidden");
+    if (orderSection) orderSection.classList.add("hidden");
+    if (sigSection) sigSection.classList.add("hidden");
+    if (clSection) clSection.classList.add("hidden");
+    if (exemplarSection) exemplarSection.classList.add("hidden");
+    if (topZoneSection) topZoneSection.classList.add("hidden");
+    if (catalogReqSection) catalogReqSection.classList.add("hidden");
+    if (globalCatalogSection) globalCatalogSection.classList.add("hidden");
+    if (superClusterSection) superClusterSection.classList.remove("hidden");
+
+    if (idNum === 4) {
+      // Node 4: Super-Initiator C4 - 7x7 Similarity Matrix & 3 Global Super-Clusters
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "👑👑 SUPER-INITIATOR (META-CLUSTERING COMPLETE)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-sky-100 text-sky-900 border-sky-400";
+      }
+      if (superClusterBadge) {
+        superClusterBadge.textContent = "7x7 MATRIX & 3 SCs";
+        superClusterBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-sky-100 text-sky-900 border border-sky-300";
+      }
+      if (superClusterContent) {
+        const matrixData = mergedNode?.similarity_matrix_7x7 || stepData?.similarity_matrix_7x7 || {};
+        const clusterIds = matrixData?.cluster_ids || ["2-A", "2-B", "4-A", "4-B", "8-A", "8-B", "8-C"];
+        const matrix = matrixData?.matrix || [];
+
+        // Build 7x7 Heatmap table
+        let tableHeaderHtml = `<th class="py-1 px-1.5 bg-slate-100 text-slate-600 border-r border-slate-200"></th>`;
+        clusterIds.forEach(cid => {
+          tableHeaderHtml += `<th class="py-1 px-1 text-center font-bold text-slate-700">${cid}</th>`;
+        });
+
+        let tableRowsHtml = "";
+        matrix.forEach((row, rIdx) => {
+          const rowCid = clusterIds[rIdx] || `C${rIdx}`;
+          let cellsHtml = `<td class="py-1 px-1 font-bold text-slate-700 bg-slate-50 border-r border-slate-200 font-mono">${rowCid}</td>`;
+          row.forEach(val => {
+            let cellClass = "bg-slate-50 text-slate-400";
+            if (val === 1.0) {
+              cellClass = "bg-emerald-600 text-white font-bold";
+            } else if (val >= 0.8) {
+              cellClass = "bg-emerald-500 text-white font-bold";
+            } else if (val > 0) {
+              cellClass = "bg-emerald-100 text-emerald-800 font-semibold";
+            }
+            cellsHtml += `<td class="py-1 px-0.5 text-center font-mono ${cellClass}">${Number(val).toFixed(2)}</td>`;
+          });
+          tableRowsHtml += `<tr class="border-b border-slate-100">${cellsHtml}</tr>`;
+        });
+
+        // Build 3 Global Super-Clusters Cards
+        const superClusters = mergedNode?.super_clusters || stepData?.super_clusters || [];
+        let scCardsHtml = "";
+        superClusters.forEach(sc => {
+          const clusterTags = (sc?.clusters || []).map(c => `<span class="px-1.5 py-0.2 bg-white rounded border border-slate-200 font-mono text-[9px] font-bold text-slate-700">${c}</span>`).join(" ");
+          const peerTags = (sc?.peers || []).map(p => `<span class="px-1.5 py-0.2 bg-white rounded border border-slate-200 font-mono text-[9px] font-bold text-slate-800">C${p}</span>`).join(" ");
+          const exemplarTags = (sc?.exemplars || []).map(e => `<span class="px-1.5 py-0.2 bg-amber-100 text-amber-900 rounded border border-amber-300 font-mono text-[9px] font-bold">⭐ C${e}</span>`).join(" ");
+          const classNames = (sc?.class_names || []).join(", ");
+
+          let badgeColor = sc?.id === "SC-1" ? "border-sky-300 bg-sky-50/80" : (sc?.id === "SC-2" ? "border-amber-300 bg-amber-50/80" : "border-violet-300 bg-violet-50/80");
+          let headerColor = sc?.id === "SC-1" ? "text-sky-900" : (sc?.id === "SC-2" ? "text-amber-900" : "text-violet-900");
+
+          scCardsHtml += `
+            <div class="p-2.5 rounded-lg border ${badgeColor} space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="font-extrabold ${headerColor} text-[10.5px]">🌌 ${sc?.id}: ${sc?.name}</span>
+                <span class="text-[8.5px] font-mono font-bold px-1.5 py-0.2 rounded bg-white border border-slate-200">${sc?.clusters?.length || 0} Clusters</span>
+              </div>
+              <div class="text-[9px] text-slate-600">
+                <strong>Clusters:</strong> ${clusterTags}
+              </div>
+              <div class="text-[9px] text-slate-600">
+                <strong>Member Peers:</strong> ${peerTags}
+              </div>
+              <div class="text-[9px] text-slate-600 flex items-center gap-1">
+                <strong>Exemplars:</strong> ${exemplarTags}
+              </div>
+              <div class="text-[8.5px] text-slate-500 italic">
+                Dominant Classes: ${classNames}
+              </div>
+            </div>
+          `;
+        });
+
+        superClusterContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-sky-300 shadow-xs space-y-3">
+            <!-- Header Banner -->
+            <div class="p-2 rounded-lg border border-sky-400 bg-sky-50/90 text-center space-y-0.5">
+              <div class="text-[11px] font-extrabold text-sky-950 flex items-center justify-center gap-1.5">
+                <span>🌌</span>
+                <span>Inter-Zone Meta-Clustering & Super-Clusters</span>
+                <span>🌌</span>
+              </div>
+              <div class="text-[9px] font-mono text-sky-800 font-semibold">
+                7x7 Pairwise Cosine Similarity Matrix (Threshold τ >= 0.85)
+              </div>
+            </div>
+
+            <!-- 7x7 Similarity Matrix Heatmap -->
+            <div class="space-y-1">
+              <div class="text-[9.5px] font-bold text-slate-700 flex items-center justify-between">
+                <span>7x7 Inter-Cluster Cosine Similarity Heatmap:</span>
+                <span class="text-[8.5px] font-normal text-slate-500">Green = High Affinity</span>
+              </div>
+              <div class="rounded border border-slate-200 overflow-x-auto">
+                <table class="w-full text-[8px] font-mono text-left">
+                  <thead class="bg-slate-100 text-slate-800 uppercase font-bold border-b border-slate-200">
+                    <tr>${tableHeaderHtml}</tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 bg-white">
+                    ${tableRowsHtml}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 3 Global Super-Clusters List -->
+            <div class="space-y-1.5">
+              <div class="text-[9.5px] font-bold text-slate-700">
+                Formed 3 Global Super-Clusters:
+              </div>
+              <div class="space-y-2">
+                ${scCardsHtml}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      // Other Nodes (1, 2, 3, 5, 6, 7, 8, 9, 10)
+      const scId = mergedNode?.assigned_super_cluster || ([1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3"));
+      const scName = mergedNode?.super_cluster_name || (scId === "SC-1" ? "Aviation & Vehicles (C1-C3)" : (scId === "SC-2" ? "Animals (C4-C6)" : "Heavy Transport & Amphibians (C7-C10)"));
+      const peers = mergedNode?.cross_zone_semantic_peers || [];
+      const allPeers = mergedNode?.super_cluster_peers || (scId === "SC-1" ? [1, 2, 9] : (scId === "SC-2" ? [3, 4, 5, 8] : [6, 7, 10]));
+      const exemplars = mergedNode?.super_cluster_exemplars || (scId === "SC-1" ? [1, 9] : (scId === "SC-2" ? [3, 5, 8] : [7, 10]));
+
+      const scBadgeBg = scId === "SC-1" ? "bg-sky-100 text-sky-900 border-sky-300" : (scId === "SC-2" ? "bg-amber-100 text-amber-900 border-amber-300" : "bg-violet-100 text-violet-900 border-violet-300");
+      const scCardBg = scId === "SC-1" ? "bg-sky-50 border-sky-300" : (scId === "SC-2" ? "bg-amber-50 border-amber-300" : "bg-violet-50 border-violet-300");
+
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = `SUPER-CLUSTER MEMBER (${scId})`;
+        cardStatusBadge.className = `text-[9px] font-semibold px-2 py-0.5 rounded border font-bold ${scBadgeBg}`;
+      }
+      if (superClusterBadge) {
+        superClusterBadge.textContent = scId;
+        superClusterBadge.className = `text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${scBadgeBg}`;
+      }
+      if (superClusterContent) {
+        const peerTags = peers.map(p => `<span class="px-1.5 py-0.5 bg-white rounded border border-slate-300 font-mono font-bold text-slate-800">C${p}</span>`).join(" ");
+        const allPeerTags = allPeers.map(p => `<span class="px-1.5 py-0.5 bg-white rounded border border-slate-300 font-mono font-bold text-slate-800 ${p === idNum ? 'ring-1 ring-emerald-500 text-emerald-800' : ''}">C${p}${p === idNum ? ' (You)' : ''}</span>`).join(" ");
+        const exemplarTags = exemplars.map(e => `<span class="px-1.5 py-0.5 bg-amber-100 text-amber-900 rounded border border-amber-300 font-mono font-bold">⭐ C${e}</span>`).join(" ");
+
+        superClusterContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border ${scCardBg} space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-slate-900">Assigned Super-Cluster:</span>
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold text-[10px] ${scBadgeBg}">${scId}</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-slate-700 font-semibold">
+                ${scName}
+              </div>
+            </div>
+
+            <div class="space-y-1.5 text-[9.5px] font-mono text-slate-700">
+              <div class="p-2 bg-slate-50 rounded border border-slate-200 space-y-1">
+                <div class="font-bold text-slate-800">Cross-Zone Semantic Peers:</div>
+                <div class="flex flex-wrap gap-1">
+                  ${peers.length > 0 ? peerTags : '<span class="text-slate-400">None</span>'}
+                </div>
+              </div>
+
+              <div class="p-2 bg-slate-50 rounded border border-slate-200 space-y-1">
+                <div class="font-bold text-slate-800">All Super-Cluster Members:</div>
+                <div class="flex flex-wrap gap-1">
+                  ${allPeerTags}
+                </div>
+              </div>
+
+              <div class="p-2 bg-slate-50 rounded border border-slate-200 space-y-1">
+                <div class="font-bold text-slate-800">Cluster Exemplars:</div>
+                <div class="flex flex-wrap gap-1">
+                  ${exemplarTags}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+  } else {
+    if (superClusterSection) superClusterSection.classList.add("hidden");
+  }
+
     card.classList.remove("hidden");
     card.style.display = "block";
     card.style.zIndex = "9999";
@@ -7627,7 +8062,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 16; s++) {
+  for (let s = 1; s <= 17; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -7642,7 +8077,7 @@ function updateStepper(step) {
         item.classList.add("step-emerald");
       } else if (step === 6 || step === 8) {
         item.classList.add("step-purple");
-      } else if (step === 7) {
+      } else if (step === 7 || step === 17) {
         item.classList.add("step-blue");
       } else if (step === 9) {
         item.classList.add("step-indigo");
@@ -7683,7 +8118,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 16) {
+    if (step < 17) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -7691,7 +8126,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 16 active (Global Semantic Catalog Aggregation complete)";
+      btnNext.title = "Step 17 active (Global Super-Cluster Formation complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -7704,7 +8139,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 16);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 17);
 }
 
 function bindActionButtons() {
@@ -7728,16 +8163,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 16) {
+      if (currentStep < 17) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 16 is active (Global Semantic Catalog Aggregation complete).");
+        logToTerminal("INFO", "Step 17 is active (Global Super-Cluster Formation complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 16)
-  for (let s = 1; s <= 16; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 17)
+  for (let s = 1; s <= 17; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

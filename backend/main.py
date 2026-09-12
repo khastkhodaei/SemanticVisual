@@ -26,7 +26,7 @@ from backend.storyboard_10nodes import (
     TOTAL_STEPS,
 )
 
-TOTAL_STEPS: int = 16
+TOTAL_STEPS: int = 17
 
 
 
@@ -277,6 +277,19 @@ def get_storyboard_step_16():
 def post_storyboard_step_16():
     """Execute / return deterministic data for Storyboard Step 16."""
     return get_10node_step_data(16)
+
+
+@app.get("/api/v1/storyboard/step/17", tags=["Storyboard"])
+def get_storyboard_step_17():
+    """Returns deterministic data for Storyboard Step 17 (Inter-Zone Meta-Clustering & Super-Clusters)."""
+    return get_10node_step_data(17)
+
+
+@app.post("/api/v1/storyboard/step/17", tags=["Storyboard"])
+def post_storyboard_step_17():
+    """Execute / return deterministic data for Storyboard Step 17."""
+    return get_10node_step_data(17)
+
 
 
 @app.get("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])

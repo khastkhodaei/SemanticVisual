@@ -25,7 +25,7 @@ from backend.storyboard_10nodes import (
     TOTAL_STEPS,
 )
 
-TOTAL_STEPS: int = 16
+TOTAL_STEPS: int = 17
 
 
 
@@ -1724,6 +1724,11 @@ class SemanticDFLEngine:
     def run_zone_catalog_response_10nodes(self) -> Dict[str, Any]:
         """Zone Catalog Response & Global Aggregation: Base initiators transmit REP_CLUSTER_CATALOG and C4 aggregates 7 global clusters."""
         return get_10node_step_data(16)
+
+    def run_meta_clustering_super_clusters_10nodes(self) -> Dict[str, Any]:
+        """Inter-Zone Meta-Clustering & Super-Clusters: C4 computes 7x7 similarity matrix and forms 3 Global Super-Clusters."""
+        return get_10node_step_data(17)
+
 
 
 

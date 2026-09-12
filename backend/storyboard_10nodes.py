@@ -8,9 +8,11 @@ Implements Step 1 of the new 10-node CIFAR-10 SemanticDFL Storyboard:
 - Initial state: role='CLIENT', status='NOT_ASSIGNED', zone_id=None
 """
 
+import copy
+import math
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 16
+TOTAL_STEPS: int = 17
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -3741,6 +3743,148 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "total_registered_clusters": len(global_cluster_catalog),
             "top_level_zone": step14_data.get("top_level_zone", {}),
             "super_zone": step14_data.get("super_zone", {}),
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "top_initiator": 4,
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
+    elif step_number == 17:
+        step16_data = _get_10node_step_data_raw(16)
+        step17_nodes = [copy.deepcopy(n) for n in step16_data["nodes"]]
+        global_cluster_catalog = step16_data.get("global_cluster_catalog", [])
+
+        # 7 clusters in standardized order
+        cluster_ids = ["2-A", "2-B", "4-A", "4-B", "8-A", "8-B", "8-C"]
+        cluster_masks = {
+            "2-A": [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+            "2-B": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+            "4-A": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+            "4-B": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            "8-A": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+            "8-B": [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+            "8-C": [0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+        }
+
+        # Calculate 7x7 pairwise Cosine Similarity Matrix between all 7 cluster masks
+        matrix_7x7: List[List[float]] = []
+        for cid_a in cluster_ids:
+            row: List[float] = []
+            ma = cluster_masks[cid_a]
+            norm_a = math.sqrt(sum(x * x for x in ma))
+            for cid_b in cluster_ids:
+                mb = cluster_masks[cid_b]
+                norm_b = math.sqrt(sum(x * x for x in mb))
+                dot = sum(x * y for x, y in zip(ma, mb))
+                sim = round(dot / (norm_a * norm_b), 3) if (norm_a > 0 and norm_b > 0) else 0.0
+                row.append(sim)
+            matrix_7x7.append(row)
+
+        # 3 Global Super-Clusters
+        super_clusters = [
+            {
+                "id": "SC-1",
+                "name": "Aviation & Vehicles (C1-C3)",
+                "clusters": ["2-A", "8-B"],
+                "peers": [1, 2, 9],
+                "exemplars": [1, 9],
+                "classes": [1, 2, 3],
+                "class_names": ["Airplane", "Automobile", "Bird"],
+                "color": "#38bdf8",
+                "accent": "sky",
+            },
+            {
+                "id": "SC-2",
+                "name": "Animals (C4-C6)",
+                "clusters": ["2-B", "4-A", "8-A"],
+                "peers": [3, 4, 5, 8],
+                "exemplars": [3, 5, 8],
+                "classes": [4, 5, 6],
+                "class_names": ["Deer", "Dog", "Frog"],
+                "color": "#fbbf24",
+                "accent": "amber",
+            },
+            {
+                "id": "SC-3",
+                "name": "Heavy Transport & Amphibians (C7-C10)",
+                "clusters": ["4-B", "8-C"],
+                "peers": [6, 7, 10],
+                "exemplars": [7, 10],
+                "classes": [8, 9, 10],
+                "class_names": ["Horse", "Ship", "Truck"],
+                "color": "#c084fc",
+                "accent": "violet",
+            },
+        ]
+
+        node_sc_map = {
+            1: "SC-1", 2: "SC-1", 9: "SC-1",
+            3: "SC-2", 4: "SC-2", 5: "SC-2", 8: "SC-2",
+            6: "SC-3", 7: "SC-3", 10: "SC-3",
+        }
+        sc_by_id = {sc["id"]: sc for sc in super_clusters}
+
+        for n in step17_nodes:
+            nid = n["id"]
+            sc_id = node_sc_map.get(nid, "SC-2")
+            sc = sc_by_id[sc_id]
+
+            n["assigned_super_cluster"] = sc_id
+            n["super_cluster_name"] = sc["name"]
+            n["super_cluster_color"] = sc["color"]
+            n["super_cluster_accent"] = sc["accent"]
+            n["super_cluster_peers"] = sc["peers"]
+            n["super_cluster_exemplars"] = sc["exemplars"]
+            n["cross_zone_semantic_peers"] = [p for p in sc["peers"] if p != nid]
+
+            if nid == 4:
+                n["meta_clustering_status"] = "SUPER_CLUSTERS_FORMED"
+                n["similarity_matrix_7x7"] = {
+                    "cluster_ids": cluster_ids,
+                    "matrix": matrix_7x7,
+                }
+                n["super_clusters"] = super_clusters
+                n["total_super_clusters"] = len(super_clusters)
+
+        terminal_logs = [
+            "[SUPER-INITIATOR C4] Evaluated pairwise Cosine Similarity across 7 ingested cluster profile masks.",
+            "[AFFINITY MATRIX] Formed 7x7 inter-cluster similarity matrix S_{7x7}.",
+            "[META-CLUSTERING] Partitioned clusters into 3 Global Super-Clusters based on profile alignment (threshold τ >= 0.85).",
+            "[SUPER-CLUSTER 1 (SC-1)] Clusters {2-A, 8-B} -> Nodes {1, 2, 9} (Aviation & Vehicles, Classes: Airplane, Automobile, Bird).",
+            "[SUPER-CLUSTER 2 (SC-2)] Clusters {2-B, 4-A, 8-A} -> Nodes {3, 4, 5, 8} (Animals, Classes: Deer, Dog, Frog).",
+            "[SUPER-CLUSTER 3 (SC-3)] Clusters {4-B, 8-C} -> Nodes {6, 7, 10} (Heavy Transport & Amphibians, Classes: Horse, Ship, Truck).",
+            "[GLOBAL SUPER-ZONE] Cross-zone semantic federation established while preserving ad-hoc physical mesh.",
+        ]
+
+        return {
+            "step": 17,
+            "title": "Step 17: Inter-Zone Meta-Clustering & Global Super-Cluster Formation",
+            "phase_badge": "ACTIVE PHASE: STEP 17: GLOBAL SUPER-CLUSTER FORMATION",
+            "description": "Super-Initiator C4 calculates 7x7 inter-cluster Cosine Similarity matrix and partitions 7 clusters into 3 cross-zone Super-Clusters.",
+            "formula": "S_{7 \\times 7} = \\frac{|\\mathbf{m}_a \\cap \\mathbf{m}_b|}{3} \\longrightarrow \\{\\mathcal{SC}_1, \\mathcal{SC}_2, \\mathcal{SC}_3\\}",
+            "formula_desc": "C4 executes meta-clustering over cluster profile masks, partitioning the network into 3 cross-zone Super-Clusters.",
+            "nodes": step17_nodes,
+            "edges": step16_data["edges"],
+            "packet_events": [],
+            "packet_exchanges": [],
+            "packet_traces": [],
+            "super_clusters": super_clusters,
+            "similarity_matrix_7x7": {
+                "cluster_ids": cluster_ids,
+                "matrix": matrix_7x7,
+            },
+            "global_cluster_catalog": global_cluster_catalog,
+            "top_level_zone": step16_data.get("top_level_zone", {}),
+            "super_zone": step16_data.get("super_zone", {}),
             "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
             "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
             "total_nodes": 10,
