@@ -241,4 +241,36 @@ def test_step13_frontend_modal_and_drag_safety():
     assert "const exemplarNodeId = " in content
     assert "Regular Cluster Member" in content
     assert "DESIGNATED CLUSTER EXEMPLAR" in content
+    assert "window.handleNodeClick = handleNodeClick" in content
+    assert "window.openNodeModal = openNodeModal" in content
+    assert "window.selectNode = selectNode" in content
+    assert "window.showFallbackModal = showFallbackModal" in content
+    assert 'console.log("Clicked node:", node)' in content
+
+
+def test_step13_payload_contains_all_base_and_exemplar_fields(client):
+    """Verify each node object (1 to 10) explicitly contains all fields expected by earlier steps and Step 13."""
+    res = client.get("/api/v1/storyboard/step/13")
+    assert res.status_code == 200
+    data = res.json()
+    nodes = data.get("nodes", [])
+    assert len(nodes) == 10
+
+    required_fields = [
+        "id", "zone", "role", "vrf_score", "data_distribution",
+        "normalized_vector", "top_p_indices", "binary_mask",
+        "is_exemplar", "cluster_id", "exemplar_node_id", "exemplar_for", "profile_signature"
+    ]
+
+    for n in nodes:
+        for f in required_fields:
+            assert f in n, f"Node {n.get('id')} missing required field '{f}'"
+        assert isinstance(n["is_exemplar"], bool)
+        assert isinstance(n["cluster_id"], str)
+        assert isinstance(n["exemplar_for"], list)
+        assert isinstance(n["profile_signature"], list)
+        assert isinstance(n["data_distribution"], dict)
+        assert isinstance(n["normalized_vector"], list)
+        assert isinstance(n["binary_mask"], list)
+
 

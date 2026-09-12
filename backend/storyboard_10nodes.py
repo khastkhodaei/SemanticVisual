@@ -3349,6 +3349,44 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
     """Retrieve storyboard step data for 10-node simulation with guaranteed total_steps = 14."""
     data = _get_10node_step_data_raw(step_number)
     data["total_steps"] = TOTAL_STEPS
+
+    # Ensure all base & step-specific fields are explicitly present on every node
+    for n in data.get("nodes", []):
+        nid = n["id"]
+        # In steps 1-4, zones are not yet established unless specified
+        if step_number in [1, 2, 3]:
+            # Retain None zone_id for steps prior to election/zone formation
+            zone = n.get("zone")
+            if zone is not None:
+                n["assigned_zone"] = zone
+                n["zone_id"] = zone
+            else:
+                n["zone"] = None
+                n["assigned_zone"] = None
+                n["zone_id"] = None
+        else:
+            zone = n.get("zone") or n.get("assigned_zone") or n.get("zone_id") or (2 if nid in [1, 2, 3] else (4 if nid in [4, 5, 6, 7] else 8))
+            n["zone"] = zone
+            n["assigned_zone"] = zone
+            n["zone_id"] = zone
+
+        if "binary_mask" not in n:
+            n["binary_mask"] = n.get("binary_mask_10d") or [1 if (i + 1) in n.get("top_p_indices", []) else 0 for i in range(10)]
+        if "binary_mask_10d" not in n:
+            n["binary_mask_10d"] = n["binary_mask"]
+
+        if "normalized_vector" not in n:
+            n["normalized_vector"] = n.get("vector_10d") or n.get("vector") or []
+        if "data_distribution" not in n:
+            n["data_distribution"] = n.get("distribution") or {}
+
+        if step_number == 13:
+            n["is_exemplar"] = bool(n.get("is_exemplar", False))
+            n["cluster_id"] = n.get("cluster_id") or "N/A"
+            n["exemplar_node_id"] = n.get("exemplar_node_id") if n.get("exemplar_node_id") is not None else (nid if n["is_exemplar"] else None)
+            n["exemplar_for"] = n.get("exemplar_for") if isinstance(n.get("exemplar_for"), list) else ([] if not n["is_exemplar"] else [nid])
+            n["profile_signature"] = n.get("profile_signature") if isinstance(n.get("profile_signature"), list) else []
+
     return data
 
 
