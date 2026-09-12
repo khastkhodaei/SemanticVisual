@@ -218,3 +218,27 @@ def test_step13_steps_markdown_documentation():
     assert "Node 5" in content
     assert "Node 7" in content
     assert "Step 14 — Top-Level Initiator Election & Super-Zone Creation (Figure 3(e))" in content
+
+
+def test_step13_frontend_modal_and_drag_safety():
+    """Assert frontend/static/app.js implements defensive modal rendering and drag/click separation."""
+    app_js_path = Path(__file__).resolve().parent.parent / "frontend" / "static" / "app.js"
+    assert app_js_path.exists()
+    content = app_js_path.read_text(encoding="utf-8")
+
+    # 1. Canvas Drag vs Click distinction logic
+    assert "isDragging" in content
+    assert "Math.hypot(e.clientX - startX, e.clientY - startY) > 5" in content
+    assert "autoungrabify: true" in content
+
+    # 2. Defensive renderNodeModal implementation
+    assert "function renderNodeModal" in content
+    assert "window.renderNodeModal = renderNodeModal" in content
+    assert "window.showNodeModal = showNodeModal" in content
+    assert "const isExemplar = Boolean(" in content
+    assert "const exemplarFor = Array.isArray(" in content
+    assert "const profileSig = Array.isArray(" in content
+    assert "const exemplarNodeId = " in content
+    assert "Regular Cluster Member" in content
+    assert "DESIGNATED CLUSTER EXEMPLAR" in content
+

@@ -430,9 +430,35 @@ function initCytoscape() {
     userZoomingEnabled: true,
     userPanningEnabled: true,
     boxSelectionEnabled: false,
+    autoungrabify: true,
     minZoom: 0.4,
     maxZoom: 2.5
   });
+
+  // Track mousedown / mousemove to cleanly distinguish Click (open modal) from Drag (pan/move canvas)
+  let startX = 0;
+  let startY = 0;
+  let isDragging = false;
+
+  const cyContainer = cy.container();
+  if (cyContainer) {
+    cyContainer.addEventListener("mousedown", (e) => {
+      startX = e.clientX;
+      startY = e.clientY;
+      isDragging = false;
+    });
+
+    cyContainer.addEventListener("mousemove", (e) => {
+      if (Math.hypot(e.clientX - startX, e.clientY - startY) > 5) {
+        isDragging = true;
+      }
+    });
+
+    cyContainer.addEventListener("mouseup", (e) => {
+      // If isDragging === false, treat this purely as a Node Click Selection
+      // and do NOT alter node coordinates
+    });
+  }
 
   // Transparent lookup wrapper for cy.getElementById supporting String(id), numeric id, and "node_" + id
   const origGetById = cy.getElementById.bind(cy);
@@ -459,15 +485,25 @@ function initCytoscape() {
 
   // Click-to-Toggle Node Modal Interaction
   cy.on("tap", "node", (evt) => {
+    // If the mouse was dragged (e.g. panning canvas), do not treat as selection click
+    if (isDragging) return;
+
     const node = evt.target;
-    const nid = node.data("node_id_num");
+    // Keep node coordinates locked and immutable during click
+    if (node && typeof node.position === "function") {
+      const pos = node.position();
+      node.position({ x: pos.x, y: pos.y });
+    }
+
+    const nodeData = node.data();
+    const nid = nodeData.node_id_num || (typeof nodeData.id === "string" ? parseInt(nodeData.id.replace(/\D/g, ""), 10) : nodeData.id);
 
     if (activeSelectedNodeId === nid) {
       hideNodeModal();
     } else {
       activeSelectedNodeId = nid;
-      activeSelectedNodeData = node.data();
-      showNodeModal(node.data());
+      activeSelectedNodeData = nodeData;
+      renderNodeModal(nodeData, currentStepData);
 
       // Highlight selected node without dimming other nodes or links
       cy.nodes().removeClass("selected-node");
@@ -477,6 +513,7 @@ function initCytoscape() {
 
   // Tap on background to dismiss modal and restore full canvas opacity
   cy.on("tap", (evt) => {
+    if (isDragging) return;
     if (evt.target === cy) {
       hideNodeModal();
     }
@@ -2699,6 +2736,10 @@ function renderStep13(data) {
     clusterHalos: true,
     isStep13Exemplars: true
   });
+  if (cy) {
+    cy.autoungrabify(true);
+    cy.nodes().lock();
+  }
 
   logToTerminal("ZONE", "[STEP 13] Intra-Zone Cluster Exemplar Designation & Profile Assignment initiated.");
   logToTerminal("INFO", "Zone 2 Initiator C2 designated Exemplar C1 (Cluster 2-A: {C1, C2}) and Exemplar C3 (Cluster 2-B: {C3}).");
@@ -3972,6 +4013,8 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   cy.resize();
   cy.layout({ name: "preset" }).run();
   cy.fit(undefined, 35);
+  cy.autoungrabify(true);
+  cy.nodes().lock();
 
   if (options.clusterHalos) {
     nodes.forEach(n => {
@@ -4111,7 +4154,16 @@ function renderOverlayVrfScoreboardHtml(idNum, scoreboard) {
 }
 
 // 10. Click-to-Toggle Node Details Modal (Strict Step 1 Scope)
-function showNodeModal(nodeData) {
+function renderNodeModal(node, stepData = currentStepData) {
+  if (!node) return;
+  const nodeData = (typeof node.data === "function") ? node.data() : node;
+  const rawId = nodeData.node_id_num ?? nodeData.id;
+  const idNum = typeof rawId === "string" ? parseInt(rawId.replace(/\D/g, ""), 10) : Number(rawId);
+
+  // Merge with backend step data if available for safe fallbacks
+  const backendNode = (stepData?.nodes || []).find(n => n.id === idNum) || {};
+  const mergedNode = Object.assign({}, backendNode, nodeData);
+
   const card = document.getElementById("nodeInfoCard");
   if (!card) return;
 
@@ -4121,19 +4173,17 @@ function showNodeModal(nodeData) {
   const cardNeighbors = document.getElementById("cardNeighbors");
   const distTableBody = document.getElementById("cardDataDistributionTableBody");
 
-  const idNum = nodeData.node_id_num || nodeData.id;
-
   // Header: Node C{id} | Role: INITIATOR / CLIENT | Zone: {assigned_zone} in Step 5 & 6
   if (cardNodeId) {
     if (currentStep === 14) {
-      const isTopInit = Boolean(idNum === 4 || nodeData.is_top_initiator);
-      const isInit = Boolean([2, 4, 8].includes(idNum) || nodeData.is_initiator);
+      const isTopInit = Boolean(idNum === 4 || mergedNode.is_top_initiator);
+      const isInit = Boolean([2, 4, 8].includes(idNum) || mergedNode.is_initiator);
       const roleStr = isTopInit ? "👑👑 TOP INITIATOR" : (isInit ? "👑 BASE INITIATOR" : "CLIENT");
       cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Role: <span class="${isTopInit ? 'text-amber-800 font-bold' : (isInit ? 'text-amber-700 font-bold' : 'text-slate-800')}">${roleStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Super-Zone: <span class="font-bold text-amber-900">Z_TOP</span></span>`;
     } else if (currentStep === 13) {
-      const isEx = Boolean(nodeData.is_exemplar !== undefined ? nodeData.is_exemplar : [1, 3, 5, 7, 8, 9, 10].includes(idNum));
+      const isEx = Boolean(mergedNode.is_exemplar);
       const roleStr = isEx ? "⭐ CLUSTER EXEMPLAR" : "CLUSTER MEMBER";
-      const cId = nodeData.cluster_id || (idNum in {1:1, 2:1} ? "2-A" : idNum === 3 ? "2-B" : idNum in {4:1, 5:1} ? "4-A" : idNum in {6:1, 7:1} ? "4-B" : idNum === 8 ? "8-A" : idNum === 9 ? "8-B" : "8-C");
+      const cId = mergedNode.cluster_id || 'N/A';
       cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Role: <span class="${isEx ? 'text-amber-600 font-bold' : 'text-slate-800 font-semibold'}">${roleStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Cluster: <span class="font-bold text-violet-900">${cId}</span></span>`;
     } else if (currentStep === 5 || currentStep === 6) {
       const isInit = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
@@ -5806,46 +5856,51 @@ function showNodeModal(nodeData) {
     if (topZoneSection) topZoneSection.classList.add("hidden");
     if (exemplarSection) exemplarSection.classList.remove("hidden");
 
-    const assignedZ = nodeData.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
-    const isEx = Boolean(nodeData.is_exemplar !== undefined ? nodeData.is_exemplar : [1, 3, 5, 7, 8, 9, 10].includes(idNum));
+    // Defensive Exemplar Fields per specification
+    const isExemplar = Boolean(mergedNode.is_exemplar);
+    const clusterId = mergedNode.cluster_id || 'N/A';
+    const exemplarFor = Array.isArray(mergedNode.exemplar_for) ? mergedNode.exemplar_for : [];
+    const profileSig = Array.isArray(mergedNode.profile_signature) ? mergedNode.profile_signature : [];
+    const exemplarNodeId = mergedNode.exemplar_node_id ?? (isExemplar ? (idNum || mergedNode.id) : 'N/A');
 
-    const defaultClusterMap = {
-      1: { cluster_id: "2-A", is_exemplar: true, exemplar_for: [1, 2], profile_signature: [1, 2, 3], color: "#059669" },
-      2: { cluster_id: "2-A", is_exemplar: false, exemplar_node_id: 1, color: "#059669" },
-      3: { cluster_id: "2-B", is_exemplar: true, exemplar_for: [3], profile_signature: [4, 5, 6], color: "#0d9488" },
-      4: { cluster_id: "4-A", is_exemplar: false, exemplar_node_id: 5, color: "#ea580c" },
-      5: { cluster_id: "4-A", is_exemplar: true, exemplar_for: [4, 5], profile_signature: [4, 5, 6], color: "#ea580c" },
-      6: { cluster_id: "4-B", is_exemplar: false, exemplar_node_id: 7, color: "#d97706" },
-      7: { cluster_id: "4-B", is_exemplar: true, exemplar_for: [6, 7], profile_signature: [7, 8, 9, 10], color: "#d97706" },
-      8: { cluster_id: "8-A", is_exemplar: true, exemplar_for: [8], profile_signature: [4, 5, 6], color: "#7c3aed" },
-      9: { cluster_id: "8-B", is_exemplar: true, exemplar_for: [9], profile_signature: [1, 2, 3], color: "#6366f1" },
-      10: { cluster_id: "8-C", is_exemplar: true, exemplar_for: [10], profile_signature: [8, 9, 10], color: "#8b5cf6" },
+    const assignedZ = mergedNode.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
+
+    const defaultClusterColors = {
+      "2-A": "#059669", "2-B": "#0d9488",
+      "4-A": "#ea580c", "4-B": "#d97706",
+      "8-A": "#7c3aed", "8-B": "#6366f1", "8-C": "#8b5cf6"
     };
-    const cInfo = defaultClusterMap[idNum] || {};
-    const clusterId = nodeData.cluster_id || cInfo.cluster_id || "2-A";
-    const clusterColor = cInfo.color || "#059669";
+    const clusterColor = mergedNode.cluster_color || defaultClusterColors[clusterId] || "#059669";
 
     const classNamesMap = {
       1: "Airplane (C1)", 2: "Automobile (C2)", 3: "Bird (C3)",
       4: "Cat (C4)", 5: "Deer (C5)", 6: "Dog (C6)",
       7: "Frog (C7)", 8: "Horse (C8)", 9: "Ship (C9)", 10: "Truck (C10)"
     };
+    const sigLabels = profileSig.map(cid => classNamesMap[cid] || `Class ${cid}`).join(", ");
 
-    if (isEx) {
-      const repPeers = nodeData.exemplar_for || cInfo.exemplar_for || [idNum];
-      const peerStr = repPeers.map(p => `C${p}`).join(", ");
-      const rawSig = nodeData.profile_signature || cInfo.profile_signature || [1, 2, 3];
-      const sigLabels = rawSig.map(cid => classNamesMap[cid] || `Class ${cid}`).join(", ");
-
-      if (cardStatusBadge) {
-        cardStatusBadge.textContent = `⭐ DESIGNATED CLUSTER EXEMPLAR (Cluster ${clusterId})`;
+    if (cardStatusBadge) {
+      if (isExemplar) {
+        cardStatusBadge.textContent = "⭐ DESIGNATED CLUSTER EXEMPLAR";
         cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+      } else {
+        cardStatusBadge.textContent = "REGULAR CLUSTER MEMBER";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-700 border-slate-300";
       }
-      if (exemplarBadge) {
-        exemplarBadge.textContent = `⭐ EXEMPLAR (Cluster ${clusterId})`;
+    }
+
+    if (exemplarBadge) {
+      if (isExemplar) {
+        exemplarBadge.textContent = `⭐ EXEMPLAR (${clusterId})`;
         exemplarBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
+      } else {
+        exemplarBadge.textContent = `Member (${clusterId})`;
+        exemplarBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-700 border border-slate-300";
       }
-      if (exemplarContent) {
+    }
+
+    if (exemplarContent) {
+      if (isExemplar) {
         exemplarContent.innerHTML = `
           <div class="p-3 bg-white rounded-lg border border-amber-300 shadow-xs space-y-3">
             <!-- 1. Highlight Banner -->
@@ -5856,29 +5911,29 @@ function showNodeModal(nodeData) {
                 <span>⭐</span>
               </div>
               <div class="text-[9.5px] font-mono text-amber-800 font-semibold">
-                Cluster ${clusterId} | Zone ${assignedZ} Initiator: C${assignedZ}
+                Cluster ID: ${clusterId} | Zone ${assignedZ} Initiator: C${assignedZ}
               </div>
             </div>
 
             <!-- 2. Profile & Peers Details -->
             <div class="p-2.5 bg-slate-50 rounded border border-amber-200 space-y-2 text-[10px] font-mono">
               <div class="flex items-center justify-between">
-                <span class="text-slate-600 font-semibold">Assigned Cluster ID:</span>
-                <span class="font-bold text-white px-2 py-0.5 rounded shadow-xs" style="background-color: ${clusterColor};">
-                  Cluster ${clusterId}
+                <span class="text-slate-600 font-semibold">Cluster ID:</span>
+                <span class="font-bold text-amber-950 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+                  ${clusterId}
                 </span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-slate-600 font-semibold">Represented Peers:</span>
                 <span class="font-bold text-amber-950 bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300">
-                  [${peerStr}]
+                  [${exemplarFor.map(id => 'C' + id).join(', ')}]
                 </span>
               </div>
               <div class="pt-1.5 border-t border-slate-200">
-                <span class="text-slate-600 font-semibold">Cluster Profile Signature:</span>
+                <span class="text-slate-600 font-semibold">Profile Signature:</span>
                 <div class="mt-1 p-1.5 bg-white rounded border border-amber-200 text-amber-900 font-bold text-[9.5px] flex items-center gap-1">
                   <span>✨</span>
-                  <span>{${rawSig.join(", ")}} → ${sigLabels}</span>
+                  <span>{${profileSig.length ? profileSig.join(', ') : 'None'}}${sigLabels ? ` → ${sigLabels}` : ''}</span>
                 </div>
               </div>
               <div class="pt-1 border-t border-slate-200 text-[9px] text-slate-500">
@@ -5887,51 +5942,45 @@ function showNodeModal(nodeData) {
             </div>
           </div>
         `;
-      }
-    } else {
-      // Non-Exemplar Member Node (Nodes 2, 4, 6)
-      const exNodeId = nodeData.exemplar_node_id || cInfo.exemplar_node_id || 1;
-      if (cardStatusBadge) {
-        cardStatusBadge.textContent = `CLUSTER MEMBER (Exemplar: C${exNodeId})`;
-        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-700 border-slate-300";
-      }
-      if (exemplarBadge) {
-        exemplarBadge.textContent = `Member (Cluster ${clusterId})`;
-        exemplarBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-700 border border-slate-300";
-      }
-      if (exemplarContent) {
+      } else {
         exemplarContent.innerHTML = `
           <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
             <div class="p-2.5 rounded-lg border border-slate-300 bg-slate-50 text-center space-y-1">
               <div class="text-[11.5px] font-bold text-slate-800">
-                CLUSTER MEMBER (NON-EXEMPLAR)
+                Role: Regular Cluster Member
               </div>
               <div class="text-[9.5px] font-mono text-slate-600">
-                Cluster ${clusterId} | Zone ${assignedZ}
+                Cluster ID: ${clusterId} | Zone ${assignedZ}
               </div>
             </div>
 
             <div class="p-2.5 bg-slate-50 rounded border border-slate-200 space-y-2 text-[10px] font-mono">
               <div class="flex items-center justify-between">
-                <span class="text-slate-600">Cluster Exemplar:</span>
+                <span class="text-slate-600 font-semibold">Role:</span>
+                <span class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                  Regular Cluster Member
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600 font-semibold">Cluster ID:</span>
+                <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
+                  ${clusterId}
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600 font-semibold">Cluster Exemplar:</span>
                 <span class="font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-300">
-                  ⭐ Node C${exNodeId}
+                  Node C${exemplarNodeId}
                 </span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-600">Assigned Cluster:</span>
-                <span class="font-bold text-white px-2 py-0.5 rounded" style="background-color: ${clusterColor};">
-                  Cluster ${clusterId}
-                </span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-slate-600">Zone Initiator:</span>
+                <span class="text-slate-600 font-semibold">Zone Initiator:</span>
                 <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
                   👑 Node C${assignedZ}
                 </span>
               </div>
               <div class="pt-1.5 border-t border-slate-200 text-[9.5px] text-slate-600 font-sans leading-relaxed">
-                Node C${idNum} delegates exemplar coordination to designated leader Node C${exNodeId} and participates in intra-cluster aggregation.
+                Node C${idNum} delegates exemplar coordination to designated leader Node C${exemplarNodeId} and participates in intra-cluster aggregation.
               </div>
             </div>
           </div>
@@ -6151,6 +6200,13 @@ function showNodeModal(nodeData) {
 
   card.classList.remove("hidden");
 }
+
+function showNodeModal(nodeData) {
+  return renderNodeModal(nodeData, currentStepData);
+}
+
+window.renderNodeModal = renderNodeModal;
+window.showNodeModal = showNodeModal;
 
 function hideNodeModal() {
   const card = document.getElementById("nodeInfoCard");
