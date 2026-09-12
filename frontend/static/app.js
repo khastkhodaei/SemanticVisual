@@ -925,7 +925,15 @@ async function loadStep(stepNumber) {
         console.error("Step 14 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 14 Render Error: ${renderErr.message}`);
       }
+    } else if (stepNumber === 15) {
+      try {
+        renderStep15(data);
+      } catch (renderErr) {
+        console.error("Step 15 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 15 Render Error: ${renderErr.message}`);
+      }
     }
+
 
     // Stream initial terminal logs
     if (data.terminal_logs && Array.isArray(data.terminal_logs)) {
@@ -3545,6 +3553,303 @@ function drawTopProbePacket(ctx, x, y, label) {
   ctx.restore();
 }
 
+// Helper: Draw REQ_CLUSTER_CATALOG cyan/golden traveling particle
+function drawCatalogQueryPacket(ctx, x, y, label) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, 7.5, 0, Math.PI * 2);
+  ctx.fillStyle = "#06b6d4";
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = "#06b6d4";
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+  const lW = ctx.measureText(label).width;
+  ctx.fillStyle = "rgba(8, 51, 68, 0.95)";
+  ctx.strokeStyle = "#22d3ee";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.roundRect(x + 9, y - 13, lW + 10, 16, 4);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#cffafe";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x + 14, y - 5);
+  ctx.restore();
+}
+
+function renderStep15(data) {
+  stopCurrentPacketAnimation();
+
+  // Explicitly sync header active step badge
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 15: TOP-LEVEL CATALOG QUERY DISPATCH";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-cyan-50 text-cyan-900 border border-cyan-400";
+  });
+
+  renderSidebarFormula(
+    "Step 15: Top-Level Catalog Query Dispatch",
+    "\\text{REQ\\_CLUSTER\\_CATALOG}(C_4) \\xrightarrow{\\text{overlay}} \\{C_2, C_8\\}",
+    "Super-Initiator C4 requests intra-zone cluster metadata from base initiators across boundary routes.",
+    "Step 15: Catalog Query",
+    false,
+    "cyan"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Step 15: Top-Level Catalog Query Dispatch (REQ_CLUSTER_CATALOG from C4 👑👑)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const zoneLegend = document.getElementById("zoneLegendItem");
+  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Super-Initiator <span class="text-amber-600 font-bold">👑👑 C4</span> dispatches <span class="text-cyan-700 font-bold font-mono">REQ_CLUSTER_CATALOG</span> ➔ C2 & C8</span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Render Cytoscape network maintaining super-zone, exemplars, and zones
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    showBoundaryEdges: false,
+    clusterHalos: true,
+    isStep15: true,
+    isStep13Exemplars: true
+  });
+
+  logToTerminal("ZONE", "[STEP 15] Top-Level Catalog Query Dispatch initialized (REQ_CLUSTER_CATALOG).");
+  logToTerminal("INFO", "Super-Initiator C4 initiates global cluster catalog discovery across Super-Zone Z_TOP.");
+  logToTerminal("QUERY", "Westbound Query: C4 ➔ C1 (relay gateway) ➔ C2 [path: 4-1-2] with payload REQ_CLUSTER_CATALOG.");
+  logToTerminal("QUERY", "Eastbound Query: C4 ➔ C6 (relay gateway) ➔ C8 [path: 4-6-8] with payload REQ_CLUSTER_CATALOG.");
+  logToTerminal("SUCCESS", "Initiator C2 received REQ_CLUSTER_CATALOG: Status set to RECEIVED_PENDING_RESPONSE.");
+  logToTerminal("SUCCESS", "Initiator C8 received REQ_CLUSTER_CATALOG: Status set to RECEIVED_PENDING_RESPONSE.");
+  logToTerminal("INFO", "Cluster catalog response transmission and global alignment scheduled for Step 16.");
+
+  const packets = data.packet_events || data.packet_traces || [];
+  animateStep15CatalogQuery(packets, data.nodes);
+}
+
+// Animate Step 15: Outward golden/cyan packet traces C4 -> C1 -> C2 and C4 -> C6 -> C8
+function animateStep15CatalogQuery(packets, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const duration = 4800; // ms per complete query dispatch cycle
+  const startTime = performance.now();
+
+  function runFrame(now) {
+    const elapsed = now - startTime;
+    const progress = (elapsed % duration) / duration;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const n8 = getNodeElement(8);
+    const n6 = getNodeElement(6);
+    const n4 = getNodeElement(4);
+    const n1 = getNodeElement(1);
+    const n2 = getNodeElement(2);
+
+    if (!n4 || !n2 || !n8) {
+      activeAnimationId = requestAnimationFrame(runFrame);
+      return;
+    }
+
+    const p4 = n4.renderedPosition();
+    const p1 = n1 ? n1.renderedPosition() : null;
+    const p2 = n2.renderedPosition();
+    const p6 = n6 ? n6.renderedPosition() : null;
+    const p8 = n8.renderedPosition();
+
+    // 1. Static Super-Zone Envelope encompassing C2, C4, C8
+    ctx.save();
+    ctx.beginPath();
+    const topPad = 46;
+    const sidePad = 48;
+    const botPad = 44;
+
+    ctx.moveTo(p4.x, p4.y - topPad - 8);
+    ctx.bezierCurveTo(p4.x + 140, p4.y - topPad + 4, p8.x + sidePad, p8.y - topPad + 10, p8.x + sidePad, p8.y);
+    ctx.bezierCurveTo(p8.x + sidePad, p8.y + botPad, p8.x - 30, p8.y + botPad, (p8.x + p2.x) / 2, p8.y + botPad - 8);
+    ctx.bezierCurveTo(p2.x + 30, p2.y + botPad, p2.x - sidePad, p2.y + botPad, p2.x - sidePad, p2.y);
+    ctx.bezierCurveTo(p2.x - sidePad, p2.y - topPad + 10, p4.x - sidePad - 10, p4.y - topPad + 4, p4.x, p4.y - topPad - 8);
+    ctx.closePath();
+
+    const envGrad = ctx.createLinearGradient(p2.x, p4.y, p8.x, p8.y);
+    envGrad.addColorStop(0, "rgba(6, 182, 212, 0.05)");
+    envGrad.addColorStop(0.5, "rgba(234, 179, 8, 0.06)");
+    envGrad.addColorStop(1, "rgba(6, 182, 212, 0.05)");
+    ctx.fillStyle = envGrad;
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(6, 182, 212, 0.40)";
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([8, 6]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 2. Connecting Backbone C2 <-> C1 <-> C4 <-> C6 <-> C8
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(p2.x, p2.y);
+    if (p1) ctx.lineTo(p1.x, p1.y);
+    ctx.lineTo(p4.x, p4.y);
+    if (p6) ctx.lineTo(p6.x, p6.y);
+    ctx.lineTo(p8.x, p8.y);
+    ctx.strokeStyle = "rgba(6, 182, 212, 0.65)";
+    ctx.lineWidth = 2.4;
+    ctx.shadowColor = "#06b6d4";
+    ctx.shadowBlur = 12;
+    ctx.setLineDash([6, 5]);
+    ctx.lineDashOffset = -(now / 30);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 3. Super-Initiator C4 Golden Pulsing Aura
+    ctx.save();
+    const auraProg = (now % 1500) / 1500;
+    const auraR = 26 + auraProg * 18;
+    const auraA = (1.0 - auraProg) * 0.85;
+    ctx.beginPath();
+    ctx.arc(p4.x, p4.y, auraR, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(234, 179, 8, ${auraA})`;
+    ctx.lineWidth = 3.0;
+    ctx.shadowColor = "#eab308";
+    ctx.shadowBlur = 16;
+    ctx.stroke();
+
+    ctx.font = "bold 13px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("👑👑", p4.x, p4.y - 30);
+    ctx.restore();
+
+    // 4. Status Announcement Banner
+    ctx.save();
+    const aX = (p2.x + p8.x) / 2;
+    const aY = p4.y + 44;
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const aText = "REQ_CLUSTER_CATALOG: C4 DISPATCHES QUERY TO C2 AND C8";
+    const aW = ctx.measureText(aText).width;
+    ctx.fillStyle = "rgba(8, 51, 68, 0.95)";
+    ctx.strokeStyle = "#22d3ee";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.roundRect(aX - aW / 2 - 8, aY - 10, aW + 16, 20, 4);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#cffafe";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(aText, aX, aY);
+    ctx.restore();
+
+    // 5. Directional Multi-Hop Traveling Packets C4 -> C1 -> C2 & C4 -> C6 -> C8
+    const ease = easeInOutQuad(progress);
+
+    // West Branch: C4 -> C1 -> C2
+    let westX, westY;
+    const tgt1 = p1 || p2;
+    if (progress < 0.5) {
+      const seg = progress / 0.5;
+      const e = easeInOutQuad(seg);
+      westX = p4.x + (tgt1.x - p4.x) * e;
+      westY = p4.y + (tgt1.y - p4.y) * e;
+    } else {
+      const seg = (progress - 0.5) / 0.5;
+      const e = easeInOutQuad(seg);
+      westX = tgt1.x + (p2.x - tgt1.x) * e;
+      westY = tgt1.y + (p2.y - tgt1.y) * e;
+    }
+
+    // East Branch: C4 -> C6 -> C8
+    let eastX, eastY;
+    const tgt6 = p6 || p8;
+    if (progress < 0.5) {
+      const seg = progress / 0.5;
+      const e = easeInOutQuad(seg);
+      eastX = p4.x + (tgt6.x - p4.x) * e;
+      eastY = p4.y + (tgt6.y - p4.y) * e;
+    } else {
+      const seg = (progress - 0.5) / 0.5;
+      const e = easeInOutQuad(seg);
+      eastX = tgt6.x + (p8.x - tgt6.x) * e;
+      eastY = tgt6.y + (p8.y - tgt6.y) * e;
+    }
+
+    // Gateway Relay Glow on C1 and C6 when traversed
+    if (progress >= 0.42 && progress <= 0.58) {
+      const gProg = (progress - 0.42) / 0.16;
+      const gA = Math.sin(gProg * Math.PI) * 0.95;
+      [p1, p6].filter(Boolean).forEach(p => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 25 + gProg * 8, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(6, 182, 212, ${gA})`;
+        ctx.lineWidth = 3.0;
+        ctx.shadowColor = "#06b6d4";
+        ctx.shadowBlur = 18;
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    // Render traveling packets with floating labels
+    drawCatalogQueryPacket(ctx, westX, westY, "REQ_CATALOG ➔ C2");
+    drawCatalogQueryPacket(ctx, eastX, eastY, "REQ_CATALOG ➔ C8");
+
+    // Flash subtle reception rings on Node 2 and Node 8 upon arrival
+    if (progress >= 0.82) {
+      const arrProg = (progress - 0.82) / 0.18;
+      const arrA = (1.0 - arrProg) * 0.95;
+      [p2, p8].forEach(p => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 24 + arrProg * 22, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(6, 182, 212, ${arrA})`;
+        ctx.lineWidth = 3.5;
+        ctx.shadowColor = "#06b6d4";
+        ctx.shadowBlur = 20;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 16 + arrProg * 12, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(234, 179, 8, ${arrA * 0.8})`;
+        ctx.lineWidth = 2.0;
+        ctx.shadowColor = "#eab308";
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+
 
 // Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
 function animateProbeFloodingWaves(waves, allNodes) {
@@ -3828,7 +4133,7 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
     const isInit = Boolean(options.showInitiators && (n.is_initiator || [2, 4, 8].includes(n.id)));
     const domName = n.dominant_class_name || n.class_title || "CIFAR-10";
     const domIcon = n.dominant_class_icon || n.class_icon || "";
-    const isTopInit = Boolean((options.isStep14 || options.isStep13TopZone) && (n.id === 4 || n.is_top_initiator));
+    const isTopInit = Boolean((options.isStep15 || options.isStep14 || options.isStep13TopZone) && (n.id === 4 || n.is_top_initiator));
     const isExemplar = Boolean(options.isStep13Exemplars && (n.is_exemplar !== undefined ? n.is_exemplar : [1, 3, 5, 7, 8, 9, 10].includes(n.id)));
     let label = isTopInit ? `👑👑 C${n.id}` : (isExemplar ? `⭐ C${n.id}` : (isInit ? `👑 C${n.id}` : `C${n.id}`));
 
@@ -4200,7 +4505,13 @@ function renderNodeModal(node, stepData = currentStepData) {
 
   // Header: Node C{id} | Role: INITIATOR / CLIENT | Zone: {assigned_zone} in Step 5 & 6
   if (cardNodeId) {
-    if (currentStep === 14) {
+    if (currentStep === 15) {
+      const isTopInit = Boolean(idNum === 4 || mergedNode.is_top_initiator);
+      const isInit = Boolean([2, 4, 8].includes(idNum) || mergedNode.is_initiator);
+      const roleStr = isTopInit ? "👑👑 SUPER-INITIATOR" : (isInit ? "👑 BASE INITIATOR" : "CLIENT");
+      const qStatus = idNum === 4 ? "DISPATCHED" : ([2, 8].includes(idNum) ? "QUERY RECEIVED" : "INACTIVE");
+      cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Role: <span class="${isTopInit ? 'text-amber-800 font-bold' : (isInit ? 'text-amber-700 font-bold' : 'text-slate-800')}">${roleStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Query: <span class="font-bold text-cyan-800">${qStatus}</span></span>`;
+    } else if (currentStep === 14) {
       const isTopInit = Boolean(idNum === 4 || mergedNode.is_top_initiator);
       const isInit = Boolean([2, 4, 8].includes(idNum) || mergedNode.is_initiator);
       const roleStr = isTopInit ? "👑👑 TOP INITIATOR" : (isInit ? "👑 BASE INITIATOR" : "CLIENT");
@@ -6220,6 +6531,162 @@ function renderNodeModal(node, stepData = currentStepData) {
     if (topZoneSection) topZoneSection.classList.add("hidden");
   }
 
+  // Step 15: Top-Level Catalog Query Dispatch (REQ_CLUSTER_CATALOG)
+  const catalogReqSection = document.getElementById("cardCatalogReqSection");
+  const catalogReqBadge = document.getElementById("cardCatalogReqBadge");
+  const catalogReqContent = document.getElementById("cardCatalogReqContent");
+
+  if (currentStep === 15) {
+    if (probeSection) probeSection.classList.add("hidden");
+    if (bndSection) bndSection.classList.add("hidden");
+    if (pminSection) pminSection.classList.add("hidden");
+    if (bsSection) bsSection.classList.add("hidden");
+    if (consensusSection) consensusSection.classList.add("hidden");
+    if (orderSection) orderSection.classList.add("hidden");
+    if (sigSection) sigSection.classList.add("hidden");
+    if (clSection) clSection.classList.add("hidden");
+    if (exemplarSection) exemplarSection.classList.add("hidden");
+    if (topZoneSection) topZoneSection.classList.add("hidden");
+    if (catalogReqSection) catalogReqSection.classList.remove("hidden");
+
+    if (idNum === 4) {
+      // Node 4: Super-Initiator C4
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "👑👑 SUPER-INITIATOR (REQ_CATALOG DISPATCHER)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-cyan-100 text-cyan-900 border-cyan-400";
+      }
+      if (catalogReqBadge) {
+        catalogReqBadge.textContent = "DISPATCHED (C2 & C8)";
+        catalogReqBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-cyan-100 text-cyan-900 border border-cyan-300";
+      }
+      if (catalogReqContent) {
+        catalogReqContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-cyan-300 shadow-xs space-y-3">
+            <!-- 1. Outbound Query Status Banner -->
+            <div class="p-2.5 rounded-lg border border-cyan-400 bg-cyan-50/90 text-center space-y-1">
+              <div class="text-[11.5px] font-extrabold text-cyan-950 flex items-center justify-center gap-1.5">
+                <span>📡</span>
+                <span>Outbound Query: REQ_CLUSTER_CATALOG dispatched to C2 and C8</span>
+                <span>📡</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-cyan-800 font-semibold">
+                Super-Initiator C4 | Status: DISPATCHED_TO_ALL_INITIATORS
+              </div>
+            </div>
+
+            <!-- 2. Dispatched Route Details -->
+            <div class="p-2.5 bg-slate-50 rounded border border-cyan-200 space-y-2 text-[10px] font-mono">
+              <div class="text-slate-700 font-bold flex items-center gap-1">
+                <span>🚀</span>
+                <span>Dispatched Query Traces (Overlay Routes):</span>
+              </div>
+              <div class="space-y-1.5 text-[9.5px]">
+                <div class="p-1.5 bg-white rounded border border-cyan-100 flex items-center justify-between">
+                  <span class="text-cyan-900 font-bold">• West Branch:</span>
+                  <span class="font-mono text-slate-800">C4 ➔ C1 (gateway) ➔ C2 [Path: 4-1-2]</span>
+                </div>
+                <div class="p-1.5 bg-white rounded border border-cyan-100 flex items-center justify-between">
+                  <span class="text-cyan-900 font-bold">• East Branch:</span>
+                  <span class="font-mono text-slate-800">C4 ➔ C6 (gateway) ➔ C8 [Path: 4-6-8]</span>
+                </div>
+              </div>
+              <div class="pt-1 border-t border-slate-200 text-[9px] text-slate-600">
+                <span class="font-semibold text-slate-800">Directive:</span> Collects intra-zone cluster IDs, exemplars, and profile signatures from base initiators.
+              </div>
+            </div>
+
+            <!-- 3. Local Base Zone Authority -->
+            <div class="p-2 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono flex items-center justify-between">
+              <span class="text-slate-600">Governed Zone 4 Clusters:</span>
+              <span class="font-bold text-orange-900">4-A (Exemplar: C5) & 4-B (Exemplar: C7)</span>
+            </div>
+          </div>
+        `;
+      }
+    } else if ([2, 8].includes(idNum)) {
+      // Base Initiators C2 & C8
+      const zoneNum = idNum;
+      const gatewayNum = idNum === 2 ? 1 : 6;
+      const pathStr = idNum === 2 ? "[4, 1, 2]" : "[4, 6, 8]";
+      const myClusters = idNum === 2 ? "2-A (Exemplar: C1) & 2-B (Exemplar: C3)" : "8-A (Exemplar: C8), 8-B (Exemplar: C9), 8-C (Exemplar: C10)";
+
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "👑 BASE INITIATOR (QUERY RECEIVED)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-50 text-amber-900 border-amber-300";
+      }
+      if (catalogReqBadge) {
+        catalogReqBadge.textContent = "QUERY RECEIVED";
+        catalogReqBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-cyan-100 text-cyan-900 border border-cyan-300";
+      }
+      if (catalogReqContent) {
+        catalogReqContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-cyan-200 shadow-xs space-y-3">
+            <!-- 1. Inbound Query Status Banner -->
+            <div class="p-2.5 rounded-lg border border-cyan-300 bg-cyan-50 text-center space-y-1">
+              <div class="text-[11px] font-extrabold text-cyan-950 flex items-center justify-center gap-1.5">
+                <span>📥</span>
+                <span>Inbound Query Received: Preparing intra-zone cluster catalog response</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-cyan-800 font-semibold">
+                Initiator C${idNum} | Status: RECEIVED_PENDING_RESPONSE
+              </div>
+            </div>
+
+            <!-- 2. Query Ingress Details -->
+            <div class="p-2.5 bg-slate-50 rounded border border-slate-200 space-y-1.5 text-[10px] font-mono">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Query Origin:</span>
+                <span class="font-bold text-amber-900">👑👑 Super-Initiator C4 (Root)</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Traversed Path:</span>
+                <span class="font-bold text-slate-800 font-mono">C4 ➔ C${gatewayNum} (gateway) ➔ C${idNum} ${pathStr}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Requested Metadata:</span>
+                <span class="font-bold text-cyan-900">INTRA_ZONE_CLUSTERS</span>
+              </div>
+              <div class="pt-1.5 border-t border-slate-200 text-[9.5px] text-slate-600 leading-relaxed">
+                Node C${idNum} compiles local cluster profiles for transmission in Step 16.
+              </div>
+            </div>
+
+            <!-- 3. Prepared Catalog Preview -->
+            <div class="p-2 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono space-y-1">
+              <div class="text-slate-700 font-bold">Catalog Response Payload (Preview):</div>
+              <div class="text-slate-800 font-medium">${myClusters}</div>
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      // Member Node
+      const isGateway = [1, 6].includes(idNum);
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = isGateway ? "GATEWAY BRIDGE (PACKET FORWARDER)" : "CLUSTER MEMBER";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-700 border-slate-300";
+      }
+      if (catalogReqBadge) {
+        catalogReqBadge.textContent = isGateway ? "FORWARDING RELAY" : "INACTIVE";
+        catalogReqBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-700 border border-slate-300";
+      }
+      if (catalogReqContent) {
+        catalogReqContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2">
+            <div class="text-[10.5px] text-slate-700 font-sans leading-relaxed">
+              ${isGateway
+                ? `<span class="font-bold text-cyan-800">Boundary Gateway Role:</span> Node C${idNum} transparently forwards the supervisory control packet <code>REQ_CLUSTER_CATALOG</code> from Super-Initiator C4 to its zone initiator.`
+                : `Node C${idNum} remains in active cluster coordination within its assigned cluster while the supervisory control plane executes catalog query dispatch.`
+              }
+            </div>
+          </div>
+        `;
+      }
+    }
+  } else {
+    if (catalogReqSection) catalogReqSection.classList.add("hidden");
+  }
+
     card.classList.remove("hidden");
     card.style.display = "block";
     card.style.zIndex = "9999";
@@ -6633,7 +7100,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 14; s++) {
+  for (let s = 1; s <= 15; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -6648,7 +7115,7 @@ function updateStepper(step) {
         item.classList.add("step-emerald");
       } else if (step === 6 || step === 8) {
         item.classList.add("step-purple");
-      } else if (step === 7) {
+      } else if (step === 7 || step === 15) {
         item.classList.add("step-blue");
       } else if (step === 9) {
         item.classList.add("step-indigo");
@@ -6689,7 +7156,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 14) {
+    if (step < 15) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -6697,7 +7164,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 14 active (Hierarchical Top-Level Zone creation complete)";
+      btnNext.title = "Step 15 active (Top-Level Catalog Query Dispatch complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -6710,7 +7177,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 14);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 15);
 }
 
 function bindActionButtons() {
@@ -6734,16 +7201,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 14) {
+      if (currentStep < 15) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 14 is active (Hierarchical Top-Level Zone creation complete).");
+        logToTerminal("INFO", "Step 15 is active (Top-Level Catalog Query Dispatch complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 14)
-  for (let s = 1; s <= 14; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 15)
+  for (let s = 1; s <= 15; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

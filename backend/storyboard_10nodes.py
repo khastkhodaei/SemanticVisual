@@ -10,7 +10,7 @@ Implements Step 1 of the new 10-node CIFAR-10 SemanticDFL Storyboard:
 
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 14
+TOTAL_STEPS: int = 15
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -3325,6 +3325,162 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "agreed_global_p": 3,
             "target_p": 3,
             "tau": 0.80,
+            "terminal_logs": terminal_logs,
+        }
+    elif step_number == 15:
+        # Step 15: Top-Level Catalog Query Dispatch (REQ_CLUSTER_CATALOG)
+        # Super-Initiator C4 queries base initiators (C2 and C8) for their intra-zone cluster catalogs.
+        # Outward dispatch across super-zone links via boundary gateway nodes:
+        #   - West branch: C4 -> C1 (gateway) -> C2 (path [4, 1, 2])
+        #   - East branch: C4 -> C6 (gateway) -> C8 (path [4, 6, 8])
+        step14_data = get_10node_step_data(14)
+        step14_nodes_map = {n["id"]: n for n in step14_data["nodes"]}
+
+        step15_nodes = []
+        for n in nodes:
+            nid = n["id"]
+            n_copy = dict(step14_nodes_map[nid])
+
+            if nid == 4:
+                # Super-Initiator C4
+                n_copy["query_status"] = "DISPATCHED_TO_ALL_INITIATORS"
+                n_copy["catalog_query_status"] = "DISPATCHED_TO_ALL_INITIATORS"
+                n_copy["outbound_catalog_requests"] = [
+                    {
+                        "target": 2,
+                        "target_str": "C2",
+                        "path": [4, 1, 2],
+                        "relay": 1,
+                        "relay_str": "C1",
+                        "type": "REQ_CLUSTER_CATALOG",
+                    },
+                    {
+                        "target": 8,
+                        "target_str": "C8",
+                        "path": [4, 6, 8],
+                        "relay": 6,
+                        "relay_str": "C6",
+                        "type": "REQ_CLUSTER_CATALOG",
+                    },
+                ]
+            elif nid in [2, 8]:
+                # Base Initiators C2 & C8
+                n_copy["query_status"] = "RECEIVED_PENDING_RESPONSE"
+                n_copy["catalog_query_status"] = "RECEIVED_PENDING_RESPONSE"
+                n_copy["received_catalog_query"] = {
+                    "from": 4,
+                    "from_str": "C4",
+                    "root": 4,
+                    "path": [4, 1, 2] if nid == 2 else [4, 6, 8],
+                    "relay": 1 if nid == 2 else 6,
+                    "type": "REQ_CLUSTER_CATALOG",
+                    "status": "RECEIVED_PENDING_RESPONSE",
+                }
+            else:
+                # Member nodes
+                n_copy["query_status"] = "INACTIVE_MEMBER"
+                n_copy["catalog_query_status"] = "INACTIVE_MEMBER"
+
+            step15_nodes.append(n_copy)
+
+        packet_traces = [
+            {
+                "from": 4,
+                "to": 2,
+                "path": [4, 1, 2],
+                "type": "REQ_CLUSTER_CATALOG",
+                "root": 4,
+                "source": "C4",
+                "target": "C2",
+                "source_num": 4,
+                "target_num": 2,
+                "relay": "C1",
+                "relay_num": 1,
+                "path_str": ["C4", "C1", "C2"],
+                "color": "#06b6d4",
+                "label": "REQ_CLUSTER_CATALOG",
+                "route_label": "C4 -> C1 -> C2",
+                "msg": "Super-Initiator C4 dispatches REQ_CLUSTER_CATALOG outward West to C2 (via C1)",
+                "payload": {
+                    "type": "REQ_CLUSTER_CATALOG",
+                    "root": 4,
+                    "target_zone": 2,
+                    "scope": "INTRA_ZONE_CLUSTERS",
+                },
+            },
+            {
+                "from": 4,
+                "to": 8,
+                "path": [4, 6, 8],
+                "type": "REQ_CLUSTER_CATALOG",
+                "root": 4,
+                "source": "C4",
+                "target": "C8",
+                "source_num": 4,
+                "target_num": 8,
+                "relay": "C6",
+                "relay_num": 6,
+                "path_str": ["C4", "C6", "C8"],
+                "color": "#06b6d4",
+                "label": "REQ_CLUSTER_CATALOG",
+                "route_label": "C4 -> C6 -> C8",
+                "msg": "Super-Initiator C4 dispatches REQ_CLUSTER_CATALOG outward East to C8 (via C6)",
+                "payload": {
+                    "type": "REQ_CLUSTER_CATALOG",
+                    "root": 4,
+                    "target_zone": 8,
+                    "scope": "INTRA_ZONE_CLUSTERS",
+                },
+            },
+        ]
+
+        step15_edges = []
+        for e in edges:
+            e_copy = dict(e)
+            e_copy["style"] = "solid"
+            e_copy["line_color"] = "#64748b"
+            e_copy["line_style"] = "solid"
+            step15_edges.append(e_copy)
+
+        terminal_logs = [
+            "[STEP 15] Top-Level Catalog Query Dispatch initialized (REQ_CLUSTER_CATALOG).",
+            "[SUPER-ZONE CONTROL PLANE] Super-Initiator C4 initiates global cluster discovery across Z_TOP.",
+            "[QUERY DISPATCH 1] C4 -> C1 (gateway) -> C2: REQ_CLUSTER_CATALOG path=[4, 1, 2].",
+            "[QUERY DISPATCH 2] C4 -> C6 (gateway) -> C8: REQ_CLUSTER_CATALOG path=[4, 6, 8].",
+            "[STATE TRANSITION] Node C4 status: DISPATCHED_TO_ALL_INITIATORS.",
+            "[RECEPTION] Node C2 received REQ_CLUSTER_CATALOG: Status = RECEIVED_PENDING_RESPONSE.",
+            "[RECEPTION] Node C8 received REQ_CLUSTER_CATALOG: Status = RECEIVED_PENDING_RESPONSE.",
+            "[INFO] Response transmission and cluster catalog consolidation scheduled for Step 16.",
+        ]
+
+        return {
+            "step": 15,
+            "title": "Step 15: Top-Level Catalog Query Dispatch (REQ_CLUSTER_CATALOG)",
+            "phase_badge": "ACTIVE PHASE: STEP 15: TOP-LEVEL CATALOG QUERY DISPATCH",
+            "description": "Super-Initiator C4 broadcasts REQ_CLUSTER_CATALOG along super-zone overlay links outward to C2 (via C1) and C8 (via C6).",
+            "formula": "\\text{REQ\\_CLUSTER\\_CATALOG}(C_4) \\xrightarrow{\\text{overlay}} \\{C_2, C_8\\}",
+            "formula_desc": "Super-Initiator C4 requests intra-zone cluster metadata from base initiators across boundary routes.",
+            "nodes": step15_nodes,
+            "edges": step15_edges,
+            "packet_events": packet_traces,
+            "packet_exchanges": packet_traces,
+            "packet_traces": packet_traces,
+            "catalog_queries": packet_traces,
+            "top_level_zone": step14_data.get("top_level_zone", {}),
+            "super_zone": step14_data.get("super_zone", {}),
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "top_initiator": 4,
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
             "terminal_logs": terminal_logs,
         }
     else:

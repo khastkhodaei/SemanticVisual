@@ -25,7 +25,7 @@ from backend.storyboard_10nodes import (
     TOTAL_STEPS,
 )
 
-TOTAL_STEPS: int = 14
+TOTAL_STEPS: int = 15
 
 
 
@@ -1716,6 +1716,10 @@ class SemanticDFLEngine:
     def run_top_level_zone_creation_10nodes(self) -> Dict[str, Any]:
         """Hierarchical Top-Level Zone Creation: Elect C4 as Top-Level Initiator and dispatch symmetrical TOP_PROBE to form Z_TOP."""
         return get_10node_step_data(14)
+
+    def run_top_level_catalog_query_10nodes(self) -> Dict[str, Any]:
+        """Top-Level Catalog Query Dispatch: Super-Initiator C4 queries base initiators for intra-zone cluster catalogs."""
+        return get_10node_step_data(15)
 
 
 

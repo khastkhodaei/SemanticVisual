@@ -26,7 +26,7 @@ from backend.storyboard_10nodes import (
     TOTAL_STEPS,
 )
 
-TOTAL_STEPS: int = 14
+TOTAL_STEPS: int = 15
 
 
 
@@ -255,9 +255,21 @@ def post_storyboard_step_14():
     return get_10node_step_data(14)
 
 
+@app.get("/api/v1/storyboard/step/15", tags=["Storyboard"])
+def get_storyboard_step_15():
+    """Returns deterministic data for Storyboard Step 15 (Top-Level Catalog Query Dispatch)."""
+    return get_10node_step_data(15)
+
+
+@app.post("/api/v1/storyboard/step/15", tags=["Storyboard"])
+def post_storyboard_step_15():
+    """Execute / return deterministic data for Storyboard Step 15."""
+    return get_10node_step_data(15)
+
+
 @app.get("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
 def get_storyboard_step(step_number: int):
-    """Returns deterministic data for Storyboard Step (1 to 14) for 10-node simulation."""
+    """Returns deterministic data for Storyboard Step (1 to 15) for 10-node simulation."""
     if step_number == 1:
         return load_step1_data()
     if step_number not in list(range(1, TOTAL_STEPS + 1)):
@@ -270,7 +282,7 @@ def get_storyboard_step(step_number: int):
 
 @app.post("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
 def post_storyboard_step(step_number: int):
-    """Execute / return deterministic data for Storyboard Step (1 to 14) for 10-node simulation."""
+    """Execute / return deterministic data for Storyboard Step (1 to 15) for 10-node simulation."""
     if step_number == 1:
         return load_step1_data()
     if step_number not in list(range(1, TOTAL_STEPS + 1)):
@@ -279,6 +291,7 @@ def post_storyboard_step(step_number: int):
             detail=f"Invalid step number {step_number}. Must be between 1 and {TOTAL_STEPS}.",
         )
     return get_10node_step_data(step_number)
+
 
 
 

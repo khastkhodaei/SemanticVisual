@@ -435,3 +435,46 @@ $$\text{TOP\_PROBE}(C_4, \text{TTL}_{\text{top}} = 1)$$
 
 ### Phase 4: Formation of Super-Zone $\mathcal{Z}_{\text{Top}}$ Rooted at Node 4
 All three initiators enroll into the **Top-Level Super-Zone $\mathcal{Z}_{\text{Top}}$ (Root: $C_4$, Members: $\{C_2, C_4, C_8\}$)**, establishing the hierarchical control plane for global cluster catalog exchange in subsequent steps.
+
+---
+
+## Step 15 — Top-Level Catalog Query Dispatch (`REQ_CLUSTER_CATALOG`)
+
+### Objective
+Initiate the hierarchical metadata exchange across the newly formed Super-Zone $\mathcal{Z}_{\text{Top}}$. Super-Initiator $C_4$ queries base initiators ($C_2$ and $C_8$) for their intra-zone semantic cluster catalogs, including exemplar IDs, cluster memberships, and profile signatures. This step strictly models outbound query dispatch and reception at base initiators (response transmission occurs in Step 16).
+
+### Control Packet Specification
+1. **Query Message Type**: `REQ_CLUSTER_CATALOG`
+2. **Root Initiator**: $C_4$ ($\sigma = 0.0412$)
+3. **Dispatch Routes & Overlay Traces**:
+   - **Branch West ($C_4 \to C_2$)**:
+     $$\text{Packet 1}: \quad C_4 \xrightarrow{\text{physical link}} C_1 \xrightarrow{\text{physical link}} C_2$$
+     - *Path*: `[4, 1, 2]`
+     - *Relay Gateway*: $C_1$ (Zone 2 Boundary Bridge)
+     - *Payload*: `{"type": "REQ_CLUSTER_CATALOG", "root": 4, "target_zone": 2, "scope": "INTRA_ZONE_CLUSTERS"}`
+   - **Branch East ($C_4 \to C_8$)**:
+     $$\text{Packet 2}: \quad C_4 \xrightarrow{\text{physical link}} C_6 \xrightarrow{\text{physical link}} C_8$$
+     - *Path*: `[4, 6, 8]`
+     - *Relay Gateway*: $C_6$ (Zone 4 Boundary Bridge)
+     - *Payload*: `{"type": "REQ_CLUSTER_CATALOG", "root": 4, "target_zone": 8, "scope": "INTRA_ZONE_CLUSTERS"}`
+
+### Mathematical Formulation
+$$\text{REQ\_CLUSTER\_CATALOG}(C_4) \xrightarrow{\text{overlay}} \{C_2, C_8\}$$
+Across the hierarchical overlay paths $\mathcal{P}(C_4, C_2) = (C_4, C_1, C_2)$ and $\mathcal{P}(C_4, C_8) = (C_4, C_6, C_8)$.
+
+### Node States & Lifecycle in Step 15
+- **Node 4 ($C_4$ — Super-Initiator)**:
+  - `query_status`: `"DISPATCHED_TO_ALL_INITIATORS"`
+  - `outbound_catalog_requests`: `[{"target": 2, "path": [4, 1, 2]}, {"target": 8, "path": [4, 6, 8]}]`
+  - Maintains authority over Zone 4 clusters (`4-A`, `4-B`).
+- **Node 2 ($C_2$ — Zone 2 Initiator)**:
+  - `query_status`: `"RECEIVED_PENDING_RESPONSE"`
+  - `received_catalog_query`: `{"from": 4, "path": [4, 1, 2], "type": "REQ_CLUSTER_CATALOG"}`
+  - Preparing intra-zone catalog: Clusters `2-A` (Exemplar: $C_1$) & `2-B` (Exemplar: $C_3$).
+- **Node 8 ($C_8$ — Zone 8 Initiator)**:
+  - `query_status`: `"RECEIVED_PENDING_RESPONSE"`
+  - `received_catalog_query`: `{"from": 4, "path": [4, 6, 8], "type": "REQ_CLUSTER_CATALOG"}`
+  - Preparing intra-zone catalog: Clusters `8-A` (Exemplar: $C_8$), `8-B` (Exemplar: $C_9$), & `8-C` (Exemplar: $C_{10}$).
+- **Member Clients ($C_1, C_3, C_5, C_6, C_7, C_9, C_{10}$)**:
+  - Unaffected in local state; $C_1$ and $C_6$ serve as transparent forwarding gateways for the supervisory control packets.
+
