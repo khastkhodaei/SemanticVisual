@@ -10,6 +10,8 @@ Implements Step 1 of the new 10-node CIFAR-10 SemanticDFL Storyboard:
 
 from typing import Any, Dict, List, Optional, Tuple
 
+TOTAL_STEPS: int = 14
+
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
     2: {"class_id": 2, "code": "C2", "name": "Automobile", "english_name": "Automobile", "icon": "🚗"},
@@ -208,8 +210,8 @@ def get_10node_config() -> Dict[str, Any]:
     }
 
 
-def get_10node_step_data(step_number: int) -> Dict[str, Any]:
-    """Retrieve storyboard step data for 10-node simulation."""
+def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
+    """Internal helper to retrieve raw storyboard step data for 10-node simulation."""
     nodes = get_10node_nodes()
     edges = get_10node_edges()
 
@@ -2863,7 +2865,7 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 "target": 7,
                 "target_str": "C7",
                 "exemplar_id": 7,
-                "path": [4, 6, 7],
+                "path": [4, 7],
                 "cluster_id": "4-B",
                 "profile_signature": [7, 8, 9, 10],
                 "peers": [6, 7],
@@ -3341,6 +3343,13 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 f"[Protocol] Executing Step {step_number} on 10-node network."
             ]
         }
+
+
+def get_10node_step_data(step_number: int) -> Dict[str, Any]:
+    """Retrieve storyboard step data for 10-node simulation with guaranteed total_steps = 14."""
+    data = _get_10node_step_data_raw(step_number)
+    data["total_steps"] = TOTAL_STEPS
+    return data
 
 
 

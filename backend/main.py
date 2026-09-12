@@ -23,7 +23,10 @@ from backend.storyboard_10nodes import (
     get_10node_nodes,
     get_10node_edges,
     get_10node_step_data,
+    TOTAL_STEPS,
 )
+
+TOTAL_STEPS: int = 14
 
 
 
@@ -257,10 +260,10 @@ def get_storyboard_step(step_number: int):
     """Returns deterministic data for Storyboard Step (1 to 14) for 10-node simulation."""
     if step_number == 1:
         return load_step1_data()
-    if step_number not in list(range(1, 15)):
+    if step_number not in list(range(1, TOTAL_STEPS + 1)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid step number {step_number}. Must be between 1 and 14.",
+            detail=f"Invalid step number {step_number}. Must be between 1 and {TOTAL_STEPS}.",
         )
     return get_10node_step_data(step_number)
 
@@ -270,10 +273,10 @@ def post_storyboard_step(step_number: int):
     """Execute / return deterministic data for Storyboard Step (1 to 14) for 10-node simulation."""
     if step_number == 1:
         return load_step1_data()
-    if step_number not in list(range(1, 15)):
+    if step_number not in list(range(1, TOTAL_STEPS + 1)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid step number {step_number}. Must be between 1 and 14.",
+            detail=f"Invalid step number {step_number}. Must be between 1 and {TOTAL_STEPS}.",
         )
     return get_10node_step_data(step_number)
 

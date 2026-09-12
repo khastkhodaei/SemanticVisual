@@ -374,7 +374,7 @@ Each packet conveys:
    - $C_2 \to C_3$ (path $[2, 3]$): `ORDER_SET_EXEMPLAR` (Cluster 2-B, Signature $\{4, 5, 6\}$, Peers $\{C_3\}$)
 2. **Zone 4 (Initiator $C_4$):**
    - $C_4 \to C_5$ (path $[4, 5]$): `ORDER_SET_EXEMPLAR` (Cluster 4-A, Signature $\{4, 5, 6\}$, Peers $\{C_4, C_5\}$)
-   - $C_4 \to C_7$ (path $[4, 6, 7]$): `ORDER_SET_EXEMPLAR` (Cluster 4-B, Signature $\{7, 8, 9, 10\}$, Peers $\{C_6, C_7\}$)
+   - $C_4 \to C_7$ (path $[4, 7]$): `ORDER_SET_EXEMPLAR` (Cluster 4-B, Signature $\{7, 8, 9, 10\}$, Peers $\{C_6, C_7\}$)
 3. **Zone 8 (Initiator $C_8$):**
    - $C_8 \to C_8$ (local internal): `ORDER_SET_EXEMPLAR` (Cluster 8-A, Signature $\{4, 5, 6\}$, Peers $\{C_8\}$)
    - $C_8 \to C_9$ (path $[8, 9]$): `ORDER_SET_EXEMPLAR` (Cluster 8-B, Signature $\{1, 2, 3\}$, Peers $\{C_9\}$)

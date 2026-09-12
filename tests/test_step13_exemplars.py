@@ -47,6 +47,7 @@ def test_step13_endpoints_return_200(client):
     assert data_get["phase_badge"] == "ACTIVE PHASE: STEP 13: CLUSTER EXEMPLAR DESIGNATION"
     assert data_get["total_nodes"] == 10
     assert data_get["total_edges"] == 18
+    assert data_get["total_steps"] == 14
 
     res_post = client.post("/api/v1/storyboard/step/13")
     assert res_post.status_code == 200
@@ -148,29 +149,34 @@ def test_step13_order_set_exemplar_events(client):
 
     event_map = {(e["initiator_id"], e["exemplar_id"]): e for e in events}
 
-    # C2 -> Node 1, C2 -> Node 3
+    # C2 -> Node 1, C2 -> Node 3 (Direct 1-Hop)
     assert (2, 1) in event_map
     assert event_map[(2, 1)]["cluster_id"] == "2-A"
     assert event_map[(2, 1)]["profile_signature"] == [1, 2, 3]
     assert event_map[(2, 1)]["peer_members"] == [1, 2]
+    assert event_map[(2, 1)]["path"] == [2, 1]
 
     assert (2, 3) in event_map
     assert event_map[(2, 3)]["cluster_id"] == "2-B"
     assert event_map[(2, 3)]["profile_signature"] == [4, 5, 6]
     assert event_map[(2, 3)]["peer_members"] == [3]
+    assert event_map[(2, 3)]["path"] == [2, 3]
 
-    # C4 -> Node 5, C4 -> Node 7
+    # C4 -> Node 5, C4 -> Node 7 (Strictly Direct 1-Hop, NEVER via C6)
     assert (4, 5) in event_map
     assert event_map[(4, 5)]["cluster_id"] == "4-A"
     assert event_map[(4, 5)]["profile_signature"] == [4, 5, 6]
     assert event_map[(4, 5)]["peer_members"] == [4, 5]
+    assert event_map[(4, 5)]["path"] == [4, 5]
 
     assert (4, 7) in event_map
     assert event_map[(4, 7)]["cluster_id"] == "4-B"
     assert event_map[(4, 7)]["profile_signature"] == [7, 8, 9, 10]
     assert event_map[(4, 7)]["peer_members"] == [6, 7]
+    assert event_map[(4, 7)]["path"] == [4, 7], "C4 to C7 must be direct 1-hop physical link [4, 7]"
+    assert 6 not in event_map[(4, 7)]["path"], "C4 to C7 must NEVER route via C6"
 
-    # C8 -> Node 8 (local), C8 -> Node 9, C8 -> Node 10
+    # C8 -> Node 8 (local), C8 -> Node 9, C8 -> Node 10 (Direct 1-Hop)
     assert (8, 8) in event_map
     assert event_map[(8, 8)]["cluster_id"] == "8-A"
     assert event_map[(8, 8)]["profile_signature"] == [4, 5, 6]
@@ -180,11 +186,13 @@ def test_step13_order_set_exemplar_events(client):
     assert event_map[(8, 9)]["cluster_id"] == "8-B"
     assert event_map[(8, 9)]["profile_signature"] == [1, 2, 3]
     assert event_map[(8, 9)]["peer_members"] == [9]
+    assert event_map[(8, 9)]["path"] == [8, 9]
 
     assert (8, 10) in event_map
     assert event_map[(8, 10)]["cluster_id"] == "8-C"
     assert event_map[(8, 10)]["profile_signature"] == [8, 9, 10]
     assert event_map[(8, 10)]["peer_members"] == [10]
+    assert event_map[(8, 10)]["path"] == [8, 10]
 
 
 def test_step13_engine_method():
@@ -192,6 +200,7 @@ def test_step13_engine_method():
     engine = SemanticDFLEngine()
     result = engine.run_cluster_exemplar_designation_10nodes()
     assert result["step"] == 13
+    assert result["total_steps"] == 14
     assert len(result["nodes"]) == 10
     assert len(result["edges"]) in (17, 18)
     assert result["total_edges"] == 18

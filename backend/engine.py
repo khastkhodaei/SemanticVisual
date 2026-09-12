@@ -22,7 +22,10 @@ from backend.storyboard_10nodes import (
     get_10node_nodes,
     get_10node_config,
     get_10node_step_data,
+    TOTAL_STEPS,
 )
+
+TOTAL_STEPS: int = 14
 
 
 
@@ -267,6 +270,7 @@ def load_step1_data() -> Dict[str, Any]:
         "total_nodes": len(nodes),
         "total_edges": 18,
         "unique_edges": len(edges),
+        "total_steps": TOTAL_STEPS,
         "classes": classes_list,
         "dataset_classes": classes_list,
         "active_leaders": [],

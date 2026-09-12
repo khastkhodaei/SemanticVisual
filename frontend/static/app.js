@@ -2740,12 +2740,12 @@ function animateStep13Exemplars(packets, allNodes) {
       return;
     }
 
-    // Exemplar definitions
+    // Exemplar definitions (strictly direct 1-hop physical links)
     const exemplarDefs = [
       { id: 1, cluster: "2-A", init: 2, path: [2, 1] },
       { id: 3, cluster: "2-B", init: 2, path: [2, 3] },
       { id: 5, cluster: "4-A", init: 4, path: [4, 5] },
-      { id: 7, cluster: "4-B", init: 4, path: [4, 6, 7] },
+      { id: 7, cluster: "4-B", init: 4, path: [4, 7] },
       { id: 8, cluster: "8-A", init: 8, path: [8, 8] },
       { id: 9, cluster: "8-B", init: 8, path: [8, 9] },
       { id: 10, cluster: "8-C", init: 8, path: [8, 10] }
@@ -2965,7 +2965,7 @@ function renderStep14(data) {
   logToTerminal("SUCCESS", "Phase 2 (Election): Node C4 elected as central Top-Level Super-Initiator 👑👑 (Bridge hub connecting West & East).");
   logToTerminal("ZONE", "Phase 3 (Symmetrical Probing): Initiator C4 broadcasts TOP_PROBE(TTL=1) symmetrically to C2 (via C1) and C8 (via C6).");
   logToTerminal("SUCCESS", "Phase 4 (Super-Zone Formed): Top-Level Super-Zone Z_TOP established (Root: C4, Members: [C2, C4, C8]).");
-  logToTerminal("TOPOLOGY", "Hierarchical control plane active for global cluster catalog exchange in Step 15.");
+  logToTerminal("TOPOLOGY", "Hierarchical control plane active for global cluster catalog exchange across the 14-step storyboard.");
 
   const packets = data.packet_events || data.packet_exchanges || [];
   animateStep14TopProbe(packets, data.nodes);
@@ -6086,7 +6086,7 @@ function showNodeModal(nodeData) {
               </div>
               <div class="pt-1 border-t border-slate-200 text-[9.5px]">
                 <span class="text-slate-600 font-semibold">Super-Zone Scope:</span>
-                <span class="text-slate-800 ml-1">Enrolled in Z_TOP control plane (Root: C4) for global catalog exchange in Step 14.</span>
+                <span class="text-slate-800 ml-1">Enrolled in Z_TOP control plane (Root: C4) for hierarchical multi-level coordination.</span>
               </div>
             </div>
 
