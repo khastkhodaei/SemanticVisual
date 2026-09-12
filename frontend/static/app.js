@@ -104,6 +104,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // 1. Initialize Cytoscape.js with strict preset coordinates
 function initCytoscape() {
+  if (typeof cytoscape === "undefined") {
+    console.error("Cytoscape.js is not loaded! Please check script tags.");
+    const cyContainer = document.getElementById("cy");
+    if (cyContainer) {
+      cyContainer.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-full p-6 text-center text-slate-500">
+          <p class="text-base font-bold text-red-600 mb-2">Cytoscape Library Not Loaded</p>
+          <p class="text-xs">Failed to load Cytoscape.js. Please verify vendor scripts or internet connectivity.</p>
+        </div>`;
+    }
+    return;
+  }
   cy = cytoscape({
     container: document.getElementById("cy"),
     elements: [],
@@ -3217,6 +3229,7 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   nodes.forEach(n => {
     const isInit = Boolean(options.showInitiators && (n.is_initiator || [2, 4, 8].includes(n.id)));
     const domName = n.dominant_class_name || n.class_title || "CIFAR-10";
+    const domIcon = n.dominant_class_icon || n.class_icon || "";
     const isTopInit = Boolean(options.isStep13 && (n.id === 8 || n.is_top_initiator));
     const label = isTopInit ? `👑👑 C${n.id}` : (isInit ? `👑 C${n.id}` : `C${n.id}`);
 
@@ -3414,6 +3427,7 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
 
   cy.elements().remove();
   cy.add(elements);
+  cy.resize();
   cy.layout({ name: "preset" }).run();
   cy.fit(undefined, 35);
 

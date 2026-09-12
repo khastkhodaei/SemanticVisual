@@ -27,18 +27,25 @@
     }
   </script>
 
-  <!-- Cytoscape.js CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+  <!-- Cytoscape.js & Graph Layout Engines (Local Vendor with CDN Fallback) -->
+  <script src="/static/vendor/cytoscape.min.js"></script>
+  <script>window.cytoscape || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"><\/script>');</script>
+  <script src="/static/vendor/dagre.min.js"></script>
+  <script>window.dagre || document.write('<script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"><\/script>');</script>
+  <script src="/static/vendor/cytoscape-dagre.min.js"></script>
+  <script>window.cytoscapeDagre || document.write('<script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"><\/script>');</script>
 
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Chart.js (Local Vendor with CDN Fallback) -->
+  <script src="/static/vendor/chart.umd.min.js"></script>
+  <script>window.Chart || document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"><\/script>');</script>
 
-  <!-- KaTeX CDN -->
+  <!-- KaTeX (Local Vendor & CDN) -->
+  <link rel="stylesheet" href="/static/vendor/katex.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <script src="/static/vendor/katex.min.js"></script>
+  <script>window.katex || document.write('<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script>');</script>
+  <script src="/static/vendor/auto-render.min.js"></script>
+  <script>window.renderMathInElement || document.write('<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>');</script>
 
   <!-- Custom Academic Stylesheet -->
   <link rel="stylesheet" href="/static/style.css">
