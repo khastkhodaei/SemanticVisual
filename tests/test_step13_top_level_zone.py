@@ -1,23 +1,28 @@
-"""Automated Verification Suite for Step 13: Hierarchical Top-Level Zone Creation (Figure 3(e)).
+"""Automated Verification Suite for Step 13: Top-Level Initiator Election & Super-Zone Creation (Figure 3(e)).
 
 Verifies:
 1. Endpoints GET and POST /api/v1/storyboard/step/13 return HTTP 200 with complete storyboard payload.
 2. Endpoint /api/v1/storyboard/step/13 validates:
-   - top_level_zone['root_initiator'] == 8
+   - top_level_zone['root_initiator'] == 4
    - top_level_zone['id'] == 'Z_TOP'
    - All three initiators {2, 4, 8} belong to Z_TOP (member_initiators).
-3. Evaluates top-level VRF election:
-   - Node 8 has top_level_role == "TOP_INITIATOR" and is_top_initiator is True.
-   - Nodes 2 and 4 have top_level_role == "SUPER_ZONE_MEMBER" and belong to Z_TOP.
+3. Evaluates central bridge top-level election:
+   - Node 4 has top_level_role == "TOP_INITIATOR" and is_top_initiator is True.
+   - Nodes 2 and 8 have top_level_role == "SUPER_ZONE_MEMBER" and belong to Z_TOP (Root: C4).
    - Regular nodes (1, 3, 5, 6, 7, 9, 10) have top_level_role == "BASE_ZONE_MEMBER".
-4. Multi-hop high-level probe traces:
-   - Packet TOP_PROBE: C8 -> C6 -> C4 (Hop 1, TTL=2)
-   - Packet TOP_PROBE: C4 -> C1 -> C2 (Hop 2, TTL=1)
-5. Base zone memberships and Step 12 intra-zone clusters remain preserved:
+4. 1-hop bidirectional VRF score exchange events on overlay graph G_init:
+   - C2 -> C4: score 0.0837 via path [2, 1, 4]
+   - C8 -> C4: score 0.0275 via path [8, 6, 4]
+   - C4 -> C2: score 0.0412 via path [4, 1, 2]
+   - C4 -> C8: score 0.0412 via path [4, 6, 8]
+5. Symmetrical TOP_PROBE broadcasts from C4 with TTL=1:
+   - C4 -> C1 -> C2 (root=4, ttl=1)
+   - C4 -> C6 -> C8 (root=4, ttl=1)
+6. Base zone memberships and Step 12 intra-zone clusters remain preserved:
    - Zones: Zone 2 {1, 2, 3}, Zone 4 {4, 5, 6, 7}, Zone 8 {8, 9, 10}
    - Clusters: 2-A {1, 2}, 2-B {3}, 4-A {4, 5}, 4-B {6, 7}, 8-A {8}, 8-B {9}, 8-C {10}
-6. SemanticDFLEngine().run_top_level_zone_creation_10nodes() produces valid structure.
-7. STEPS.md contains documentation for Step 13.
+7. SemanticDFLEngine().run_top_level_zone_creation_10nodes() produces valid structure with root 4.
+8. STEPS.md contains documentation for Step 13 with C4 Top-Level Initiator.
 """
 
 from pathlib import Path
@@ -42,7 +47,7 @@ def test_step13_endpoints_return_200(client):
     assert res_get.status_code == 200
     data_get = res_get.json()
     assert data_get["step"] == 13
-    assert data_get["phase_badge"] == "ACTIVE PHASE: STEP 13: TOP-LEVEL ZONE CREATION (FIGURE 3(e))"
+    assert data_get["phase_badge"] == "ACTIVE PHASE: STEP 13: TOP-LEVEL INITIATOR ELECTION & SUPER-ZONE (C4 👑👑)"
     assert data_get["total_nodes"] == 10
     assert data_get["total_edges"] == 18
 
@@ -52,38 +57,41 @@ def test_step13_endpoints_return_200(client):
 
 
 def test_step13_top_level_zone_structure():
-    """Assert top_level_zone root_initiator is 8 and member initiators are {2, 4, 8}."""
+    """Assert top_level_zone root_initiator is 4 and member initiators are {2, 4, 8}."""
     data = get_10node_step_data(13)
     assert "top_level_zone" in data
     top_zone = data["top_level_zone"]
     assert top_zone["id"] == "Z_TOP"
-    assert top_zone["root_initiator"] == 8
+    assert top_zone["root_initiator"] == 4
+    assert top_zone["winner_initiator"] == 4
     assert set(top_zone["member_initiators"]) == {2, 4, 8}
-    assert top_zone["min_vrf"] == 0.0275
-    assert top_zone["vrf_scores"][8] == 0.0275
+    assert top_zone["ttl"] == 1
     assert top_zone["vrf_scores"][4] == 0.0412
+    assert top_zone["vrf_scores"][8] == 0.0275
     assert top_zone["vrf_scores"][2] == 0.0837
 
 
 def test_step13_node_roles_and_election():
-    """Assert Node 8 is elected TOP_INITIATOR and Nodes 2 & 4 are SUPER_ZONE_MEMBER."""
+    """Assert Node 4 is elected TOP_INITIATOR and Nodes 2 & 8 are SUPER_ZONE_MEMBER."""
     data = get_10node_step_data(13)
     nodes = {n["id"]: n for n in data["nodes"]}
 
-    # Node 8 is elected Top-Level Initiator (Super-Initiator)
-    assert nodes[8]["top_level_role"] == "TOP_INITIATOR"
-    assert nodes[8]["is_top_initiator"] is True
-    assert nodes[8]["top_level_zone"] == "Z_TOP"
-    assert set(nodes[8]["governing_initiators"]) == {2, 4, 8}
+    # Node 4 is elected Top-Level Initiator (Super-Initiator)
+    assert nodes[4]["top_level_role"] == "TOP_INITIATOR"
+    assert nodes[4]["is_top_initiator"] is True
+    assert nodes[4]["top_level_zone"] == "Z_TOP"
+    assert set(nodes[4]["governing_initiators"]) == {2, 4, 8}
 
-    # Nodes 2 and 4 are Super-Zone members
+    # Nodes 2 and 8 are Super-Zone members
     assert nodes[2]["top_level_role"] == "SUPER_ZONE_MEMBER"
     assert nodes[2]["is_top_initiator"] is False
     assert nodes[2]["top_level_zone"] == "Z_TOP"
+    assert nodes[2]["super_zone_root"] == 4
 
-    assert nodes[4]["top_level_role"] == "SUPER_ZONE_MEMBER"
-    assert nodes[4]["is_top_initiator"] is False
-    assert nodes[4]["top_level_zone"] == "Z_TOP"
+    assert nodes[8]["top_level_role"] == "SUPER_ZONE_MEMBER"
+    assert nodes[8]["is_top_initiator"] is False
+    assert nodes[8]["top_level_zone"] == "Z_TOP"
+    assert nodes[8]["super_zone_root"] == 4
 
     # Regular client nodes
     for nid in [1, 3, 5, 6, 7, 9, 10]:
@@ -91,29 +99,53 @@ def test_step13_node_roles_and_election():
         assert nodes[nid]["is_top_initiator"] is False
 
 
-def test_step13_top_probe_packet_traces():
-    """Assert high-level probe traces: C8 -> C6 -> C4 and C4 -> C1 -> C2."""
+def test_step13_vrf_score_exchange_events():
+    """Assert 1-hop bidirectional VRF score exchanges between C2 <-> C4 and C4 <-> C8."""
     data = get_10node_step_data(13)
-    packets = data["packet_events"]
-    assert len(packets) == 2
+    vrf_events = data.get("vrf_exchange_events", [])
+    assert len(vrf_events) == 4
 
-    # Hop 1: C8 -> C6 -> C4
-    pkt1 = packets[0]
-    assert pkt1["type"] == "TOP_PROBE"
-    assert pkt1["source_num"] == 8
-    assert pkt1["relay_num"] == 6
-    assert pkt1["target_num"] == 4
-    assert pkt1["path_nums"] == [8, 6, 4]
-    assert pkt1["ttl"] == 2
+    exchanges = {(e["source_num"], e["target_num"]): e for e in vrf_events}
+    # C2 -> C4
+    assert (2, 4) in exchanges
+    assert exchanges[(2, 4)]["score"] == 0.0837
+    assert exchanges[(2, 4)]["path"] == [2, 1, 4]
 
-    # Hop 2: C4 -> C1 -> C2
-    pkt2 = packets[1]
-    assert pkt2["type"] == "TOP_PROBE"
-    assert pkt2["source_num"] == 4
-    assert pkt2["relay_num"] == 1
-    assert pkt2["target_num"] == 2
-    assert pkt2["path_nums"] == [4, 1, 2]
-    assert pkt2["ttl"] == 1
+    # C8 -> C4
+    assert (8, 4) in exchanges
+    assert exchanges[(8, 4)]["score"] == 0.0275
+    assert exchanges[(8, 4)]["path"] == [8, 6, 4]
+
+    # C4 -> C2
+    assert (4, 2) in exchanges
+    assert exchanges[(4, 2)]["score"] == 0.0412
+    assert exchanges[(4, 2)]["path"] == [4, 1, 2]
+
+    # C4 -> C8
+    assert (4, 8) in exchanges
+    assert exchanges[(4, 8)]["score"] == 0.0412
+    assert exchanges[(4, 8)]["path"] == [4, 6, 8]
+
+
+def test_step13_symmetrical_top_probe_traces():
+    """Assert symmetrical high-level probe traces from C4 outward to C2 and C8."""
+    data = get_10node_step_data(13)
+    probe_events = data.get("probe_events", [])
+    assert len(probe_events) == 2
+
+    west_probe = next(p for p in probe_events if p["target_num"] == 2)
+    assert west_probe["source_num"] == 4
+    assert west_probe["relay_num"] == 1
+    assert west_probe["path_nums"] == [4, 1, 2]
+    assert west_probe["ttl"] == 1
+    assert west_probe["root"] == 4
+
+    east_probe = next(p for p in probe_events if p["target_num"] == 8)
+    assert east_probe["source_num"] == 4
+    assert east_probe["relay_num"] == 6
+    assert east_probe["path_nums"] == [4, 6, 8]
+    assert east_probe["ttl"] == 1
+    assert east_probe["root"] == 4
 
 
 def test_step13_preserves_base_zones_and_step12_clusters():
@@ -154,19 +186,21 @@ def test_step13_engine_method():
     result = engine.run_top_level_zone_creation_10nodes()
     assert result["step"] == 13
     assert len(result["nodes"]) == 10
-    assert result["top_level_zone"]["root_initiator"] == 8
+    assert result["top_level_zone"]["root_initiator"] == 4
     assert set(result["top_level_zone"]["member_initiators"]) == {2, 4, 8}
 
 
 def test_step13_steps_markdown_documentation():
-    """Verify STEPS.md contains documentation for Step 13."""
+    """Verify STEPS.md contains documentation for Step 13 with C4 Top-Level Initiator."""
     steps_file = Path(__file__).resolve().parent.parent / "STEPS.md"
     assert steps_file.exists()
     content = steps_file.read_text()
     assert "## Step 13 — Hierarchical Top-Level Zone Creation (Figure 3(e))" in content
     assert r"\mathcal{G}_{\text{init}}" in content
-    assert "Super-Initiator 👑👑" in content
-    assert "TOP_PROBE" in content
+    assert "Phase 1: 1-Hop VRF Score Exchange" in content
+    assert "Selection of Node 4 as the Central Top-Level Initiator" in content
+    assert "Phase 3: Symmetrical TOP_PROBE Broadcast from" in content
+    assert "Formation of Super-Zone" in content
     assert r"\mathcal{Z}_{\text{Top}}" in content
 
 
@@ -183,5 +217,5 @@ def test_step13_frontend_elements_and_logic(client):
     assert "renderStep13" in res_js.text
     assert "animateStep13TopProbe" in res_js.text
     assert "👑👑 ELECTED TOP-LEVEL SUPER-INITIATOR" in res_js.text
-    assert "ACTIVE PHASE: STEP 13: TOP-LEVEL ZONE CREATION (FIGURE 3(e))" in res_js.text
+    assert "ACTIVE PHASE: STEP 13: TOP-LEVEL INITIATOR ELECTION & SUPER-ZONE (C4 👑👑)" in res_js.text
     assert "top-initiator-node" in res_js.text

@@ -2627,21 +2627,21 @@ function renderStep13(data) {
     document.getElementById("activeStepBadge")
   ].filter(Boolean);
   activeBadges.forEach(badge => {
-    badge.textContent = "ACTIVE PHASE: STEP 13: TOP-LEVEL ZONE CREATION (FIGURE 3(e))";
+    badge.textContent = "ACTIVE PHASE: STEP 13: TOP-LEVEL INITIATOR ELECTION & SUPER-ZONE (C4 👑👑)";
     badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-400";
   });
 
   renderSidebarFormula(
-    "Step 13: Top-Level Zone Creation",
-    "\\mathcal{G}_{\\text{init}} = \\{I_2, I_4, I_8\\}, \\quad I_{\\text{top}} = \\arg\\min_{p \\in \\mathcal{V}_{\\text{init}}} \\sigma_p = C_8, \\quad \\text{TOP\\_PROBE} \\to \\mathcal{Z}_{\\text{Top}}",
-    "Base initiators form a higher-level overlay graph. Initiator C8 wins election and broadcasts TOP_PROBE to form the global Super-Zone.",
+    "Step 13: Top-Level Initiator Election & Super-Zone",
+    "\\mathcal{G}_{\\text{init}} = \\{I_2 \\leftrightarrow I_4 \\leftrightarrow I_8\\}, \\quad I_{\\text{top}} = C_4, \\quad \\text{TOP\\_PROBE}(C_4, \\text{TTL}=1) \\to \\mathcal{Z}_{\\text{Top}}",
+    "Initiators exchange VRF scores across overlay links. Central bridge C4 is elected Top-Level Initiator and symmetrically floods TOP_PROBE to C2 and C8.",
     "Step 13: Super-Zone",
     false,
     "gold"
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "Step 13: Hierarchical Top-Level Zone Creation (Figure 3(e))";
+  if (canvasLabel) canvasLabel.textContent = "Step 13: Top-Level Initiator Election & Super-Zone Creation (Root: C4 👑👑)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
   if (leaderLegend) leaderLegend.classList.remove("hidden");
@@ -2652,11 +2652,11 @@ function renderStep13(data) {
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.innerHTML = '<span>Top-Level Super-Zone (<span class="text-amber-600 font-bold">👑👑 Root: C8</span>, Members: C2, C4, C8) → <span class="text-amber-700 font-bold font-mono">Z_TOP Control Plane</span></span>';
+    statLeaders.innerHTML = '<span>Top-Level Super-Zone (<span class="text-amber-600 font-bold">👑👑 Root: C4</span>, Members: C2, C4, C8) → <span class="text-amber-700 font-bold font-mono">Z_TOP Control Plane</span></span>';
     statLeaders.className = "text-xs font-bold text-slate-800";
   }
 
-  // Render nodes with Tonal Zone colors, cluster halos, and special Top-Initiator styling for C8
+  // Render nodes with Tonal Zone colors, cluster halos, and special Top-Initiator styling for C4
   renderCytoscapeGraph(data.nodes, data.edges, {
     showInitiators: true,
     useTonalZoneColors: true,
@@ -2667,18 +2667,17 @@ function renderStep13(data) {
 
   logToTerminal("ZONE", "[STEP 13] Hierarchical Top-Level Zone Creation initialized (Figure 3(e)).");
   logToTerminal("INFO", "Base zone initiators form higher-level overlay graph: V_init={C2, C4, C8}, E_init={(C2, C4), (C4, C8)}.");
-  logToTerminal("VRF", "Evaluating VRF scores on initiator overlay: sigma_2=0.0837, sigma_4=0.0412, sigma_8=0.0275.");
-  logToTerminal("SUCCESS", "Winner: Initiator C8 (0.0275) elected as Top-Level Super-Initiator 👑👑.");
-  logToTerminal("ZONE", "Initiator C8 broadcasts high-level probe: TOP_PROBE(C8, TTL_top=2).");
-  logToTerminal("BOUNDARY", "Hop 1: C8 -> via C6 (gateway) -> C4 (Hop 1 complete, TTL=1).");
-  logToTerminal("BOUNDARY", "Hop 2: C4 -> via C1 (gateway) -> C2 (Hop 2 complete, TTL=0).");
-  logToTerminal("SUCCESS", "Top-Level Super-Zone Z_TOP established (Root: C8, Members: [C2, C4, C8]).");
+  logToTerminal("VRF", "Phase 1 (1-Hop VRF Exchange): C2 <-> C4 (scores 0.0837 <-> 0.0412 via C1) and C4 <-> C8 (scores 0.0412 <-> 0.0275 via C6).");
+  logToTerminal("SUCCESS", "Phase 2 (Election): Node C4 elected as central Top-Level Super-Initiator 👑👑 (Bridge hub connecting West & East).");
+  logToTerminal("ZONE", "Phase 3 (Symmetrical Probing): Initiator C4 broadcasts TOP_PROBE(TTL=1) symmetrically to C2 (via C1) and C8 (via C6).");
+  logToTerminal("SUCCESS", "Phase 4 (Super-Zone Formed): Top-Level Super-Zone Z_TOP established (Root: C4, Members: [C2, C4, C8]).");
+  logToTerminal("TOPOLOGY", "Hierarchical control plane active for global cluster catalog exchange in Step 14.");
 
   const packets = data.packet_events || data.packet_exchanges || [];
   animateStep13TopProbe(packets, data.nodes);
 }
 
-// Animate Step 13 TOP_PROBE Multi-Hop Dispatch & High-Level Super-Zone Envelope
+// Animate Step 13: Phase A (1-Hop VRF Score Exchange), Election Flash, and Phase B (Symmetrical TOP_PROBE)
 function animateStep13TopProbe(packets, allNodes) {
   stopCurrentPacketAnimation();
   syncPacketCanvasSize();
@@ -2687,7 +2686,7 @@ function animateStep13TopProbe(packets, allNodes) {
   if (!canvas || !cy) return;
   const ctx = canvas.getContext("2d");
 
-  const duration = 3600; // ms per complete multi-hop relay loop
+  const duration = 6600; // ms per complete two-phase cycle
   const startTime = performance.now();
 
   function runFrame(now) {
@@ -2702,18 +2701,18 @@ function animateStep13TopProbe(packets, allNodes) {
     const n1 = getNodeElement(1);
     const n2 = getNodeElement(2);
 
-    if (!n8 || !n4 || !n2) {
+    if (!n4 || !n2 || !n8) {
       activeAnimationId = requestAnimationFrame(runFrame);
       return;
     }
 
-    const p8 = n8.renderedPosition();
-    const p6 = n6 ? n6.renderedPosition() : null;
     const p4 = n4.renderedPosition();
     const p1 = n1 ? n1.renderedPosition() : null;
     const p2 = n2.renderedPosition();
+    const p6 = n6 ? n6.renderedPosition() : null;
+    const p8 = n8.renderedPosition();
 
-    // 1. Draw Subtle Translucent High-Level Boundary Envelope encompassing C8, C4, C2
+    // 1. High-Level Super-Zone Envelope encompassing C2, C4, C8
     ctx.save();
     ctx.beginPath();
     const topPad = 46;
@@ -2743,10 +2742,10 @@ function animateStep13TopProbe(packets, allNodes) {
 
     // Floating Badge Pill for Super-Zone Envelope
     ctx.save();
-    const badgeX = (p4.x + p8.x) / 2 - 20;
+    const badgeX = p4.x;
     const badgeY = p4.y - 56;
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, Menlo, Monaco, monospace";
-    const badgeText = "👑👑 SUPER-ZONE Z_TOP (ROOT: C8)";
+    const badgeText = "👑👑 SUPER-ZONE Z_TOP (ROOT: C4)";
     const textW = ctx.measureText(badgeText).width;
     ctx.fillStyle = "rgba(254, 243, 199, 0.96)";
     ctx.strokeStyle = "#eab308";
@@ -2761,14 +2760,14 @@ function animateStep13TopProbe(packets, allNodes) {
     ctx.fillText(badgeText, badgeX, badgeY - 2);
     ctx.restore();
 
-    // 2. Distinct Golden Connecting Backbone along C8 ↔ C4 ↔ C2 (via Gateway bridges)
+    // 2. Distinct Golden Connecting Backbone along C2 ↔ C1 ↔ C4 ↔ C6 ↔ C8
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(p8.x, p8.y);
-    if (p6) ctx.lineTo(p6.x, p6.y);
-    ctx.lineTo(p4.x, p4.y);
+    ctx.moveTo(p2.x, p2.y);
     if (p1) ctx.lineTo(p1.x, p1.y);
-    ctx.lineTo(p2.x, p2.y);
+    ctx.lineTo(p4.x, p4.y);
+    if (p6) ctx.lineTo(p6.x, p6.y);
+    ctx.lineTo(p8.x, p8.y);
     ctx.strokeStyle = "rgba(234, 179, 8, 0.70)";
     ctx.lineWidth = 2.8;
     ctx.shadowColor = "#eab308";
@@ -2779,27 +2778,27 @@ function animateStep13TopProbe(packets, allNodes) {
     ctx.setLineDash([]);
     ctx.restore();
 
-    // 3. Glowing Gold Aura & Floating Double-Crown around Elected Root Initiator Node 8
+    // 3. Glowing Gold Aura & Floating Double-Crown around Elected Root Initiator Node 4
     ctx.save();
     const auraProg = (now % 1600) / 1600;
-    const auraR = 28 + auraProg * 20;
-    const auraA = (1.0 - auraProg) * 0.85;
+    const auraR = 28 + auraProg * 22;
+    const auraA = (1.0 - auraProg) * 0.90;
     ctx.beginPath();
-    ctx.arc(p8.x, p8.y, auraR, 0, Math.PI * 2);
+    ctx.arc(p4.x, p4.y, auraR, 0, Math.PI * 2);
     ctx.strokeStyle = `rgba(234, 179, 8, ${auraA})`;
-    ctx.lineWidth = 3.0;
+    ctx.lineWidth = 3.2;
     ctx.shadowColor = "#eab308";
-    ctx.shadowBlur = 18;
+    ctx.shadowBlur = 20;
     ctx.stroke();
 
-    // Floating 👑👑 crown icon above C8
-    ctx.font = "bold 13px sans-serif";
+    // Floating 👑👑 crown icon above C4
+    ctx.font = "bold 14px sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("👑👑", p8.x, p8.y - 32);
+    ctx.fillText("👑👑", p4.x, p4.y - 32);
     ctx.restore();
 
-    // 4. Subtle Super-Zone Member Aura on Node 4 and Node 2
-    [p4, p2].forEach(p => {
+    // 4. Subtle Super-Zone Member Aura on Node 2 and Node 8
+    [p2, p8].forEach(p => {
       ctx.save();
       const mProg = ((now + 400) % 2000) / 2000;
       ctx.beginPath();
@@ -2812,139 +2811,278 @@ function animateStep13TopProbe(packets, allNodes) {
       ctx.restore();
     });
 
-    // 5. Gateway Relay Glow on C6 and C1 when traversed
-    if (progress >= 0.20 && progress <= 0.32 && p6) {
-      const g6Prog = (progress - 0.20) / 0.12;
-      const g6A = Math.sin(g6Prog * Math.PI) * 0.9;
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(p6.x, p6.y, 24 + g6Prog * 8, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(234, 179, 8, ${g6A})`;
-      ctx.lineWidth = 3.0;
-      ctx.shadowColor = "#eab308";
-      ctx.shadowBlur = 16;
-      ctx.stroke();
-      ctx.restore();
-    }
-    if (progress >= 0.70 && progress <= 0.82 && p1) {
-      const g1Prog = (progress - 0.70) / 0.12;
-      const g1A = Math.sin(g1Prog * Math.PI) * 0.9;
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(p1.x, p1.y, 24 + g1Prog * 8, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(234, 179, 8, ${g1A})`;
-      ctx.lineWidth = 3.0;
-      ctx.shadowColor = "#eab308";
-      ctx.shadowBlur = 16;
-      ctx.stroke();
-      ctx.restore();
-    }
+    // Sub-Phase Logic:
+    // progress < 0.40: Phase A (1-Hop VRF Score Exchange across C2 <-> C4 and C4 <-> C8)
+    // 0.40 <= progress < 0.48: Election Flash & Announcement (Node 4 central bridge)
+    // 0.48 <= progress <= 1.0: Phase B (Symmetrical TOP_PROBE broadcast outward to C2 & C8)
 
-    // 6. Animate Distinct Golden TOP_PROBE Traveling Packets
-    let curX, curY;
-    let pktLabel = "";
+    if (progress < 0.40) {
+      // ===== PHASE A: 1-HOP VRF SCORE EXCHANGE =====
+      const subA = progress / 0.40;
+      const easeA = easeInOutQuad(subA);
 
-    if (progress < 0.5) {
-      // Hop 1: C8 -> C6 -> C4 (TTL=2)
-      pktLabel = "TOP_PROBE (TTL=2)";
-      if (progress < 0.25) {
-        // Sub-segment 1a: C8 -> C6
-        const sub = progress / 0.25;
-        const ease = easeInOutQuad(sub);
-        const tgt = p6 || p4;
-        curX = p8.x + (tgt.x - p8.x) * ease;
-        curY = p8.y + (tgt.y - p8.y) * ease;
+      // Phase A Status Banner
+      ctx.save();
+      const statusX = (p2.x + p8.x) / 2;
+      const statusY = p4.y + 42;
+      ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+      const statTxt = "PHASE 1: 1-HOP VRF SCORE EXCHANGE (C2 ↔ C4 ↔ C8)";
+      const sW = ctx.measureText(statTxt).width;
+      ctx.fillStyle = "rgba(30, 41, 59, 0.90)";
+      ctx.strokeStyle = "#38bdf8";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(statusX - sW / 2 - 8, statusY - 10, sW + 16, 18, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#38bdf8";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(statTxt, statusX, statusY);
+      ctx.restore();
+
+      // Exchange 1: C2 -> C4 (carrying σ_2 = 0.0837) and C4 -> C2 (carrying σ_4 = 0.0412)
+      // Path: C2 <-> C1 <-> C4
+      let x2_4, y2_4, x4_2, y4_2;
+      const tgt1 = p1 || p4;
+      if (subA < 0.5) {
+        const seg = subA / 0.5;
+        const e = easeInOutQuad(seg);
+        x2_4 = p2.x + (tgt1.x - p2.x) * e;
+        y2_4 = p2.y + (tgt1.y - p2.y) * e;
+        x4_2 = p4.x + (tgt1.x - p4.x) * e;
+        y4_2 = p4.y + (tgt1.y - p4.y) * e;
       } else {
-        // Sub-segment 1b: C6 -> C4
-        const sub = (progress - 0.25) / 0.25;
-        const ease = easeInOutQuad(sub);
-        const src = p6 || p8;
-        curX = src.x + (p4.x - src.x) * ease;
-        curY = src.y + (p4.y - src.y) * ease;
+        const seg = (subA - 0.5) / 0.5;
+        const e = easeInOutQuad(seg);
+        x2_4 = tgt1.x + (p4.x - tgt1.x) * e;
+        y2_4 = tgt1.y + (p4.y - tgt1.y) * e;
+        x4_2 = tgt1.x + (p2.x - tgt1.x) * e;
+        y4_2 = tgt1.y + (p2.y - tgt1.y) * e;
       }
+
+      // Exchange 2: C8 -> C4 (carrying σ_8 = 0.0275) and C4 -> C8 (carrying σ_4 = 0.0412)
+      // Path: C8 <-> C6 <-> C4
+      let x8_4, y8_4, x4_8, y4_8;
+      const tgt6 = p6 || p4;
+      if (subA < 0.5) {
+        const seg = subA / 0.5;
+        const e = easeInOutQuad(seg);
+        x8_4 = p8.x + (tgt6.x - p8.x) * e;
+        y8_4 = p8.y + (tgt6.y - p8.y) * e;
+        x4_8 = p4.x + (tgt6.x - p4.x) * e;
+        y4_8 = p4.y + (tgt6.y - p4.y) * e;
+      } else {
+        const seg = (subA - 0.5) / 0.5;
+        const e = easeInOutQuad(seg);
+        x8_4 = tgt6.x + (p4.x - tgt6.x) * e;
+        y8_4 = tgt6.y + (p4.y - tgt6.y) * e;
+        x4_8 = tgt6.x + (p8.x - tgt6.x) * e;
+        y4_8 = tgt6.y + (p8.y - tgt6.y) * e;
+      }
+
+      // Render exchange packets
+      drawVrfPacket(ctx, x2_4, y2_4, "#3b82f6", "VRF: 0.0837");
+      drawVrfPacket(ctx, x4_2, y4_2, "#f97316", "VRF: 0.0412");
+      drawVrfPacket(ctx, x8_4, y8_4, "#8b5cf6", "VRF: 0.0275");
+      drawVrfPacket(ctx, x4_8, y4_8, "#f97316", "VRF: 0.0412");
+
+    } else if (progress < 0.48) {
+      // ===== ELECTION FLASH / ANNOUNCEMENT =====
+      const subE = (progress - 0.40) / 0.08;
+      const eRing = 30 + subE * 35;
+      const eA = (1.0 - subE) * 0.95;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(p4.x, p4.y, eRing, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(234, 179, 8, ${eA})`;
+      ctx.lineWidth = 4;
+      ctx.shadowColor = "#eab308";
+      ctx.shadowBlur = 24;
+      ctx.stroke();
+
+      // Election Winner Announcement Banner
+      const aX = p4.x;
+      const aY = p4.y + 40;
+      ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+      const aText = "👑👑 TOP INITIATOR ELECTED: C4 (CENTRAL BRIDGE)";
+      const aW = ctx.measureText(aText).width;
+      ctx.fillStyle = "rgba(120, 53, 15, 0.95)";
+      ctx.strokeStyle = "#fbbf24";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(aX - aW / 2 - 8, aY - 10, aW + 16, 20, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#fef3c7";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(aText, aX, aY);
+      ctx.restore();
+
     } else {
-      // Hop 2: C4 -> C1 -> C2 (TTL=1)
-      pktLabel = "TOP_PROBE (TTL=1)";
-      if (progress < 0.75) {
-        // Sub-segment 2a: C4 -> C1
-        const sub = (progress - 0.5) / 0.25;
-        const ease = easeInOutQuad(sub);
-        const tgt = p1 || p2;
-        curX = p4.x + (tgt.x - p4.x) * ease;
-        curY = p4.y + (tgt.y - p4.y) * ease;
+      // ===== PHASE B: SYMMETRICAL TOP_PROBE BROADCAST FROM C4 =====
+      const subB = (progress - 0.48) / 0.52;
+      const easeB = easeInOutQuad(subB);
+
+      // Phase B Status Banner
+      ctx.save();
+      const statusX = (p2.x + p8.x) / 2;
+      const statusY = p4.y + 42;
+      ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+      const statTxt = "PHASE 3: SYMMETRICAL TOP_PROBE BROADCAST (C4 ➔ C2 & C8)";
+      const sW = ctx.measureText(statTxt).width;
+      ctx.fillStyle = "rgba(30, 41, 59, 0.90)";
+      ctx.strokeStyle = "#eab308";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(statusX - sW / 2 - 8, statusY - 10, sW + 16, 18, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#fef08a";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(statTxt, statusX, statusY);
+      ctx.restore();
+
+      // 1. Symmetrical Outward West Branch: C4 -> C1 -> C2
+      let westX, westY;
+      const tgt1 = p1 || p2;
+      if (subB < 0.5) {
+        const seg = subB / 0.5;
+        const e = easeInOutQuad(seg);
+        westX = p4.x + (tgt1.x - p4.x) * e;
+        westY = p4.y + (tgt1.y - p4.y) * e;
       } else {
-        // Sub-segment 2b: C1 -> C2
-        const sub = (progress - 0.75) / 0.25;
-        const ease = easeInOutQuad(sub);
-        const src = p1 || p4;
-        curX = src.x + (p2.x - src.x) * ease;
-        curY = src.y + (p2.y - src.y) * ease;
+        const seg = (subB - 0.5) / 0.5;
+        const e = easeInOutQuad(seg);
+        westX = tgt1.x + (p2.x - tgt1.x) * e;
+        westY = tgt1.y + (p2.y - tgt1.y) * e;
       }
-    }
 
-    // Draw Traveling Golden Particle & Badge
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(curX, curY, 6.5, 0, Math.PI * 2);
-    ctx.fillStyle = "#eab308";
-    ctx.shadowBlur = 14;
-    ctx.shadowColor = "#eab308";
-    ctx.fill();
+      // 2. Symmetrical Outward East Branch: C4 -> C6 -> C8
+      let eastX, eastY;
+      const tgt6 = p6 || p8;
+      if (subB < 0.5) {
+        const seg = subB / 0.5;
+        const e = easeInOutQuad(seg);
+        eastX = p4.x + (tgt6.x - p4.x) * e;
+        eastY = p4.y + (tgt6.y - p4.y) * e;
+      } else {
+        const seg = (subB - 0.5) / 0.5;
+        const e = easeInOutQuad(seg);
+        eastX = tgt6.x + (p8.x - tgt6.x) * e;
+        eastY = tgt6.y + (p8.y - tgt6.y) * e;
+      }
 
-    ctx.beginPath();
-    ctx.arc(curX, curY, 2.8, 0, Math.PI * 2);
-    ctx.fillStyle = "#ffffff";
-    ctx.fill();
+      // Gateway Relay Glow on C1 and C6 when traversed
+      if (subB >= 0.42 && subB <= 0.58) {
+        const gProg = (subB - 0.42) / 0.16;
+        const gA = Math.sin(gProg * Math.PI) * 0.95;
+        [p1, p6].filter(Boolean).forEach(p => {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 25 + gProg * 8, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(234, 179, 8, ${gA})`;
+          ctx.lineWidth = 3.0;
+          ctx.shadowColor = "#eab308";
+          ctx.shadowBlur = 18;
+          ctx.stroke();
+          ctx.restore();
+        });
+      }
 
-    // Floating Label Tag next to packet
-    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-    const labelW = ctx.measureText(pktLabel).width;
-    const tagX = curX + 10;
-    const tagY = curY - 14;
-    ctx.fillStyle = "rgba(120, 53, 15, 0.92)";
-    ctx.strokeStyle = "#fbbf24";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(tagX, tagY, labelW + 10, 16, 4);
-    ctx.fill();
-    ctx.stroke();
+      // Render traveling golden TOP_PROBE packets
+      drawTopProbePacket(ctx, westX, westY, "TOP_PROBE(TTL=1) ➔ C2");
+      drawTopProbePacket(ctx, eastX, eastY, "TOP_PROBE(TTL=1) ➔ C8");
 
-    ctx.fillStyle = "#fef3c7";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.fillText(pktLabel, tagX + 5, tagY + 8);
-    ctx.restore();
-
-    // Arrival pulse at C4 (around progress 0.48-0.54) and C2 (around progress 0.94-1.0)
-    if (progress >= 0.46 && progress <= 0.56) {
-      const arrProg = (progress - 0.46) / 0.10;
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(p4.x, p4.y, 24 + arrProg * 14, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(234, 179, 8, ${(1.0 - arrProg) * 0.9})`;
-      ctx.lineWidth = 3;
-      ctx.shadowColor = "#eab308";
-      ctx.shadowBlur = 16;
-      ctx.stroke();
-      ctx.restore();
-    }
-    if (progress >= 0.92) {
-      const arrProg = (progress - 0.92) / 0.08;
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(p2.x, p2.y, 24 + arrProg * 14, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(234, 179, 8, ${(1.0 - arrProg) * 0.9})`;
-      ctx.lineWidth = 3;
-      ctx.shadowColor = "#eab308";
-      ctx.shadowBlur = 16;
-      ctx.stroke();
-      ctx.restore();
+      // Simultaneous Arrival flash at C2 and C8 (subB >= 0.88)
+      if (subB >= 0.88) {
+        const arrProg = (subB - 0.88) / 0.12;
+        const arrA = (1.0 - arrProg) * 0.92;
+        [p2, p8].forEach(p => {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 25 + arrProg * 16, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(234, 179, 8, ${arrA})`;
+          ctx.lineWidth = 3.2;
+          ctx.shadowColor = "#eab308";
+          ctx.shadowBlur = 18;
+          ctx.stroke();
+          ctx.restore();
+        });
+      }
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
   }
 
   activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+// Helper: Draw VRF exchange traveling particle
+function drawVrfPacket(ctx, x, y, color, label) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, 6, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.shadowBlur = 12;
+  ctx.shadowColor = color;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+  const lW = ctx.measureText(label).width;
+  ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(x + 8, y - 12, lW + 8, 15, 3);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x + 12, y - 4);
+  ctx.restore();
+}
+
+// Helper: Draw TOP_PROBE golden traveling particle
+function drawTopProbePacket(ctx, x, y, label) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, 7, 0, Math.PI * 2);
+  ctx.fillStyle = "#eab308";
+  ctx.shadowBlur = 16;
+  ctx.shadowColor = "#eab308";
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(x, y, 3, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+  const lW = ctx.measureText(label).width;
+  ctx.fillStyle = "rgba(120, 53, 15, 0.94)";
+  ctx.strokeStyle = "#fbbf24";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(x + 9, y - 13, lW + 10, 16, 4);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#fef3c7";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x + 14, y - 5);
+  ctx.restore();
 }
 
 
@@ -3230,7 +3368,7 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
     const isInit = Boolean(options.showInitiators && (n.is_initiator || [2, 4, 8].includes(n.id)));
     const domName = n.dominant_class_name || n.class_title || "CIFAR-10";
     const domIcon = n.dominant_class_icon || n.class_icon || "";
-    const isTopInit = Boolean(options.isStep13 && (n.id === 8 || n.is_top_initiator));
+    const isTopInit = Boolean(options.isStep13 && (n.id === 4 || n.is_top_initiator));
     const label = isTopInit ? `👑👑 C${n.id}` : (isInit ? `👑 C${n.id}` : `C${n.id}`);
 
     let bgColor = "#2563eb";
@@ -3240,9 +3378,9 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
     if (options.useTonalZoneColors && (n.assigned_zone || n.zone_id)) {
       const zid = n.assigned_zone || n.zone_id;
       if (isInit) {
-        if (options.isStep13 && (n.id === 8 || n.is_top_initiator)) {
+        if (options.isStep13 && (n.id === 4 || n.is_top_initiator)) {
           nodeClasses += `top-initiator-node zone-initiator-${zid} `;
-          bgColor = "#7c3aed";
+          bgColor = "#ea580c";
           borderColor = "#eab308";
         } else {
           nodeClasses += `initiator-node zone-initiator-${zid} `;
@@ -5153,7 +5291,7 @@ function showNodeModal(nodeData) {
     if (clSection) clSection.classList.add("hidden");
     if (topZoneSection) topZoneSection.classList.remove("hidden");
 
-    const isTopInit = Boolean(idNum === 8 || nodeData.is_top_initiator);
+    const isTopInit = Boolean(idNum === 4 || nodeData.is_top_initiator);
     const isInit = Boolean([2, 4, 8].includes(idNum) || nodeData.is_initiator);
     const assignedZ = nodeData.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
 
@@ -5189,11 +5327,11 @@ function showNodeModal(nodeData) {
 
     if (isTopInit) {
       if (cardStatusBadge) {
-        cardStatusBadge.textContent = "👑👑 ELECTED TOP-LEVEL SUPER-INITIATOR";
+        cardStatusBadge.textContent = "👑👑 ELECTED TOP-LEVEL SUPER-INITIATOR (Central Hub of Z_TOP)";
         cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
       }
       if (topZoneBadge) {
-        topZoneBadge.textContent = "Z_TOP Root Initiator";
+        topZoneBadge.textContent = "Z_TOP Root Initiator (C4 👑👑)";
         topZoneBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
       }
       if (topZoneContent) {
@@ -5207,61 +5345,61 @@ function showNodeModal(nodeData) {
                 <span>👑👑</span>
               </div>
               <div class="text-[9.5px] font-mono text-amber-800 font-semibold">
-                Super-Zone Membership: Leader of Z_TOP (Governing Initiators: C2, C4, C8)
+                Central Hub of Z_TOP | Governing Initiators: C2 (West) & C8 (East)
               </div>
             </div>
 
-            <!-- 2. VRF Overlay Election Breakdown -->
+            <!-- 2. Overlay Scoreboard: Received Scores from C2 and C8 -->
             <div class="p-2.5 bg-amber-50/70 rounded border border-amber-200 space-y-1.5 text-[10px] font-mono">
               <div class="flex items-center justify-between font-bold text-amber-950">
-                <span class="flex items-center gap-1"><span>🎲</span><span>VRF Evaluation on G_init:</span></span>
-                <span class="px-1.5 py-0.2 rounded bg-amber-200 text-amber-900 border border-amber-300">Winner: σ_8 = 0.0275</span>
+                <span class="flex items-center gap-1"><span>🎲</span><span>Overlay Scoreboard (1-Hop Exchange):</span></span>
+                <span class="px-1.5 py-0.2 rounded bg-amber-200 text-amber-900 border border-amber-300">Hub: Node 4</span>
               </div>
               <div class="grid grid-cols-3 gap-1.5 text-center mt-1">
                 <div class="p-1.5 rounded bg-white border border-amber-300">
-                  <div class="text-slate-500 text-[8.5px]">C8 (Self)</div>
-                  <div class="font-bold text-amber-900">0.0275 👑👑</div>
-                  <div class="text-[8px] text-emerald-700 font-bold">Rank 1 (WINNER)</div>
+                  <div class="text-slate-500 text-[8.5px]">C4 (Self / Bridge)</div>
+                  <div class="font-bold text-amber-900">0.0412 👑👑</div>
+                  <div class="text-[8px] text-emerald-700 font-bold">Central Bridge Hub</div>
                 </div>
                 <div class="p-1.5 rounded bg-white border border-slate-200">
-                  <div class="text-slate-500 text-[8.5px]">C4 (Neighbor)</div>
-                  <div class="font-semibold text-slate-700">0.0412</div>
-                  <div class="text-[8px] text-slate-500 font-medium">Rank 2 (Yield)</div>
-                </div>
-                <div class="p-1.5 rounded bg-white border border-slate-200">
-                  <div class="text-slate-500 text-[8.5px]">C2 (2-Hop Peer)</div>
+                  <div class="text-slate-500 text-[8.5px]">C2 (West Neighbor)</div>
                   <div class="font-semibold text-slate-700">0.0837</div>
-                  <div class="text-[8px] text-slate-500 font-medium">Rank 3 (Yield)</div>
+                  <div class="text-[8px] text-slate-500 font-medium">path: [2, 1, 4]</div>
+                </div>
+                <div class="p-1.5 rounded bg-white border border-slate-200">
+                  <div class="text-slate-500 text-[8.5px]">C8 (East Neighbor)</div>
+                  <div class="font-semibold text-slate-700">0.0275</div>
+                  <div class="text-[8px] text-slate-500 font-medium">path: [8, 6, 4]</div>
                 </div>
               </div>
               <div class="text-[9px] text-amber-900 pt-1 border-t border-amber-200">
-                m_top = min(σ_2, σ_4, σ_8) = σ_8 = 0.0275 network-wide minimum.
+                Central bridge topology: C2 ↔ C4 ↔ C8. C4 bridges both western and eastern clusters.
               </div>
             </div>
 
-            <!-- 3. TOP_PROBE Broadcast Pipeline -->
+            <!-- 3. Symmetrical TOP_PROBE Broadcast Pipeline -->
             <div class="p-2.5 bg-slate-50 rounded border border-amber-200 space-y-1.5 text-[10px] font-mono">
               <div class="flex items-center justify-between">
-                <span class="text-slate-700 font-bold flex items-center gap-1"><span>🚀</span><span>TOP_PROBE Broadcast:</span></span>
-                <span class="text-amber-800 font-bold">TTL_top = 2</span>
+                <span class="text-slate-700 font-bold flex items-center gap-1"><span>🚀</span><span>Symmetrical TOP_PROBE Broadcast:</span></span>
+                <span class="text-amber-800 font-bold">TTL_top = 1</span>
               </div>
               <div class="text-[9.5px] text-slate-700 space-y-1">
                 <div class="flex items-center gap-1">
-                  <span class="text-amber-600 font-bold">• Hop 1:</span> C8 ➔ via C6 (gateway) ➔ C4
+                  <span class="text-amber-600 font-bold">• Westward Branch:</span> C4 ➔ via C1 (gateway) ➔ C2 (Accepted)
                 </div>
                 <div class="flex items-center gap-1">
-                  <span class="text-amber-600 font-bold">• Hop 2:</span> C4 ➔ via C1 (gateway) ➔ C2
+                  <span class="text-amber-600 font-bold">• Eastward Branch:</span> C4 ➔ via C6 (gateway) ➔ C8 (Accepted)
                 </div>
               </div>
               <div class="text-[9px] text-emerald-800 font-semibold pt-1 border-t border-slate-200">
-                All base initiators successfully enrolled into Top-Level Super-Zone Z_TOP.
+                Top-Level Super-Zone Z_TOP formed: Root C4 encompasses base initiators {C2, C4, C8}.
               </div>
             </div>
 
-            <!-- 4. Preserved Base Zone & Cluster Identity -->
+            <!-- 4. Preserved Base Zone Authority -->
             <div class="p-2 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono flex items-center justify-between">
               <span class="text-slate-600">Base Zone Authority:</span>
-              <span class="font-bold text-purple-900">Zone 8 (Cluster 8-A, Exemplar C8)</span>
+              <span class="font-bold text-orange-900">Zone 4 (Clusters 4-A & 4-B, Exemplar C4)</span>
             </div>
           </div>
         `;
@@ -5272,29 +5410,29 @@ function showNodeModal(nodeData) {
         cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-50 text-amber-900 border-amber-300";
       }
       if (topZoneBadge) {
-        topZoneBadge.textContent = "Member of Z_TOP (Root: C8)";
+        topZoneBadge.textContent = "Member of Z_TOP (Root: C4)";
         topZoneBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
       }
-      const myVrf = idNum === 4 ? 0.0412 : 0.0837;
-      const myHop = idNum === 4 ? "Hop 1 (via gateway C6)" : "Hop 2 (via gateway C1)";
-      const myZoneDesc = idNum === 4 ? "Zone 4 {C4, C5, C6, C7} (Clusters 4-A & 4-B)" : "Zone 2 {C1, C2, C3} (Clusters 2-A & 2-B)";
+      const myVrf = idNum === 8 ? 0.0275 : 0.0837;
+      const myHop = idNum === 8 ? "Received TOP_PROBE(TTL=1) from C4 via gateway C6" : "Received TOP_PROBE(TTL=1) from C4 via gateway C1";
+      const myZoneDesc = idNum === 8 ? "Zone 8 {C8, C9, C10} (Clusters 8-A, 8-B, 8-C)" : "Zone 2 {C1, C2, C3} (Clusters 2-A & 2-B)";
 
       if (topZoneContent) {
         topZoneContent.innerHTML = `
           <div class="p-3 bg-white rounded-lg border border-amber-200 shadow-xs space-y-3">
             <div class="p-2 bg-amber-50/80 rounded border border-amber-200 text-[10.5px] font-mono text-amber-950">
-              <span class="font-bold">Status:</span> Base Zone Initiator | Member of Top-Level Super-Zone (Z_TOP, Root: C8)
+              <span class="font-bold">Status:</span> Base Zone Initiator | Member of Top-Level Super-Zone (Root: C4)
             </div>
 
             <!-- Membership & VRF Details -->
             <div class="p-2.5 bg-slate-50 rounded border border-amber-200 space-y-1.5 text-[10px] font-mono">
               <div class="flex items-center justify-between">
                 <span class="text-slate-600">Super-Zone Root Initiator:</span>
-                <span class="font-bold text-amber-900">👑👑 Node C8 (σ_8 = 0.0275)</span>
+                <span class="font-bold text-amber-900">👑👑 Node C4 (Central Bridge)</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-slate-600">Local Initiator VRF:</span>
-                <span class="font-bold text-slate-800">σ_${idNum} = ${myVrf} (Yielded to C8)</span>
+                <span class="font-bold text-slate-800">σ_${idNum} = ${myVrf} (Overlay Peer)</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-slate-600">TOP_PROBE Ingress:</span>
@@ -5302,7 +5440,7 @@ function showNodeModal(nodeData) {
               </div>
               <div class="pt-1 border-t border-slate-200 text-[9.5px]">
                 <span class="text-slate-600 font-semibold">Super-Zone Scope:</span>
-                <span class="text-slate-800 ml-1">Enrolled in Z_TOP control plane for global catalog exchange in Step 14.</span>
+                <span class="text-slate-800 ml-1">Enrolled in Z_TOP control plane (Root: C4) for global catalog exchange in Step 14.</span>
               </div>
             </div>
 
@@ -5322,14 +5460,14 @@ function showNodeModal(nodeData) {
         cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-700 border-slate-300";
       }
       if (topZoneBadge) {
-        topZoneBadge.textContent = "Supervised by Z_TOP";
+        topZoneBadge.textContent = "Supervised by Z_TOP (Root: C4)";
         topZoneBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-700 border border-slate-300";
       }
       if (topZoneContent) {
         topZoneContent.innerHTML = `
           <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
             <div class="p-2 bg-amber-50/60 rounded border border-amber-200 text-[10px] text-amber-950 font-sans leading-relaxed">
-              <span class="font-bold">Supervisory Plane Notice:</span> The Top-Level Super-Zone (Z_TOP, Root: C8) operates as a supervisory control plane above base clients. Node C${idNum}'s semantic cluster assignments remain active and unchanged.
+              <span class="font-bold">Supervisory Plane Notice:</span> The Top-Level Super-Zone (Z_TOP, Root: C4) operates as a supervisory control plane above base clients. Node C${idNum}'s semantic cluster assignments remain active and unchanged.
             </div>
 
             <!-- Preserved Cluster Profile -->

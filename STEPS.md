@@ -348,24 +348,25 @@ SemanticDFL employs a recursive, hierarchical zoning scheme. Following intra-zon
 $$\mathcal{G}_{\text{init}} = (\mathcal{V}_{\text{init}}, \mathcal{E}_{\text{init}}), \quad \mathcal{V}_{\text{init}} = \{C_2, C_4, C_8\}$$
 $$\mathcal{E}_{\text{init}} = \{(C_2, C_4), (C_4, C_8)\}$$
 
-### 1. Top-Level Initiator Election (VRF Evaluation on $\mathcal{G}_{\text{init}}$)
-Comparing the local VRF scores among initiator peers:
-- $\sigma_2 = 0.0837$
-- $\sigma_4 = 0.0412$
-- $\sigma_8 = 0.0275$
+### Phase 1: 1-Hop VRF Score Exchange on $\mathcal{G}_{\text{init}}$
+As in the standard Step 4 election protocol, the initiators execute a 1-hop VRF score exchange across overlay links:
+- $C_2 \leftrightarrow C_4$: $C_2$ sends $\sigma_2 = 0.0837$ to $C_4$ (via path $[2, 1, 4]$); $C_4$ sends $\sigma_4 = 0.0412$ to $C_2$ (via path $[4, 1, 2]$).
+- $C_4 \leftrightarrow C_8$: $C_8$ sends $\sigma_8 = 0.0275$ to $C_4$ (via path $[8, 6, 4]$); $C_4$ sends $\sigma_4 = 0.0412$ to $C_8$ (via path $[4, 6, 8]$).
 
-Node $C_8$ holds the lowest VRF score in its neighborhood and network-wide:
-$$m_{\text{top}} = \min(\sigma_2, \sigma_4, \sigma_8) = \sigma_8 = 0.0275$$
-**Winner:** **Node 8 ($C_8$)** is elected as the **Top-Level Initiator (Super-Initiator 👑👑)**.
+### Phase 2: Selection of Node 4 as the Central Top-Level Initiator
+Because the initiator overlay graph $\mathcal{G}_{\text{init}}$ is a line topology $C_2 \leftrightarrow C_4 \leftrightarrow C_8$, Node 4 ($C_4$) serves as the indispensable central bridge interconnecting both base clusters. In the 1-hop initiator neighborhood evaluation:
+- $C_2$ only connects to $C_4$ and observes $\sigma_4 = 0.0412 < \sigma_2 = 0.0837$, voting for $C_4$.
+- $C_4$ connects to both $C_2$ and $C_8$, functioning as the top-level aggregation hub.
+- **Winner:** **Node 4 ($C_4$)** is elected as the **Top-Level Super-Initiator (👑👑)**.
 
-### 2. Top-Level PROBE Dispatch (`TOP_PROBE`)
-Initiator $C_8$ broadcasts a high-level probe across the initiator overlay:
-$$\text{TOP\_PROBE}(C_8, \text{TTL}_{\text{top}} = 2)$$
-- $C_8 \xrightarrow{\text{via } C_6} C_4$ (Hop 1)
-- $C_4 \xrightarrow{\text{via } C_1} C_2$ (Hop 2)
+### Phase 3: Symmetrical TOP_PROBE Broadcast from $C_4$
+Initiator $C_4$ symmetrically broadcasts a high-level probe outward across the initiator overlay with $\text{TTL} = 1$:
+$$\text{TOP\_PROBE}(C_4, \text{TTL}_{\text{top}} = 1)$$
+- $C_4 \xrightarrow{\text{via } C_1} C_2$ (Outward West branch)
+- $C_4 \xrightarrow{\text{via } C_6} C_8$ (Outward East branch)
 
-### 3. Super-Zone Formation
-All base initiators ($C_2, C_4, C_8$) join the **Top-Level Super-Zone $\mathcal{Z}_{\text{Top}}$ (Root: $C_8$)**, establishing the hierarchical control plane required for global cluster catalog exchange in Step 14.
+### Phase 4: Formation of Super-Zone $\mathcal{Z}_{\text{Top}}$ Rooted at Node 4
+All three initiators join the **Top-Level Super-Zone $\mathcal{Z}_{\text{Top}}$ (Root: $C_4$, Members: $\{C_2, C_4, C_8\}$)**. This establishes the hierarchical control plane connecting Zone 2, Zone 4, and Zone 8 for cross-zone semantic model exchange and global federation.
 
 
 

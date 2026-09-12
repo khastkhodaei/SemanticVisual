@@ -2695,16 +2695,18 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
         }
     elif step_number == 13:
         # Step 13: Hierarchical Top-Level Zone Creation (Figure 3(e))
-        # The base zone initiators {C2, C4, C8} form a higher-level overlay graph G_init.
-        # VRF scores: sigma_2 = 0.0837, sigma_4 = 0.0412, sigma_8 = 0.0275.
-        # Node 8 wins election as the Top-Level Initiator (Super-Initiator 👑👑).
-        # C8 broadcasts TOP_PROBE(TTL_top=2) along C8 -> C6 -> C4 (Hop 1) and C4 -> C1 -> C2 (Hop 2),
-        # establishing Top-Level Super-Zone Z_TOP.
+        # The base zone initiators {C2, C4, C8} form a higher-level overlay graph G_init: C2 <-> C4 <-> C8.
+        # Phase 1: 1-hop bidirectional VRF score exchange across overlay links:
+        #   - C2 <-> C4 (path [2, 1, 4] and [4, 1, 2])
+        #   - C4 <-> C8 (path [8, 6, 4] and [4, 6, 8])
+        # Phase 2: Node 4 (C4) elected as Top-Level Super-Initiator (👑👑) as central bridge.
+        # Phase 3: Symmetrical TOP_PROBE(TTL=1) outward from C4 to both C2 (via C1) and C8 (via C6).
+        # Phase 4: Formation of Super-Zone Z_TOP rooted at Node 4.
         step12_data = get_10node_step_data(12)
         step12_nodes_map = {n["id"]: n for n in step12_data["nodes"]}
 
         initiators = [2, 4, 8]
-        top_initiator = 8
+        top_initiator = 4
         super_zone_members = [2, 4, 8]
 
         step13_nodes = []
@@ -2721,15 +2723,29 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 n_copy["governing_initiators"] = [2, 4, 8]
                 n_copy["governing_initiators_str"] = ["C2", "C4", "C8"]
                 n_copy["vrf_top_rank"] = 1
-            elif nid in [2, 4]:
+                n_copy["received_overlay_scores"] = {2: 0.0837, 8: 0.0275}
+                n_copy["overlay_scoreboard"] = [
+                    {"node": 4, "node_str": "C4", "score": 0.0412, "role": "Self (Central Bridge & Winner 👑👑)"},
+                    {"node": 2, "node_str": "C2", "score": 0.0837, "role": "Overlay Neighbor (West)", "path": [2, 1, 4]},
+                    {"node": 8, "node_str": "C8", "score": 0.0275, "role": "Overlay Neighbor (East)", "path": [8, 6, 4]},
+                ]
+            elif nid in [2, 8]:
                 n_copy["top_level_role"] = "SUPER_ZONE_MEMBER"
                 n_copy["top_level_status"] = "SUPER_ZONE_MEMBER"
                 n_copy["is_top_initiator"] = False
                 n_copy["top_level_zone"] = "Z_TOP"
                 n_copy["super_zone_role"] = "SUPER_ZONE_MEMBER"
-                n_copy["super_zone_root"] = 8
-                n_copy["super_zone_root_str"] = "C8"
+                n_copy["super_zone_root"] = 4
+                n_copy["super_zone_root_str"] = "C4"
                 n_copy["vrf_top_rank"] = 3 if nid == 2 else 2
+                n_copy["received_top_probe"] = {
+                    "from": 4,
+                    "from_str": "C4",
+                    "ttl": 1,
+                    "root": 4,
+                    "super_zone": "Z_TOP",
+                    "via": 1 if nid == 2 else 6,
+                }
             else:
                 n_copy["top_level_role"] = "BASE_ZONE_MEMBER"
                 n_copy["top_level_status"] = "SUPERVISED_CLIENT"
@@ -2739,59 +2755,137 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
 
             step13_nodes.append(n_copy)
 
-        # Multi-hop high-level probe traces: C8 -> C6 -> C4, C4 -> C1 -> C2
-        packet_events = [
+        # 1-Hop VRF Score Exchanges (Phase A)
+        vrf_exchange_events = [
             {
-                "packet_id": "top_probe_8_6_4",
-                "type": "TOP_PROBE",
+                "packet_id": "vrf_2_to_4",
+                "type": "VRF_EXCHANGE",
+                "score": 0.0837,
+                "source": "C2",
+                "target": "C4",
+                "source_num": 2,
+                "target_num": 4,
+                "relay": "C1",
+                "relay_num": 1,
+                "path": [2, 1, 4],
+                "path_str": ["C2", "C1", "C4"],
+                "color": "#3b82f6",
+                "label": "VRF_EXCHANGE(0.0837)",
+                "route_label": "C2 -> C1 -> C4",
+                "msg": "C2 transmits VRF score (0.0837) to C4 via C1",
+            },
+            {
+                "packet_id": "vrf_8_to_4",
+                "type": "VRF_EXCHANGE",
+                "score": 0.0275,
                 "source": "C8",
                 "target": "C4",
                 "source_num": 8,
                 "target_num": 4,
                 "relay": "C6",
                 "relay_num": 6,
-                "path": ["C8", "C6", "C4"],
-                "path_nums": [8, 6, 4],
-                "ttl": 2,
-                "hop": 1,
-                "color": "#eab308",
-                "label": "TOP_PROBE(TTL=2)",
+                "path": [8, 6, 4],
+                "path_str": ["C8", "C6", "C4"],
+                "color": "#8b5cf6",
+                "label": "VRF_EXCHANGE(0.0275)",
                 "route_label": "C8 -> C6 -> C4",
-                "payload": {
-                    "msg": "TOP_PROBE",
-                    "root_initiator": 8,
-                    "vrf_score": 0.0275,
-                    "ttl": 2,
-                    "super_zone": "Z_TOP",
-                },
+                "msg": "C8 transmits VRF score (0.0275) to C4 via C6",
             },
             {
-                "packet_id": "top_probe_4_1_2",
-                "type": "TOP_PROBE",
+                "packet_id": "vrf_4_to_2",
+                "type": "VRF_EXCHANGE",
+                "score": 0.0412,
                 "source": "C4",
                 "target": "C2",
                 "source_num": 4,
                 "target_num": 2,
                 "relay": "C1",
                 "relay_num": 1,
-                "path": ["C4", "C1", "C2"],
-                "path_nums": [4, 1, 2],
+                "path": [4, 1, 2],
+                "path_str": ["C4", "C1", "C2"],
+                "color": "#f59e0b",
+                "label": "VRF_EXCHANGE(0.0412)",
+                "route_label": "C4 -> C1 -> C2",
+                "msg": "C4 transmits VRF score (0.0412) to C2 via C1",
+            },
+            {
+                "packet_id": "vrf_4_to_8",
+                "type": "VRF_EXCHANGE",
+                "score": 0.0412,
+                "source": "C4",
+                "target": "C8",
+                "source_num": 4,
+                "target_num": 8,
+                "relay": "C6",
+                "relay_num": 6,
+                "path": [4, 6, 8],
+                "path_str": ["C4", "C6", "C8"],
+                "color": "#f59e0b",
+                "label": "VRF_EXCHANGE(0.0412)",
+                "route_label": "C4 -> C6 -> C8",
+                "msg": "C4 transmits VRF score (0.0412) to C8 via C6",
+            },
+        ]
+
+        # Symmetrical TOP_PROBE Broadcasts from C4 (Phase B)
+        probe_events = [
+            {
+                "packet_id": "top_probe_4_1_2",
+                "type": "TOP_PROBE",
                 "ttl": 1,
-                "hop": 2,
+                "root": 4,
+                "source": "C4",
+                "target": "C2",
+                "source_num": 4,
+                "target_num": 2,
+                "relay": "C1",
+                "relay_num": 1,
+                "path": [4, 1, 2],
+                "path_nums": [4, 1, 2],
+                "path_str": ["C4", "C1", "C2"],
                 "color": "#eab308",
                 "label": "TOP_PROBE(TTL=1)",
                 "route_label": "C4 -> C1 -> C2",
+                "msg": "C4 broadcasts TOP_PROBE outward West to C2 (via C1)",
                 "payload": {
                     "msg": "TOP_PROBE",
-                    "root_initiator": 8,
-                    "vrf_score": 0.0275,
+                    "root_initiator": 4,
+                    "vrf_score": 0.0412,
+                    "ttl": 1,
+                    "super_zone": "Z_TOP",
+                },
+            },
+            {
+                "packet_id": "top_probe_4_6_8",
+                "type": "TOP_PROBE",
+                "ttl": 1,
+                "root": 4,
+                "source": "C4",
+                "target": "C8",
+                "source_num": 4,
+                "target_num": 8,
+                "relay": "C6",
+                "relay_num": 6,
+                "path": [4, 6, 8],
+                "path_nums": [4, 6, 8],
+                "path_str": ["C4", "C6", "C8"],
+                "color": "#eab308",
+                "label": "TOP_PROBE(TTL=1)",
+                "route_label": "C4 -> C6 -> C8",
+                "msg": "C4 broadcasts TOP_PROBE outward East to C8 (via C6)",
+                "payload": {
+                    "msg": "TOP_PROBE",
+                    "root_initiator": 4,
+                    "vrf_score": 0.0412,
                     "ttl": 1,
                     "super_zone": "Z_TOP",
                 },
             },
         ]
 
-        # Edges for Step 13: All 18 physical links remain clean solid slate lines
+        packet_events = vrf_exchange_events + probe_events
+
+        # Edges for Step 13: All physical links remain clean solid slate lines
         step13_edges = []
         for e in edges:
             e_copy = dict(e)
@@ -2802,60 +2896,73 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
 
         terminal_logs = [
             "[STEP 13] Hierarchical Top-Level Zone Creation initialized (Figure 3(e)).",
-            "[OVERLAY GRAPH] Base zone initiators form higher-level graph G_init: V_init={C2, C4, C8}, E_init={(C2, C4), (C4, C8)}.",
-            "[VRF EVALUATION] Evaluating local VRF scores on G_init: sigma_2=0.0837, sigma_4=0.0412, sigma_8=0.0275.",
-            "[ELECTION WINNER] Node 8 holds lowest VRF score (0.0275) network-wide -> Elected Top-Level Super-Initiator 👑👑.",
-            "[TOP_PROBE DISPATCH] Initiator C8 broadcasts TOP_PROBE(TTL_top=2) across initiator overlay.",
-            "[HOP 1 RELAY] TOP_PROBE: C8 -> C6 (gateway) -> C4 (Hop 1 complete). Initiator C4 accepts Super-Zone membership.",
-            "[HOP 2 RELAY] TOP_PROBE: C4 -> C1 (gateway) -> C2 (Hop 2 complete). Initiator C2 accepts Super-Zone membership.",
-            "[SUPER-ZONE FORMED] Top-Level Super-Zone Z_TOP established (Root: C8, Members: [C2, C4, C8]).",
+            "[OVERLAY GRAPH] Base zone initiators form higher-level overlay graph G_init: V_init={C2, C4, C8}, E_init={(C2, C4), (C4, C8)}.",
+            "[PHASE 1: VRF EXCHANGE] 1-hop VRF score exchange across overlay links:",
+            "  - C2 -> C4: score=0.0837 (path [2, 1, 4]) | C4 -> C2: score=0.0412 (path [4, 1, 2])",
+            "  - C8 -> C4: score=0.0275 (path [8, 6, 4]) | C4 -> C8: score=0.0412 (path [4, 6, 8])",
+            "[PHASE 2: ELECTION] Node C4 elected Top-Level Super-Initiator 👑👑 (Central bridge interconnecting C2 and C8).",
+            "[PHASE 3: SYMMETRICAL PROBING] Initiator C4 symmetrically broadcasts TOP_PROBE(TTL=1) outward:",
+            "  - C4 -> C1 (gateway) -> C2 (West branch complete, accepted by C2)",
+            "  - C4 -> C6 (gateway) -> C8 (East branch complete, accepted by C8)",
+            "[PHASE 4: SUPER-ZONE FORMED] Top-Level Super-Zone Z_TOP established (Root: C4 👑👑, Member Initiators: [C2, C4, C8]).",
             "[SUPERVISORY PLANE] Hierarchical control plane active for global cluster catalog exchange in Step 14.",
         ]
 
         top_level_zone = {
             "id": "Z_TOP",
-            "root_initiator": 8,
+            "root_initiator": 4,
             "member_initiators": [2, 4, 8],
-            "root_initiator_str": "C8",
+            "root_initiator_str": "C4",
             "member_initiators_str": ["C2", "C4", "C8"],
             "vrf_scores": {2: 0.0837, 4: 0.0412, 8: 0.0275},
-            "min_vrf": 0.0275,
-            "winner_initiator": 8,
-            "ttl": 2,
+            "winner_initiator": 4,
+            "ttl": 1,
             "overlay_edges": [
-                {"source": 8, "target": 4, "via": 6, "hop": 1},
-                {"source": 4, "target": 2, "via": 1, "hop": 2},
+                {"source": 4, "target": 2, "via": 1, "hop": 1, "path": [4, 1, 2]},
+                {"source": 4, "target": 8, "via": 6, "hop": 1, "path": [4, 6, 8]},
+            ],
+            "score_exchanges": [
+                {"type": "VRF_EXCHANGE", "score": 0.0837, "path": [2, 1, 4], "source": 2, "target": 4},
+                {"type": "VRF_EXCHANGE", "score": 0.0275, "path": [8, 6, 4], "source": 8, "target": 4},
+                {"type": "VRF_EXCHANGE", "score": 0.0412, "path": [4, 1, 2], "source": 4, "target": 2},
+                {"type": "VRF_EXCHANGE", "score": 0.0412, "path": [4, 6, 8], "source": 4, "target": 8},
+            ],
+            "probe_broadcasts": [
+                {"type": "TOP_PROBE", "ttl": 1, "root": 4, "path": [4, 1, 2], "target": 2},
+                {"type": "TOP_PROBE", "ttl": 1, "root": 4, "path": [4, 6, 8], "target": 8},
             ],
         }
 
         return {
             "step": 13,
             "title": "Step 13: Hierarchical Top-Level Zone Creation (Figure 3(e))",
-            "phase_badge": "ACTIVE PHASE: STEP 13: TOP-LEVEL ZONE CREATION (FIGURE 3(e))",
-            "description": "Base initiators form a higher-level overlay graph. Initiator C8 wins election and broadcasts TOP_PROBE to form the global Super-Zone.",
-            "formula": "\\mathcal{G}_{\\text{init}} = \\{I_2, I_4, I_8\\}, \\quad I_{\\text{top}} = \\arg\\min_{p \\in \\mathcal{V}_{\\text{init}}} \\sigma_p = C_8, \\quad \\text{TOP\\_PROBE} \\to \\mathcal{Z}_{\\text{Top}}",
-            "formula_desc": "Base initiators form a higher-level overlay graph. Initiator C8 wins election and broadcasts TOP_PROBE to form the global Super-Zone.",
+            "phase_badge": "ACTIVE PHASE: STEP 13: TOP-LEVEL INITIATOR ELECTION & SUPER-ZONE (C4 👑👑)",
+            "description": "Initiators exchange VRF scores across overlay links. Central bridge C4 is elected Top-Level Initiator and symmetrically floods TOP_PROBE to C2 and C8.",
+            "formula": "\\mathcal{G}_{\\text{init}} = \\{I_2 \\leftrightarrow I_4 \\leftrightarrow I_8\\}, \\quad I_{\\text{top}} = C_4, \\quad \\text{TOP\\_PROBE}(C_4, \\text{TTL}=1) \\to \\mathcal{Z}_{\\text{Top}}",
+            "formula_desc": "Initiators exchange VRF scores across overlay links. Central bridge C4 is elected Top-Level Initiator and symmetrically floods TOP_PROBE to C2 and C8.",
             "nodes": step13_nodes,
             "edges": step13_edges,
             "overlay_topology": {
                 "nodes": [2, 4, 8],
                 "nodes_str": ["C2", "C4", "C8"],
                 "edges": [
-                    {"source": 8, "target": 4, "via": 6, "hop": 1},
-                    {"source": 4, "target": 2, "via": 1, "hop": 2},
+                    {"source": 4, "target": 2, "via": 1, "hop": 1, "path": [4, 1, 2]},
+                    {"source": 4, "target": 8, "via": 6, "hop": 1, "path": [4, 6, 8]},
                 ],
             },
             "top_level_zone": top_level_zone,
             "super_zone": top_level_zone,
             "packet_events": packet_events,
             "packet_exchanges": packet_events,
+            "vrf_exchange_events": vrf_exchange_events,
+            "probe_events": probe_events,
             "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
             "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
             "total_nodes": 10,
             "total_edges": 18,
             "unique_edges": len(edges),
             "active_leaders": [2, 4, 8],
-            "top_initiator": 8,
+            "top_initiator": 4,
             "similarity_matrices": step12_data["similarity_matrices"],
             "all_clusters": step12_data["all_clusters"],
             "zones": {
