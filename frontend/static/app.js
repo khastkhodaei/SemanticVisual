@@ -862,9 +862,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 16)
+// 4. Main Step Loading Function (Steps 1 to 17)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 16) return;
+  if (stepNumber < 1 || stepNumber > 17) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -5093,7 +5093,13 @@ function renderNodeModal(node, stepData = currentStepData) {
 
   // Header: Node C{id} | Role: INITIATOR / CLIENT | Zone: {assigned_zone} in Step 5 & 6
   if (cardNodeId) {
-    if (currentStep === 16) {
+    if (currentStep === 17) {
+      const isTopInit = Boolean(idNum === 4 || mergedNode?.is_top_initiator);
+      const isInit = Boolean([2, 4, 8].includes(idNum) || mergedNode?.is_initiator);
+      const roleStr = isTopInit ? "👑👑 SUPER-INITIATOR" : (isInit ? "👑 BASE INITIATOR" : "CLIENT");
+      const scStr = mergedNode?.assigned_super_cluster || ([1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3"));
+      cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Role: <span class="${isTopInit ? 'text-amber-800 font-bold' : (isInit ? 'text-amber-700 font-bold' : 'text-slate-800')}">${roleStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Super-Cluster: <span class="font-bold text-sky-800">${scStr}</span></span>`;
+    } else if (currentStep === 16) {
       const isTopInit = Boolean(idNum === 4 || mergedNode.is_top_initiator);
       const isInit = Boolean([2, 4, 8].includes(idNum) || mergedNode.is_initiator);
       const roleStr = isTopInit ? "👑👑 SUPER-INITIATOR" : (isInit ? "👑 BASE INITIATOR" : "CLIENT");
