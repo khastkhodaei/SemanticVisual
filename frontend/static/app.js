@@ -1099,12 +1099,12 @@ function updateUIHeaders(data) {
     if (stepDesc) stepDesc.textContent = "Super-Initiator C4 broadcasts REQ_CLUSTER_CATALOG across the super-zone overlay to retrieve cluster metadata from base initiators C2 and C8.";
   } else if (step === 16) {
     activeBadges.forEach(badge => {
-      badge.textContent = "ACTIVE PHASE: STEP 16: ZONE CATALOG RESPONSE & GLOBAL AGGREGATION";
+      badge.textContent = "ACTIVE PHASE: STEP 16: ZONE CATALOG RESPONSE & SIGNATURE INGESTION";
       badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-400";
     });
-    if (stepTag) stepTag.textContent = "STEP 16 / ZONE CATALOG RESPONSE & GLOBAL AGGREGATION";
-    if (stepTitle) stepTitle.textContent = "Step 16: Zone Catalog Response & Global Catalog Aggregation at C4";
-    if (stepDesc) stepDesc.textContent = "Base initiators reply with intra-zone cluster metadata over boundary relays to Super-Initiator C4, assembling the Global Cluster Registry (7 clusters total).";
+    if (stepTag) stepTag.textContent = "STEP 16 / ZONE CATALOG RESPONSE & SIGNATURE INGESTION";
+    if (stepTitle) stepTitle.textContent = "Step 16: Zone Catalog Response & Signature Ingestion at C4";
+    if (stepDesc) stepDesc.textContent = "Base initiators transmit exemplar profiles and binary masks inward to Super-Initiator C4, assembling the 7-cluster Global Semantic Registry.";
   }
 }
 
@@ -3903,7 +3903,7 @@ function drawCatalogResponsePacket(ctx, x, y, label, color = "#10b981") {
   ctx.restore();
 }
 
-// 5.16 STEP 16: Zone Catalog Response & Global Catalog Aggregation at C4
+// 5.16 STEP 16: Zone Catalog Response & Signature Ingestion at C4
 function renderStep16(data) {
   stopCurrentPacketAnimation();
 
@@ -3913,21 +3913,21 @@ function renderStep16(data) {
     document.getElementById("activeStepBadge")
   ].filter(Boolean);
   activeBadges.forEach(badge => {
-    badge.textContent = "ACTIVE PHASE: STEP 16: ZONE CATALOG RESPONSE & GLOBAL AGGREGATION";
+    badge.textContent = "ACTIVE PHASE: STEP 16: ZONE CATALOG RESPONSE & SIGNATURE INGESTION";
     badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-400";
   });
 
   renderSidebarFormula(
-    "Step 16: Zone Catalog Response & Global Aggregation",
-    "\\sum_{k \\in \\{2, 4, 8\\}} \\text{CATALOG}(Z_k) \\longrightarrow \\text{GlobalRegistry}(C_4) \\quad (7\\text{ Clusters})",
-    "Base initiators transmit cluster exemplars and signatures to C4, assembling the network-wide semantic catalog.",
+    "Step 16: Zone Catalog Response & Signature Ingestion",
+    "\\text{REP\\_CATALOG}(Z_2, Z_8) \\xrightarrow{\\text{boundary routes}} C_4 \\quad (\\text{Ingests 7 Cluster Masks})",
+    "Base initiators transmit exemplar profiles and binary masks inward to Super-Initiator C4.",
     "Step 16: Global Catalog",
     false,
     "emerald"
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "Step 16: Zone Catalog Response & Global Catalog Aggregation at C4 (7 Clusters Assembled)";
+  if (canvasLabel) canvasLabel.textContent = "Step 16: Zone Catalog Response & Signature Ingestion at C4 (7 Cluster Masks Ingested)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
   if (leaderLegend) leaderLegend.classList.remove("hidden");
@@ -3938,7 +3938,7 @@ function renderStep16(data) {
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.innerHTML = '<span>Super-Initiator <span class="text-amber-600 font-bold">👑👑 C4</span> assembled <span class="text-emerald-700 font-bold font-mono">7 Global Clusters</span> from Zones 2, 4, 8</span>';
+    statLeaders.innerHTML = '<span>Super-Initiator <span class="text-amber-600 font-bold">👑👑 C4</span> ingested <span class="text-emerald-700 font-bold font-mono">7 Cluster Masks</span> from Zones 2, 4, 8</span>';
     statLeaders.className = "text-xs font-bold text-slate-800";
   }
 
@@ -3953,19 +3953,19 @@ function renderStep16(data) {
     isStep13Exemplars: true
   });
 
-  logToTerminal("ZONE", "[STEP 16] Zone Catalog Response & Global Catalog Aggregation initialized (REP_CLUSTER_CATALOG).");
+  logToTerminal("ZONE", "[STEP 16] Zone Catalog Response & Signature Ingestion initialized (REP_CLUSTER_CATALOG).");
   logToTerminal("INFO", "Base initiators compile local intra-zone cluster profiles and respond to Super-Initiator C4.");
   logToTerminal("SUCCESS", "Inbound Response 1: C2 ➔ C1 (gateway) ➔ C4 [path: 2-1-4] with REP_CLUSTER_CATALOG (Clusters: 2-A, 2-B).");
   logToTerminal("SUCCESS", "Inbound Response 2: C8 ➔ C6 (gateway) ➔ C4 [path: 8-6-4] with REP_CLUSTER_CATALOG (Clusters: 8-A, 8-B, 8-C).");
   logToTerminal("INFO", "Local Consolidation: Super-Initiator C4 integrates local Zone 4 clusters (4-A, 4-B).");
   logToTerminal("SUCCESS", "Global Registry Assembled: 7 unique semantic clusters registered under C4's global supervision.");
-  logToTerminal("SUCCESS", "Super-Initiator C4 emits golden supervisory beacon across Super-Zone Z_TOP.");
+  logToTerminal("SUCCESS", "Super-Initiator C4 pulses with vibrant cyan/gold glow across Super-Zone Z_TOP.");
 
   const packets = data.packet_events || data.packet_traces || [];
   animateStep16CatalogResponse(packets, data.nodes);
 }
 
-// Animate Step 16: Inward response packets C2 -> C1 -> C4 and C8 -> C6 -> C4 + Golden Beacon at C4
+// Animate Step 16: Inward response packets C2 -> C1 -> C4 and C8 -> C6 -> C4 + Cyan/Gold Glow at C4
 function animateStep16CatalogResponse(packets, allNodes) {
   stopCurrentPacketAnimation();
   syncPacketCanvasSize();
@@ -4118,58 +4118,77 @@ function animateStep16CatalogResponse(packets, allNodes) {
     drawCatalogResponsePacket(ctx, westX, westY, "REP_CATALOG (Z2)", "#10b981");
     drawCatalogResponsePacket(ctx, eastX, eastY, "REP_CATALOG (Z8)", "#10b981");
 
-    // 5. Energetic Golden Supervisory Beacon on C4 (Flashing brightly upon packet arrival, and pulsing continuously)
+    // 5. Energetic Cyan/Gold Glow & Supervisory Beacon on C4
     ctx.save();
-    // Continuous supervisory pulse
+    // Continuous cyan/gold pulse
     const auraProg = (now % 1400) / 1400;
     const auraR = 26 + auraProg * 22;
     const auraA = (1.0 - auraProg) * 0.9;
     ctx.beginPath();
     ctx.arc(p4.x, p4.y, auraR, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(234, 179, 8, ${auraA})`;
+    ctx.strokeStyle = `rgba(34, 211, 238, ${auraA * 0.9})`;
     ctx.lineWidth = 3.2;
-    ctx.shadowColor = "#eab308";
+    ctx.shadowColor = "#06b6d4";
     ctx.shadowBlur = 18;
     ctx.stroke();
 
-    // Arrival explosion / energetic beacon flash (progress >= 0.82)
+    ctx.beginPath();
+    ctx.arc(p4.x, p4.y, auraR * 0.85, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(234, 179, 8, ${auraA * 0.8})`;
+    ctx.lineWidth = 2.4;
+    ctx.shadowColor = "#eab308";
+    ctx.shadowBlur = 14;
+    ctx.stroke();
+
+    // Arrival energetic cyan/gold flash upon payload reception (progress >= 0.82)
     if (progress >= 0.82) {
       const arrProg = (progress - 0.82) / 0.18;
       const arrA = (1.0 - arrProg);
 
-      // Expanding golden shockwaves
-      [0, 12, 24].forEach(offset => {
+      // Expanding cyan & gold shockwaves
+      [0, 14, 28].forEach(offset => {
+        // Cyan outer wave
         ctx.beginPath();
-        ctx.arc(p4.x, p4.y, 26 + arrProg * 40 + offset, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(245, 158, 11, ${arrA * 0.9})`;
+        ctx.arc(p4.x, p4.y, 26 + arrProg * 42 + offset, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(34, 211, 238, ${arrA * 0.9})`;
         ctx.lineWidth = 3.5;
-        ctx.shadowColor = "#f59e0b";
+        ctx.shadowColor = "#22d3ee";
         ctx.shadowBlur = 24;
+        ctx.stroke();
+
+        // Golden inner wave
+        ctx.beginPath();
+        ctx.arc(p4.x, p4.y, 22 + arrProg * 32 + offset, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(245, 158, 11, ${arrA * 0.95})`;
+        ctx.lineWidth = 3.0;
+        ctx.shadowColor = "#f59e0b";
+        ctx.shadowBlur = 20;
         ctx.stroke();
       });
 
-      // Bright white/golden radial core
-      const coreGrad = ctx.createRadialGradient(p4.x, p4.y, 4, p4.x, p4.y, 36);
-      coreGrad.addColorStop(0, `rgba(255, 255, 255, ${arrA * 0.8})`);
-      coreGrad.addColorStop(0.5, `rgba(251, 191, 36, ${arrA * 0.4})`);
+      // Bright white/cyan/gold radial core
+      const coreGrad = ctx.createRadialGradient(p4.x, p4.y, 4, p4.x, p4.y, 42);
+      coreGrad.addColorStop(0, `rgba(255, 255, 255, ${arrA * 0.95})`);
+      coreGrad.addColorStop(0.35, `rgba(34, 211, 238, ${arrA * 0.65})`);
+      coreGrad.addColorStop(0.7, `rgba(251, 191, 36, ${arrA * 0.5})`);
       coreGrad.addColorStop(1, `rgba(245, 158, 11, 0)`);
       ctx.fillStyle = coreGrad;
       ctx.beginPath();
-      ctx.arc(p4.x, p4.y, 36, 0, Math.PI * 2);
+      ctx.arc(p4.x, p4.y, 42, 0, Math.PI * 2);
       ctx.fill();
 
       // Floating celebratory aggregation badge above C4
       ctx.font = "bold 10px ui-monospace, SFMono-Regular, monospace";
-      const bText = "👑👑 7 CLUSTERS AGGREGATED";
+      const bText = "👑👑 7 CLUSTERS INGESTED";
       const bW = ctx.measureText(bText).width;
-      ctx.fillStyle = `rgba(120, 53, 15, ${arrA * 0.95})`;
-      ctx.strokeStyle = `rgba(251, 191, 36, ${arrA})`;
+      ctx.fillStyle = `rgba(12, 74, 96, ${arrA * 0.95})`;
+      ctx.strokeStyle = `rgba(34, 211, 238, ${arrA})`;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.roundRect(p4.x - bW / 2 - 8, p4.y - 48, bW + 16, 18, 4);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = "#fef3c7";
+      ctx.fillStyle = "#cffafe";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(bText, p4.x, p4.y - 39);
@@ -7060,18 +7079,19 @@ function renderNodeModal(node, stepData = currentStepData) {
         globalCatalogBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
       }
       if (globalCatalogContent) {
-        const catalog = mergedNode.global_cluster_catalog || stepData?.global_cluster_catalog || [];
+        const catalog = mergedNode?.global_cluster_catalog || stepData?.global_cluster_catalog || [];
         let rowsHtml = "";
         catalog.forEach(c => {
-          const sigStr = Array.isArray(c.signature) ? `[${c.signature.join(", ")}]` : JSON.stringify(c.signature);
-          const membersStr = Array.isArray(c.members) ? c.members.map(m => `C${m}`).join(", ") : (c.members_str ? c.members_str.join(", ") : "");
+          const rawMask = c?.mask || c?.binary_mask || c?.signature;
+          const maskStr = Array.isArray(rawMask) ? `[${rawMask.join(", ")}]` : JSON.stringify(rawMask || []);
+          const membersStr = Array.isArray(c?.members) ? c.members.map(m => `C${m}`).join(", ") : (c?.members_str ? c.members_str.join(", ") : "");
           rowsHtml += `
             <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
-              <td class="py-1 px-2 font-bold text-emerald-700 font-mono">${c.cluster_id}</td>
-              <td class="py-1 px-2 font-mono text-slate-600">Zone ${c.zone}</td>
-              <td class="py-1 px-2 font-bold text-amber-700 font-mono">C${c.exemplar}</td>
+              <td class="py-1 px-2 font-bold text-emerald-700 font-mono">${c?.cluster_id || "N/A"}</td>
+              <td class="py-1 px-2 font-mono text-slate-600">Zone ${c?.zone ?? "N/A"}</td>
+              <td class="py-1 px-2 font-bold text-amber-700 font-mono">C${c?.exemplar ?? "N/A"}</td>
               <td class="py-1 px-2 font-mono text-slate-700">${membersStr}</td>
-              <td class="py-1 px-2 text-right font-mono text-cyan-800 font-semibold">${sigStr}</td>
+              <td class="py-1 px-2 text-right font-mono text-cyan-800 font-semibold">${maskStr}</td>
             </tr>
           `;
         });
@@ -7082,11 +7102,11 @@ function renderNodeModal(node, stepData = currentStepData) {
             <div class="p-2.5 rounded-lg border border-emerald-400 bg-emerald-50/90 text-center space-y-1">
               <div class="text-[11.5px] font-extrabold text-emerald-950 flex items-center justify-center gap-1.5">
                 <span>🌐</span>
-                <span>Global Semantic Cluster Registry: 7 Clusters Assembled</span>
+                <span>Global Cluster Catalog Registry: 7 Clusters Ingested</span>
                 <span>🌐</span>
               </div>
               <div class="text-[9.5px] font-mono text-emerald-800 font-semibold">
-                Super-Initiator C4 | Status: GLOBAL_CATALOG_ASSEMBLED
+                Super-Initiator C4 | Status: GLOBAL_CATALOG_REGISTRY_ASSEMBLED
               </div>
             </div>
 
@@ -7099,7 +7119,7 @@ function renderNodeModal(node, stepData = currentStepData) {
                     <th class="py-1 px-2">Zone</th>
                     <th class="py-1 px-2">Exemplar</th>
                     <th class="py-1 px-2">Members</th>
-                    <th class="py-1 px-2 text-right">Profile Signature</th>
+                    <th class="py-1 px-2 text-right">10D Binary Mask</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -7111,14 +7131,14 @@ function renderNodeModal(node, stepData = currentStepData) {
             <!-- 3. Summary Footer -->
             <div class="p-2 bg-slate-50 rounded border border-slate-200 text-[9px] font-mono flex items-center justify-between text-slate-600">
               <span>Coverage: <strong class="text-slate-800">100% of network clients (10 Nodes)</strong></span>
-              <span>Total Registry: <strong class="text-emerald-700">7 Active Clusters</strong></span>
+              <span>Total Registry: <strong class="text-emerald-700">7 Global Clusters</strong></span>
             </div>
           </div>
         `;
       }
     } else if ([2, 8].includes(idNum)) {
       // Base Initiators C2 & C8 - Dispatched Catalog
-      const reported = mergedNode.reported_clusters || [];
+      const reported = mergedNode?.reported_clusters || [];
       const relayGw = idNum === 2 ? "C1" : "C6";
       const pathStr = idNum === 2 ? "[2, 1, 4]" : "[8, 6, 4]";
       if (cardStatusBadge) {
@@ -7132,15 +7152,16 @@ function renderNodeModal(node, stepData = currentStepData) {
       if (globalCatalogContent) {
         let repRowsHtml = "";
         reported.forEach(c => {
-          const sigStr = Array.isArray(c.signature) ? `[${c.signature.join(", ")}]` : JSON.stringify(c.signature);
-          const membersStr = Array.isArray(c.members) ? c.members.map(m => `C${m}`).join(", ") : "";
+          const rawMask = c?.mask || c?.binary_mask || c?.signature;
+          const maskStr = Array.isArray(rawMask) ? `[${rawMask.join(", ")}]` : JSON.stringify(rawMask || []);
+          const membersStr = Array.isArray(c?.members) ? c.members.map(m => `C${m}`).join(", ") : "";
           repRowsHtml += `
             <div class="p-2 bg-white rounded border border-emerald-100 flex items-center justify-between text-[9.5px]">
               <div>
-                <span class="font-bold text-emerald-800 font-mono">• Cluster ${c.cluster_id}</span>
-                <span class="text-slate-500 ml-1">(Exemplar: C${c.exemplar}, Members: ${membersStr})</span>
+                <span class="font-bold text-emerald-800 font-mono">• Cluster ${c?.cluster_id || "N/A"}</span>
+                <span class="text-slate-500 ml-1">(Exemplar: C${c?.exemplar ?? "N/A"}, Members: ${membersStr})</span>
               </div>
-              <span class="font-mono text-cyan-800 font-semibold">${sigStr}</span>
+              <span class="font-mono text-cyan-800 font-semibold">${maskStr}</span>
             </div>
           `;
         });
@@ -7149,7 +7170,7 @@ function renderNodeModal(node, stepData = currentStepData) {
           <div class="p-3 bg-white rounded-lg border border-emerald-300 shadow-xs space-y-3">
             <div class="p-2 rounded bg-emerald-50 border border-emerald-300 text-[10px] font-mono text-emerald-900 space-y-1">
               <div class="font-bold flex items-center justify-between">
-                <span>Dispatched Catalog Response (REP_CLUSTER_CATALOG):</span>
+                <span>Dispatched Cluster Catalog (REP_CLUSTER_CATALOG):</span>
                 <span class="px-1.5 py-0.2 bg-emerald-200 text-emerald-900 rounded text-[9px]">SENT</span>
               </div>
               <div class="text-[9px] text-emerald-700">
@@ -7178,8 +7199,8 @@ function renderNodeModal(node, stepData = currentStepData) {
         globalCatalogBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-600 border border-slate-300";
       }
       if (globalCatalogContent) {
-        const cId = mergedNode.cluster_id || 'N/A';
-        const exId = mergedNode.exemplar_node_id || 'N/A';
+        const cId = mergedNode?.cluster_id || 'N/A';
+        const exId = mergedNode?.exemplar_node_id || 'N/A';
         globalCatalogContent.innerHTML = `
           <div class="p-2.5 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono space-y-1 text-slate-700">
             <div><strong>Registered Cluster:</strong> <span class="text-emerald-700 font-bold">${cId}</span></div>

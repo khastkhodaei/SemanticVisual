@@ -3496,6 +3496,8 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 "exemplar": 1,
                 "members": [1, 2],
                 "signature": [1, 2, 3],
+                "mask": [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                "binary_mask": [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
                 "exemplar_str": "C1",
                 "members_str": ["C1", "C2"],
                 "categories": ["Airplane", "Automobile", "Bird"],
@@ -3507,6 +3509,8 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 "exemplar": 3,
                 "members": [3],
                 "signature": [4, 5, 6],
+                "mask": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+                "binary_mask": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
                 "exemplar_str": "C3",
                 "members_str": ["C3"],
                 "categories": ["Cat", "Deer", "Dog"],
@@ -3518,6 +3522,8 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 "exemplar": 5,
                 "members": [4, 5],
                 "signature": [4, 5, 6],
+                "mask": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+                "binary_mask": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
                 "exemplar_str": "C5",
                 "members_str": ["C4", "C5"],
                 "categories": ["Cat", "Deer", "Dog"],
@@ -3529,6 +3535,8 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 "exemplar": 7,
                 "members": [6, 7],
                 "signature": [7, 8, 9, 10],
+                "mask": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+                "binary_mask": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
                 "exemplar_str": "C7",
                 "members_str": ["C6", "C7"],
                 "categories": ["Frog", "Horse", "Ship", "Truck"],
@@ -3540,6 +3548,8 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 "exemplar": 8,
                 "members": [8],
                 "signature": [4, 5, 6],
+                "mask": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+                "binary_mask": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
                 "exemplar_str": "C8",
                 "members_str": ["C8"],
                 "categories": ["Cat", "Deer", "Dog"],
@@ -3551,6 +3561,8 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 "exemplar": 9,
                 "members": [9],
                 "signature": [1, 2, 3],
+                "mask": [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                "binary_mask": [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
                 "exemplar_str": "C9",
                 "members_str": ["C9"],
                 "categories": ["Airplane", "Automobile", "Bird"],
@@ -3562,6 +3574,8 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 "exemplar": 10,
                 "members": [10],
                 "signature": [8, 9, 10],
+                "mask": [0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+                "binary_mask": [0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
                 "exemplar_str": "C10",
                 "members_str": ["C10"],
                 "categories": ["Horse", "Ship", "Truck"],
@@ -3606,8 +3620,8 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 n_copy["catalog_response_status"] = "RESPONSE_DISPATCHED"
                 n_copy["query_status"] = "RESPONSE_DISPATCHED"
                 n_copy["reported_clusters"] = [
-                    {"cluster_id": "2-A", "exemplar": 1, "members": [1, 2], "signature": [1, 2, 3]},
-                    {"cluster_id": "2-B", "exemplar": 3, "members": [3], "signature": [4, 5, 6]},
+                    {"cluster_id": "2-A", "exemplar": 1, "members": [1, 2], "signature": [1, 2, 3], "mask": [1, 1, 1, 0, 0, 0, 0, 0, 0, 0]},
+                    {"cluster_id": "2-B", "exemplar": 3, "members": [3], "signature": [4, 5, 6], "mask": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0]},
                 ]
                 n_copy["response_packet"] = {
                     "to": 4,
@@ -3621,9 +3635,9 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 n_copy["catalog_response_status"] = "RESPONSE_DISPATCHED"
                 n_copy["query_status"] = "RESPONSE_DISPATCHED"
                 n_copy["reported_clusters"] = [
-                    {"cluster_id": "8-A", "exemplar": 8, "members": [8], "signature": [4, 5, 6]},
-                    {"cluster_id": "8-B", "exemplar": 9, "members": [9], "signature": [1, 2, 3]},
-                    {"cluster_id": "8-C", "exemplar": 10, "members": [10], "signature": [8, 9, 10]},
+                    {"cluster_id": "8-A", "exemplar": 8, "members": [8], "signature": [4, 5, 6], "mask": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0]},
+                    {"cluster_id": "8-B", "exemplar": 9, "members": [9], "signature": [1, 2, 3], "mask": [1, 1, 1, 0, 0, 0, 0, 0, 0, 0]},
+                    {"cluster_id": "8-C", "exemplar": 10, "members": [10], "signature": [8, 9, 10], "mask": [0, 0, 0, 0, 0, 0, 0, 1, 1, 1]},
                 ]
                 n_copy["response_packet"] = {
                     "to": 4,
@@ -3639,6 +3653,16 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 n_copy["status"] = "CLUSTER_MEMBER"
 
             step16_nodes.append(n_copy)
+
+        z2_clusters = [
+            {"cluster_id": "2-A", "exemplar": 1, "members": [1, 2], "mask": [1, 1, 1, 0, 0, 0, 0, 0, 0, 0], "signature": [1, 2, 3]},
+            {"cluster_id": "2-B", "exemplar": 3, "members": [3], "mask": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0], "signature": [4, 5, 6]},
+        ]
+        z8_clusters = [
+            {"cluster_id": "8-A", "exemplar": 8, "members": [8], "mask": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0], "signature": [4, 5, 6]},
+            {"cluster_id": "8-B", "exemplar": 9, "members": [9], "mask": [1, 1, 1, 0, 0, 0, 0, 0, 0, 0], "signature": [1, 2, 3]},
+            {"cluster_id": "8-C", "exemplar": 10, "members": [10], "mask": [0, 0, 0, 0, 0, 0, 0, 1, 1, 1], "signature": [8, 9, 10]},
+        ]
 
         packet_traces = [
             {
@@ -3658,10 +3682,8 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 "label": "REP_CATALOG (Z2)",
                 "route_label": "C2 -> C1 -> C4",
                 "msg": "Initiator C2 transmits REP_CLUSTER_CATALOG (Clusters 2-A, 2-B) inward to C4 (via C1)",
-                "payload": [
-                    {"cluster_id": "2-A", "exemplar": 1, "members": [1, 2], "signature": [1, 2, 3]},
-                    {"cluster_id": "2-B", "exemplar": 3, "members": [3], "signature": [4, 5, 6]},
-                ],
+                "clusters": z2_clusters,
+                "payload": z2_clusters,
             },
             {
                 "from": 8,
@@ -3680,11 +3702,8 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 "label": "REP_CATALOG (Z8)",
                 "route_label": "C8 -> C6 -> C4",
                 "msg": "Initiator C8 transmits REP_CLUSTER_CATALOG (Clusters 8-A, 8-B, 8-C) inward to C4 (via C6)",
-                "payload": [
-                    {"cluster_id": "8-A", "exemplar": 8, "members": [8], "signature": [4, 5, 6]},
-                    {"cluster_id": "8-B", "exemplar": 9, "members": [9], "signature": [1, 2, 3]},
-                    {"cluster_id": "8-C", "exemplar": 10, "members": [10], "signature": [8, 9, 10]},
-                ],
+                "clusters": z8_clusters,
+                "payload": z8_clusters,
             },
         ]
 
@@ -3697,7 +3716,7 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             step16_edges.append(e_copy)
 
         terminal_logs = [
-            "[STEP 16] Zone Catalog Response & Global Catalog Aggregation initialized (REP_CLUSTER_CATALOG).",
+            "[STEP 16] Zone Catalog Response & Signature Ingestion initialized (REP_CLUSTER_CATALOG).",
             "[INBOUND RESPONSE 1] Initiator C2 -> C1 (gateway) -> C4: Transmitted REP_CLUSTER_CATALOG (Clusters: 2-A, 2-B).",
             "[INBOUND RESPONSE 2] Initiator C8 -> C6 (gateway) -> C4: Transmitted REP_CLUSTER_CATALOG (Clusters: 8-A, 8-B, 8-C).",
             "[LOCAL CONSOLIDATION] Super-Initiator C4 integrated local Zone 4 clusters (4-A, 4-B).",
@@ -3707,11 +3726,11 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
 
         return {
             "step": 16,
-            "title": "Step 16: Zone Catalog Response & Global Catalog Aggregation at C4",
-            "phase_badge": "ACTIVE PHASE: STEP 16: ZONE CATALOG RESPONSE & GLOBAL AGGREGATION",
+            "title": "Step 16: Zone Catalog Response & Signature Ingestion at C4",
+            "phase_badge": "ACTIVE PHASE: STEP 16: ZONE CATALOG RESPONSE & SIGNATURE INGESTION",
             "description": "Base initiators reply with intra-zone cluster metadata over boundary relays to Super-Initiator C4, assembling the Global Cluster Registry (7 clusters total).",
-            "formula": "\\sum_{k \\in \\{2, 4, 8\\}} \\text{CATALOG}(Z_k) \\longrightarrow \\text{GlobalRegistry}(C_4) \\quad (7\\text{ Clusters})",
-            "formula_desc": "Base initiators transmit cluster exemplars and signatures to C4, assembling the network-wide semantic catalog.",
+            "formula": "\\text{REP\\_CATALOG}(Z_2, Z_8) \\xrightarrow{\\text{boundary routes}} C_4 \\quad (\\text{Ingests 7 Cluster Masks})",
+            "formula_desc": "Base initiators transmit exemplar profiles and binary masks inward to Super-Initiator C4.",
             "nodes": step16_nodes,
             "edges": step16_edges,
             "packet_events": packet_traces,
