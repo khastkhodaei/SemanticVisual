@@ -185,6 +185,26 @@ function initCytoscape() {
         }
       },
       {
+        selector: "node.exemplar-node",
+        style: {
+          "label": function(ele) {
+            const raw = ele.data("node_id_num") || ele.data("id");
+            const clean = String(raw).replace("node_", "").replace("C", "");
+            return "⭐ C" + clean;
+          },
+          "border-color": "#f59e0b",
+          "border-width": 4.5,
+          "width": 42,
+          "height": 42,
+          "color": "#ffffff",
+          "font-size": "11.5px",
+          "shadow-blur": 22,
+          "shadow-color": "#f59e0b",
+          "shadow-opacity": 0.9,
+          "z-index": 100
+        }
+      },
+      {
         selector: "node.winner-node-4",
         style: {
           "background-color": "#166534",
@@ -748,9 +768,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 13)
+// 4. Main Step Loading Function (Steps 1 to 14)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 13) return;
+  if (stepNumber < 1 || stepNumber > 14) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -836,6 +856,13 @@ async function loadStep(stepNumber) {
       } catch (renderErr) {
         console.error("Step 13 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 13 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 14) {
+      try {
+        renderStep14(data);
+      } catch (renderErr) {
+        console.error("Step 14 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 14 Render Error: ${renderErr.message}`);
       }
     }
 
@@ -972,12 +999,20 @@ function updateUIHeaders(data) {
     if (stepDesc) stepDesc.textContent = "Initiators evaluate pairwise Cosine Similarities across member Top-P signatures and run Affinity Propagation to partition peers into semantic clusters.";
   } else if (step === 13) {
     activeBadges.forEach(badge => {
-      badge.textContent = "ACTIVE PHASE: STEP 13: TOP-LEVEL ZONE CREATION (FIGURE 3(e))";
+      badge.textContent = "ACTIVE PHASE: STEP 13: CLUSTER EXEMPLAR DESIGNATION";
       badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-400";
     });
-    if (stepTag) stepTag.textContent = "STEP 13 / TOP-LEVEL ZONE CREATION (FIGURE 3(e))";
-    if (stepTitle) stepTitle.textContent = "Step 13: Hierarchical Top-Level Zone Creation (Figure 3(e))";
-    if (stepDesc) stepDesc.textContent = "Base initiators form a higher-level overlay graph. Initiator C8 wins election and broadcasts TOP_PROBE to form the global Super-Zone.";
+    if (stepTag) stepTag.textContent = "STEP 13 / CLUSTER EXEMPLAR DESIGNATION";
+    if (stepTitle) stepTitle.textContent = "Step 13: Intra-Zone Cluster Exemplar Designation & Profile Assignment";
+    if (stepDesc) stepDesc.textContent = "Zone initiators assign official cluster exemplars and dispatch representative profile signatures via ORDER_SET_EXEMPLAR.";
+  } else if (step === 14) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 14: TOP-LEVEL INITIATOR ELECTION & SUPER-ZONE (C4 👑👑)";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 14 / TOP-LEVEL INITIATOR ELECTION & SUPER-ZONE (C4 👑👑)";
+    if (stepTitle) stepTitle.textContent = "Step 14: Top-Level Initiator Election & Super-Zone Creation (Figure 3(e))";
+    if (stepDesc) stepDesc.textContent = "Base initiators form a higher-level overlay graph. Initiator C4 wins election and broadcasts symmetrical TOP_PROBE to form the global Super-Zone Z_TOP.";
   }
 }
 
@@ -2617,7 +2652,7 @@ function renderStep12(data) {
   logToTerminal("INFO", "Orthogonal distribution in Zone 8 highlights necessity for inter-zone Semantic Overlay links in Step 13.");
 }
 
-// 8j. Storyboard Step 13: Hierarchical Top-Level Zone Creation (Figure 3(e))
+// 8j. Storyboard Step 13: Intra-Zone Cluster Exemplar Designation & Profile Assignment
 function renderStep13(data) {
   stopCurrentPacketAnimation();
 
@@ -2627,21 +2662,280 @@ function renderStep13(data) {
     document.getElementById("activeStepBadge")
   ].filter(Boolean);
   activeBadges.forEach(badge => {
-    badge.textContent = "ACTIVE PHASE: STEP 13: TOP-LEVEL INITIATOR ELECTION & SUPER-ZONE (C4 👑👑)";
+    badge.textContent = "ACTIVE PHASE: STEP 13: CLUSTER EXEMPLAR DESIGNATION";
     badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-400";
   });
 
   renderSidebarFormula(
-    "Step 13: Top-Level Initiator Election & Super-Zone",
-    "\\mathcal{G}_{\\text{init}} = \\{I_2 \\leftrightarrow I_4 \\leftrightarrow I_8\\}, \\quad I_{\\text{top}} = C_4, \\quad \\text{TOP\\_PROBE}(C_4, \\text{TTL}=1) \\to \\mathcal{Z}_{\\text{Top}}",
-    "Initiators exchange VRF scores across overlay links. Central bridge C4 is elected Top-Level Initiator and symmetrically floods TOP_PROBE to C2 and C8.",
-    "Step 13: Super-Zone",
+    "Step 13: Intra-Zone Cluster Exemplar Designation & Profile Assignment",
+    "\\mathcal{C}_k \\xrightarrow{\\text{AP}} e_k \\in \\mathcal{V}_k, \\quad \\text{ORDER\\_SET\\_EXEMPLAR}(e_k, \\mathbf{s}_{\\mathcal{C}_k})",
+    "Zone initiators assign official cluster exemplars and dispatch representative profile signatures.",
+    "Step 13: Exemplars",
     false,
     "gold"
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "Step 13: Top-Level Initiator Election & Super-Zone Creation (Root: C4 👑👑)";
+  if (canvasLabel) canvasLabel.textContent = "Step 13: Intra-Zone Cluster Exemplar Designation & Profile Assignment";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const zoneLegend = document.getElementById("zoneLegendItem");
+  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>7 Cluster Exemplars Designated (<span class="text-emerald-700 font-bold">C1, C3</span>, <span class="text-orange-700 font-bold">C5, C7</span>, <span class="text-purple-700 font-bold">C8, C9, C10</span>) → <span class="text-amber-700 font-bold font-mono">ORDER_SET_EXEMPLAR Active</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Render nodes with Tonal Zone colors, cluster halos, and star exemplar badges
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    showBoundaryEdges: false,
+    clusterHalos: true,
+    isStep13Exemplars: true
+  });
+
+  logToTerminal("ZONE", "[STEP 13] Intra-Zone Cluster Exemplar Designation & Profile Assignment initiated.");
+  logToTerminal("INFO", "Zone 2 Initiator C2 designated Exemplar C1 (Cluster 2-A: {C1, C2}) and Exemplar C3 (Cluster 2-B: {C3}).");
+  logToTerminal("INFO", "Zone 4 Initiator C4 designated Exemplar C5 (Cluster 4-A: {C4, C5}) and Exemplar C7 (Cluster 4-B: {C6, C7}).");
+  logToTerminal("INFO", "Zone 8 Initiator C8 designated Exemplars C8 (Cluster 8-A: {C8}), C9 (Cluster 8-B: {C9}), C10 (Cluster 8-C: {C10}).");
+  logToTerminal("SUCCESS", "Zone initiators transmitted ORDER_SET_EXEMPLAR control packets containing representative cluster profile signatures.");
+
+  const packets = data.order_set_exemplar_events || data.packet_events || [];
+  animateStep13Exemplars(packets, data.nodes);
+}
+
+// Animate Step 13: Transmission of ORDER_SET_EXEMPLAR from Initiators to Exemplars + Golden Star Badges
+function animateStep13Exemplars(packets, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const duration = 4000; // ms per cycle
+  const startTime = performance.now();
+
+  function runFrame(now) {
+    const elapsed = now - startTime;
+    const progress = (elapsed % duration) / duration;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Get rendered coordinates for all 10 nodes
+    const nodeCoords = {};
+    for (let i = 1; i <= 10; i++) {
+      const el = getNodeElement(i);
+      if (el) nodeCoords[i] = el.renderedPosition();
+    }
+
+    if (!nodeCoords[2] || !nodeCoords[4] || !nodeCoords[8]) {
+      activeAnimationId = requestAnimationFrame(runFrame);
+      return;
+    }
+
+    // Exemplar definitions
+    const exemplarDefs = [
+      { id: 1, cluster: "2-A", init: 2, path: [2, 1] },
+      { id: 3, cluster: "2-B", init: 2, path: [2, 3] },
+      { id: 5, cluster: "4-A", init: 4, path: [4, 5] },
+      { id: 7, cluster: "4-B", init: 4, path: [4, 6, 7] },
+      { id: 8, cluster: "8-A", init: 8, path: [8, 8] },
+      { id: 9, cluster: "8-B", init: 8, path: [8, 9] },
+      { id: 10, cluster: "8-C", init: 8, path: [8, 10] }
+    ];
+
+    // Status Banner at top center of canvas
+    ctx.save();
+    const midX = (nodeCoords[2].x + nodeCoords[8].x) / 2;
+    const midY = nodeCoords[4].y - 50;
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const statusTxt = progress < 0.65
+      ? "DISPATCHING ORDER_SET_EXEMPLAR CONTROL PACKETS"
+      : "⭐ 7 CLUSTER EXEMPLARS DESIGNATED & PROFILES ASSIGNED";
+    const sW = ctx.measureText(statusTxt).width;
+    ctx.fillStyle = progress < 0.65 ? "rgba(30, 41, 59, 0.92)" : "rgba(120, 53, 15, 0.95)";
+    ctx.strokeStyle = progress < 0.65 ? "#f59e0b" : "#fbbf24";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.roundRect(midX - sW / 2 - 10, midY - 11, sW + 20, 22, 5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = progress < 0.65 ? "#fef08a" : "#fef3c7";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(statusTxt, midX, midY);
+    ctx.restore();
+
+    // Packet Transit Phase (progress < 0.65)
+    if (progress < 0.65) {
+      const transitProg = progress / 0.65;
+      const easeT = easeInOutQuad(transitProg);
+
+      exemplarDefs.forEach(ex => {
+        if (ex.id === ex.init) {
+          // Local designation (Node 8): Pulsing circle around C8
+          const p = nodeCoords[8];
+          if (p) {
+            ctx.save();
+            const pulseR = 24 + easeT * 18;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, pulseR, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(245, 158, 11, 0.85)";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.restore();
+          }
+        } else {
+          // Multi-hop or single hop path
+          const path = ex.path;
+          let curX, curY;
+          if (path.length === 2) {
+            const pFrom = nodeCoords[path[0]];
+            const pTo = nodeCoords[path[1]];
+            if (pFrom && pTo) {
+              curX = pFrom.x + (pTo.x - pFrom.x) * easeT;
+              curY = pFrom.y + (pTo.y - pFrom.y) * easeT;
+            }
+          } else if (path.length === 3) {
+            const pFrom = nodeCoords[path[0]];
+            const pMid = nodeCoords[path[1]];
+            const pTo = nodeCoords[path[2]];
+            if (pFrom && pMid && pTo) {
+              if (easeT < 0.5) {
+                const subE = easeT / 0.5;
+                curX = pFrom.x + (pMid.x - pFrom.x) * subE;
+                curY = pFrom.y + (pMid.y - pFrom.y) * subE;
+              } else {
+                const subE = (easeT - 0.5) / 0.5;
+                curX = pMid.x + (pTo.x - pMid.x) * subE;
+                curY = pMid.y + (pTo.y - pMid.y) * subE;
+              }
+            }
+          }
+
+          if (curX !== undefined && curY !== undefined) {
+            drawOrderPacket(ctx, curX, curY, "#f59e0b", `ORDER_SET_EXEMPLAR (C${ex.id})`);
+          }
+        }
+      });
+    }
+
+    // Exemplar Established Phase: Draw star badge ⭐ and golden aura on all 7 exemplar nodes
+    exemplarDefs.forEach(ex => {
+      const p = nodeCoords[ex.id];
+      if (!p) return;
+
+      // Halo ring
+      ctx.save();
+      const pulseProg = (now % 1800) / 1800;
+      const r = 24 + pulseProg * 10;
+      const a = (1.0 - pulseProg) * 0.8;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(245, 158, 11, ${a})`;
+      ctx.lineWidth = 2.2;
+      ctx.shadowColor = "#f59e0b";
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+      ctx.restore();
+
+      // ⭐ Floating Exemplar Badge
+      ctx.save();
+      const badgeY = p.y - 32;
+      const bTxt = `⭐ EXEMPLAR (${ex.cluster})`;
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      const bW = ctx.measureText(bTxt).width;
+      ctx.fillStyle = "rgba(254, 243, 199, 0.95)";
+      ctx.strokeStyle = "#d97706";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(p.x - bW / 2 - 6, badgeY - 9, bW + 12, 18, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#78350f";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(bTxt, p.x, badgeY);
+      ctx.restore();
+    });
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+// Helper: Draw ORDER_SET_EXEMPLAR packet
+function drawOrderPacket(ctx, x, y, color, label) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, 6, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.shadowBlur = 12;
+  ctx.shadowColor = color;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  if (label) {
+    ctx.font = "bold 8px ui-monospace, SFMono-Regular, monospace";
+    const lW = ctx.measureText(label).width;
+    const boxW = lW + 10;
+    const boxH = 15;
+    const boxX = x - boxW / 2;
+    const boxY = y + 9;
+
+    ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(boxX, boxY, boxW, boxH, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#fef08a";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, boxX + boxW / 2, boxY + boxH / 2);
+  }
+  ctx.restore();
+}
+
+// 8k. Storyboard Step 14: Top-Level Initiator Election & Super-Zone Creation (Figure 3(e))
+function renderStep14(data) {
+  stopCurrentPacketAnimation();
+
+  // Explicitly sync header active step badge
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 14: TOP-LEVEL INITIATOR ELECTION & SUPER-ZONE (C4 👑👑)";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-400";
+  });
+
+  renderSidebarFormula(
+    "Step 14: Top-Level Initiator Election & Super-Zone",
+    "\\mathcal{G}_{\\text{init}} = \\{I_2 \\leftrightarrow I_4 \\leftrightarrow I_8\\}, \\quad I_{\\text{top}} = C_4, \\quad \\text{TOP\\_PROBE}(C_4, \\text{TTL}=1) \\to \\mathcal{Z}_{\\text{Top}}",
+    "Initiators exchange VRF scores across overlay links. Central bridge C4 is elected Top-Level Initiator and symmetrically floods TOP_PROBE to C2 and C8.",
+    "Step 14: Super-Zone",
+    false,
+    "gold"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Step 14: Top-Level Initiator Election & Super-Zone Creation (Root: C4 👑👑)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
   if (leaderLegend) leaderLegend.classList.remove("hidden");
@@ -2662,23 +2956,23 @@ function renderStep13(data) {
     useTonalZoneColors: true,
     showBoundaryEdges: false,
     clusterHalos: true,
-    isStep13: true
+    isStep14: true
   });
 
-  logToTerminal("ZONE", "[STEP 13] Hierarchical Top-Level Zone Creation initialized (Figure 3(e)).");
+  logToTerminal("ZONE", "[STEP 14] Hierarchical Top-Level Zone Creation initialized (Figure 3(e)).");
   logToTerminal("INFO", "Base zone initiators form higher-level overlay graph: V_init={C2, C4, C8}, E_init={(C2, C4), (C4, C8)}.");
   logToTerminal("VRF", "Phase 1 (1-Hop VRF Exchange): C2 <-> C4 (scores 0.0837 <-> 0.0412 via C1) and C4 <-> C8 (scores 0.0412 <-> 0.0275 via C6).");
   logToTerminal("SUCCESS", "Phase 2 (Election): Node C4 elected as central Top-Level Super-Initiator 👑👑 (Bridge hub connecting West & East).");
   logToTerminal("ZONE", "Phase 3 (Symmetrical Probing): Initiator C4 broadcasts TOP_PROBE(TTL=1) symmetrically to C2 (via C1) and C8 (via C6).");
   logToTerminal("SUCCESS", "Phase 4 (Super-Zone Formed): Top-Level Super-Zone Z_TOP established (Root: C4, Members: [C2, C4, C8]).");
-  logToTerminal("TOPOLOGY", "Hierarchical control plane active for global cluster catalog exchange in Step 14.");
+  logToTerminal("TOPOLOGY", "Hierarchical control plane active for global cluster catalog exchange in Step 15.");
 
   const packets = data.packet_events || data.packet_exchanges || [];
-  animateStep13TopProbe(packets, data.nodes);
+  animateStep14TopProbe(packets, data.nodes);
 }
 
-// Animate Step 13: Phase A (1-Hop VRF Score Exchange), Election Flash, and Phase B (Symmetrical TOP_PROBE)
-function animateStep13TopProbe(packets, allNodes) {
+// Animate Step 14: Phase A (1-Hop VRF Score Exchange), Election Flash, and Phase B (Symmetrical TOP_PROBE)
+function animateStep14TopProbe(packets, allNodes) {
   stopCurrentPacketAnimation();
   syncPacketCanvasSize();
 
@@ -3469,17 +3763,22 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
     const isInit = Boolean(options.showInitiators && (n.is_initiator || [2, 4, 8].includes(n.id)));
     const domName = n.dominant_class_name || n.class_title || "CIFAR-10";
     const domIcon = n.dominant_class_icon || n.class_icon || "";
-    const isTopInit = Boolean(options.isStep13 && (n.id === 4 || n.is_top_initiator));
-    const label = isTopInit ? `👑👑 C${n.id}` : (isInit ? `👑 C${n.id}` : `C${n.id}`);
+    const isTopInit = Boolean((options.isStep14 || options.isStep13TopZone) && (n.id === 4 || n.is_top_initiator));
+    const isExemplar = Boolean(options.isStep13Exemplars && (n.is_exemplar !== undefined ? n.is_exemplar : [1, 3, 5, 7, 8, 9, 10].includes(n.id)));
+    let label = isTopInit ? `👑👑 C${n.id}` : (isExemplar ? `⭐ C${n.id}` : (isInit ? `👑 C${n.id}` : `C${n.id}`));
 
     let bgColor = "#2563eb";
     let borderColor = "#1d4ed8";
 
     let nodeClasses = "";
+    if (isExemplar) {
+      nodeClasses += "exemplar-node ";
+    }
+
     if (options.useTonalZoneColors && (n.assigned_zone || n.zone_id)) {
       const zid = n.assigned_zone || n.zone_id;
       if (isInit) {
-        if (options.isStep13 && (n.id === 4 || n.is_top_initiator)) {
+        if (isTopInit) {
           nodeClasses += `top-initiator-node zone-initiator-${zid} `;
           bgColor = "#ea580c";
           borderColor = "#eab308";
@@ -3487,26 +3786,26 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
           nodeClasses += `initiator-node zone-initiator-${zid} `;
           if (zid === 2) {
             bgColor = "#059669";
-            borderColor = "#f59e0b";
+            borderColor = isExemplar ? "#f59e0b" : "#f59e0b";
           } else if (zid === 4) {
             bgColor = "#ea580c";
-            borderColor = "#f59e0b";
+            borderColor = isExemplar ? "#f59e0b" : "#f59e0b";
           } else if (zid === 8) {
             bgColor = "#7c3aed";
-            borderColor = "#f59e0b";
+            borderColor = isExemplar ? "#f59e0b" : "#f59e0b";
           }
         }
       } else {
         nodeClasses += `zone-pastel-${zid} `;
         if (zid === 2) {
           bgColor = "#34d399";
-          borderColor = "#10b981";
+          borderColor = isExemplar ? "#f59e0b" : "#10b981";
         } else if (zid === 4) {
           bgColor = "#fb923c";
-          borderColor = "#f97316";
+          borderColor = isExemplar ? "#f59e0b" : "#f97316";
         } else if (zid === 8) {
           bgColor = "#a78bfa";
-          borderColor = "#8b5cf6";
+          borderColor = isExemplar ? "#f59e0b" : "#8b5cf6";
         }
       }
     } else if (options.useZoneColors && (n.assigned_zone || n.zone_id)) {
@@ -3642,6 +3941,10 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
         super_zone_role: n.super_zone_role,
         governing_initiators: n.governing_initiators,
         top_level_zone: n.top_level_zone,
+        is_exemplar: n.is_exemplar,
+        exemplar_for: n.exemplar_for,
+        exemplar_node_id: n.exemplar_node_id,
+        profile_signature: n.profile_signature,
       },
       position: {
         x: n.x,
@@ -3822,11 +4125,16 @@ function showNodeModal(nodeData) {
 
   // Header: Node C{id} | Role: INITIATOR / CLIENT | Zone: {assigned_zone} in Step 5 & 6
   if (cardNodeId) {
-    if (currentStep === 13) {
+    if (currentStep === 14) {
       const isTopInit = Boolean(idNum === 4 || nodeData.is_top_initiator);
       const isInit = Boolean([2, 4, 8].includes(idNum) || nodeData.is_initiator);
       const roleStr = isTopInit ? "👑👑 TOP INITIATOR" : (isInit ? "👑 BASE INITIATOR" : "CLIENT");
       cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Role: <span class="${isTopInit ? 'text-amber-800 font-bold' : (isInit ? 'text-amber-700 font-bold' : 'text-slate-800')}">${roleStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Super-Zone: <span class="font-bold text-amber-900">Z_TOP</span></span>`;
+    } else if (currentStep === 13) {
+      const isEx = Boolean(nodeData.is_exemplar !== undefined ? nodeData.is_exemplar : [1, 3, 5, 7, 8, 9, 10].includes(idNum));
+      const roleStr = isEx ? "⭐ CLUSTER EXEMPLAR" : "CLUSTER MEMBER";
+      const cId = nodeData.cluster_id || (idNum in {1:1, 2:1} ? "2-A" : idNum === 3 ? "2-B" : idNum in {4:1, 5:1} ? "4-A" : idNum in {6:1, 7:1} ? "4-B" : idNum === 8 ? "8-A" : idNum === 9 ? "8-B" : "8-C");
+      cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Role: <span class="${isEx ? 'text-amber-600 font-bold' : 'text-slate-800 font-semibold'}">${roleStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Cluster: <span class="font-bold text-violet-900">${cId}</span></span>`;
     } else if (currentStep === 5 || currentStep === 6) {
       const isInit = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
       const roleStr = isInit ? "INITIATOR" : "CLIENT";
@@ -5481,10 +5789,10 @@ function showNodeModal(nodeData) {
     if (clSection) clSection.classList.add("hidden");
   }
 
-  // Step 13: Hierarchical Top-Level Zone Creation (Figure 3(e))
-  const topZoneSection = document.getElementById("cardTopZoneSection");
-  const topZoneBadge = document.getElementById("cardTopZoneBadge");
-  const topZoneContent = document.getElementById("cardTopZoneContent");
+  // Step 13: Intra-Zone Cluster Exemplar Designation & Profile Assignment
+  const exemplarSection = document.getElementById("cardExemplarSection");
+  const exemplarBadge = document.getElementById("cardExemplarBadge");
+  const exemplarContent = document.getElementById("cardExemplarContent");
 
   if (currentStep === 13) {
     if (probeSection) probeSection.classList.add("hidden");
@@ -5495,6 +5803,160 @@ function showNodeModal(nodeData) {
     if (orderSection) orderSection.classList.add("hidden");
     if (sigSection) sigSection.classList.add("hidden");
     if (clSection) clSection.classList.add("hidden");
+    if (topZoneSection) topZoneSection.classList.add("hidden");
+    if (exemplarSection) exemplarSection.classList.remove("hidden");
+
+    const assignedZ = nodeData.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
+    const isEx = Boolean(nodeData.is_exemplar !== undefined ? nodeData.is_exemplar : [1, 3, 5, 7, 8, 9, 10].includes(idNum));
+
+    const defaultClusterMap = {
+      1: { cluster_id: "2-A", is_exemplar: true, exemplar_for: [1, 2], profile_signature: [1, 2, 3], color: "#059669" },
+      2: { cluster_id: "2-A", is_exemplar: false, exemplar_node_id: 1, color: "#059669" },
+      3: { cluster_id: "2-B", is_exemplar: true, exemplar_for: [3], profile_signature: [4, 5, 6], color: "#0d9488" },
+      4: { cluster_id: "4-A", is_exemplar: false, exemplar_node_id: 5, color: "#ea580c" },
+      5: { cluster_id: "4-A", is_exemplar: true, exemplar_for: [4, 5], profile_signature: [4, 5, 6], color: "#ea580c" },
+      6: { cluster_id: "4-B", is_exemplar: false, exemplar_node_id: 7, color: "#d97706" },
+      7: { cluster_id: "4-B", is_exemplar: true, exemplar_for: [6, 7], profile_signature: [7, 8, 9, 10], color: "#d97706" },
+      8: { cluster_id: "8-A", is_exemplar: true, exemplar_for: [8], profile_signature: [4, 5, 6], color: "#7c3aed" },
+      9: { cluster_id: "8-B", is_exemplar: true, exemplar_for: [9], profile_signature: [1, 2, 3], color: "#6366f1" },
+      10: { cluster_id: "8-C", is_exemplar: true, exemplar_for: [10], profile_signature: [8, 9, 10], color: "#8b5cf6" },
+    };
+    const cInfo = defaultClusterMap[idNum] || {};
+    const clusterId = nodeData.cluster_id || cInfo.cluster_id || "2-A";
+    const clusterColor = cInfo.color || "#059669";
+
+    const classNamesMap = {
+      1: "Airplane (C1)", 2: "Automobile (C2)", 3: "Bird (C3)",
+      4: "Cat (C4)", 5: "Deer (C5)", 6: "Dog (C6)",
+      7: "Frog (C7)", 8: "Horse (C8)", 9: "Ship (C9)", 10: "Truck (C10)"
+    };
+
+    if (isEx) {
+      const repPeers = nodeData.exemplar_for || cInfo.exemplar_for || [idNum];
+      const peerStr = repPeers.map(p => `C${p}`).join(", ");
+      const rawSig = nodeData.profile_signature || cInfo.profile_signature || [1, 2, 3];
+      const sigLabels = rawSig.map(cid => classNamesMap[cid] || `Class ${cid}`).join(", ");
+
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = `⭐ DESIGNATED CLUSTER EXEMPLAR (Cluster ${clusterId})`;
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+      }
+      if (exemplarBadge) {
+        exemplarBadge.textContent = `⭐ EXEMPLAR (Cluster ${clusterId})`;
+        exemplarBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
+      }
+      if (exemplarContent) {
+        exemplarContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-amber-300 shadow-xs space-y-3">
+            <!-- 1. Highlight Banner -->
+            <div class="p-2.5 rounded-lg border border-amber-400 bg-amber-50/90 text-center space-y-1">
+              <div class="text-[11.5px] font-extrabold text-amber-950 flex items-center justify-center gap-1.5">
+                <span>⭐</span>
+                <span>DESIGNATED CLUSTER EXEMPLAR</span>
+                <span>⭐</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-amber-800 font-semibold">
+                Cluster ${clusterId} | Zone ${assignedZ} Initiator: C${assignedZ}
+              </div>
+            </div>
+
+            <!-- 2. Profile & Peers Details -->
+            <div class="p-2.5 bg-slate-50 rounded border border-amber-200 space-y-2 text-[10px] font-mono">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600 font-semibold">Assigned Cluster ID:</span>
+                <span class="font-bold text-white px-2 py-0.5 rounded shadow-xs" style="background-color: ${clusterColor};">
+                  Cluster ${clusterId}
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600 font-semibold">Represented Peers:</span>
+                <span class="font-bold text-amber-950 bg-amber-100/80 px-2 py-0.5 rounded border border-amber-300">
+                  [${peerStr}]
+                </span>
+              </div>
+              <div class="pt-1.5 border-t border-slate-200">
+                <span class="text-slate-600 font-semibold">Cluster Profile Signature:</span>
+                <div class="mt-1 p-1.5 bg-white rounded border border-amber-200 text-amber-900 font-bold text-[9.5px] flex items-center gap-1">
+                  <span>✨</span>
+                  <span>{${rawSig.join(", ")}} → ${sigLabels}</span>
+                </div>
+              </div>
+              <div class="pt-1 border-t border-slate-200 text-[9px] text-slate-500">
+                <span class="font-semibold text-slate-700">Control Packet:</span> ORDER_SET_EXEMPLAR received from Zone ${assignedZ} Initiator (C${assignedZ}).
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      // Non-Exemplar Member Node (Nodes 2, 4, 6)
+      const exNodeId = nodeData.exemplar_node_id || cInfo.exemplar_node_id || 1;
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = `CLUSTER MEMBER (Exemplar: C${exNodeId})`;
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-700 border-slate-300";
+      }
+      if (exemplarBadge) {
+        exemplarBadge.textContent = `Member (Cluster ${clusterId})`;
+        exemplarBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-700 border border-slate-300";
+      }
+      if (exemplarContent) {
+        exemplarContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-slate-300 bg-slate-50 text-center space-y-1">
+              <div class="text-[11.5px] font-bold text-slate-800">
+                CLUSTER MEMBER (NON-EXEMPLAR)
+              </div>
+              <div class="text-[9.5px] font-mono text-slate-600">
+                Cluster ${clusterId} | Zone ${assignedZ}
+              </div>
+            </div>
+
+            <div class="p-2.5 bg-slate-50 rounded border border-slate-200 space-y-2 text-[10px] font-mono">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Cluster Exemplar:</span>
+                <span class="font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-300">
+                  ⭐ Node C${exNodeId}
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Assigned Cluster:</span>
+                <span class="font-bold text-white px-2 py-0.5 rounded" style="background-color: ${clusterColor};">
+                  Cluster ${clusterId}
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Zone Initiator:</span>
+                <span class="font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
+                  👑 Node C${assignedZ}
+                </span>
+              </div>
+              <div class="pt-1.5 border-t border-slate-200 text-[9.5px] text-slate-600 font-sans leading-relaxed">
+                Node C${idNum} delegates exemplar coordination to designated leader Node C${exNodeId} and participates in intra-cluster aggregation.
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+  } else {
+    if (exemplarSection) exemplarSection.classList.add("hidden");
+  }
+
+  // Step 14: Hierarchical Top-Level Zone Creation (Figure 3(e))
+  const topZoneSection = document.getElementById("cardTopZoneSection");
+  const topZoneBadge = document.getElementById("cardTopZoneBadge");
+  const topZoneContent = document.getElementById("cardTopZoneContent");
+
+  if (currentStep === 14) {
+    if (probeSection) probeSection.classList.add("hidden");
+    if (bndSection) bndSection.classList.add("hidden");
+    if (pminSection) pminSection.classList.add("hidden");
+    if (bsSection) bsSection.classList.add("hidden");
+    if (consensusSection) consensusSection.classList.add("hidden");
+    if (orderSection) orderSection.classList.add("hidden");
+    if (sigSection) sigSection.classList.add("hidden");
+    if (clSection) clSection.classList.add("hidden");
+    if (exemplarSection) exemplarSection.classList.add("hidden");
     if (topZoneSection) topZoneSection.classList.remove("hidden");
 
     const isTopInit = Boolean(idNum === 4 || nodeData.is_top_initiator);
@@ -6056,7 +6518,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 13; s++) {
+  for (let s = 1; s <= 14; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -6080,6 +6542,8 @@ function updateStepper(step) {
       } else if (step === 12) {
         item.classList.add("step-violet");
       } else if (step === 13) {
+        item.classList.add("step-amber");
+      } else if (step === 14) {
         item.classList.add("step-gold");
       }
     }
@@ -6110,7 +6574,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 13) {
+    if (step < 14) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -6118,7 +6582,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 13 active (Hierarchical Top-Level Zone creation complete)";
+      btnNext.title = "Step 14 active (Hierarchical Top-Level Zone creation complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -6131,7 +6595,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 13);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 14);
 }
 
 function bindActionButtons() {
@@ -6155,16 +6619,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 13) {
+      if (currentStep < 14) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 13 is active (Hierarchical Top-Level Zone creation complete).");
+        logToTerminal("INFO", "Step 14 is active (Hierarchical Top-Level Zone creation complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 13)
-  for (let s = 1; s <= 13; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 14)
+  for (let s = 1; s <= 14; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

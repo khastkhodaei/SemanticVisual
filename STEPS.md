@@ -338,13 +338,53 @@ Then, each Initiator executes **Affinity Propagation (AP)** clustering with pref
    - **Cluster 8-A:** {Node 8} (Classes C4, C5, C6)
    - **Cluster 8-B:** {Node 9} (Classes C1, C2, C3)
    - **Cluster 8-C:** {Node 10} (Classes C8, C9, C10)
-   *(Orthogonal distribution highlights the need for inter-zone Semantic Overlay links in Step 13).*
+   *(Orthogonal distribution highlights the need for inter-zone Semantic Overlay links in subsequent steps).*
 
 ---
 
-## Step 13 — Hierarchical Top-Level Zone Creation (Figure 3(e))
+## Step 13 — Intra-Zone Cluster Exemplar Designation & Profile Assignment
 
-SemanticDFL employs a recursive, hierarchical zoning scheme. Following intra-zone clustering, the base initiators form an abstract higher-level overlay network:
+Following intra-zone semantic clustering in Step 12, each zone initiator ($C_2, C_4, C_8$) officially designates cluster exemplars and assigns cluster profile signatures.
+
+The initiator transmits official $\text{ORDER\_SET\_EXEMPLAR}$ control packets to designated exemplar nodes:
+$$\mathcal{C}_k \xrightarrow{\text{AP}} e_k \in \mathcal{V}_k, \quad \text{ORDER\_SET\_EXEMPLAR}(e_k, \mathbf{s}_{\mathcal{C}_k})$$
+Each packet conveys:
+1. Assigned Cluster ID ($\mathcal{C}_k$).
+2. Official Representative Profile Signature ($\mathbf{s}_{\mathcal{C}_k}$).
+3. Supervised member peer set ($\text{peers}(\mathcal{C}_k)$).
+
+### Cluster Exemplar Assignments & Profile Signatures
+
+| Node | Zone | Role | Cluster ID | Exemplar For | Profile Signature (Dominant Classes) |
+|---|---|---|---|---|---|
+| **Node 1 ($C_1$)** | Zone 2 | ⭐ Designated Exemplar | 2-A | $\{C_1, C_2\}$ | $\{1, 2, 3\}$ (Airplane, Automobile, Bird) |
+| **Node 2 ($C_2$)** | Zone 2 | Zone Initiator (Member) | 2-A | — (Represented by $C_1$) | Represented by Exemplar $C_1$ |
+| **Node 3 ($C_3$)** | Zone 2 | ⭐ Designated Exemplar | 2-B | $\{C_3\}$ | $\{4, 5, 6\}$ (Cat, Deer, Dog) |
+| **Node 4 ($C_4$)** | Zone 4 | Zone Initiator (Member) | 4-A | — (Represented by $C_5$) | Represented by Exemplar $C_5$ |
+| **Node 5 ($C_5$)** | Zone 4 | ⭐ Designated Exemplar | 4-A | $\{C_4, C_5\}$ | $\{4, 5, 6\}$ (Cat, Deer, Dog) |
+| **Node 6 ($C_6$)** | Zone 4 | Boundary Gateway (Member)| 4-B | — (Represented by $C_7$) | Represented by Exemplar $C_7$ |
+| **Node 7 ($C_7$)** | Zone 4 | ⭐ Designated Exemplar | 4-B | $\{C_6, C_7\}$ | $\{7, 8, 9, 10\}$ (Frog, Horse, Ship, Truck) |
+| **Node 8 ($C_8$)** | Zone 8 | ⭐ Designated Exemplar / Init | 8-A | $\{C_8\}$ | $\{4, 5, 6\}$ (Cat, Deer, Dog) |
+| **Node 9 ($C_9$)** | Zone 8 | ⭐ Designated Exemplar | 8-B | $\{C_9\}$ | $\{1, 2, 3\}$ (Airplane, Automobile, Bird) |
+| **Node 10 ($C_{10}$)**| Zone 8 | ⭐ Designated Exemplar | 8-C | $\{C_{10}\}$ | $\{8, 9, 10\}$ (Horse, Ship, Truck) |
+
+### Control Packet Transmissions (`ORDER_SET_EXEMPLAR`)
+1. **Zone 2 (Initiator $C_2$):**
+   - $C_2 \to C_1$ (path $[2, 1]$): `ORDER_SET_EXEMPLAR` (Cluster 2-A, Signature $\{1, 2, 3\}$, Peers $\{C_1, C_2\}$)
+   - $C_2 \to C_3$ (path $[2, 3]$): `ORDER_SET_EXEMPLAR` (Cluster 2-B, Signature $\{4, 5, 6\}$, Peers $\{C_3\}$)
+2. **Zone 4 (Initiator $C_4$):**
+   - $C_4 \to C_5$ (path $[4, 5]$): `ORDER_SET_EXEMPLAR` (Cluster 4-A, Signature $\{4, 5, 6\}$, Peers $\{C_4, C_5\}$)
+   - $C_4 \to C_7$ (path $[4, 6, 7]$): `ORDER_SET_EXEMPLAR` (Cluster 4-B, Signature $\{7, 8, 9, 10\}$, Peers $\{C_6, C_7\}$)
+3. **Zone 8 (Initiator $C_8$):**
+   - $C_8 \to C_8$ (local internal): `ORDER_SET_EXEMPLAR` (Cluster 8-A, Signature $\{4, 5, 6\}$, Peers $\{C_8\}$)
+   - $C_8 \to C_9$ (path $[8, 9]$): `ORDER_SET_EXEMPLAR` (Cluster 8-B, Signature $\{1, 2, 3\}$, Peers $\{C_9\}$)
+   - $C_8 \to C_{10}$ (path $[8, 10]$): `ORDER_SET_EXEMPLAR` (Cluster 8-C, Signature $\{8, 9, 10\}$, Peers $\{C_{10}\}$)
+
+---
+
+## Step 14 — Top-Level Initiator Election & Super-Zone Creation (Figure 3(e))
+
+SemanticDFL employs a recursive, hierarchical zoning scheme. Following intra-zone clustering and exemplar designation, the base initiators form an abstract higher-level overlay network:
 $$\mathcal{G}_{\text{init}} = (\mathcal{V}_{\text{init}}, \mathcal{E}_{\text{init}}), \quad \mathcal{V}_{\text{init}} = \{C_2, C_4, C_8\}$$
 $$\mathcal{E}_{\text{init}} = \{(C_2, C_4), (C_4, C_8)\}$$
 
@@ -394,7 +434,4 @@ $$\text{TOP\_PROBE}(C_4, \text{TTL}_{\text{top}} = 1)$$
 - $C_4 \xrightarrow{\text{via } C_6} C_8$ (Eastward Branch)
 
 ### Phase 4: Formation of Super-Zone $\mathcal{Z}_{\text{Top}}$ Rooted at Node 4
-All three initiators enroll into the **Top-Level Super-Zone $\mathcal{Z}_{\text{Top}}$ (Root: $C_4$, Members: $\{C_2, C_4, C_8\}$)**, establishing the hierarchical control plane for global cluster catalog exchange in Step 14.
-
-
-
+All three initiators enroll into the **Top-Level Super-Zone $\mathcal{Z}_{\text{Top}}$ (Root: $C_4$, Members: $\{C_2, C_4, C_8\}$)**, establishing the hierarchical control plane for global cluster catalog exchange in subsequent steps.

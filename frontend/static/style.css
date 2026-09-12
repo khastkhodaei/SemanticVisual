@@ -491,3 +491,18 @@ body {
   color: #78350f;
   font-weight: 700;
 }
+
+/* Step 13: Cluster Exemplar Styling */
+.exemplar-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
