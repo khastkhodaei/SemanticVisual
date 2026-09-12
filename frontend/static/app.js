@@ -829,9 +829,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 15)
+// 4. Main Step Loading Function (Steps 1 to 16)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 15) return;
+  if (stepNumber < 1 || stepNumber > 16) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -931,6 +931,13 @@ async function loadStep(stepNumber) {
       } catch (renderErr) {
         console.error("Step 15 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 15 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 16) {
+      try {
+        renderStep16(data);
+      } catch (renderErr) {
+        console.error("Step 16 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 16 Render Error: ${renderErr.message}`);
       }
     }
 
@@ -1090,6 +1097,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 15 / TOP-LEVEL CATALOG QUERY DISPATCH";
     if (stepTitle) stepTitle.textContent = "Step 15: Top-Level Catalog Query Dispatch (REQ_CLUSTER_CATALOG)";
     if (stepDesc) stepDesc.textContent = "Super-Initiator C4 broadcasts REQ_CLUSTER_CATALOG across the super-zone overlay to retrieve cluster metadata from base initiators C2 and C8.";
+  } else if (step === 16) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 16: ZONE CATALOG RESPONSE & GLOBAL AGGREGATION";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 16 / ZONE CATALOG RESPONSE & GLOBAL AGGREGATION";
+    if (stepTitle) stepTitle.textContent = "Step 16: Zone Catalog Response & Global Catalog Aggregation at C4";
+    if (stepDesc) stepDesc.textContent = "Base initiators reply with intra-zone cluster metadata over boundary relays to Super-Initiator C4, assembling the Global Cluster Registry (7 clusters total).";
   }
 }
 
@@ -3854,6 +3869,320 @@ function animateStep15CatalogQuery(packets, allNodes) {
     activeAnimationId = requestAnimationFrame(runFrame);
   }
 
+}
+
+// Helper: Draw REP_CLUSTER_CATALOG emerald/golden traveling particle
+function drawCatalogResponsePacket(ctx, x, y, label, color = "#10b981") {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, 7.5, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = color;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+  const lW = ctx.measureText(label).width;
+  ctx.fillStyle = "rgba(6, 78, 59, 0.95)";
+  ctx.strokeStyle = "#34d399";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.roundRect(x + 9, y - 13, lW + 10, 16, 4);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#d1fae5";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x + 14, y - 5);
+  ctx.restore();
+}
+
+// 5.16 STEP 16: Zone Catalog Response & Global Catalog Aggregation at C4
+function renderStep16(data) {
+  stopCurrentPacketAnimation();
+
+  // Explicitly sync header active step badge
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 16: ZONE CATALOG RESPONSE & GLOBAL AGGREGATION";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-400";
+  });
+
+  renderSidebarFormula(
+    "Step 16: Zone Catalog Response & Global Aggregation",
+    "\\sum_{k \\in \\{2, 4, 8\\}} \\text{CATALOG}(Z_k) \\longrightarrow \\text{GlobalRegistry}(C_4) \\quad (7\\text{ Clusters})",
+    "Base initiators transmit cluster exemplars and signatures to C4, assembling the network-wide semantic catalog.",
+    "Step 16: Global Catalog",
+    false,
+    "emerald"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Step 16: Zone Catalog Response & Global Catalog Aggregation at C4 (7 Clusters Assembled)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const zoneLegend = document.getElementById("zoneLegendItem");
+  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Super-Initiator <span class="text-amber-600 font-bold">👑👑 C4</span> assembled <span class="text-emerald-700 font-bold font-mono">7 Global Clusters</span> from Zones 2, 4, 8</span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Render Cytoscape network maintaining super-zone, exemplars, and zones
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    showBoundaryEdges: false,
+    clusterHalos: true,
+    isStep16: true,
+    isStep15: true,
+    isStep13Exemplars: true
+  });
+
+  logToTerminal("ZONE", "[STEP 16] Zone Catalog Response & Global Catalog Aggregation initialized (REP_CLUSTER_CATALOG).");
+  logToTerminal("INFO", "Base initiators compile local intra-zone cluster profiles and respond to Super-Initiator C4.");
+  logToTerminal("SUCCESS", "Inbound Response 1: C2 ➔ C1 (gateway) ➔ C4 [path: 2-1-4] with REP_CLUSTER_CATALOG (Clusters: 2-A, 2-B).");
+  logToTerminal("SUCCESS", "Inbound Response 2: C8 ➔ C6 (gateway) ➔ C4 [path: 8-6-4] with REP_CLUSTER_CATALOG (Clusters: 8-A, 8-B, 8-C).");
+  logToTerminal("INFO", "Local Consolidation: Super-Initiator C4 integrates local Zone 4 clusters (4-A, 4-B).");
+  logToTerminal("SUCCESS", "Global Registry Assembled: 7 unique semantic clusters registered under C4's global supervision.");
+  logToTerminal("SUCCESS", "Super-Initiator C4 emits golden supervisory beacon across Super-Zone Z_TOP.");
+
+  const packets = data.packet_events || data.packet_traces || [];
+  animateStep16CatalogResponse(packets, data.nodes);
+}
+
+// Animate Step 16: Inward response packets C2 -> C1 -> C4 and C8 -> C6 -> C4 + Golden Beacon at C4
+function animateStep16CatalogResponse(packets, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const duration = 5000; // ms per complete catalog response cycle
+  const startTime = performance.now();
+
+  function runFrame(now) {
+    const elapsed = now - startTime;
+    const progress = (elapsed % duration) / duration;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const n8 = getNodeElement(8);
+    const n6 = getNodeElement(6);
+    const n4 = getNodeElement(4);
+    const n1 = getNodeElement(1);
+    const n2 = getNodeElement(2);
+
+    if (!n4 || !n2 || !n8) {
+      activeAnimationId = requestAnimationFrame(runFrame);
+      return;
+    }
+
+    const p4 = n4.renderedPosition();
+    const p1 = n1 ? n1.renderedPosition() : null;
+    const p2 = n2.renderedPosition();
+    const p6 = n6 ? n6.renderedPosition() : null;
+    const p8 = n8.renderedPosition();
+
+    // 1. Static Super-Zone Envelope encompassing C2, C4, C8
+    ctx.save();
+    ctx.beginPath();
+    const topPad = 46;
+    const sidePad = 48;
+    const botPad = 44;
+
+    ctx.moveTo(p4.x, p4.y - topPad - 8);
+    ctx.bezierCurveTo(p4.x + 140, p4.y - topPad + 4, p8.x + sidePad, p8.y - topPad + 10, p8.x + sidePad, p8.y);
+    ctx.bezierCurveTo(p8.x + sidePad, p8.y + botPad, p8.x - 30, p8.y + botPad, (p8.x + p2.x) / 2, p8.y + botPad - 8);
+    ctx.bezierCurveTo(p2.x + 30, p2.y + botPad, p2.x - sidePad, p2.y + botPad, p2.x - sidePad, p2.y);
+    ctx.bezierCurveTo(p2.x - sidePad, p2.y - topPad + 10, p4.x - sidePad - 10, p4.y - topPad + 4, p4.x, p4.y - topPad - 8);
+    ctx.closePath();
+
+    const envGrad = ctx.createLinearGradient(p2.x, p4.y, p8.x, p8.y);
+    envGrad.addColorStop(0, "rgba(16, 185, 129, 0.05)");
+    envGrad.addColorStop(0.5, "rgba(234, 179, 8, 0.08)");
+    envGrad.addColorStop(1, "rgba(16, 185, 129, 0.05)");
+    ctx.fillStyle = envGrad;
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(16, 185, 129, 0.45)";
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([8, 6]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 2. Connecting Inward Backbone C2 <-> C1 <-> C4 <-> C6 <-> C8
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(p2.x, p2.y);
+    if (p1) ctx.lineTo(p1.x, p1.y);
+    ctx.lineTo(p4.x, p4.y);
+    if (p6) ctx.lineTo(p6.x, p6.y);
+    ctx.lineTo(p8.x, p8.y);
+    ctx.strokeStyle = "rgba(16, 185, 129, 0.70)";
+    ctx.lineWidth = 2.4;
+    ctx.shadowColor = "#10b981";
+    ctx.shadowBlur = 12;
+    ctx.setLineDash([6, 5]);
+    ctx.lineDashOffset = now / 30; // inward dash animation toward C4
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 3. Status Announcement Banner
+    ctx.save();
+    const aX = (p2.x + p8.x) / 2;
+    const aY = p4.y + 44;
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const aText = "REP_CLUSTER_CATALOG: C2 & C8 TRANSMIT CATALOGS ➔ C4 (7 CLUSTERS TOTAL)";
+    const aW = ctx.measureText(aText).width;
+    ctx.fillStyle = "rgba(6, 78, 59, 0.95)";
+    ctx.strokeStyle = "#34d399";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.roundRect(aX - aW / 2 - 8, aY - 10, aW + 16, 20, 4);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#d1fae5";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(aText, aX, aY);
+    ctx.restore();
+
+    // 4. Directional Inward Multi-Hop Packets:
+    // West Branch: C2 -> C1 -> C4
+    let westX, westY;
+    const tgt1 = p1 || p4;
+    if (progress < 0.5) {
+      const seg = progress / 0.5;
+      const e = easeInOutQuad(seg);
+      westX = p2.x + (tgt1.x - p2.x) * e;
+      westY = p2.y + (tgt1.y - p2.y) * e;
+    } else {
+      const seg = (progress - 0.5) / 0.5;
+      const e = easeInOutQuad(seg);
+      westX = tgt1.x + (p4.x - tgt1.x) * e;
+      westY = tgt1.y + (p4.y - tgt1.y) * e;
+    }
+
+    // East Branch: C8 -> C6 -> C4
+    let eastX, eastY;
+    const tgt6 = p6 || p4;
+    if (progress < 0.5) {
+      const seg = progress / 0.5;
+      const e = easeInOutQuad(seg);
+      eastX = p8.x + (tgt6.x - p8.x) * e;
+      eastY = p8.y + (tgt6.y - p8.y) * e;
+    } else {
+      const seg = (progress - 0.5) / 0.5;
+      const e = easeInOutQuad(seg);
+      eastX = tgt6.x + (p4.x - tgt6.x) * e;
+      eastY = tgt6.y + (p4.y - tgt6.y) * e;
+    }
+
+    // Gateway Relay Glow on C1 and C6 when traversed (around progress 0.42 to 0.58)
+    if (progress >= 0.42 && progress <= 0.58) {
+      const gProg = (progress - 0.42) / 0.16;
+      const gA = Math.sin(gProg * Math.PI) * 0.95;
+      [p1, p6].filter(Boolean).forEach(p => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 25 + gProg * 8, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(16, 185, 129, ${gA})`;
+        ctx.lineWidth = 3.0;
+        ctx.shadowColor = "#10b981";
+        ctx.shadowBlur = 18;
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
+    // Render traveling packets with floating labels
+    drawCatalogResponsePacket(ctx, westX, westY, "REP_CATALOG (Z2)", "#10b981");
+    drawCatalogResponsePacket(ctx, eastX, eastY, "REP_CATALOG (Z8)", "#10b981");
+
+    // 5. Energetic Golden Supervisory Beacon on C4 (Flashing brightly upon packet arrival, and pulsing continuously)
+    ctx.save();
+    // Continuous supervisory pulse
+    const auraProg = (now % 1400) / 1400;
+    const auraR = 26 + auraProg * 22;
+    const auraA = (1.0 - auraProg) * 0.9;
+    ctx.beginPath();
+    ctx.arc(p4.x, p4.y, auraR, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(234, 179, 8, ${auraA})`;
+    ctx.lineWidth = 3.2;
+    ctx.shadowColor = "#eab308";
+    ctx.shadowBlur = 18;
+    ctx.stroke();
+
+    // Arrival explosion / energetic beacon flash (progress >= 0.82)
+    if (progress >= 0.82) {
+      const arrProg = (progress - 0.82) / 0.18;
+      const arrA = (1.0 - arrProg);
+
+      // Expanding golden shockwaves
+      [0, 12, 24].forEach(offset => {
+        ctx.beginPath();
+        ctx.arc(p4.x, p4.y, 26 + arrProg * 40 + offset, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(245, 158, 11, ${arrA * 0.9})`;
+        ctx.lineWidth = 3.5;
+        ctx.shadowColor = "#f59e0b";
+        ctx.shadowBlur = 24;
+        ctx.stroke();
+      });
+
+      // Bright white/golden radial core
+      const coreGrad = ctx.createRadialGradient(p4.x, p4.y, 4, p4.x, p4.y, 36);
+      coreGrad.addColorStop(0, `rgba(255, 255, 255, ${arrA * 0.8})`);
+      coreGrad.addColorStop(0.5, `rgba(251, 191, 36, ${arrA * 0.4})`);
+      coreGrad.addColorStop(1, `rgba(245, 158, 11, 0)`);
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(p4.x, p4.y, 36, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Floating celebratory aggregation badge above C4
+      ctx.font = "bold 10px ui-monospace, SFMono-Regular, monospace";
+      const bText = "👑👑 7 CLUSTERS AGGREGATED";
+      const bW = ctx.measureText(bText).width;
+      ctx.fillStyle = `rgba(120, 53, 15, ${arrA * 0.95})`;
+      ctx.strokeStyle = `rgba(251, 191, 36, ${arrA})`;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(p4.x - bW / 2 - 8, p4.y - 48, bW + 16, 18, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#fef3c7";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(bText, p4.x, p4.y - 39);
+    } else {
+      ctx.font = "bold 13px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("👑👑", p4.x, p4.y - 30);
+    }
+    ctx.restore();
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
   activeAnimationId = requestAnimationFrame(runFrame);
 }
 
@@ -4513,7 +4842,13 @@ function renderNodeModal(node, stepData = currentStepData) {
 
   // Header: Node C{id} | Role: INITIATOR / CLIENT | Zone: {assigned_zone} in Step 5 & 6
   if (cardNodeId) {
-    if (currentStep === 15) {
+    if (currentStep === 16) {
+      const isTopInit = Boolean(idNum === 4 || mergedNode.is_top_initiator);
+      const isInit = Boolean([2, 4, 8].includes(idNum) || mergedNode.is_initiator);
+      const roleStr = isTopInit ? "👑👑 SUPER-INITIATOR" : (isInit ? "👑 BASE INITIATOR" : "CLIENT");
+      const cStatus = idNum === 4 ? "7 CLUSTERS ASSEMBLED" : ([2, 8].includes(idNum) ? "CATALOG DISPATCHED" : "CLUSTER MEMBER");
+      cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Role: <span class="${isTopInit ? 'text-amber-800 font-bold' : (isInit ? 'text-amber-700 font-bold' : 'text-slate-800')}">${roleStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Catalog: <span class="font-bold text-emerald-800">${cStatus}</span></span>`;
+    } else if (currentStep === 15) {
       const isTopInit = Boolean(idNum === 4 || mergedNode.is_top_initiator);
       const isInit = Boolean([2, 4, 8].includes(idNum) || mergedNode.is_initiator);
       const roleStr = isTopInit ? "👑👑 SUPER-INITIATOR" : (isInit ? "👑 BASE INITIATOR" : "CLIENT");
@@ -6695,6 +7030,169 @@ function renderNodeModal(node, stepData = currentStepData) {
     if (catalogReqSection) catalogReqSection.classList.add("hidden");
   }
 
+  // Step 16: Zone Catalog Response & Global Catalog Aggregation at C4
+  const globalCatalogSection = document.getElementById("cardGlobalCatalogSection");
+  const globalCatalogBadge = document.getElementById("cardGlobalCatalogBadge");
+  const globalCatalogContent = document.getElementById("cardGlobalCatalogContent");
+
+  if (currentStep === 16) {
+    if (probeSection) probeSection.classList.add("hidden");
+    if (bndSection) bndSection.classList.add("hidden");
+    if (pminSection) pminSection.classList.add("hidden");
+    if (bsSection) bsSection.classList.add("hidden");
+    if (consensusSection) consensusSection.classList.add("hidden");
+    if (orderSection) orderSection.classList.add("hidden");
+    if (sigSection) sigSection.classList.add("hidden");
+    if (clSection) clSection.classList.add("hidden");
+    if (exemplarSection) exemplarSection.classList.add("hidden");
+    if (topZoneSection) topZoneSection.classList.add("hidden");
+    if (catalogReqSection) catalogReqSection.classList.add("hidden");
+    if (globalCatalogSection) globalCatalogSection.classList.remove("hidden");
+
+    if (idNum === 4) {
+      // Node 4: Super-Initiator C4 - Assembled Global Cluster Registry (7 clusters)
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "👑👑 SUPER-INITIATOR (GLOBAL REGISTRY ASSEMBLED)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-emerald-100 text-emerald-900 border-emerald-400";
+      }
+      if (globalCatalogBadge) {
+        globalCatalogBadge.textContent = "7 CLUSTERS REGISTERED";
+        globalCatalogBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
+      }
+      if (globalCatalogContent) {
+        const catalog = mergedNode.global_cluster_catalog || stepData?.global_cluster_catalog || [];
+        let rowsHtml = "";
+        catalog.forEach(c => {
+          const sigStr = Array.isArray(c.signature) ? `[${c.signature.join(", ")}]` : JSON.stringify(c.signature);
+          const membersStr = Array.isArray(c.members) ? c.members.map(m => `C${m}`).join(", ") : (c.members_str ? c.members_str.join(", ") : "");
+          rowsHtml += `
+            <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
+              <td class="py-1 px-2 font-bold text-emerald-700 font-mono">${c.cluster_id}</td>
+              <td class="py-1 px-2 font-mono text-slate-600">Zone ${c.zone}</td>
+              <td class="py-1 px-2 font-bold text-amber-700 font-mono">C${c.exemplar}</td>
+              <td class="py-1 px-2 font-mono text-slate-700">${membersStr}</td>
+              <td class="py-1 px-2 text-right font-mono text-cyan-800 font-semibold">${sigStr}</td>
+            </tr>
+          `;
+        });
+
+        globalCatalogContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-emerald-300 shadow-xs space-y-3">
+            <!-- 1. Header Aggregation Status Banner -->
+            <div class="p-2.5 rounded-lg border border-emerald-400 bg-emerald-50/90 text-center space-y-1">
+              <div class="text-[11.5px] font-extrabold text-emerald-950 flex items-center justify-center gap-1.5">
+                <span>🌐</span>
+                <span>Global Semantic Cluster Registry: 7 Clusters Assembled</span>
+                <span>🌐</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-emerald-800 font-semibold">
+                Super-Initiator C4 | Status: GLOBAL_CATALOG_ASSEMBLED
+              </div>
+            </div>
+
+            <!-- 2. Full 7-Cluster Table -->
+            <div class="rounded border border-emerald-200 overflow-hidden">
+              <table class="w-full text-[9px] font-mono text-left">
+                <thead class="bg-emerald-50 text-emerald-900 uppercase font-bold border-b border-emerald-200">
+                  <tr>
+                    <th class="py-1 px-2">Cluster ID</th>
+                    <th class="py-1 px-2">Zone</th>
+                    <th class="py-1 px-2">Exemplar</th>
+                    <th class="py-1 px-2">Members</th>
+                    <th class="py-1 px-2 text-right">Profile Signature</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                  ${rowsHtml}
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 3. Summary Footer -->
+            <div class="p-2 bg-slate-50 rounded border border-slate-200 text-[9px] font-mono flex items-center justify-between text-slate-600">
+              <span>Coverage: <strong class="text-slate-800">100% of network clients (10 Nodes)</strong></span>
+              <span>Total Registry: <strong class="text-emerald-700">7 Active Clusters</strong></span>
+            </div>
+          </div>
+        `;
+      }
+    } else if ([2, 8].includes(idNum)) {
+      // Base Initiators C2 & C8 - Dispatched Catalog
+      const reported = mergedNode.reported_clusters || [];
+      const relayGw = idNum === 2 ? "C1" : "C6";
+      const pathStr = idNum === 2 ? "[2, 1, 4]" : "[8, 6, 4]";
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "👑 BASE INITIATOR (REP_CATALOG DISPATCHED)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-50 text-amber-900 border-amber-300";
+      }
+      if (globalCatalogBadge) {
+        globalCatalogBadge.textContent = "DISPATCHED TO C4";
+        globalCatalogBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
+      }
+      if (globalCatalogContent) {
+        let repRowsHtml = "";
+        reported.forEach(c => {
+          const sigStr = Array.isArray(c.signature) ? `[${c.signature.join(", ")}]` : JSON.stringify(c.signature);
+          const membersStr = Array.isArray(c.members) ? c.members.map(m => `C${m}`).join(", ") : "";
+          repRowsHtml += `
+            <div class="p-2 bg-white rounded border border-emerald-100 flex items-center justify-between text-[9.5px]">
+              <div>
+                <span class="font-bold text-emerald-800 font-mono">• Cluster ${c.cluster_id}</span>
+                <span class="text-slate-500 ml-1">(Exemplar: C${c.exemplar}, Members: ${membersStr})</span>
+              </div>
+              <span class="font-mono text-cyan-800 font-semibold">${sigStr}</span>
+            </div>
+          `;
+        });
+
+        globalCatalogContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-emerald-300 shadow-xs space-y-3">
+            <div class="p-2 rounded bg-emerald-50 border border-emerald-300 text-[10px] font-mono text-emerald-900 space-y-1">
+              <div class="font-bold flex items-center justify-between">
+                <span>Dispatched Catalog Response (REP_CLUSTER_CATALOG):</span>
+                <span class="px-1.5 py-0.2 bg-emerald-200 text-emerald-900 rounded text-[9px]">SENT</span>
+              </div>
+              <div class="text-[9px] text-emerald-700">
+                Route: C${idNum} ➔ ${relayGw} (gateway) ➔ C4 [Path: ${pathStr}]
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              ${repRowsHtml}
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      // Member nodes or relay gateways
+      if (cardStatusBadge) {
+        if ([1, 6].includes(idNum)) {
+          cardStatusBadge.textContent = "BOUNDARY GATEWAY (FORWARDED RESPONSE)";
+          cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-indigo-50 text-indigo-900 border-indigo-300";
+        } else {
+          cardStatusBadge.textContent = "CLUSTER MEMBER";
+          cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-700 border-slate-300";
+        }
+      }
+      if (globalCatalogBadge) {
+        globalCatalogBadge.textContent = "INTRA-ZONE MEMBER";
+        globalCatalogBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-600 border border-slate-300";
+      }
+      if (globalCatalogContent) {
+        const cId = mergedNode.cluster_id || 'N/A';
+        const exId = mergedNode.exemplar_node_id || 'N/A';
+        globalCatalogContent.innerHTML = `
+          <div class="p-2.5 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono space-y-1 text-slate-700">
+            <div><strong>Registered Cluster:</strong> <span class="text-emerald-700 font-bold">${cId}</span></div>
+            <div><strong>Cluster Exemplar:</strong> <span class="text-amber-700 font-bold">C${exId}</span></div>
+            <div class="text-[9px] text-slate-500">Represented in Global Semantic Catalog assembled at Super-Initiator C4.</div>
+          </div>
+        `;
+      }
+    }
+  } else {
+    if (globalCatalogSection) globalCatalogSection.classList.add("hidden");
+  }
+
     card.classList.remove("hidden");
     card.style.display = "block";
     card.style.zIndex = "9999";
@@ -7108,7 +7606,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 15; s++) {
+  for (let s = 1; s <= 16; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -7119,7 +7617,7 @@ function updateStepper(step) {
       item.classList.add("active");
       if (step === 3 || step === 4) {
         item.classList.add("step-amber");
-      } else if (step === 5 || step === 10) {
+      } else if (step === 5 || step === 10 || step === 16) {
         item.classList.add("step-emerald");
       } else if (step === 6 || step === 8) {
         item.classList.add("step-purple");
@@ -7164,7 +7662,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 15) {
+    if (step < 16) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -7172,7 +7670,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 15 active (Top-Level Catalog Query Dispatch complete)";
+      btnNext.title = "Step 16 active (Global Semantic Catalog Aggregation complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -7185,7 +7683,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 15);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 16);
 }
 
 function bindActionButtons() {
@@ -7209,16 +7707,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 15) {
+      if (currentStep < 16) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 15 is active (Top-Level Catalog Query Dispatch complete).");
+        logToTerminal("INFO", "Step 16 is active (Global Semantic Catalog Aggregation complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 15)
-  for (let s = 1; s <= 15; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 16)
+  for (let s = 1; s <= 16; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

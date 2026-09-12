@@ -478,3 +478,79 @@ Across the hierarchical overlay paths $\mathcal{P}(C_4, C_2) = (C_4, C_1, C_2)$ 
 - **Member Clients ($C_1, C_3, C_5, C_6, C_7, C_9, C_{10}$)**:
   - Unaffected in local state; $C_1$ and $C_6$ serve as transparent forwarding gateways for the supervisory control packets.
 
+---
+
+## Step 16 — Zone Catalog Response & Global Catalog Aggregation at C4
+
+### Objective
+Following the receipt of the `REQ_CLUSTER_CATALOG` query in Step 15, base initiators $C_2$ (Zone 2) and $C_8$ (Zone 8) compile and transmit their local cluster catalogs back to Super-Initiator $C_4$ using the inbound response message `REP_CLUSTER_CATALOG`. Upon receiving these responses via boundary gateway nodes ($C_1$ and $C_6$), Super-Initiator $C_4$ integrates the incoming catalogs with its own local Zone 4 clusters, assembling the network-wide **Global Semantic Cluster Registry** consisting of 7 distinct clusters.
+
+### Physical Multi-Hop Response Routing
+Control responses are transmitted strictly across existing 1-hop physical ad-hoc edges, relaying through boundary gateways toward Super-Initiator $C_4$:
+- **Branch West ($C_2 \to C_1 \to C_4$)**:
+  $$\text{Packet 1}: \quad C_2 \xrightarrow{\text{physical link}} C_1 \xrightarrow{\text{physical link}} C_4$$
+  - *Path*: `[2, 1, 4]`
+  - *Relay Gateway*: $C_1$ (Zone 2 Boundary Bridge)
+  - *Type*: `REP_CLUSTER_CATALOG`
+  - *Payload*:
+    ```json
+    [
+      {"cluster_id": "2-A", "exemplar": 1, "members": [1, 2], "signature": [1, 2, 3]},
+      {"cluster_id": "2-B", "exemplar": 3, "members": [3], "signature": [4, 5, 6]}
+    ]
+    ```
+- **Branch East ($C_8 \to C_6 \to C_4$)**:
+  $$\text{Packet 2}: \quad C_8 \xrightarrow{\text{physical link}} C_6 \xrightarrow{\text{physical link}} C_4$$
+  - *Path*: `[8, 6, 4]`
+  - *Relay Gateway*: $C_6$ (Zone 4 Boundary Bridge)
+  - *Type*: `REP_CLUSTER_CATALOG`
+  - *Payload*:
+    ```json
+    [
+      {"cluster_id": "8-A", "exemplar": 8, "members": [8], "signature": [4, 5, 6]},
+      {"cluster_id": "8-B", "exemplar": 9, "members": [9], "signature": [1, 2, 3]},
+      {"cluster_id": "8-C", "exemplar": 10, "members": [10], "signature": [8, 9, 10]}
+    ]
+    ```
+
+### Mathematical Formulation & Global Aggregation
+$$\sum_{k \in \{2, 4, 8\}} \text{CATALOG}(Z_k) \longrightarrow \text{GlobalRegistry}(C_4) \quad (7\text{ Clusters})$$
+
+$$\text{GlobalRegistry}(C_4) = \text{CATALOG}(Z_2) \cup \text{CATALOG}(Z_4) \cup \text{CATALOG}(Z_8)$$
+
+Where:
+- $\text{CATALOG}(Z_2) = \{ \text{Cluster 2-A (Exemplar } C_1), \text{Cluster 2-B (Exemplar } C_3) \}$
+- $\text{CATALOG}(Z_4) = \{ \text{Cluster 4-A (Exemplar } C_5), \text{Cluster 4-B (Exemplar } C_7) \}$
+- $\text{CATALOG}(Z_8) = \{ \text{Cluster 8-A (Exemplar } C_8), \text{Cluster 8-B (Exemplar } C_9), \text{Cluster 8-C (Exemplar } C_{10}) \}$
+
+### Global Semantic Cluster Registry Table at $C_4$
+| Cluster ID | Zone | Exemplar Node | Member Clients | Profile Signature $\mathbf{s}_c$ | Dominant Semantic Categories |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **2-A** | Zone 2 | $C_1$ | $\{C_1, C_2\}$ | `[1, 2, 3]` | Airplane, Automobile, Bird |
+| **2-B** | Zone 2 | $C_3$ | $\{C_3\}$ | `[4, 5, 6]` | Deer, Dog, Frog |
+| **4-A** | Zone 4 | $C_5$ | $\{C_4, C_5\}$ | `[4, 5, 6]` | Deer, Dog, Frog |
+| **4-B** | Zone 4 | $C_7$ | $\{C_6, C_7\}$ | `[7, 8, 9, 10]` | Horse, Ship, Truck |
+| **8-A** | Zone 8 | $C_8$ | $\{C_8\}$ | `[4, 5, 6]` | Deer, Dog, Frog |
+| **8-B** | Zone 8 | $C_9$ | $\{C_9\}$ | `[1, 2, 3]` | Airplane, Automobile, Bird |
+| **8-C** | Zone 8 | $C_{10}$ | $\{C_{10}\}$ | `[8, 9, 10]` | Ship, Truck |
+
+Total Registered Clusters: **7 Clusters**.
+
+### Node States & Lifecycle in Step 16
+- **Node 4 ($C_4$ — Super-Initiator)**:
+  - `aggregation_status`: `"GLOBAL_CATALOG_ASSEMBLED"`
+  - `total_registered_clusters`: `7`
+  - `global_cluster_catalog`: Array of all 7 cluster records with exemplar, member list, and profile signature.
+  - Emits golden supervisory beacon upon successful aggregation of all responses.
+- **Node 2 ($C_2$ — Zone 2 Initiator)**:
+  - `catalog_response_status`: `"RESPONSE_DISPATCHED"`
+  - `reported_clusters`: Clusters `2-A` and `2-B`.
+- **Node 8 ($C_8$ — Zone 8 Initiator)**:
+  - `catalog_response_status`: `"RESPONSE_DISPATCHED"`
+  - `reported_clusters`: Clusters `8-A`, `8-B`, and `8-C`.
+- **Relay Gateways ($C_1, C_6$)**:
+  - Forward `REP_CLUSTER_CATALOG` packets directly across physical links to $C_4$.
+- **Member Nodes ($C_3, C_5, C_7, C_9, C_{10}$)**:
+  - Maintain intra-zone cluster profiles, ready for inter-cluster semantic pairing and cross-zone model aggregation in subsequent phases.
+
+

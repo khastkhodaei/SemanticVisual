@@ -10,7 +10,7 @@ Implements Step 1 of the new 10-node CIFAR-10 SemanticDFL Storyboard:
 
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 15
+TOTAL_STEPS: int = 16
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -3466,6 +3466,260 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "packet_exchanges": packet_traces,
             "packet_traces": packet_traces,
             "catalog_queries": packet_traces,
+            "top_level_zone": step14_data.get("top_level_zone", {}),
+            "super_zone": step14_data.get("super_zone", {}),
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "top_initiator": 4,
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
+    elif step_number == 16:
+        # Step 16: Zone Catalog Response & Global Catalog Aggregation at C4
+        step15_data = _get_10node_step_data_raw(15)
+        step14_data = _get_10node_step_data_raw(14)
+
+        # Global cluster catalog on Node 4 (7 items total across 3 zones)
+        global_cluster_catalog = [
+            {
+                "cluster_id": "2-A",
+                "zone": 2,
+                "exemplar": 1,
+                "members": [1, 2],
+                "signature": [1, 2, 3],
+                "exemplar_str": "C1",
+                "members_str": ["C1", "C2"],
+                "categories": ["Airplane", "Automobile", "Bird"],
+                "source_initiator": 2,
+            },
+            {
+                "cluster_id": "2-B",
+                "zone": 2,
+                "exemplar": 3,
+                "members": [3],
+                "signature": [4, 5, 6],
+                "exemplar_str": "C3",
+                "members_str": ["C3"],
+                "categories": ["Cat", "Deer", "Dog"],
+                "source_initiator": 2,
+            },
+            {
+                "cluster_id": "4-A",
+                "zone": 4,
+                "exemplar": 5,
+                "members": [4, 5],
+                "signature": [4, 5, 6],
+                "exemplar_str": "C5",
+                "members_str": ["C4", "C5"],
+                "categories": ["Cat", "Deer", "Dog"],
+                "source_initiator": 4,
+            },
+            {
+                "cluster_id": "4-B",
+                "zone": 4,
+                "exemplar": 7,
+                "members": [6, 7],
+                "signature": [7, 8, 9, 10],
+                "exemplar_str": "C7",
+                "members_str": ["C6", "C7"],
+                "categories": ["Frog", "Horse", "Ship", "Truck"],
+                "source_initiator": 4,
+            },
+            {
+                "cluster_id": "8-A",
+                "zone": 8,
+                "exemplar": 8,
+                "members": [8],
+                "signature": [4, 5, 6],
+                "exemplar_str": "C8",
+                "members_str": ["C8"],
+                "categories": ["Cat", "Deer", "Dog"],
+                "source_initiator": 8,
+            },
+            {
+                "cluster_id": "8-B",
+                "zone": 8,
+                "exemplar": 9,
+                "members": [9],
+                "signature": [1, 2, 3],
+                "exemplar_str": "C9",
+                "members_str": ["C9"],
+                "categories": ["Airplane", "Automobile", "Bird"],
+                "source_initiator": 8,
+            },
+            {
+                "cluster_id": "8-C",
+                "zone": 8,
+                "exemplar": 10,
+                "members": [10],
+                "signature": [8, 9, 10],
+                "exemplar_str": "C10",
+                "members_str": ["C10"],
+                "categories": ["Horse", "Ship", "Truck"],
+                "source_initiator": 8,
+            },
+        ]
+
+        step16_nodes = []
+        for n in step15_data["nodes"]:
+            n_copy = dict(n)
+            nid = n_copy["id"]
+
+            if nid == 4:
+                # Super-Initiator Node 4
+                n_copy["role"] = "SUPER_INITIATOR"
+                n_copy["is_top_initiator"] = True
+                n_copy["is_initiator"] = True
+                n_copy["status"] = "GLOBAL_CATALOG_ASSEMBLED"
+                n_copy["aggregation_status"] = "GLOBAL_CATALOG_ASSEMBLED"
+                n_copy["query_status"] = "GLOBAL_CATALOG_ASSEMBLED"
+                n_copy["total_registered_clusters"] = len(global_cluster_catalog)
+                n_copy["global_cluster_catalog"] = global_cluster_catalog
+                n_copy["received_catalog_responses"] = [
+                    {
+                        "from": 2,
+                        "from_str": "C2",
+                        "path": [2, 1, 4],
+                        "relay": 1,
+                        "clusters": [c for c in global_cluster_catalog if c["zone"] == 2],
+                    },
+                    {
+                        "from": 8,
+                        "from_str": "C8",
+                        "path": [8, 6, 4],
+                        "relay": 6,
+                        "clusters": [c for c in global_cluster_catalog if c["zone"] == 8],
+                    },
+                ]
+            elif nid == 2:
+                # Base Initiator Node 2
+                n_copy["status"] = "RESPONSE_DISPATCHED"
+                n_copy["catalog_response_status"] = "RESPONSE_DISPATCHED"
+                n_copy["query_status"] = "RESPONSE_DISPATCHED"
+                n_copy["reported_clusters"] = [
+                    {"cluster_id": "2-A", "exemplar": 1, "members": [1, 2], "signature": [1, 2, 3]},
+                    {"cluster_id": "2-B", "exemplar": 3, "members": [3], "signature": [4, 5, 6]},
+                ]
+                n_copy["response_packet"] = {
+                    "to": 4,
+                    "path": [2, 1, 4],
+                    "relay": 1,
+                    "type": "REP_CLUSTER_CATALOG",
+                }
+            elif nid == 8:
+                # Base Initiator Node 8
+                n_copy["status"] = "RESPONSE_DISPATCHED"
+                n_copy["catalog_response_status"] = "RESPONSE_DISPATCHED"
+                n_copy["query_status"] = "RESPONSE_DISPATCHED"
+                n_copy["reported_clusters"] = [
+                    {"cluster_id": "8-A", "exemplar": 8, "members": [8], "signature": [4, 5, 6]},
+                    {"cluster_id": "8-B", "exemplar": 9, "members": [9], "signature": [1, 2, 3]},
+                    {"cluster_id": "8-C", "exemplar": 10, "members": [10], "signature": [8, 9, 10]},
+                ]
+                n_copy["response_packet"] = {
+                    "to": 4,
+                    "path": [8, 6, 4],
+                    "relay": 6,
+                    "type": "REP_CLUSTER_CATALOG",
+                }
+            elif nid in [1, 6]:
+                # Relay Gateways
+                n_copy["relay_role"] = "BOUNDARY_GATEWAY_RELAY"
+                n_copy["status"] = "FORWARDING_CATALOG_RESPONSE"
+            else:
+                n_copy["status"] = "CLUSTER_MEMBER"
+
+            step16_nodes.append(n_copy)
+
+        packet_traces = [
+            {
+                "from": 2,
+                "to": 4,
+                "path": [2, 1, 4],
+                "type": "REP_CLUSTER_CATALOG",
+                "root": 4,
+                "source": "C2",
+                "target": "C4",
+                "source_num": 2,
+                "target_num": 4,
+                "relay": "C1",
+                "relay_num": 1,
+                "path_str": ["C2", "C1", "C4"],
+                "color": "#10b981",
+                "label": "REP_CATALOG (Z2)",
+                "route_label": "C2 -> C1 -> C4",
+                "msg": "Initiator C2 transmits REP_CLUSTER_CATALOG (Clusters 2-A, 2-B) inward to C4 (via C1)",
+                "payload": [
+                    {"cluster_id": "2-A", "exemplar": 1, "members": [1, 2], "signature": [1, 2, 3]},
+                    {"cluster_id": "2-B", "exemplar": 3, "members": [3], "signature": [4, 5, 6]},
+                ],
+            },
+            {
+                "from": 8,
+                "to": 4,
+                "path": [8, 6, 4],
+                "type": "REP_CLUSTER_CATALOG",
+                "root": 4,
+                "source": "C8",
+                "target": "C4",
+                "source_num": 8,
+                "target_num": 4,
+                "relay": "C6",
+                "relay_num": 6,
+                "path_str": ["C8", "C6", "C4"],
+                "color": "#10b981",
+                "label": "REP_CATALOG (Z8)",
+                "route_label": "C8 -> C6 -> C4",
+                "msg": "Initiator C8 transmits REP_CLUSTER_CATALOG (Clusters 8-A, 8-B, 8-C) inward to C4 (via C6)",
+                "payload": [
+                    {"cluster_id": "8-A", "exemplar": 8, "members": [8], "signature": [4, 5, 6]},
+                    {"cluster_id": "8-B", "exemplar": 9, "members": [9], "signature": [1, 2, 3]},
+                    {"cluster_id": "8-C", "exemplar": 10, "members": [10], "signature": [8, 9, 10]},
+                ],
+            },
+        ]
+
+        step16_edges = []
+        for e in edges:
+            e_copy = dict(e)
+            e_copy["style"] = "solid"
+            e_copy["line_color"] = "#64748b"
+            e_copy["line_style"] = "solid"
+            step16_edges.append(e_copy)
+
+        terminal_logs = [
+            "[STEP 16] Zone Catalog Response & Global Catalog Aggregation initialized (REP_CLUSTER_CATALOG).",
+            "[INBOUND RESPONSE 1] Initiator C2 -> C1 (gateway) -> C4: Transmitted REP_CLUSTER_CATALOG (Clusters: 2-A, 2-B).",
+            "[INBOUND RESPONSE 2] Initiator C8 -> C6 (gateway) -> C4: Transmitted REP_CLUSTER_CATALOG (Clusters: 8-A, 8-B, 8-C).",
+            "[LOCAL CONSOLIDATION] Super-Initiator C4 integrated local Zone 4 clusters (4-A, 4-B).",
+            "[GLOBAL AGGREGATION] Super-Initiator C4 successfully assembled Global Cluster Catalog Registry (7 clusters registered).",
+            "[SUPERVISORY BEACON] C4 emitted golden supervisory beacon across Super-Zone Z_TOP.",
+        ]
+
+        return {
+            "step": 16,
+            "title": "Step 16: Zone Catalog Response & Global Catalog Aggregation at C4",
+            "phase_badge": "ACTIVE PHASE: STEP 16: ZONE CATALOG RESPONSE & GLOBAL AGGREGATION",
+            "description": "Base initiators reply with intra-zone cluster metadata over boundary relays to Super-Initiator C4, assembling the Global Cluster Registry (7 clusters total).",
+            "formula": "\\sum_{k \\in \\{2, 4, 8\\}} \\text{CATALOG}(Z_k) \\longrightarrow \\text{GlobalRegistry}(C_4) \\quad (7\\text{ Clusters})",
+            "formula_desc": "Base initiators transmit cluster exemplars and signatures to C4, assembling the network-wide semantic catalog.",
+            "nodes": step16_nodes,
+            "edges": step16_edges,
+            "packet_events": packet_traces,
+            "packet_exchanges": packet_traces,
+            "packet_traces": packet_traces,
+            "catalog_responses": packet_traces,
+            "global_cluster_catalog": global_cluster_catalog,
+            "total_registered_clusters": len(global_cluster_catalog),
             "top_level_zone": step14_data.get("top_level_zone", {}),
             "super_zone": step14_data.get("super_zone", {}),
             "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
