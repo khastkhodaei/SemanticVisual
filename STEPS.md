@@ -344,29 +344,57 @@ Then, each Initiator executes **Affinity Propagation (AP)** clustering with pref
 
 ## Step 13 — Hierarchical Top-Level Zone Creation (Figure 3(e))
 
-SemanticDFL employs a recursive, hierarchical zoning scheme. Following intra-zone clustering, the base initiators form an abstract higher-level network:
+SemanticDFL employs a recursive, hierarchical zoning scheme. Following intra-zone clustering, the base initiators form an abstract higher-level overlay network:
 $$\mathcal{G}_{\text{init}} = (\mathcal{V}_{\text{init}}, \mathcal{E}_{\text{init}}), \quad \mathcal{V}_{\text{init}} = \{C_2, C_4, C_8\}$$
 $$\mathcal{E}_{\text{init}} = \{(C_2, C_4), (C_4, C_8)\}$$
 
-### Phase 1: 1-Hop VRF Score Exchange on $\mathcal{G}_{\text{init}}$
-As in the standard Step 4 election protocol, the initiators execute a 1-hop VRF score exchange across overlay links:
-- $C_2 \leftrightarrow C_4$: $C_2$ sends $\sigma_2 = 0.0837$ to $C_4$ (via path $[2, 1, 4]$); $C_4$ sends $\sigma_4 = 0.0412$ to $C_2$ (via path $[4, 1, 2]$).
-- $C_4 \leftrightarrow C_8$: $C_8$ sends $\sigma_8 = 0.0275$ to $C_4$ (via path $[8, 6, 4]$); $C_4$ sends $\sigma_4 = 0.0412$ to $C_8$ (via path $[4, 6, 8]$).
+Because the initiator overlay is a line topology $C_2 \leftrightarrow C_4 \leftrightarrow C_8$, Node 4 ($C_4$) serves as the indispensable central bridge interconnecting the Western ($C_2$) and Eastern ($C_8$) clusters.
 
-### Phase 2: Selection of Node 4 as the Central Top-Level Initiator
-Because the initiator overlay graph $\mathcal{G}_{\text{init}}$ is a line topology $C_2 \leftrightarrow C_4 \leftrightarrow C_8$, Node 4 ($C_4$) serves as the indispensable central bridge interconnecting both base clusters. In the 1-hop initiator neighborhood evaluation:
-- $C_2$ only connects to $C_4$ and observes $\sigma_4 = 0.0412 < \sigma_2 = 0.0837$, voting for $C_4$.
-- $C_4$ connects to both $C_2$ and $C_8$, functioning as the top-level aggregation hub.
-- **Winner:** **Node 4 ($C_4$)** is elected as the **Top-Level Super-Initiator (👑👑)**.
+### Phase 1: Inward VRF Score Reporting to Central Bridge $C_4$
+Flanking initiators transmit their local VRF scores inward along multi-hop overlay paths to central bridge $C_4$:
+- **Trace 1 ($C_2 \to C_4$ via path $[2, 1, 4]$):** $C_2$ reports $\sigma_2 = 0.0837$ to $C_4$.
+- **Trace 2 ($C_8 \to C_4$ via path $[8, 6, 4]$):** $C_8$ reports $\sigma_8 = 0.0275$ to $C_4$.
+
+### Phase 2: Outward Relay of Network-Wide Scores from $C_4$
+Having accumulated the scores from both endpoints, $C_4$ relays the complete scoreboard outward to guarantee full network visibility:
+- **Trace 3 ($C_4 \to C_2$ via path $[4, 1, 2]$):** $C_4$ sends its own score $\sigma_4 = 0.0412$ and relays $\sigma_8 = 0.0275$ to $C_2$.
+- **Trace 4 ($C_4 \to C_8$ via path $[4, 6, 8]$):** $C_4$ sends its own score $\sigma_4 = 0.0412$ and relays $\sigma_2 = 0.0837$ to $C_8$.
+
+### Overlay VRF Scoreboards on Initiators
+Following two-way score dissemination, each initiator populates an explicit Overlay Scoreboard, validating Node $C_4$'s election as the Top-Level Super-Initiator:
+
+1. **Node 2 ($C_2$) Scoreboard:**
+   | Initiator | Role / Origin | VRF Score ($\sigma$) | Election Status |
+   |---|---|---|---|
+   | $C_2$ | Self | $0.0837$ | Member |
+   | $C_4$ | Direct Neighbor (Gateway $C_1$) | $0.0412$ | 🏆 **Elected Top-Level Initiator** |
+   | $C_8$ | Relayed via $C_4$ | $0.0275$ | Member |
+   *Elected Leader: $C_4$ (Central aggregation bridge).*
+
+2. **Node 4 ($C_4$) Scoreboard (Winner):**
+   | Initiator | Role / Origin | VRF Score ($\sigma$) | Election Status |
+   |---|---|---|---|
+   | $C_4$ | Self (Central Bridge) | $0.0412$ | 🏆 **Elected Top-Level Initiator (👑👑)** |
+   | $C_2$ | Direct Neighbor West (Gateway $C_1$) | $0.0837$ | Member |
+   | $C_8$ | Direct Neighbor East (Gateway $C_6$) | $0.0275$ | Member |
+   *Elected Leader: $C_4$ (Self, Central Hub).*
+
+3. **Node 8 ($C_8$) Scoreboard:**
+   | Initiator | Role / Origin | VRF Score ($\sigma$) | Election Status |
+   |---|---|---|---|
+   | $C_8$ | Self | $0.0275$ | Member |
+   | $C_4$ | Direct Neighbor (Gateway $C_6$) | $0.0412$ | 🏆 **Elected Top-Level Initiator** |
+   | $C_2$ | Relayed via $C_4$ | $0.0837$ | Member |
+   *Elected Leader: $C_4$ (Central aggregation bridge).*
 
 ### Phase 3: Symmetrical TOP_PROBE Broadcast from $C_4$
-Initiator $C_4$ symmetrically broadcasts a high-level probe outward across the initiator overlay with $\text{TTL} = 1$:
+With consensus established across all three scoreboards, $C_4$ symmetrically broadcasts a high-level probe outward with $\text{TTL} = 1$:
 $$\text{TOP\_PROBE}(C_4, \text{TTL}_{\text{top}} = 1)$$
-- $C_4 \xrightarrow{\text{via } C_1} C_2$ (Outward West branch)
-- $C_4 \xrightarrow{\text{via } C_6} C_8$ (Outward East branch)
+- $C_4 \xrightarrow{\text{via } C_1} C_2$ (Westward Branch)
+- $C_4 \xrightarrow{\text{via } C_6} C_8$ (Eastward Branch)
 
 ### Phase 4: Formation of Super-Zone $\mathcal{Z}_{\text{Top}}$ Rooted at Node 4
-All three initiators join the **Top-Level Super-Zone $\mathcal{Z}_{\text{Top}}$ (Root: $C_4$, Members: $\{C_2, C_4, C_8\}$)**. This establishes the hierarchical control plane connecting Zone 2, Zone 4, and Zone 8 for cross-zone semantic model exchange and global federation.
+All three initiators enroll into the **Top-Level Super-Zone $\mathcal{Z}_{\text{Top}}$ (Root: $C_4$, Members: $\{C_2, C_4, C_8\}$)**, establishing the hierarchical control plane for global cluster catalog exchange in Step 14.
 
 
 

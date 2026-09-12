@@ -180,6 +180,71 @@ def test_step13_preserves_base_zones_and_step12_clusters():
         assert edge["line_style"] == "solid"
 
 
+def test_step13_overlay_scoreboards_and_traces():
+    """Assert all three initiators have overlay_scoreboard and explicit VRF traces."""
+    data = get_10node_step_data(13)
+    nodes = {n["id"]: n for n in data["nodes"]}
+
+    # 1. Assert top_level_zone['root_initiator'] == 4
+    assert data["top_level_zone"]["root_initiator"] == 4
+
+    # 2. Assert all three initiators have overlay_scoreboard containing entries for nodes 2, 4, 8
+    # Node 2 Scoreboard
+    sb2 = nodes[2].get("overlay_scoreboard")
+    assert sb2 is not None
+    assert sb2["self"]["id"] == 2
+    assert sb2["self"]["score"] == 0.0837
+    assert sb2["elected_leader"] == 4
+    recv2 = {r["id"]: r for r in sb2["received"]}
+    assert 4 in recv2 and recv2[4]["score"] == 0.0412 and recv2[4]["via"] == "direct"
+    assert 8 in recv2 and recv2[8]["score"] == 0.0275 and recv2[8]["via"] == "relayed_by_C4"
+
+    # Node 4 Scoreboard
+    sb4 = nodes[4].get("overlay_scoreboard")
+    assert sb4 is not None
+    assert sb4["self"]["id"] == 4
+    assert sb4["self"]["score"] == 0.0412
+    assert sb4["elected_leader"] == 4
+    assert sb4["is_winner"] is True
+    recv4 = {r["id"]: r for r in sb4["received"]}
+    assert 2 in recv4 and recv4[2]["score"] == 0.0837 and recv4[2]["via"] == "direct"
+    assert 8 in recv4 and recv4[8]["score"] == 0.0275 and recv4[8]["via"] == "direct"
+
+    # Node 8 Scoreboard
+    sb8 = nodes[8].get("overlay_scoreboard")
+    assert sb8 is not None
+    assert sb8["self"]["id"] == 8
+    assert sb8["self"]["score"] == 0.0275
+    assert sb8["elected_leader"] == 4
+    recv8 = {r["id"]: r for r in sb8["received"]}
+    assert 4 in recv8 and recv8[4]["score"] == 0.0412 and recv8[4]["via"] == "direct"
+    assert 2 in recv8 and recv8[2]["score"] == 0.0837 and recv8[2]["via"] == "relayed_by_C4"
+
+    # 3. Assert elected_leader == 4 across all three initiators
+    assert sb2["elected_leader"] == 4
+    assert sb4["elected_leader"] == 4
+    assert sb8["elected_leader"] == 4
+
+    # 4. Assert explicit VRF communication traces
+    traces = data.get("vrf_communication_traces", [])
+    assert len(traces) == 4
+    t1 = next(t for t in traces if t["from"] == 2 and t["to"] == 4)
+    assert t1["payload"] == {"C2_vrf": 0.0837}
+    assert t1["path"] == [2, 1, 4]
+
+    t2 = next(t for t in traces if t["from"] == 8 and t["to"] == 4)
+    assert t2["payload"] == {"C8_vrf": 0.0275}
+    assert t2["path"] == [8, 6, 4]
+
+    t3 = next(t for t in traces if t["from"] == 4 and t["to"] == 2)
+    assert t3["payload"] == {"C4_vrf": 0.0412, "relayed_C8_vrf": 0.0275}
+    assert t3["path"] == [4, 1, 2]
+
+    t4 = next(t for t in traces if t["from"] == 4 and t["to"] == 8)
+    assert t4["payload"] == {"C4_vrf": 0.0412, "relayed_C2_vrf": 0.0837}
+    assert t4["path"] == [4, 6, 8]
+
+
 def test_step13_engine_method():
     """Verify SemanticDFLEngine().run_top_level_zone_creation_10nodes() produces valid structure."""
     engine = SemanticDFLEngine()
@@ -197,10 +262,11 @@ def test_step13_steps_markdown_documentation():
     content = steps_file.read_text()
     assert "## Step 13 — Hierarchical Top-Level Zone Creation (Figure 3(e))" in content
     assert r"\mathcal{G}_{\text{init}}" in content
-    assert "Phase 1: 1-Hop VRF Score Exchange" in content
-    assert "Selection of Node 4 as the Central Top-Level Initiator" in content
+    assert "Phase 1: Inward VRF Score Reporting to Central Bridge" in content
+    assert "Phase 2: Outward Relay of Network-Wide Scores from" in content
+    assert "Overlay VRF Scoreboards on Initiators" in content
     assert "Phase 3: Symmetrical TOP_PROBE Broadcast from" in content
-    assert "Formation of Super-Zone" in content
+    assert "Phase 4: Formation of Super-Zone" in content
     assert r"\mathcal{Z}_{\text{Top}}" in content
 
 
@@ -216,6 +282,9 @@ def test_step13_frontend_elements_and_logic(client):
     assert res_js.status_code == 200
     assert "renderStep13" in res_js.text
     assert "animateStep13TopProbe" in res_js.text
+    assert "renderOverlayVrfScoreboardHtml" in res_js.text
+    assert "Overlay VRF Scoreboard (Super-Initiator Election)" in res_js.text
     assert "👑👑 ELECTED TOP-LEVEL SUPER-INITIATOR" in res_js.text
     assert "ACTIVE PHASE: STEP 13: TOP-LEVEL INITIATOR ELECTION & SUPER-ZONE (C4 👑👑)" in res_js.text
     assert "top-initiator-node" in res_js.text
+

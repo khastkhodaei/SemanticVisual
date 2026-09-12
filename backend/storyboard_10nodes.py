@@ -2724,11 +2724,20 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 n_copy["governing_initiators_str"] = ["C2", "C4", "C8"]
                 n_copy["vrf_top_rank"] = 1
                 n_copy["received_overlay_scores"] = {2: 0.0837, 8: 0.0275}
-                n_copy["overlay_scoreboard"] = [
-                    {"node": 4, "node_str": "C4", "score": 0.0412, "role": "Self (Central Bridge & Winner 👑👑)"},
-                    {"node": 2, "node_str": "C2", "score": 0.0837, "role": "Overlay Neighbor (West)", "path": [2, 1, 4]},
-                    {"node": 8, "node_str": "C8", "score": 0.0275, "role": "Overlay Neighbor (East)", "path": [8, 6, 4]},
-                ]
+                n_copy["overlay_scoreboard"] = {
+                    "self": {"id": 4, "score": 0.0412},
+                    "received": [
+                        {"id": 2, "score": 0.0837, "via": "direct"},
+                        {"id": 8, "score": 0.0275, "via": "direct"},
+                    ],
+                    "elected_leader": 4,
+                    "is_winner": True,
+                    "rows": [
+                        {"id": 4, "node": 4, "node_str": "C4", "role": "Self (Central Bridge)", "origin": "Self", "score": 0.0412, "status": "🏆 Elected Top-Level Initiator (👑👑)", "is_winner": True},
+                        {"id": 2, "node": 2, "node_str": "C2", "role": "Direct Neighbor West (Gateway C1)", "origin": "Direct Neighbor", "score": 0.0837, "status": "Base Initiator (Member)", "is_winner": False},
+                        {"id": 8, "node": 8, "node_str": "C8", "role": "Direct Neighbor East (Gateway C6)", "origin": "Direct Neighbor", "score": 0.0275, "status": "Base Initiator (Member)", "is_winner": False},
+                    ],
+                }
             elif nid in [2, 8]:
                 n_copy["top_level_role"] = "SUPER_ZONE_MEMBER"
                 n_copy["top_level_status"] = "SUPER_ZONE_MEMBER"
@@ -2746,6 +2755,34 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                     "super_zone": "Z_TOP",
                     "via": 1 if nid == 2 else 6,
                 }
+                if nid == 2:
+                    n_copy["overlay_scoreboard"] = {
+                        "self": {"id": 2, "score": 0.0837},
+                        "received": [
+                            {"id": 4, "score": 0.0412, "via": "direct"},
+                            {"id": 8, "score": 0.0275, "via": "relayed_by_C4"},
+                        ],
+                        "elected_leader": 4,
+                        "rows": [
+                            {"id": 2, "node": 2, "node_str": "C2", "role": "Self", "origin": "Self", "score": 0.0837, "status": "Base Initiator (Member)", "is_winner": False},
+                            {"id": 4, "node": 4, "node_str": "C4", "role": "Direct Neighbor (Gateway C1)", "origin": "Direct Neighbor", "score": 0.0412, "status": "🏆 Elected Top-Level Initiator", "is_winner": True},
+                            {"id": 8, "node": 8, "node_str": "C8", "role": "Relayed via C4 (Gateway C6)", "origin": "Relayed via C4", "score": 0.0275, "status": "Base Initiator (Member)", "is_winner": False},
+                        ],
+                    }
+                else:  # nid == 8
+                    n_copy["overlay_scoreboard"] = {
+                        "self": {"id": 8, "score": 0.0275},
+                        "received": [
+                            {"id": 4, "score": 0.0412, "via": "direct"},
+                            {"id": 2, "score": 0.0837, "via": "relayed_by_C4"},
+                        ],
+                        "elected_leader": 4,
+                        "rows": [
+                            {"id": 8, "node": 8, "node_str": "C8", "role": "Self", "origin": "Self", "score": 0.0275, "status": "Base Initiator (Member)", "is_winner": False},
+                            {"id": 4, "node": 4, "node_str": "C4", "role": "Direct Neighbor (Gateway C6)", "origin": "Direct Neighbor", "score": 0.0412, "status": "🏆 Elected Top-Level Initiator", "is_winner": True},
+                            {"id": 2, "node": 2, "node_str": "C2", "role": "Relayed via C4 (Gateway C1)", "origin": "Relayed via C4", "score": 0.0837, "status": "Base Initiator (Member)", "is_winner": False},
+                        ],
+                    }
             else:
                 n_copy["top_level_role"] = "BASE_ZONE_MEMBER"
                 n_copy["top_level_status"] = "SUPERVISED_CLIENT"
@@ -2755,10 +2792,14 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
 
             step13_nodes.append(n_copy)
 
-        # 1-Hop VRF Score Exchanges (Phase A)
-        vrf_exchange_events = [
+        # Explicit VRF Communication Traces (Phase 1 Inward + Phase 2 Outward Relay)
+        vrf_communication_traces = [
             {
-                "packet_id": "vrf_2_to_4",
+                "from": 2,
+                "to": 4,
+                "payload": {"C2_vrf": 0.0837},
+                "path": [2, 1, 4],
+                "packet_id": "vrf_trace_1",
                 "type": "VRF_EXCHANGE",
                 "score": 0.0837,
                 "source": "C2",
@@ -2767,15 +2808,18 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 "target_num": 4,
                 "relay": "C1",
                 "relay_num": 1,
-                "path": [2, 1, 4],
                 "path_str": ["C2", "C1", "C4"],
                 "color": "#3b82f6",
-                "label": "VRF_EXCHANGE(0.0837)",
+                "label": "VRF: 0.0837",
                 "route_label": "C2 -> C1 -> C4",
-                "msg": "C2 transmits VRF score (0.0837) to C4 via C1",
+                "msg": "C2 reports VRF score (0.0837) inward to central bridge C4",
             },
             {
-                "packet_id": "vrf_8_to_4",
+                "from": 8,
+                "to": 4,
+                "payload": {"C8_vrf": 0.0275},
+                "path": [8, 6, 4],
+                "packet_id": "vrf_trace_2",
                 "type": "VRF_EXCHANGE",
                 "score": 0.0275,
                 "source": "C8",
@@ -2784,15 +2828,18 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 "target_num": 4,
                 "relay": "C6",
                 "relay_num": 6,
-                "path": [8, 6, 4],
                 "path_str": ["C8", "C6", "C4"],
                 "color": "#8b5cf6",
-                "label": "VRF_EXCHANGE(0.0275)",
+                "label": "VRF: 0.0275",
                 "route_label": "C8 -> C6 -> C4",
-                "msg": "C8 transmits VRF score (0.0275) to C4 via C6",
+                "msg": "C8 reports VRF score (0.0275) inward to central bridge C4",
             },
             {
-                "packet_id": "vrf_4_to_2",
+                "from": 4,
+                "to": 2,
+                "payload": {"C4_vrf": 0.0412, "relayed_C8_vrf": 0.0275},
+                "path": [4, 1, 2],
+                "packet_id": "vrf_trace_3",
                 "type": "VRF_EXCHANGE",
                 "score": 0.0412,
                 "source": "C4",
@@ -2801,15 +2848,18 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 "target_num": 2,
                 "relay": "C1",
                 "relay_num": 1,
-                "path": [4, 1, 2],
                 "path_str": ["C4", "C1", "C2"],
                 "color": "#f59e0b",
-                "label": "VRF_EXCHANGE(0.0412)",
+                "label": "SCORES: {C4:0.0412, C8:0.0275}",
                 "route_label": "C4 -> C1 -> C2",
-                "msg": "C4 transmits VRF score (0.0412) to C2 via C1",
+                "msg": "C4 transmits own score (0.0412) and relays C8 score (0.0275) outward to C2",
             },
             {
-                "packet_id": "vrf_4_to_8",
+                "from": 4,
+                "to": 8,
+                "payload": {"C4_vrf": 0.0412, "relayed_C2_vrf": 0.0837},
+                "path": [4, 6, 8],
+                "packet_id": "vrf_trace_4",
                 "type": "VRF_EXCHANGE",
                 "score": 0.0412,
                 "source": "C4",
@@ -2818,14 +2868,15 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
                 "target_num": 8,
                 "relay": "C6",
                 "relay_num": 6,
-                "path": [4, 6, 8],
                 "path_str": ["C4", "C6", "C8"],
                 "color": "#f59e0b",
-                "label": "VRF_EXCHANGE(0.0412)",
+                "label": "SCORES: {C4:0.0412, C2:0.0837}",
                 "route_label": "C4 -> C6 -> C8",
-                "msg": "C4 transmits VRF score (0.0412) to C8 via C6",
+                "msg": "C4 transmits own score (0.0412) and relays C2 score (0.0837) outward to C8",
             },
         ]
+
+        vrf_exchange_events = vrf_communication_traces
 
         # Symmetrical TOP_PROBE Broadcasts from C4 (Phase B)
         probe_events = [
@@ -2955,6 +3006,7 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "packet_events": packet_events,
             "packet_exchanges": packet_events,
             "vrf_exchange_events": vrf_exchange_events,
+            "vrf_communication_traces": vrf_communication_traces,
             "probe_events": probe_events,
             "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
             "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},

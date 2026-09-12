@@ -461,3 +461,33 @@ body {
   transform: translateY(-1px);
 }
 
+/* Step 13: Dedicated Overlay VRF Scoreboard Table */
+.overlay-scoreboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.65rem;
+}
+
+.overlay-scoreboard-table th {
+  background-color: #fef3c7;
+  color: #78350f;
+  padding: 6px 10px;
+  font-weight: 700;
+  border-bottom: 1.5px solid #fde68a;
+  text-align: left;
+  letter-spacing: 0.025em;
+}
+
+.overlay-scoreboard-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.overlay-scoreboard-table tr.winner-row {
+  background: linear-gradient(90deg, #fef9c3 0%, #fef08a 100%);
+  border-top: 1.5px solid #f59e0b;
+  border-bottom: 1.5px solid #f59e0b;
+  color: #78350f;
+  font-weight: 700;
+}

@@ -2811,26 +2811,27 @@ function animateStep13TopProbe(packets, allNodes) {
       ctx.restore();
     });
 
-    // Sub-Phase Logic:
-    // progress < 0.40: Phase A (1-Hop VRF Score Exchange across C2 <-> C4 and C4 <-> C8)
-    // 0.40 <= progress < 0.48: Election Flash & Announcement (Node 4 central bridge)
-    // 0.48 <= progress <= 1.0: Phase B (Symmetrical TOP_PROBE broadcast outward to C2 & C8)
+    // 4-Step Canvas Animation Sequence for Step 13:
+    // Step A (progress < 0.28): Inward reporting C2 -> C4 (VRF: 0.0837) & C8 -> C4 (VRF: 0.0275)
+    // Step B (0.28 <= progress < 0.56): Outward relay C4 -> C2 ({C4:0.0412, C8:0.0275}) & C4 -> C8 ({C4:0.0412, C2:0.0837})
+    // Step C (0.56 <= progress < 0.72): Node 4 flashes golden halo and receives 👑👑 TOP INITIATOR badge
+    // Step D (0.72 <= progress <= 1.0): Golden TOP_PROBE pulses spread simultaneously C4 -> C2 and C4 -> C8
 
-    if (progress < 0.40) {
-      // ===== PHASE A: 1-HOP VRF SCORE EXCHANGE =====
-      const subA = progress / 0.40;
+    if (progress < 0.28) {
+      // ===== STEP A: INWARD VRF SCORE REPORTING (C2 & C8 ➔ C4) =====
+      const subA = progress / 0.28;
       const easeA = easeInOutQuad(subA);
 
-      // Phase A Status Banner
+      // Step A Status Banner
       ctx.save();
       const statusX = (p2.x + p8.x) / 2;
       const statusY = p4.y + 42;
       ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-      const statTxt = "PHASE 1: 1-HOP VRF SCORE EXCHANGE (C2 ↔ C4 ↔ C8)";
+      const statTxt = "STEP A: INWARD VRF REPORTING (C2 & C8 ➔ C4)";
       const sW = ctx.measureText(statTxt).width;
-      ctx.fillStyle = "rgba(30, 41, 59, 0.90)";
+      ctx.fillStyle = "rgba(30, 41, 59, 0.92)";
       ctx.strokeStyle = "#38bdf8";
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.roundRect(statusX - sW / 2 - 8, statusY - 10, sW + 16, 18, 4);
       ctx.fill();
@@ -2841,72 +2842,146 @@ function animateStep13TopProbe(packets, allNodes) {
       ctx.fillText(statTxt, statusX, statusY);
       ctx.restore();
 
-      // Exchange 1: C2 -> C4 (carrying σ_2 = 0.0837) and C4 -> C2 (carrying σ_4 = 0.0412)
-      // Path: C2 <-> C1 <-> C4
-      let x2_4, y2_4, x4_2, y4_2;
+      // Exchange 1: C2 -> C4 via C1 (carrying VRF: 0.0837)
+      let x2_4, y2_4;
       const tgt1 = p1 || p4;
       if (subA < 0.5) {
         const seg = subA / 0.5;
         const e = easeInOutQuad(seg);
         x2_4 = p2.x + (tgt1.x - p2.x) * e;
         y2_4 = p2.y + (tgt1.y - p2.y) * e;
-        x4_2 = p4.x + (tgt1.x - p4.x) * e;
-        y4_2 = p4.y + (tgt1.y - p4.y) * e;
       } else {
         const seg = (subA - 0.5) / 0.5;
         const e = easeInOutQuad(seg);
         x2_4 = tgt1.x + (p4.x - tgt1.x) * e;
         y2_4 = tgt1.y + (p4.y - tgt1.y) * e;
-        x4_2 = tgt1.x + (p2.x - tgt1.x) * e;
-        y4_2 = tgt1.y + (p2.y - tgt1.y) * e;
       }
 
-      // Exchange 2: C8 -> C4 (carrying σ_8 = 0.0275) and C4 -> C8 (carrying σ_4 = 0.0412)
-      // Path: C8 <-> C6 <-> C4
-      let x8_4, y8_4, x4_8, y4_8;
+      // Exchange 2: C8 -> C4 via C6 (carrying VRF: 0.0275)
+      let x8_4, y8_4;
       const tgt6 = p6 || p4;
       if (subA < 0.5) {
         const seg = subA / 0.5;
         const e = easeInOutQuad(seg);
         x8_4 = p8.x + (tgt6.x - p8.x) * e;
         y8_4 = p8.y + (tgt6.y - p8.y) * e;
-        x4_8 = p4.x + (tgt6.x - p4.x) * e;
-        y4_8 = p4.y + (tgt6.y - p4.y) * e;
       } else {
         const seg = (subA - 0.5) / 0.5;
         const e = easeInOutQuad(seg);
         x8_4 = tgt6.x + (p4.x - tgt6.x) * e;
         y8_4 = tgt6.y + (p4.y - tgt6.y) * e;
+      }
+
+      // Render inward packets
+      drawVrfPacket(ctx, x2_4, y2_4, "#3b82f6", "VRF: 0.0837");
+      drawVrfPacket(ctx, x8_4, y8_4, "#8b5cf6", "VRF: 0.0275");
+
+    } else if (progress < 0.56) {
+      // ===== STEP B: OUTWARD RELAY OF DISSEMINATED SCORES FROM C4 =====
+      const subB = (progress - 0.28) / 0.28;
+      const easeB = easeInOutQuad(subB);
+
+      // Step B Status Banner
+      ctx.save();
+      const statusX = (p2.x + p8.x) / 2;
+      const statusY = p4.y + 42;
+      ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+      const statTxt = "STEP B: C4 OUTWARD RELAY OF DISSEMINATED SCORES";
+      const sW = ctx.measureText(statTxt).width;
+      ctx.fillStyle = "rgba(30, 41, 59, 0.92)";
+      ctx.strokeStyle = "#f97316";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(statusX - sW / 2 - 8, statusY - 10, sW + 16, 18, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#fdba74";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(statTxt, statusX, statusY);
+      ctx.restore();
+
+      // Relay 1: C4 -> C2 via C1 (carrying SCORES: {C4:0.0412, C8:0.0275})
+      let x4_2, y4_2;
+      const tgt1 = p1 || p2;
+      if (subB < 0.5) {
+        const seg = subB / 0.5;
+        const e = easeInOutQuad(seg);
+        x4_2 = p4.x + (tgt1.x - p4.x) * e;
+        y4_2 = p4.y + (tgt1.y - p4.y) * e;
+      } else {
+        const seg = (subB - 0.5) / 0.5;
+        const e = easeInOutQuad(seg);
+        x4_2 = tgt1.x + (p2.x - tgt1.x) * e;
+        y4_2 = tgt1.y + (p2.y - tgt1.y) * e;
+      }
+
+      // Relay 2: C4 -> C8 via C6 (carrying SCORES: {C4:0.0412, C2:0.0837})
+      let x4_8, y4_8;
+      const tgt6 = p6 || p8;
+      if (subB < 0.5) {
+        const seg = subB / 0.5;
+        const e = easeInOutQuad(seg);
+        x4_8 = p4.x + (tgt6.x - p4.x) * e;
+        y4_8 = p4.y + (tgt6.y - p4.y) * e;
+      } else {
+        const seg = (subB - 0.5) / 0.5;
+        const e = easeInOutQuad(seg);
         x4_8 = tgt6.x + (p8.x - tgt6.x) * e;
         y4_8 = tgt6.y + (p8.y - tgt6.y) * e;
       }
 
-      // Render exchange packets
-      drawVrfPacket(ctx, x2_4, y2_4, "#3b82f6", "VRF: 0.0837");
-      drawVrfPacket(ctx, x4_2, y4_2, "#f97316", "VRF: 0.0412");
-      drawVrfPacket(ctx, x8_4, y8_4, "#8b5cf6", "VRF: 0.0275");
-      drawVrfPacket(ctx, x4_8, y4_8, "#f97316", "VRF: 0.0412");
+      // Render outward relay packets
+      drawVrfPacket(ctx, x4_2, y4_2, "#f97316", "SCORES: {C4:0.0412, C8:0.0275}", true);
+      drawVrfPacket(ctx, x4_8, y4_8, "#f97316", "SCORES: {C4:0.0412, C2:0.0837}", false);
 
-    } else if (progress < 0.48) {
-      // ===== ELECTION FLASH / ANNOUNCEMENT =====
-      const subE = (progress - 0.40) / 0.08;
-      const eRing = 30 + subE * 35;
-      const eA = (1.0 - subE) * 0.95;
+    } else if (progress < 0.72) {
+      // ===== STEP C: NODE 4 FLASHES GOLDEN HALO & RECEIVES TOP INITIATOR BADGE =====
+      const subC = (progress - 0.56) / 0.16;
+      const easeC = easeInOutQuad(subC);
+      const eRing1 = 28 + easeC * 44;
+      const eRing2 = 18 + easeC * 28;
+      const eA = Math.sin(subC * Math.PI) * 0.98;
 
       ctx.save();
+      // Outer flashing golden halo
       ctx.beginPath();
-      ctx.arc(p4.x, p4.y, eRing, 0, Math.PI * 2);
+      ctx.arc(p4.x, p4.y, eRing1, 0, Math.PI * 2);
       ctx.strokeStyle = `rgba(234, 179, 8, ${eA})`;
       ctx.lineWidth = 4;
       ctx.shadowColor = "#eab308";
-      ctx.shadowBlur = 24;
+      ctx.shadowBlur = 28;
       ctx.stroke();
 
-      // Election Winner Announcement Banner
-      const aX = p4.x;
-      const aY = p4.y + 40;
+      // Inner pulsating halo
+      ctx.beginPath();
+      ctx.arc(p4.x, p4.y, eRing2, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(251, 191, 36, ${eA * 0.85})`;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // 👑👑 TOP INITIATOR badge above C4
+      const badgeY = p4.y - 36;
+      const badgeTxt = "👑👑 TOP INITIATOR";
       ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-      const aText = "👑👑 TOP INITIATOR ELECTED: C4 (CENTRAL BRIDGE)";
+      const bW = ctx.measureText(badgeTxt).width;
+      ctx.fillStyle = "rgba(120, 53, 15, 0.96)";
+      ctx.strokeStyle = "#fbbf24";
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.roundRect(p4.x - bW / 2 - 8, badgeY - 10, bW + 16, 20, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#fef3c7";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(badgeTxt, p4.x, badgeY);
+
+      // Announcement Banner
+      const aX = (p2.x + p8.x) / 2;
+      const aY = p4.y + 42;
+      ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+      const aText = "STEP C: NODE C4 ELECTED TOP-LEVEL INITIATOR (CENTRAL BRIDGE)";
       const aW = ctx.measureText(aText).width;
       ctx.fillStyle = "rgba(120, 53, 15, 0.95)";
       ctx.strokeStyle = "#fbbf24";
@@ -2922,16 +2997,16 @@ function animateStep13TopProbe(packets, allNodes) {
       ctx.restore();
 
     } else {
-      // ===== PHASE B: SYMMETRICAL TOP_PROBE BROADCAST FROM C4 =====
-      const subB = (progress - 0.48) / 0.52;
-      const easeB = easeInOutQuad(subB);
+      // ===== STEP D: GOLDEN TOP_PROBE PULSES SPREAD SIMULTANEOUSLY (C4 ➔ C2 & C8) =====
+      const subD = (progress - 0.72) / 0.28;
+      const easeD = easeInOutQuad(subD);
 
-      // Phase B Status Banner
+      // Step D Status Banner
       ctx.save();
       const statusX = (p2.x + p8.x) / 2;
       const statusY = p4.y + 42;
       ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-      const statTxt = "PHASE 3: SYMMETRICAL TOP_PROBE BROADCAST (C4 ➔ C2 & C8)";
+      const statTxt = "STEP D: SYMMETRICAL TOP_PROBE BROADCAST (C4 ➔ C2 & C8)";
       const sW = ctx.measureText(statTxt).width;
       ctx.fillStyle = "rgba(30, 41, 59, 0.90)";
       ctx.strokeStyle = "#eab308";
@@ -2944,18 +3019,35 @@ function animateStep13TopProbe(packets, allNodes) {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(statTxt, statusX, statusY);
+
+      // Retain 👑👑 TOP INITIATOR badge above C4
+      const badgeY = p4.y - 36;
+      const badgeTxt = "👑👑 TOP INITIATOR";
+      ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+      const bW = ctx.measureText(badgeTxt).width;
+      ctx.fillStyle = "rgba(120, 53, 15, 0.96)";
+      ctx.strokeStyle = "#fbbf24";
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.roundRect(p4.x - bW / 2 - 8, badgeY - 10, bW + 16, 20, 4);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#fef3c7";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(badgeTxt, p4.x, badgeY);
       ctx.restore();
 
       // 1. Symmetrical Outward West Branch: C4 -> C1 -> C2
       let westX, westY;
       const tgt1 = p1 || p2;
-      if (subB < 0.5) {
-        const seg = subB / 0.5;
+      if (subD < 0.5) {
+        const seg = subD / 0.5;
         const e = easeInOutQuad(seg);
         westX = p4.x + (tgt1.x - p4.x) * e;
         westY = p4.y + (tgt1.y - p4.y) * e;
       } else {
-        const seg = (subB - 0.5) / 0.5;
+        const seg = (subD - 0.5) / 0.5;
         const e = easeInOutQuad(seg);
         westX = tgt1.x + (p2.x - tgt1.x) * e;
         westY = tgt1.y + (p2.y - tgt1.y) * e;
@@ -2964,21 +3056,21 @@ function animateStep13TopProbe(packets, allNodes) {
       // 2. Symmetrical Outward East Branch: C4 -> C6 -> C8
       let eastX, eastY;
       const tgt6 = p6 || p8;
-      if (subB < 0.5) {
-        const seg = subB / 0.5;
+      if (subD < 0.5) {
+        const seg = subD / 0.5;
         const e = easeInOutQuad(seg);
         eastX = p4.x + (tgt6.x - p4.x) * e;
         eastY = p4.y + (tgt6.y - p4.y) * e;
       } else {
-        const seg = (subB - 0.5) / 0.5;
+        const seg = (subD - 0.5) / 0.5;
         const e = easeInOutQuad(seg);
         eastX = tgt6.x + (p8.x - tgt6.x) * e;
         eastY = tgt6.y + (p8.y - tgt6.y) * e;
       }
 
       // Gateway Relay Glow on C1 and C6 when traversed
-      if (subB >= 0.42 && subB <= 0.58) {
-        const gProg = (subB - 0.42) / 0.16;
+      if (subD >= 0.42 && subD <= 0.58) {
+        const gProg = (subD - 0.42) / 0.16;
         const gA = Math.sin(gProg * Math.PI) * 0.95;
         [p1, p6].filter(Boolean).forEach(p => {
           ctx.save();
@@ -2997,9 +3089,9 @@ function animateStep13TopProbe(packets, allNodes) {
       drawTopProbePacket(ctx, westX, westY, "TOP_PROBE(TTL=1) ➔ C2");
       drawTopProbePacket(ctx, eastX, eastY, "TOP_PROBE(TTL=1) ➔ C8");
 
-      // Simultaneous Arrival flash at C2 and C8 (subB >= 0.88)
-      if (subB >= 0.88) {
-        const arrProg = (subB - 0.88) / 0.12;
+      // Simultaneous Arrival flash at C2 and C8 (subD >= 0.88)
+      if (subD >= 0.88) {
+        const arrProg = (subD - 0.88) / 0.12;
         const arrA = (1.0 - arrProg) * 0.92;
         [p2, p8].forEach(p => {
           ctx.save();
@@ -3022,7 +3114,7 @@ function animateStep13TopProbe(packets, allNodes) {
 }
 
 // Helper: Draw VRF exchange traveling particle
-function drawVrfPacket(ctx, x, y, color, label) {
+function drawVrfPacket(ctx, x, y, color, label, alignLeft = false) {
   ctx.save();
   ctx.beginPath();
   ctx.arc(x, y, 6, 0, Math.PI * 2);
@@ -3036,20 +3128,29 @@ function drawVrfPacket(ctx, x, y, color, label) {
   ctx.fillStyle = "#ffffff";
   ctx.fill();
 
-  ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
-  const lW = ctx.measureText(label).width;
-  ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.roundRect(x + 8, y - 12, lW + 8, 15, 3);
-  ctx.fill();
-  ctx.stroke();
+  if (label) {
+    ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+    const lW = ctx.measureText(label).width;
+    const boxW = lW + 10;
+    const boxH = 16;
+    const canvasW = ctx.canvas ? ctx.canvas.width : 1000;
+    const placeLeft = alignLeft || (x + 8 + boxW > canvasW - 15);
+    const boxX = placeLeft ? (x - boxW - 8) : (x + 8);
+    const boxY = y - boxH / 2;
 
-  ctx.fillStyle = "#ffffff";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.fillText(label, x + 12, y - 4);
+    ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(boxX, boxY, boxW, boxH, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, boxX + boxW / 2, boxY + boxH / 2);
+  }
   ctx.restore();
 }
 
@@ -3601,6 +3702,111 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   }
 }
 
+// Render dedicated 4-column Overlay VRF Scoreboard (Super-Initiator Election) Table for Step 13
+function renderOverlayVrfScoreboardHtml(idNum, scoreboard) {
+  // Initiator order: C2, C4, C8
+  let rows = [];
+  if (idNum === 2) {
+    rows = [
+      { id: 2, origin: "Self", score: 0.0837, status: "Base Zone Initiator", isWinner: false },
+      { id: 4, origin: "Direct Neighbor", score: 0.0412, status: "🏆 Elected Top-Level Initiator", isWinner: true },
+      { id: 8, origin: "Relayed via C4", score: 0.0275, status: "Base Zone Initiator", isWinner: false }
+    ];
+  } else if (idNum === 8) {
+    rows = [
+      { id: 2, origin: "Relayed via C4", score: 0.0837, status: "Base Zone Initiator", isWinner: false },
+      { id: 4, origin: "Direct Neighbor", score: 0.0412, status: "🏆 Elected Top-Level Initiator", isWinner: true },
+      { id: 8, origin: "Self", score: 0.0275, status: "Base Zone Initiator", isWinner: false }
+    ];
+  } else {
+    // Node 4 (Central Bridge Hub / Elected Super-Initiator)
+    rows = [
+      { id: 2, origin: "Direct Neighbor", score: 0.0837, status: "Base Zone Initiator", isWinner: false },
+      { id: 4, origin: "Self", score: 0.0412, status: "🏆 Elected Top-Level Initiator", isWinner: true },
+      { id: 8, origin: "Direct Neighbor", score: 0.0275, status: "Base Zone Initiator", isWinner: false }
+    ];
+  }
+
+  // If scoreboard has backend provided rows, overlay their exact scores and origins
+  if (scoreboard && Array.isArray(scoreboard.rows) && scoreboard.rows.length > 0) {
+    rows = scoreboard.rows.map(r => ({
+      id: r.id,
+      origin: r.origin || (r.id === idNum ? "Self" : (r.via === "relayed_by_C4" || r.relayed ? "Relayed via C4" : "Direct Neighbor")),
+      score: r.score,
+      status: r.is_winner || r.id === 4 ? "🏆 Elected Top-Level Initiator" : "Base Zone Initiator",
+      isWinner: Boolean(r.is_winner || r.id === 4)
+    }));
+  }
+
+  const rowsHtml = rows.map(r => {
+    const isWinner = Boolean(r.isWinner || r.id === 4);
+    const trClass = isWinner
+      ? "bg-amber-100/90 font-bold border-y-2 border-amber-400 text-amber-950"
+      : "hover:bg-slate-50 border-b border-slate-200 text-slate-700";
+
+    const originBadgeClass = r.origin.includes("Self")
+      ? "bg-blue-100 text-blue-800 border-blue-200"
+      : r.origin.includes("Direct")
+        ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+        : "bg-purple-100 text-purple-800 border-purple-200";
+
+    return `
+      <tr class="${trClass}">
+        <td class="py-1.5 px-2.5 font-bold font-mono ${isWinner ? 'text-amber-950' : 'text-slate-800'}">
+          ${isWinner ? '👑 ' : ''}C${r.id}
+        </td>
+        <td class="py-1.5 px-2.5">
+          <span class="inline-block px-1.5 py-0.5 rounded text-[8.5px] font-semibold border ${originBadgeClass}">
+            ${r.origin}
+          </span>
+        </td>
+        <td class="py-1.5 px-2.5 font-mono font-bold ${isWinner ? 'text-amber-950 text-[10px]' : 'text-slate-800'}">
+          ${typeof r.score === 'number' ? r.score.toFixed(4) : r.score}
+        </td>
+        <td class="py-1.5 px-2.5">
+          ${isWinner
+            ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-200 text-amber-950 border border-amber-400 font-extrabold text-[9px] shadow-xs">🏆 Elected Top-Level Initiator</span>'
+            : '<span class="text-[9px] text-slate-600 font-medium">Base Zone Initiator</span>'
+          }
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <div class="space-y-1.5 font-mono text-[10px] mt-1">
+      <div class="font-bold text-amber-950 flex items-center justify-between">
+        <span class="flex items-center gap-1">
+          <span>📊</span>
+          <span>Overlay VRF Scoreboard (Super-Initiator Election):</span>
+        </span>
+        <span class="text-[8.5px] px-1.5 py-0.2 rounded bg-amber-200 text-amber-900 border border-amber-300 font-bold">
+          Elected: Node C4 🏆
+        </span>
+      </div>
+      <div class="overflow-x-auto border border-amber-300 rounded shadow-xs">
+        <table class="w-full text-left border-collapse bg-white">
+          <thead>
+            <tr class="bg-amber-50 text-amber-900 text-[8.5px] border-b border-amber-200 font-bold uppercase tracking-wider">
+              <th class="py-1.5 px-2.5">Initiator ID</th>
+              <th class="py-1.5 px-2.5">Role / Origin</th>
+              <th class="py-1.5 px-2.5">Exact VRF Value</th>
+              <th class="py-1.5 px-2.5">Election Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+      <div class="text-[8.5px] text-slate-500 font-sans italic flex items-center justify-between px-0.5">
+        <span>Multi-way VRF dissemination across C2 ↔ C4 ↔ C8 overlay.</span>
+        <span class="font-semibold text-amber-900 font-mono">Consensus: C4 (0.0412)</span>
+      </div>
+    </div>
+  `;
+}
+
 // 10. Click-to-Toggle Node Details Modal (Strict Step 1 Scope)
 function showNodeModal(nodeData) {
   const card = document.getElementById("nodeInfoCard");
@@ -3617,7 +3823,7 @@ function showNodeModal(nodeData) {
   // Header: Node C{id} | Role: INITIATOR / CLIENT | Zone: {assigned_zone} in Step 5 & 6
   if (cardNodeId) {
     if (currentStep === 13) {
-      const isTopInit = Boolean(idNum === 8 || nodeData.is_top_initiator);
+      const isTopInit = Boolean(idNum === 4 || nodeData.is_top_initiator);
       const isInit = Boolean([2, 4, 8].includes(idNum) || nodeData.is_initiator);
       const roleStr = isTopInit ? "👑👑 TOP INITIATOR" : (isInit ? "👑 BASE INITIATOR" : "CLIENT");
       cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Role: <span class="${isTopInit ? 'text-amber-800 font-bold' : (isInit ? 'text-amber-700 font-bold' : 'text-slate-800')}">${roleStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Super-Zone: <span class="font-bold text-amber-900">Z_TOP</span></span>`;
@@ -5349,33 +5555,8 @@ function showNodeModal(nodeData) {
               </div>
             </div>
 
-            <!-- 2. Overlay Scoreboard: Received Scores from C2 and C8 -->
-            <div class="p-2.5 bg-amber-50/70 rounded border border-amber-200 space-y-1.5 text-[10px] font-mono">
-              <div class="flex items-center justify-between font-bold text-amber-950">
-                <span class="flex items-center gap-1"><span>🎲</span><span>Overlay Scoreboard (1-Hop Exchange):</span></span>
-                <span class="px-1.5 py-0.2 rounded bg-amber-200 text-amber-900 border border-amber-300">Hub: Node 4</span>
-              </div>
-              <div class="grid grid-cols-3 gap-1.5 text-center mt-1">
-                <div class="p-1.5 rounded bg-white border border-amber-300">
-                  <div class="text-slate-500 text-[8.5px]">C4 (Self / Bridge)</div>
-                  <div class="font-bold text-amber-900">0.0412 👑👑</div>
-                  <div class="text-[8px] text-emerald-700 font-bold">Central Bridge Hub</div>
-                </div>
-                <div class="p-1.5 rounded bg-white border border-slate-200">
-                  <div class="text-slate-500 text-[8.5px]">C2 (West Neighbor)</div>
-                  <div class="font-semibold text-slate-700">0.0837</div>
-                  <div class="text-[8px] text-slate-500 font-medium">path: [2, 1, 4]</div>
-                </div>
-                <div class="p-1.5 rounded bg-white border border-slate-200">
-                  <div class="text-slate-500 text-[8.5px]">C8 (East Neighbor)</div>
-                  <div class="font-semibold text-slate-700">0.0275</div>
-                  <div class="text-[8px] text-slate-500 font-medium">path: [8, 6, 4]</div>
-                </div>
-              </div>
-              <div class="text-[9px] text-amber-900 pt-1 border-t border-amber-200">
-                Central bridge topology: C2 ↔ C4 ↔ C8. C4 bridges both western and eastern clusters.
-              </div>
-            </div>
+            <!-- 2. Overlay VRF Scoreboard (Super-Initiator Election) Table -->
+            ${renderOverlayVrfScoreboardHtml(4, nodeData.overlay_scoreboard)}
 
             <!-- 3. Symmetrical TOP_PROBE Broadcast Pipeline -->
             <div class="p-2.5 bg-slate-50 rounded border border-amber-200 space-y-1.5 text-[10px] font-mono">
@@ -5423,6 +5604,9 @@ function showNodeModal(nodeData) {
             <div class="p-2 bg-amber-50/80 rounded border border-amber-200 text-[10.5px] font-mono text-amber-950">
               <span class="font-bold">Status:</span> Base Zone Initiator | Member of Top-Level Super-Zone (Root: C4)
             </div>
+
+            <!-- Dedicated Overlay VRF Scoreboard (Super-Initiator Election) Table -->
+            ${renderOverlayVrfScoreboardHtml(idNum, nodeData.overlay_scoreboard)}
 
             <!-- Membership & VRF Details -->
             <div class="p-2.5 bg-slate-50 rounded border border-amber-200 space-y-1.5 text-[10px] font-mono">
