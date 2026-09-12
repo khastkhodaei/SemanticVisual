@@ -829,9 +829,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 14)
+// 4. Main Step Loading Function (Steps 1 to 15)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 14) return;
+  if (stepNumber < 1 || stepNumber > 15) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -1082,6 +1082,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 14 / TOP-LEVEL INITIATOR ELECTION & SUPER-ZONE (C4 👑👑)";
     if (stepTitle) stepTitle.textContent = "Step 14: Top-Level Initiator Election & Super-Zone Creation (Figure 3(e))";
     if (stepDesc) stepDesc.textContent = "Base initiators form a higher-level overlay graph. Initiator C4 wins election and broadcasts symmetrical TOP_PROBE to form the global Super-Zone Z_TOP.";
+  } else if (step === 15) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 15: TOP-LEVEL CATALOG QUERY DISPATCH (REQ_CLUSTER_CATALOG)";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-cyan-50 text-cyan-900 border border-cyan-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 15 / TOP-LEVEL CATALOG QUERY DISPATCH";
+    if (stepTitle) stepTitle.textContent = "Step 15: Top-Level Catalog Query Dispatch (REQ_CLUSTER_CATALOG)";
+    if (stepDesc) stepDesc.textContent = "Super-Initiator C4 broadcasts REQ_CLUSTER_CATALOG across the super-zone overlay to retrieve cluster metadata from base initiators C2 and C8.";
   }
 }
 
@@ -7115,11 +7123,11 @@ function updateStepper(step) {
         item.classList.add("step-emerald");
       } else if (step === 6 || step === 8) {
         item.classList.add("step-purple");
-      } else if (step === 7 || step === 15) {
+      } else if (step === 7) {
         item.classList.add("step-blue");
       } else if (step === 9) {
         item.classList.add("step-indigo");
-      } else if (step === 11) {
+      } else if (step === 11 || step === 15) {
         item.classList.add("step-cyan");
       } else if (step === 12) {
         item.classList.add("step-violet");
