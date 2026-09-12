@@ -2462,6 +2462,237 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             "tau": 0.80,
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 12:
+        # Step 12: Intra-Zone Semantic Clustering via Cosine Similarity & Affinity Propagation (AP)
+        # Each Zone Initiator evaluates semantic similarity across its collected member signatures
+        # (m_i, m_j in {0, 1}^10) using Cosine Similarity metric:
+        # Sim(i, j) = (m_i . m_j) / (||m_i||_2 * ||m_j||_2) = |m_i cap m_j| / 3
+        # Then executes Affinity Propagation clustering.
+        initiators = [2, 4, 8]
+        node_to_zone = {
+            1: 2, 2: 2, 3: 2,
+            4: 4, 5: 4, 6: 4, 7: 4,
+            8: 8, 9: 8, 10: 8,
+        }
+
+        # Exact Intra-Zone Cosine Similarity Matrices
+        similarity_matrices = {
+            2: {
+                "peer_ids": [1, 2, 3],
+                "peers": ["C1", "C2", "C3"],
+                "matrix": [
+                    [1.0, 1.0, 0.0],
+                    [1.0, 1.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                ],
+            },
+            4: {
+                "peer_ids": [4, 5, 6, 7],
+                "peers": ["C4", "C5", "C6", "C7"],
+                "matrix": [
+                    [1.0, 1.0, 0.0, 0.0],
+                    [1.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.67],
+                    [0.0, 0.0, 0.67, 1.0],
+                ],
+            },
+            8: {
+                "peer_ids": [8, 9, 10],
+                "peers": ["C8", "C9", "C10"],
+                "matrix": [
+                    [1.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                ],
+            },
+        }
+
+        # Exact Affinity Propagation Clusters per Zone
+        zone_clusters_map = {
+            2: {
+                "2-A": {
+                    "cluster_id": "2-A",
+                    "exemplar": 2,
+                    "members": [1, 2],
+                    "members_str": ["C1", "C2"],
+                    "shared_classes": ["Airplane (C1)", "Automobile (C2)", "Bird (C3)"],
+                    "overlap_pct": 100.0,
+                    "label": "Cluster 2-A (Exemplar C2)",
+                    "color": "#059669",
+                },
+                "2-B": {
+                    "cluster_id": "2-B",
+                    "exemplar": 3,
+                    "members": [3],
+                    "members_str": ["C3"],
+                    "shared_classes": ["Cat (C4)", "Deer (C5)", "Dog (C6)"],
+                    "overlap_pct": 100.0,
+                    "label": "Cluster 2-B (Exemplar C3)",
+                    "color": "#0d9488",
+                },
+            },
+            4: {
+                "4-A": {
+                    "cluster_id": "4-A",
+                    "exemplar": 4,
+                    "members": [4, 5],
+                    "members_str": ["C4", "C5"],
+                    "shared_classes": ["Cat (C4)", "Deer (C5)", "Dog (C6)"],
+                    "overlap_pct": 100.0,
+                    "label": "Cluster 4-A (Exemplar C4)",
+                    "color": "#ea580c",
+                },
+                "4-B": {
+                    "cluster_id": "4-B",
+                    "exemplar": 6,
+                    "members": [6, 7],
+                    "members_str": ["C6", "C7"],
+                    "shared_classes": ["Ship (C9)", "Truck (C10)"],
+                    "overlap_pct": 66.7,
+                    "label": "Cluster 4-B (Exemplar C6)",
+                    "color": "#d97706",
+                },
+            },
+            8: {
+                "8-A": {
+                    "cluster_id": "8-A",
+                    "exemplar": 8,
+                    "members": [8],
+                    "members_str": ["C8"],
+                    "shared_classes": ["Cat (C4)", "Deer (C5)", "Dog (C6)"],
+                    "overlap_pct": 100.0,
+                    "label": "Cluster 8-A (Exemplar C8)",
+                    "color": "#7c3aed",
+                },
+                "8-B": {
+                    "cluster_id": "8-B",
+                    "exemplar": 9,
+                    "members": [9],
+                    "members_str": ["C9"],
+                    "shared_classes": ["Airplane (C1)", "Automobile (C2)", "Bird (C3)"],
+                    "overlap_pct": 100.0,
+                    "label": "Cluster 8-B (Exemplar C9)",
+                    "color": "#6366f1",
+                },
+                "8-C": {
+                    "cluster_id": "8-C",
+                    "exemplar": 10,
+                    "members": [10],
+                    "members_str": ["C10"],
+                    "shared_classes": ["Horse (C8)", "Ship (C9)", "Truck (C10)"],
+                    "overlap_pct": 100.0,
+                    "label": "Cluster 8-C (Exemplar C10)",
+                    "color": "#8b5cf6",
+                },
+            },
+        }
+
+        # Direct node to cluster assignment lookup
+        node_cluster_assignments = {
+            1: {"cluster_id": "2-A", "exemplar": 2, "peers": [1, 2], "color": "#059669"},
+            2: {"cluster_id": "2-A", "exemplar": 2, "peers": [1, 2], "color": "#059669"},
+            3: {"cluster_id": "2-B", "exemplar": 3, "peers": [3], "color": "#0d9488"},
+            4: {"cluster_id": "4-A", "exemplar": 4, "peers": [4, 5], "color": "#ea580c"},
+            5: {"cluster_id": "4-A", "exemplar": 4, "peers": [4, 5], "color": "#ea580c"},
+            6: {"cluster_id": "4-B", "exemplar": 6, "peers": [6, 7], "color": "#d97706"},
+            7: {"cluster_id": "4-B", "exemplar": 6, "peers": [6, 7], "color": "#d97706"},
+            8: {"cluster_id": "8-A", "exemplar": 8, "peers": [8], "color": "#7c3aed"},
+            9: {"cluster_id": "8-B", "exemplar": 9, "peers": [9], "color": "#6366f1"},
+            10: {"cluster_id": "8-C", "exemplar": 10, "peers": [10], "color": "#8b5cf6"},
+        }
+
+        # Preserve metadata from Step 11
+        step11_data = get_10node_step_data(11)
+        step11_nodes_map = {n["id"]: n for n in step11_data["nodes"]}
+
+        step12_nodes = []
+        for n in nodes:
+            nid = n["id"]
+            n_copy = dict(step11_nodes_map[nid])
+            is_init = (nid in initiators)
+            zid = node_to_zone[nid]
+
+            # Populate clustering attributes
+            c_info = node_cluster_assignments[nid]
+            n_copy["assigned_cluster_id"] = c_info["cluster_id"]
+            n_copy["cluster_id"] = c_info["cluster_id"]
+            n_copy["cluster_exemplar"] = c_info["exemplar"]
+            n_copy["cluster_peers"] = c_info["peers"]
+            n_copy["cluster_peers_str"] = [f"C{p}" for p in c_info["peers"]]
+            n_copy["cluster_color"] = c_info["color"]
+            n_copy["cluster_status"] = "CLUSTERED"
+
+            if is_init:
+                # Initiators hold intra-zone similarity matrix and cluster registry
+                n_copy["intra_zone_similarity_matrix"] = similarity_matrices[nid]
+                n_copy["clusters"] = zone_clusters_map[nid]
+                n_copy["zone_clusters"] = zone_clusters_map[nid]
+                n_copy["clustering_role"] = "ZONE_INITIATOR (CLUSTERING_ENGINE)"
+            else:
+                n_copy["intra_zone_similarity_matrix"] = {}
+                n_copy["clusters"] = {}
+                n_copy["zone_clusters"] = {}
+                n_copy["clustering_role"] = "ZONE_MEMBER (CLUSTER_PARTITIONED)"
+
+            step12_nodes.append(n_copy)
+
+        # Edges for Step 12: All 18 physical links remain clean solid slate lines
+        step12_edges = []
+        for e in edges:
+            e_copy = dict(e)
+            u = e["source_num"]
+            v = e["target_num"]
+            z_u = node_to_zone[u]
+            z_v = node_to_zone[v]
+            is_cross_zone = (z_u != z_v)
+            e_copy["is_inter_zone"] = is_cross_zone
+            e_copy["is_boundary"] = is_cross_zone
+            e_copy["is_boundary_edge"] = is_cross_zone
+            e_copy["style"] = "solid"
+            e_copy["line_color"] = "#64748b"
+            e_copy["line_style"] = "solid"
+            step12_edges.append(e_copy)
+
+        terminal_logs = [
+            "[STEP 12] Intra-Zone Semantic Clustering initialized via Affinity Propagation (AP).",
+            "[SIMILARITY] Zone 2 Initiator C2 computed 3x3 Cosine Similarity matrix: Sim(1,2)=1.0, Sim(1,3)=0.0, Sim(2,3)=0.0.",
+            "[CLUSTER] Zone 2 partitioned into 2 clusters: Cluster 2-A {C1, C2} (Exemplar C2) & Cluster 2-B {C3} (Exemplar C3).",
+            "[SIMILARITY] Zone 4 Initiator C4 computed 4x4 Cosine Similarity matrix: Sim(4,5)=1.0, Sim(6,7)=0.67, cross-pairs=0.0.",
+            "[CLUSTER] Zone 4 partitioned into 2 clusters: Cluster 4-A {C4, C5} (Exemplar C4) & Cluster 4-B {C6, C7} (Exemplar C6).",
+            "[SIMILARITY] Zone 8 Initiator C8 computed 3x3 Cosine Similarity matrix: All non-diagonal similarities = 0.0.",
+            "[CLUSTER] Zone 8 partitioned into 3 orthogonal clusters: Cluster 8-A {C8}, Cluster 8-B {C9}, Cluster 8-C {C10}.",
+            "[ANALYSIS] Orthogonal distribution in Zone 8 highlights necessity for inter-zone Semantic Overlay links in Step 13.",
+            "[SUCCESS] All 10 edge peers successfully assigned to semantic clusters.",
+        ]
+
+        return {
+            "step": 12,
+            "title": "Step 12: Intra-Zone Semantic Clustering (Affinity Propagation)",
+            "phase_badge": "ACTIVE PHASE: STEP 12: INTRA-ZONE SEMANTIC CLUSTERING (AP)",
+            "description": "Each Zone Initiator computes pairwise Cosine Similarities across member signatures and runs Affinity Propagation to form semantic clusters.",
+            "formula": "\\text{Sim}(i, j) = \\frac{|\\mathbf{m}_i \\cap \\mathbf{m}_j|}{3}, \\quad \\text{AP}(S) \\to \\mathcal{C}_k",
+            "formula_desc": "Initiators run Affinity Propagation on intra-zone cosine similarities to partition peers into semantic clusters.",
+            "nodes": step12_nodes,
+            "edges": step12_edges,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "similarity_matrices": similarity_matrices,
+            "all_clusters": zone_clusters_map,
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "agreed_global_p": 3,
+            "target_p": 3,
+            "tau": 0.80,
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,

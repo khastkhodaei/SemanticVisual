@@ -716,9 +716,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 11)
+// 4. Main Step Loading Function (Steps 1 to 12)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 11) return;
+  if (stepNumber < 1 || stepNumber > 12) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -790,6 +790,13 @@ async function loadStep(stepNumber) {
       } catch (renderErr) {
         console.error("Step 11 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 11 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 12) {
+      try {
+        renderStep12(data);
+      } catch (renderErr) {
+        console.error("Step 12 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 12 Render Error: ${renderErr.message}`);
       }
     }
 
@@ -916,6 +923,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 11 / SIGNATURE EXTRACTION & DISPATCH";
     if (stepTitle) stepTitle.textContent = "Step 11: Top-P Signature Extraction with Dual Representation";
     if (stepDesc) stepDesc.textContent = "Peers extract compact unweighted 3-index sets (3 Bytes) to eliminate parameter leakage, while the dashboard renders 10D binary indicator masks.";
+  } else if (step === 12) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 12: INTRA-ZONE SEMANTIC CLUSTERING (AP)";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-violet-50 text-violet-800 border border-violet-300";
+    });
+    if (stepTag) stepTag.textContent = "STEP 12 / INTRA-ZONE SEMANTIC CLUSTERING";
+    if (stepTitle) stepTitle.textContent = "Step 12: Intra-Zone Semantic Clustering (Affinity Propagation)";
+    if (stepDesc) stepDesc.textContent = "Initiators evaluate pairwise Cosine Similarities across member Top-P signatures and run Affinity Propagation to partition peers into semantic clusters.";
   }
 }
 
@@ -2498,6 +2513,64 @@ function animateStep11SignaturePackets(packets, allNodes) {
   activeAnimationId = requestAnimationFrame(runFrame);
 }
 
+// 8i. Storyboard Step 12: Intra-Zone Semantic Clustering (Affinity Propagation)
+function renderStep12(data) {
+  stopCurrentPacketAnimation();
+
+  // Explicitly sync header active step badge
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 12: INTRA-ZONE SEMANTIC CLUSTERING (AP)";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-violet-50 text-violet-800 border border-violet-300";
+  });
+
+  renderSidebarFormula(
+    "Step 12: Intra-Zone Semantic Clustering",
+    "\\text{Sim}(i, j) = \\frac{|\\mathbf{m}_i \\cap \\mathbf{m}_j|}{3}, \\quad \\text{AP}(S) \\to \\mathcal{C}_k",
+    "Initiators run Affinity Propagation on intra-zone cosine similarities to partition peers into semantic clusters.",
+    "Step 12: AP Clustering",
+    false,
+    "violet"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) canvasLabel.textContent = "Step 12: Intra-Zone Semantic Clustering (Cosine Similarity & AP)";
+
+  const leaderLegend = document.getElementById("leaderLegendItem");
+  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  const zoneLegend = document.getElementById("zoneLegendItem");
+  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  const boundaryLegend = document.getElementById("boundaryLegendItem");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>3 Initiators Formed Clusters (<span class="text-emerald-700 font-bold">Zone 2</span>: 2, <span class="text-orange-700 font-bold">Zone 4</span>: 2, <span class="text-purple-700 font-bold">Zone 8</span>: 3) → <span class="text-violet-700 font-bold font-mono">AP Partitioning</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Render nodes with Tonal Zone colors and luminous cluster halos
+  renderCytoscapeGraph(data.nodes, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    showBoundaryEdges: false,
+    clusterHalos: true
+  });
+
+  logToTerminal("ZONE", "[STEP 12] Intra-Zone Semantic Clustering initialized via Affinity Propagation (AP).");
+  logToTerminal("INFO", "Zone 2 Initiator C2 computed 3x3 Cosine Similarity matrix: Sim(1,2)=1.0, Sim(1,3)=0.0, Sim(2,3)=0.0.");
+  logToTerminal("SUCCESS", "Zone 2 partitioned into 2 clusters: Cluster 2-A {C1, C2} (Exemplar C2) & Cluster 2-B {C3} (Exemplar C3).");
+  logToTerminal("INFO", "Zone 4 Initiator C4 computed 4x4 Cosine Similarity matrix: Sim(4,5)=1.0, Sim(6,7)=0.67, cross-pairs=0.0.");
+  logToTerminal("SUCCESS", "Zone 4 partitioned into 2 clusters: Cluster 4-A {C4, C5} (Exemplar C4) & Cluster 4-B {C6, C7} (Exemplar C6).");
+  logToTerminal("INFO", "Zone 8 Initiator C8 computed 3x3 Cosine Similarity matrix: All non-diagonal similarities = 0.0.");
+  logToTerminal("SUCCESS", "Zone 8 partitioned into 3 orthogonal clusters: Cluster 8-A {C8}, Cluster 8-B {C9}, Cluster 8-C {C10}.");
+  logToTerminal("INFO", "Orthogonal distribution in Zone 8 highlights necessity for inter-zone Semantic Overlay links in Step 13.");
+}
+
+
 // Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
 function animateProbeFloodingWaves(waves, allNodes) {
   stopCurrentPacketAnimation();
@@ -2927,6 +3000,19 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
         boundary_neighbors: n.boundary_neighbors || [],
         boundary_status: n.boundary_status,
         status_tag: n.status_tag,
+        assigned_cluster_id: n.assigned_cluster_id,
+        cluster_id: n.cluster_id || n.assigned_cluster_id,
+        cluster_exemplar: n.cluster_exemplar,
+        cluster_peers: n.cluster_peers || [],
+        cluster_peers_str: n.cluster_peers_str || [],
+        cluster_color: n.cluster_color,
+        cluster_status: n.cluster_status,
+        clustering_role: n.clustering_role,
+        intra_zone_similarity_matrix: n.intra_zone_similarity_matrix,
+        clusters: n.clusters,
+        zone_clusters: n.zone_clusters,
+        top_p_indices: n.top_p_indices,
+        binary_mask_10d: n.binary_mask_10d,
       },
       position: {
         x: n.x,
@@ -2953,6 +3039,23 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   cy.add(elements);
   cy.layout({ name: "preset" }).run();
   cy.fit(undefined, 35);
+
+  if (options.clusterHalos) {
+    nodes.forEach(n => {
+      const cColor = n.cluster_color || "#8b5cf6";
+      const ele = cy.getElementById(`node_${n.id}`);
+      if (ele && ele.length > 0) {
+        ele.style({
+          "underlay-color": cColor,
+          "underlay-padding": 5.5,
+          "underlay-opacity": 0.5,
+          "shadow-blur": 14,
+          "shadow-color": cColor,
+          "shadow-opacity": 0.85
+        });
+      }
+    });
+  }
 
   if (options.useZoneColors && !options.useTonalZoneColors) {
     nodes.forEach(n => {
@@ -3089,10 +3192,10 @@ function showNodeModal(nodeData) {
       vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
     }
 
-    // Mini bar profile for Step 5, 6, 7, 8, 9, 10 & 11
+    // Mini bar profile for Step 5, 6, 7, 8, 9, 10, 11 & 12
     const vectorBarsContainer = document.getElementById("cardVectorBarsContainer");
     const vectorBars = document.getElementById("cardVectorBars");
-    if ((currentStep >= 5 && currentStep <= 11) && vectorBarsContainer && vectorBars) {
+    if ((currentStep >= 5 && currentStep <= 12) && vectorBarsContainer && vectorBars) {
       vectorBarsContainer.classList.remove("hidden");
       vectorBars.innerHTML = "";
       vec.forEach((val, idx) => {
@@ -4363,6 +4466,281 @@ function showNodeModal(nodeData) {
     if (sigSection) sigSection.classList.add("hidden");
   }
 
+  // Step 12: Intra-Zone Semantic Clustering (Affinity Propagation)
+  const clSection = document.getElementById("cardClusteringSection");
+  const clBadge = document.getElementById("cardClusteringBadge");
+  const clContent = document.getElementById("cardClusteringContent");
+
+  if (currentStep === 12) {
+    if (probeSection) probeSection.classList.add("hidden");
+    if (bndSection) bndSection.classList.add("hidden");
+    if (pminSection) pminSection.classList.add("hidden");
+    if (bsSection) bsSection.classList.add("hidden");
+    if (consensusSection) consensusSection.classList.add("hidden");
+    if (orderSection) orderSection.classList.add("hidden");
+    if (sigSection) sigSection.classList.add("hidden");
+    if (clSection) clSection.classList.remove("hidden");
+
+    const isInitiator = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
+    const assignedZ = nodeData.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
+
+    const defaultClusterMap = {
+      1: { cluster_id: "2-A", exemplar: 2, peers: [1, 2], color: "#059669" },
+      2: { cluster_id: "2-A", exemplar: 2, peers: [1, 2], color: "#059669" },
+      3: { cluster_id: "2-B", exemplar: 3, peers: [3], color: "#0d9488" },
+      4: { cluster_id: "4-A", exemplar: 4, peers: [4, 5], color: "#ea580c" },
+      5: { cluster_id: "4-A", exemplar: 4, peers: [4, 5], color: "#ea580c" },
+      6: { cluster_id: "4-B", exemplar: 6, peers: [6, 7], color: "#d97706" },
+      7: { cluster_id: "4-B", exemplar: 6, peers: [6, 7], color: "#d97706" },
+      8: { cluster_id: "8-A", exemplar: 8, peers: [8], color: "#7c3aed" },
+      9: { cluster_id: "8-B", exemplar: 9, peers: [9], color: "#6366f1" },
+      10: { cluster_id: "8-C", exemplar: 10, peers: [10], color: "#8b5cf6" },
+    };
+
+    const clusterInfo = defaultClusterMap[idNum] || { cluster_id: "2-A", exemplar: 2, peers: [idNum], color: "#059669" };
+    const assignedClusterId = nodeData.assigned_cluster_id || nodeData.cluster_id || clusterInfo.cluster_id;
+    const clusterExemplar = nodeData.cluster_exemplar || clusterInfo.exemplar;
+    const clusterPeers = nodeData.cluster_peers || clusterInfo.peers;
+    const clusterColor = nodeData.cluster_color || clusterInfo.color;
+
+    if (cardStatusBadge) {
+      if (isInitiator) {
+        cardStatusBadge.textContent = "👑 INITIATOR (AP CLUSTER ENGINE)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+      } else {
+        cardStatusBadge.textContent = "CLIENT (SEMANTICALLY CLUSTERED)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-violet-50 text-violet-800 border-violet-300";
+      }
+    }
+
+    if (clBadge) {
+      if (isInitiator) {
+        clBadge.textContent = `Zone ${assignedZ} Initiator (AP Partitioning)`;
+        clBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
+      } else {
+        clBadge.textContent = `Cluster ${assignedClusterId} (Zone ${assignedZ})`;
+        clBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-violet-100 text-violet-800 border border-violet-300";
+      }
+    }
+
+    if (clContent) {
+      clContent.innerHTML = "";
+
+      if (isInitiator) {
+        // Initiator View:
+        // 1. Intra-Zone Cosine Similarity Heatmap/Matrix Table
+        // 2. Identified Semantic Clusters Card
+        const fallbackSim = {
+          2: {
+            peers: ["C1", "C2", "C3"],
+            matrix: [[1.0, 1.0, 0.0], [1.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+          },
+          4: {
+            peers: ["C4", "C5", "C6", "C7"],
+            matrix: [[1.0, 1.0, 0.0, 0.0], [1.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, 0.67], [0.0, 0.0, 0.67, 1.0]]
+          },
+          8: {
+            peers: ["C8", "C9", "C10"],
+            matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+          }
+        }[idNum] || { peers: [], matrix: [] };
+
+        const simData = (nodeData.intra_zone_similarity_matrix && nodeData.intra_zone_similarity_matrix.matrix)
+          ? nodeData.intra_zone_similarity_matrix
+          : fallbackSim;
+
+        const peers = simData.peers || [];
+        const matrix = simData.matrix || [];
+
+        function getHeatmapStyle(val) {
+          if (val >= 0.99) return "background-color: #059669; color: #ffffff; font-weight: bold;";
+          if (val >= 0.6) return "background-color: #0d9488; color: #ffffff; font-weight: bold;";
+          if (val > 0) return "background-color: #0284c7; color: #ffffff;";
+          return "background-color: #1e293b; color: #94a3b8;";
+        }
+
+        const headerCells = peers.map(p => `<th class="py-1 px-1.5 text-center text-slate-700 bg-slate-100 border border-slate-200">${p}</th>`).join("");
+        const matrixRows = matrix.map((row, rIdx) => {
+          const rowPeer = peers[rIdx] || `C${rIdx}`;
+          const cells = row.map(val => {
+            const num = Number(val);
+            const style = getHeatmapStyle(num);
+            return `<td class="py-1 px-1.5 text-center text-[10px] font-mono border border-slate-200" style="${style}">${num.toFixed(2)}</td>`;
+          }).join("");
+          return `
+            <tr>
+              <th class="py-1 px-1.5 text-center font-bold text-slate-700 bg-slate-100 border border-slate-200">${rowPeer}</th>
+              ${cells}
+            </tr>
+          `;
+        }).join("");
+
+        const fallbackClusters = {
+          2: {
+            "2-A": { cluster_id: "2-A", exemplar: 2, members_str: ["C1", "C2"], shared_classes: ["Airplane (C1)", "Automobile (C2)", "Bird (C3)"], overlap_pct: 100.0, color: "#059669" },
+            "2-B": { cluster_id: "2-B", exemplar: 3, members_str: ["C3"], shared_classes: ["Cat (C4)", "Deer (C5)", "Dog (C6)"], overlap_pct: 100.0, color: "#0d9488" }
+          },
+          4: {
+            "4-A": { cluster_id: "4-A", exemplar: 4, members_str: ["C4", "C5"], shared_classes: ["Cat (C4)", "Deer (C5)", "Dog (C6)"], overlap_pct: 100.0, color: "#ea580c" },
+            "4-B": { cluster_id: "4-B", exemplar: 6, members_str: ["C6", "C7"], shared_classes: ["Ship (C9)", "Truck (C10)"], overlap_pct: 66.7, color: "#d97706" }
+          },
+          8: {
+            "8-A": { cluster_id: "8-A", exemplar: 8, members_str: ["C8"], shared_classes: ["Cat (C4)", "Deer (C5)", "Dog (C6)"], overlap_pct: 100.0, color: "#7c3aed" },
+            "8-B": { cluster_id: "8-B", exemplar: 9, members_str: ["C9"], shared_classes: ["Airplane (C1)", "Automobile (C2)", "Bird (C3)"], overlap_pct: 100.0, color: "#6366f1" },
+            "8-C": { cluster_id: "8-C", exemplar: 10, members_str: ["C10"], shared_classes: ["Horse (C8)", "Ship (C9)", "Truck (C10)"], overlap_pct: 100.0, color: "#8b5cf6" }
+          }
+        }[idNum] || {};
+
+        const clustersMap = (nodeData.clusters && Object.keys(nodeData.clusters).length > 0)
+          ? nodeData.clusters
+          : ((nodeData.zone_clusters && Object.keys(nodeData.zone_clusters).length > 0) ? nodeData.zone_clusters : fallbackClusters);
+
+        const clusterCards = Object.values(clustersMap).map(c => `
+          <div class="p-2 rounded-lg border text-[10px] space-y-1" style="border-color: ${c.color}66; background-color: ${c.color}10;">
+            <div class="flex items-center justify-between font-bold">
+              <span class="flex items-center gap-1.5" style="color: ${c.color};">
+                <span class="w-2.5 h-2.5 rounded-full inline-block" style="background-color: ${c.color};"></span>
+                <span>Cluster ${c.cluster_id}</span>
+              </span>
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-white border" style="border-color: ${c.color}55; color: ${c.color};">
+                👑 Exemplar: C${c.exemplar}
+              </span>
+            </div>
+            <div class="flex items-center justify-between text-slate-700">
+              <span class="font-semibold">Member Nodes:</span>
+              <span class="font-mono font-bold text-slate-900">{${(c.members_str || (c.members || []).map(m => `C${m}`)).join(", ")}}</span>
+            </div>
+            <div class="text-[9.5px] text-slate-600">
+              <span class="font-semibold text-slate-700">Shared Classes:</span> ${(c.shared_classes || []).join(", ")}
+              <span class="font-bold ml-1" style="color: ${c.color};">(${c.overlap_pct || 100}% Overlap)</span>
+            </div>
+          </div>
+        `).join("");
+
+        clContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-violet-200 shadow-xs space-y-3">
+            <!-- Heatmap Table -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="font-bold text-[10.5px] text-violet-950 flex items-center gap-1.5">
+                  <span>🔥</span>
+                  <span>Intra-Zone Cosine Similarity Heatmap:</span>
+                </span>
+                <span class="text-[9px] font-mono text-slate-500">
+                  Sim(i,j) = |m_i ∩ m_j| / 3
+                </span>
+              </div>
+              <div class="overflow-x-auto rounded border border-slate-200">
+                <table class="w-full text-left text-[10px] font-mono border-collapse">
+                  <thead>
+                    <tr>
+                      <th class="py-1 px-1.5 text-center bg-slate-50 border border-slate-200 text-slate-500">Peer</th>
+                      ${headerCells}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${matrixRows}
+                  </tbody>
+                </table>
+              </div>
+              <div class="flex items-center justify-between mt-1 text-[9px] text-slate-500">
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2 rounded bg-slate-800 inline-block"></span> 0.0 (Orthogonal)</span>
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2 rounded bg-teal-600 inline-block"></span> 0.67 (Partial)</span>
+                <span class="flex items-center gap-1"><span class="w-2.5 h-2 rounded bg-emerald-600 inline-block"></span> 1.0 (Identical)</span>
+              </div>
+            </div>
+
+            <!-- Identified Semantic Clusters Card -->
+            <div class="space-y-1.5 pt-2 border-t border-slate-200">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-[10.5px] text-violet-950 flex items-center gap-1.5">
+                  <span>🧩</span>
+                  <span>Identified Semantic Clusters (AP Partitioning):</span>
+                </span>
+                <span class="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded bg-violet-100 text-violet-800 border border-violet-300">
+                  ${Object.keys(clustersMap).length} Clusters
+                </span>
+              </div>
+              <div class="space-y-2">
+                ${clusterCards}
+              </div>
+            </div>
+
+            <div class="p-2 bg-violet-50/80 rounded border border-violet-200 text-[10px] text-slate-700 leading-relaxed font-sans">
+              <span class="font-bold text-violet-950">AP Clustering Notice:</span> Initiator C${idNum} grouped zone members by preference-driven message passing (median similarity preference), creating tight semantic consensus cells for model aggregation.
+            </div>
+          </div>
+        `;
+      } else {
+        // Regular Member View
+        const sharedClassesMap = {
+          "2-A": "Airplane (C1), Automobile (C2), Bird (C3)",
+          "2-B": "Cat (C4), Deer (C5), Dog (C6)",
+          "4-A": "Cat (C4), Deer (C5), Dog (C6)",
+          "4-B": "Ship (C9), Truck (C10)",
+          "8-A": "Cat (C4), Deer (C5), Dog (C6)",
+          "8-B": "Airplane (C1), Automobile (C2), Bird (C3)",
+          "8-C": "Horse (C8), Ship (C9), Truck (C10)"
+        };
+
+        const sharedClasses = sharedClassesMap[assignedClusterId] || "Top-P Dominant Classes";
+        const peerListStr = (clusterPeers || []).map(p => `C${p}`).join(", ");
+
+        clContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-violet-200 shadow-xs space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-[10.5px] text-violet-950 flex items-center gap-1.5">
+                <span>🧩</span>
+                <span>Semantic Cluster Profile:</span>
+              </span>
+              <span class="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded text-white shadow-xs" style="background-color: ${clusterColor};">
+                Cluster ${assignedClusterId}
+              </span>
+            </div>
+
+            <div class="p-2.5 bg-slate-50 rounded border border-violet-200 space-y-1.5 text-[10px] font-mono">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Assigned Semantic Cluster:</span>
+                <span class="font-bold text-violet-900 bg-white px-2 py-0.5 rounded border border-violet-200">
+                  Cluster ${assignedClusterId}
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Cluster Exemplar:</span>
+                <span class="font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                  👑 Node C${clusterExemplar}
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600">Semantic Peers in Zone:</span>
+                <span class="font-bold text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                  [${peerListStr}]
+                </span>
+              </div>
+              <div class="pt-1 border-t border-slate-200 text-[9.5px]">
+                <span class="text-slate-600 font-semibold">Cluster Focus:</span>
+                <span class="text-slate-800 font-sans font-medium ml-1">${sharedClasses}</span>
+              </div>
+            </div>
+
+            <div class="p-2 bg-violet-50 rounded border border-violet-200 flex items-center justify-between text-[10.5px]">
+              <span class="text-slate-700 font-medium">Clustering State:</span>
+              <span class="font-mono font-bold text-violet-800 px-2 py-0.5 rounded bg-violet-100 border border-violet-300">
+                CLUSTERED_IN_ZONE_${assignedZ}
+              </span>
+            </div>
+
+            <div class="text-[10px] text-slate-600 font-sans leading-relaxed">
+              Assigned to Cluster ${assignedClusterId} by Initiator C${assignedZ} based on high intra-zone cosine similarity. Node C${idNum} shares federated weight updates primarily within this semantic cluster.
+            </div>
+          </div>
+        `;
+      }
+    }
+  } else {
+    if (clSection) clSection.classList.add("hidden");
+  }
+
   card.classList.remove("hidden");
 }
 
@@ -4685,11 +5063,13 @@ function replaySlowMoNodeTrace(nodeData) {
 function renderSidebarFormula(title, texStr, description, badgeText, isAmber = false, theme = null) {
   const cardEl = document.getElementById("sidebarFormulaCard");
   if (cardEl) {
-    cardEl.classList.remove("formula-amber", "formula-purple", "formula-blue");
+    cardEl.classList.remove("formula-amber", "formula-purple", "formula-blue", "formula-violet");
     if (theme === "purple") {
       cardEl.classList.add("formula-purple");
     } else if (theme === "blue") {
       cardEl.classList.add("formula-blue");
+    } else if (theme === "violet") {
+      cardEl.classList.add("formula-violet");
     } else if (isAmber) {
       cardEl.classList.add("formula-amber");
     }
@@ -4703,6 +5083,8 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
     badgeEl.textContent = badgeText;
     if (theme === "purple") {
       badgeEl.className = "text-[9px] font-mono font-bold text-purple-800 bg-purple-100 px-1.5 py-0.5 rounded border border-purple-300";
+    } else if (theme === "violet") {
+      badgeEl.className = "text-[9px] font-mono font-bold text-violet-800 bg-violet-100 px-1.5 py-0.5 rounded border border-violet-300";
     } else if (isAmber) {
       badgeEl.className = "text-[9px] font-mono font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300";
     } else {
@@ -4728,11 +5110,11 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 11; s++) {
+  for (let s = 1; s <= 12; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
-    item.classList.remove("active", "completed", "step-amber", "step-purple", "step-emerald", "step-blue", "step-indigo", "step-cyan");
+    item.classList.remove("active", "completed", "step-amber", "step-purple", "step-emerald", "step-blue", "step-indigo", "step-cyan", "step-violet");
     if (s < step) {
       item.classList.add("completed");
     } else if (s === step) {
@@ -4749,6 +5131,8 @@ function updateStepper(step) {
         item.classList.add("step-indigo");
       } else if (step === 11) {
         item.classList.add("step-cyan");
+      } else if (step === 12) {
+        item.classList.add("step-violet");
       }
     }
   }
@@ -4778,7 +5162,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 11) {
+    if (step < 12) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -4786,7 +5170,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 11 active (Signature Extraction complete)";
+      btnNext.title = "Step 12 active (Intra-Zone Semantic Clustering complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -4799,7 +5183,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 11);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 12);
 }
 
 function bindActionButtons() {
@@ -4823,16 +5207,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 11) {
+      if (currentStep < 12) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 11 is active (Signature Extraction complete).");
+        logToTerminal("INFO", "Step 12 is active (Intra-Zone Semantic Clustering complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 11)
-  for (let s = 1; s <= 11; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 12)
+  for (let s = 1; s <= 12; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

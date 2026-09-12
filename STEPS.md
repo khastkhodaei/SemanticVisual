@@ -313,3 +313,31 @@ Zone members transmit their signature packet `{"type": "TOP_P_SIG", "indices": n
 
 All zone signatures are successfully aggregated at initiators, primed for intra-zone semantic clustering in Step 12.
 
+---
+
+## Step 12 — Intra-Zone Semantic Clustering (Affinity Propagation)
+
+Each Zone Initiator evaluates semantic similarity across its collected member signatures ($\mathbf{m}_i, \mathbf{m}_j \in \{0, 1\}^{10}$) using the Cosine Similarity metric:
+$$\text{Sim}(i, j) = \frac{\mathbf{m}_i \cdot \mathbf{m}_j}{\Vert{}\mathbf{m}_i\Vert{}_2 \Vert{}\mathbf{m}_j\Vert{}_2} = \frac{\vert{}\mathbf{m}_i \cap \mathbf{m}_j\vert{}}{3}$$
+
+Then, each Initiator executes **Affinity Propagation (AP)** clustering with preference set to the median similarity:
+
+### Zone-Level Clustering Results:
+1. **Zone 2 (Initiator C2) — Members: {C1, C2, C3}**
+   - Pairwise Cosine: $\text{Sim}(1, 2) = 1.0$, $\text{Sim}(1, 3) = 0.0$, $\text{Sim}(2, 3) = 0.0$
+   - **Cluster 2-A (Exemplar C2):** {Node 1, Node 2} (100% overlap on classes C1, C2, C3)
+   - **Cluster 2-B (Exemplar C3):** {Node 3} (Classes C4, C5, C6)
+
+2. **Zone 4 (Initiator C4) — Members: {C4, C5, C6, C7}**
+   - Pairwise Cosine: $\text{Sim}(4, 5) = 1.0$, $\text{Sim}(6, 7) = 0.67$, all cross pairs = $0.0$
+   - **Cluster 4-A (Exemplar C4):** {Node 4, Node 5} (100% overlap on classes C4, C5, C6)
+   - **Cluster 4-B (Exemplar C6):** {Node 6, Node 7} (67% overlap on classes C9, C10)
+
+3. **Zone 8 (Initiator C8) — Members: {C8, C9, C10}**
+   - Pairwise Cosine: All non-diagonal similarities $= 0.0$
+   - **Cluster 8-A:** {Node 8} (Classes C4, C5, C6)
+   - **Cluster 8-B:** {Node 9} (Classes C1, C2, C3)
+   - **Cluster 8-C:** {Node 10} (Classes C8, C9, C10)
+   *(Orthogonal distribution highlights the need for inter-zone Semantic Overlay links in Step 13).*
+
+

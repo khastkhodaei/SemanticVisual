@@ -1701,6 +1701,11 @@ class SemanticDFLEngine:
             "nodes": nodes,
         }
 
+    def run_intra_zone_clustering_10nodes(self) -> Dict[str, Any]:
+        """Compute intra-zone Cosine Similarity matrices and Affinity Propagation clustering for 10-node storyboard."""
+        return get_10node_step_data(12)
+
+
 
     @staticmethod
     def sparse_cosine_similarity(sig_a: Dict[str, Any], sig_b: Dict[str, Any]) -> float:
