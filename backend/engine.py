@@ -1705,6 +1705,10 @@ class SemanticDFLEngine:
         """Compute intra-zone Cosine Similarity matrices and Affinity Propagation clustering for 10-node storyboard."""
         return get_10node_step_data(12)
 
+    def run_top_level_zone_creation_10nodes(self) -> Dict[str, Any]:
+        """Hierarchical Top-Level Zone Creation: Elect C8 as Top-Level Initiator and dispatch TOP_PROBE to form Z_TOP."""
+        return get_10node_step_data(13)
+
 
 
     @staticmethod

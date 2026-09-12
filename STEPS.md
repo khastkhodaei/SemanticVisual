@@ -340,4 +340,32 @@ Then, each Initiator executes **Affinity Propagation (AP)** clustering with pref
    - **Cluster 8-C:** {Node 10} (Classes C8, C9, C10)
    *(Orthogonal distribution highlights the need for inter-zone Semantic Overlay links in Step 13).*
 
+---
+
+## Step 13 — Hierarchical Top-Level Zone Creation (Figure 3(e))
+
+SemanticDFL employs a recursive, hierarchical zoning scheme. Following intra-zone clustering, the base initiators form an abstract higher-level network:
+$$\mathcal{G}_{\text{init}} = (\mathcal{V}_{\text{init}}, \mathcal{E}_{\text{init}}), \quad \mathcal{V}_{\text{init}} = \{C_2, C_4, C_8\}$$
+$$\mathcal{E}_{\text{init}} = \{(C_2, C_4), (C_4, C_8)\}$$
+
+### 1. Top-Level Initiator Election (VRF Evaluation on $\mathcal{G}_{\text{init}}$)
+Comparing the local VRF scores among initiator peers:
+- $\sigma_2 = 0.0837$
+- $\sigma_4 = 0.0412$
+- $\sigma_8 = 0.0275$
+
+Node $C_8$ holds the lowest VRF score in its neighborhood and network-wide:
+$$m_{\text{top}} = \min(\sigma_2, \sigma_4, \sigma_8) = \sigma_8 = 0.0275$$
+**Winner:** **Node 8 ($C_8$)** is elected as the **Top-Level Initiator (Super-Initiator 👑👑)**.
+
+### 2. Top-Level PROBE Dispatch (`TOP_PROBE`)
+Initiator $C_8$ broadcasts a high-level probe across the initiator overlay:
+$$\text{TOP\_PROBE}(C_8, \text{TTL}_{\text{top}} = 2)$$
+- $C_8 \xrightarrow{\text{via } C_6} C_4$ (Hop 1)
+- $C_4 \xrightarrow{\text{via } C_1} C_2$ (Hop 2)
+
+### 3. Super-Zone Formation
+All base initiators ($C_2, C_4, C_8$) join the **Top-Level Super-Zone $\mathcal{Z}_{\text{Top}}$ (Root: $C_8$)**, establishing the hierarchical control plane required for global cluster catalog exchange in Step 14.
+
+
 

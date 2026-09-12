@@ -228,28 +228,40 @@ def post_storyboard_step_12():
     return get_10node_step_data(12)
 
 
+@app.get("/api/v1/storyboard/step/13", tags=["Storyboard"])
+def get_storyboard_step_13():
+    """Returns deterministic data for Storyboard Step 13 (Hierarchical Top-Level Zone Creation)."""
+    return get_10node_step_data(13)
+
+
+@app.post("/api/v1/storyboard/step/13", tags=["Storyboard"])
+def post_storyboard_step_13():
+    """Execute / return deterministic data for Storyboard Step 13."""
+    return get_10node_step_data(13)
+
+
 @app.get("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
 def get_storyboard_step(step_number: int):
-    """Returns deterministic data for Storyboard Step (1 to 12) for 10-node simulation."""
+    """Returns deterministic data for Storyboard Step (1 to 13) for 10-node simulation."""
     if step_number == 1:
         return load_step1_data()
-    if step_number not in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
+    if step_number not in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid step number {step_number}. Must be between 1 and 12.",
+            detail=f"Invalid step number {step_number}. Must be between 1 and 13.",
         )
     return get_10node_step_data(step_number)
 
 
 @app.post("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
 def post_storyboard_step(step_number: int):
-    """Execute / return deterministic data for Storyboard Step (1 to 12) for 10-node simulation."""
+    """Execute / return deterministic data for Storyboard Step (1 to 13) for 10-node simulation."""
     if step_number == 1:
         return load_step1_data()
-    if step_number not in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
+    if step_number not in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid step number {step_number}. Must be between 1 and 12.",
+            detail=f"Invalid step number {step_number}. Must be between 1 and 13.",
         )
     return get_10node_step_data(step_number)
 
