@@ -12,7 +12,7 @@ import copy
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 21
+TOTAL_STEPS: int = 22
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -4336,6 +4336,113 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "raw_payload_bytes": 40,
             "sparse_payload_bytes": 15,
         }
+    elif step_number == 22:
+        step21_data = _get_10node_step_data_raw(21)
+        step22_nodes = copy.deepcopy(step21_data["nodes"])
+
+        # Discovery Packet Traces as specified:
+        # 1. Members send REQ_PEER_DISCOVERY up to local exemplars.
+        # 2. Exemplars propagate discovery queries along multi-hop underlay routes to Super-Peers.
+        discovery_packets = [
+            {"from": 2, "to": 1, "path": [2, 1], "type": "REQ_PEER_DISCOVERY", "query_sig": [1, 2, 3], "super_cluster": "SC-1"},
+            {"from": 4, "to": 5, "path": [4, 5], "type": "REQ_PEER_DISCOVERY", "query_sig": [4, 5, 6], "super_cluster": "SC-2"},
+            {"from": 6, "to": 7, "path": [6, 7], "type": "REQ_PEER_DISCOVERY", "query_sig": [8, 9, 10], "super_cluster": "SC-3"},
+            {"from": 9, "to": 1, "path": [9, 8, 6, 4, 1], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-1", "query_sig": [1, 2, 3]},
+            {"from": 3, "to": 5, "path": [3, 5], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-2", "query_sig": [4, 5, 6]},
+            {"from": 8, "to": 5, "path": [8, 6, 5], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-2", "query_sig": [4, 5, 6]},
+            {"from": 7, "to": 10, "path": [7, 9, 10], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-3", "query_sig": [8, 9, 10]},
+        ]
+
+        # Resolved Peer States:
+        # - Nodes 1, 2, 9: search_status: "RESOLVED", federation_partners: [1, 2, 9], target_classes: "1, 2, 3"
+        # - Nodes 3, 4, 5, 8: search_status: "RESOLVED", federation_partners: [3, 4, 5, 8], target_classes: "4, 5, 6"
+        # - Nodes 6, 7, 10: search_status: "RESOLVED", federation_partners: [6, 7, 10], target_classes: "8, 9, 10"
+        PARTNERS_MAP = {
+            1: ([1, 2, 9], "1, 2, 3", "SC-1", 1, "Aviation & Vehicles (C1-C3)"),
+            2: ([1, 2, 9], "1, 2, 3", "SC-1", 1, "Aviation & Vehicles (C1-C3)"),
+            9: ([1, 2, 9], "1, 2, 3", "SC-1", 1, "Aviation & Vehicles (C1-C3)"),
+            3: ([3, 4, 5, 8], "4, 5, 6", "SC-2", 5, "Animals (C4-C6)"),
+            4: ([3, 4, 5, 8], "4, 5, 6", "SC-2", 5, "Animals (C4-C6)"),
+            5: ([3, 4, 5, 8], "4, 5, 6", "SC-2", 5, "Animals (C4-C6)"),
+            8: ([3, 4, 5, 8], "4, 5, 6", "SC-2", 5, "Animals (C4-C6)"),
+            6: ([6, 7, 10], "8, 9, 10", "SC-3", 10, "Heavy Transport & Amphibians (C7-C10)"),
+            7: ([6, 7, 10], "8, 9, 10", "SC-3", 10, "Heavy Transport & Amphibians (C7-C10)"),
+            10: ([6, 7, 10], "8, 9, 10", "SC-3", 10, "Heavy Transport & Amphibians (C7-C10)"),
+        }
+
+        DISCOVERY_ROUTES = {
+            1: "Local Super-Peer & Registry Coordinator for SC-1",
+            2: "Direct: C2 -> C1 [2, 1]",
+            3: "Direct: C3 -> C5 [3, 5]",
+            4: "Direct: C4 -> C5 [4, 5]",
+            5: "Local Super-Peer & Registry Coordinator for SC-2",
+            6: "Exemplar Relay: C6 -> C7 [6, 7] -> C10 [7, 9, 10]",
+            7: "Multi-Hop Underlay: C7 -> C9 -> C10 [7, 9, 10]",
+            8: "Multi-Hop Underlay: C8 -> C6 -> C5 [8, 6, 5]",
+            9: "Multi-Hop Underlay: C9 -> C8 -> C6 -> C4 -> C1 [9, 8, 6, 4, 1]",
+            10: "Local Super-Peer & Registry Coordinator for SC-3",
+        }
+
+        for n in step22_nodes:
+            nid = n["id"]
+            partners, target_cls, sc_id, sp_id, sc_name = PARTNERS_MAP[nid]
+            n["search_status"] = "RESOLVED"
+            n["federation_partners"] = partners
+            n["target_classes"] = target_cls
+            n["super_cluster"] = sc_id
+            n["super_peer"] = sp_id
+            n["super_cluster_name"] = sc_name
+            n["discovery_route"] = DISCOVERY_ROUTES[nid]
+
+        terminal_logs = [
+            "[TOP-DOWN DISCOVERY] Edge clients dispatch REQ_PEER_DISCOVERY upstream along the SON hierarchy.",
+            "[INTRA-ZONE PROPAGATION] Member nodes forward requests to local exemplars (C2->C1, C4->C5, C6->C7).",
+            "[MULTI-HOP ROUTING] Exemplars forward queries across multi-hop underlay routes to Super-Peers: C9->C1 [9,8,6,4,1], C8->C5 [8,6,5], C7->C10 [7,9,10].",
+            "[SUPER-PEER MATCHMAKING] Super-Peers (C1, C5, C10) evaluate cosine affinity on semantic profile catalogs.",
+            "[DISCOVERY RESOLVED] Super-Cluster SC-1 (Aviation & Vehicles): Federation partners authorized {C1, C2, C9} for target classes [1, 2, 3].",
+            "[DISCOVERY RESOLVED] Super-Cluster SC-2 (Animals): Federation partners authorized {C3, C4, C5, C8} for target classes [4, 5, 6].",
+            "[DISCOVERY RESOLVED] Super-Cluster SC-3 (Heavy Transport): Federation partners authorized {C6, C7, C10} for target classes [8, 9, 10].",
+            "[PEER STATUS] All 10 edge peers updated to search_status: RESOLVED with authorized federation partner sets.",
+        ]
+
+        return {
+            "step": 22,
+            "title": "Step 22: Hierarchical Semantic Peer Search & Discovery Query",
+            "phase_badge": "ACTIVE PHASE: STEP 22: HIERARCHICAL SEMANTIC PEER DISCOVERY",
+            "description": "Clients dispatch REQ_PEER_DISCOVERY up the SON hierarchy. Exemplars forward queries over underlay routes to Super-Peers (C1, C5, C10), which resolve authorized Model Exchange Partner Sets per Super-Cluster.",
+            "formula": r"q_i \xrightarrow{\text{SON}} SP_m \implies \mathcal{P}_i = \{j \in \mathcal{SC}_m \mid \text{Sim}(\mathbf{m}_i, \mathbf{m}_j) \ge \tau\}",
+            "formula_desc": "Clients query Super-Peers along the overlay hierarchy to resolve authorized model exchange partner sets.",
+            "nodes": step22_nodes,
+            "edges": step21_data["edges"],
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step21_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": [1, 5, 10],
+            "exemplar_bindings": step21_data.get("exemplar_bindings", {}),
+            "super_clusters": step21_data.get("super_clusters", []),
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "packets": discovery_packets,
+            "discovery_packets": discovery_packets,
+            "terminal_logs": terminal_logs,
+            "bandwidth_savings": "62.5%",
+            "sparsification_p": 3,
+            "raw_payload_bytes": 40,
+            "sparse_payload_bytes": 15,
+        }
     else:
         return {
             "step": step_number,
@@ -4357,7 +4464,9 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
 def get_10node_step_data(step_number: int) -> Dict[str, Any]:
     """Retrieve storyboard step data for 10-node simulation with guaranteed total_steps."""
     data = _get_10node_step_data_raw(step_number)
-    if step_number >= 21:
+    if step_number >= 22:
+        data["total_steps"] = 22
+    elif step_number == 21:
         data["total_steps"] = 21
     elif step_number == 20:
         data["total_steps"] = 20

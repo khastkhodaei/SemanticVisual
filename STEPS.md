@@ -804,3 +804,38 @@ All nodes transition to `status: "LOCAL_SPARSE_MODEL_READY"`.
 - Nodes emit a warm internal neon pulse glow indicating local model parameter extraction is complete and ready for hierarchical aggregation.
 - Node Inspector Modals display the interactive **Sparsification & Compression Box** comparing raw dense vectors with pruned sparse representations.
 
+---
+
+## Step 22 — Hierarchical Semantic Peer Search & Discovery Query
+
+### Objective
+Implement the Top-Down Semantic Search protocol over the SON hierarchy:
+1. Members send `REQ_PEER_DISCOVERY` up to their local exemplars.
+2. Exemplars propagate discovery queries along multi-hop underlay routes to their designated Super-Peers.
+3. Super-Peers resolve and return the authorized Model Exchange Partner Sets for each Super-Cluster.
+4. Animate search query pulses traveling upwards along the Figure 3(f) tree and over corresponding physical multi-hop routes.
+
+### 1. Mathematical Formulation
+Clients query Super-Peers along the overlay hierarchy to resolve authorized model exchange partner sets:
+$$q_i \xrightarrow{\text{SON}} SP_m \implies \mathcal{P}_i = \{j \in \mathcal{SC}_m \mid \text{Sim}(\mathbf{m}_i, \mathbf{m}_j) \ge \tau\}$$
+
+### 2. Search Query Packet Traces & Routing
+- `{"from": 2, "to": 1, "path": [2, 1], "type": "REQ_PEER_DISCOVERY", "query_sig": [1, 2, 3]}`
+- `{"from": 4, "to": 5, "path": [4, 5], "type": "REQ_PEER_DISCOVERY", "query_sig": [4, 5, 6]}`
+- `{"from": 6, "to": 7, "path": [6, 7], "type": "REQ_PEER_DISCOVERY", "query_sig": [8, 9, 10]}`
+- `{"from": 9, "to": 1, "path": [9, 8, 6, 4, 1], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-1"}`
+- `{"from": 3, "to": 5, "path": [3, 5], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-2"}`
+- `{"from": 8, "to": 5, "path": [8, 6, 5], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-2"}`
+- `{"from": 7, "to": 10, "path": [7, 9, 10], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-3"}`
+
+### 3. Resolved Peer States & Matchmaking
+- **Nodes 1, 2, 9 (SC-1)**: `search_status: "RESOLVED"`, `federation_partners: [1, 2, 9]`, `target_classes: "1, 2, 3"`
+- **Nodes 3, 4, 5, 8 (SC-2)**: `search_status: "RESOLVED"`, `federation_partners: [3, 4, 5, 8]`, `target_classes: "4, 5, 6"`
+- **Nodes 6, 7, 10 (SC-3)**: `search_status: "RESOLVED"`, `federation_partners: [6, 7, 10]`, `target_classes: "8, 9, 10"`
+
+### 4. Visualization & Inspector Modal
+- **Header & Formula HUD**: Formula card displays $q_i \xrightarrow{\text{SON}} SP_m \implies \mathcal{P}_i = \{j \in \mathcal{SC}_m \mid \text{Sim}(\mathbf{m}_i, \mathbf{m}_j) \ge \tau\}$ and badge `ACTIVE PHASE: STEP 22: HIERARCHICAL SEMANTIC PEER DISCOVERY`.
+- **Canvas Animations**: Search pulses travel along physical multi-hop links to Super-Peers with floating tag `DISCOVERY_QUERY`, while in Figure 3(f) view they float straight upward from Tier 1 to Tier 2 to Tier 3.
+- **Inspector Modal**: Displays **Semantic Discovery Resolution** card showing matched Federation Partners, resolved target classes, and active aggregation routing paths.
+
+

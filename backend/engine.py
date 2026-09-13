@@ -29,7 +29,7 @@ from backend.storyboard_10nodes import (
     FIGURE3F_3TIER_EDGES,
 )
 
-TOTAL_STEPS: int = 21
+TOTAL_STEPS: int = 22
 
 
 

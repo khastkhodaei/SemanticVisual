@@ -1103,9 +1103,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 21)
+// 4. Main Step Loading Function (Steps 1 to 22)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 21) return;
+  if (stepNumber < 1 || stepNumber > 22) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -1280,6 +1280,13 @@ async function loadStep(stepNumber) {
       } catch (renderErr) {
         console.error("Step 21 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 21 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 22) {
+      try {
+        renderStep22(data);
+      } catch (renderErr) {
+        console.error("Step 22 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 22 Render Error: ${renderErr.message}`);
       }
     }
 
@@ -1487,6 +1494,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 21 / SPARSE PRUNING";
     if (stepTitle) stepTitle.textContent = "Step 21: Local Model Parameter Pruning & Sparse Weight Extraction (P = 3)";
     if (stepDesc) stepDesc.textContent = "Clients apply Top-P sparsification (P = 3) via Hadamard product w_i ⊙ m_i, reducing wire payload from 40 Bytes to 15 Bytes (62.5% bandwidth savings).";
+  } else if (step === 22) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 22: HIERARCHICAL SEMANTIC PEER DISCOVERY";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-900 border border-blue-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 22 / PEER DISCOVERY";
+    if (stepTitle) stepTitle.textContent = "Step 22: Hierarchical Semantic Peer Search & Discovery Query";
+    if (stepDesc) stepDesc.textContent = "Clients dispatch REQ_PEER_DISCOVERY up the SON hierarchy. Exemplars forward queries over underlay routes to Super-Peers (C1, C5, C10), which resolve authorized Model Exchange Partner Sets per Super-Cluster.";
   }
 }
 
@@ -5576,6 +5591,71 @@ function renderStep21(data) {
   animateStep20SemanticOverlay(overlayEdges, data.nodes);
 }
 
+function renderStep22(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 22: HIERARCHICAL SEMANTIC PEER DISCOVERY";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-900 border border-blue-400";
+  });
+
+  renderSidebarFormula(
+    "Step 22: Hierarchical Semantic Peer Discovery",
+    "q_i \\xrightarrow{\\text{SON}} SP_m \\implies \\mathcal{P}_i = \\{j \\in \\mathcal{SC}_m \\mid \\text{Sim}(\\mathbf{m}_i, \\mathbf{m}_j) \\ge \\tau\\}",
+    "Clients query Super-Peers along the overlay hierarchy to resolve authorized model exchange partner sets.",
+    "Step 22: Peer Discovery",
+    false,
+    "blue"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      ? "Semantic Peer Discovery — Hierarchical Overlay (Upward Search Waves)"
+      : "Semantic Peer Discovery — Physical Topology (Multi-Hop Routes to Super-Peers)";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Peer Discovery: <span class="text-blue-600 font-bold font-mono">10 Nodes Resolved</span> | Super-Peers: <span class="text-amber-600 font-bold font-mono">C1, C5, C10</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Position nodes according to physical layout on Cytoscape
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = PHYSICAL_LAYOUT_COORDS[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("INFO", "[STEP 22] Initiating Hierarchical Semantic Peer Discovery Protocol.");
+  logToTerminal("ZONE", "[QUERY] Edge clients emit REQ_PEER_DISCOVERY up to local exemplars & Super-Peers.");
+  logToTerminal("SUCCESS", "[RESOLVED] Super-Peers C1, C5, C10 matched 100% affinity partner sets for SC-1, SC-2, SC-3.");
+  logToTerminal("TOPOLOGY", "[ROUTING] Active multi-hop underlay routes confirmed for federated parameter exchange.");
+
+  const discoveryPackets = data.discovery_packets || data.packets || [];
+  animateStep22PeerDiscovery(discoveryPackets, data.nodes);
+}
+
 // Global reference to hover virtual node in Figure 3(f) / Physical
 let figure3fHoveredVirtualNode = null;
 let figure3fCanvasListenersBound = false;
@@ -5766,6 +5846,108 @@ function drawFigure3fSmartphone(ctx, node, isHovered, pulse) {
   drawNode(ctx, node, isHovered, pulse, 26);
 }
 
+// Module-scope Figure 3(f) dynamic auto-fit layout calculation
+function getFigure3fLayout(canvas) {
+  const W = canvas.width;
+  const H = canvas.height;
+  const padX = Math.max(30, W * 0.04);
+  const padTop = 68;
+  const padBottom = 42;
+  const availW = W - padX * 2;
+  const availH = H - padTop - padBottom;
+
+  const scaleX = Math.max(1.0, availW / 980);
+  const scaleY = Math.max(1.0, availH / 370);
+
+  const mapX = (origX) => (origX - 540) * scaleX + W / 2;
+  const mapY = (origY) => (origY - 260) * scaleY + (padTop + availH / 2);
+
+  const nodePosMap = {};
+  FIGURE3F_3TIER_NODES.forEach((n) => {
+    nodePosMap[n.key] = {
+      key: n.key,
+      id: n.id,
+      node_id: n.node_id,
+      renderedX: mapX(n.x),
+      renderedY: mapY(n.y),
+      tier: n.tier,
+      zone: n.zone,
+      label: n.label,
+      role: n.role
+    };
+  });
+
+  return {
+    scaleX,
+    scaleY,
+    mapX,
+    mapY,
+    nodePosMap,
+    hull: {
+      x: mapX(80),
+      y: mapY(190),
+      w: 920 * scaleX,
+      h: 118 * scaleY,
+      cx: mapX(540),
+      cy: mapY(250),
+      rx: 460 * scaleX,
+      ry: 58 * scaleY
+    },
+    capsules: [
+      {
+        zone: 2,
+        name: "ZONE 2 (Physical Base Clients)",
+        color: "#059669",
+        fill: "rgba(5, 150, 105, 0.08)",
+        border: "rgba(5, 150, 105, 0.35)",
+        x: mapX(50),
+        y: mapY(372),
+        w: 290 * scaleX,
+        h: 104 * scaleY,
+        centerX: mapX(195)
+      },
+      {
+        zone: 4,
+        name: "ZONE 4 (Physical Base Clients)",
+        color: "#ea580c",
+        fill: "rgba(234, 88, 12, 0.08)",
+        border: "rgba(234, 88, 12, 0.35)",
+        x: mapX(370),
+        y: mapY(372),
+        w: 340 * scaleX,
+        h: 104 * scaleY,
+        centerX: mapX(540)
+      },
+      {
+        zone: 8,
+        name: "ZONE 8 (Physical Base Clients)",
+        color: "#7c3aed",
+        fill: "rgba(124, 58, 237, 0.08)",
+        border: "rgba(124, 58, 237, 0.35)",
+        x: mapX(740),
+        y: mapY(372),
+        w: 290 * scaleX,
+        h: 104 * scaleY,
+        centerX: mapX(885)
+      }
+    ]
+  };
+}
+
+function showNodeDetailsModal(nodeId) {
+  const nid = typeof nodeId === "object" ? (nodeId.id ?? nodeId) : nodeId;
+  const numId = typeof nid === "string" ? parseInt(nid.replace(/\D/g, ""), 10) : Number(nid);
+  activeSelectedNodeId = null;
+  const ele = cy ? (cy.getElementById(`node_${numId}`) || cy.getElementById(numId)) : null;
+  if (ele && ele.length > 0) {
+    handleNodeClick(ele);
+  } else if (currentStepData && Array.isArray(currentStepData.nodes)) {
+    const nodeObj = currentStepData.nodes.find(n => n.id === numId);
+    if (nodeObj) handleNodeClick(nodeObj);
+  }
+}
+window.showNodeDetailsModal = showNodeDetailsModal;
+
 function animateStep20SemanticOverlay(overlayEdges, allNodes) {
   stopCurrentPacketAnimation();
   syncPacketCanvasSize();
@@ -5778,7 +5960,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
   if (!figure3fCanvasListenersBound) {
     figure3fCanvasListenersBound = true;
     canvas.addEventListener("pointermove", (e) => {
-      if (currentStep !== 20) {
+      if (currentStep < 20) {
         figure3fHoveredVirtualNode = null;
         canvas.style.cursor = "";
         return;
@@ -5834,7 +6016,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     });
 
     canvas.addEventListener("click", (e) => {
-      if (currentStep !== 20) return;
+      if (currentStep < 20) return;
       if (figure3fHoveredVirtualNode) {
         logToTerminal("INFO", `[INSPECTOR] Selected Node ${figure3fHoveredVirtualNode.id}.`);
         showNodeDetailsModal(figure3fHoveredVirtualNode.id);
@@ -5844,95 +6026,6 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
 
   const startTime = performance.now();
   const CYCLE_MS = 4000; // 4.0s full ping-pong heartbeat loop
-
-  // ==========================================================================
-  // VIEW 1: FIGURE 3(f) DYNAMIC AUTO-FIT LAYOUT CALCULATION
-  // ==========================================================================
-  function getFigure3fLayout(canvas) {
-    const W = canvas.width;
-    const H = canvas.height;
-    // Available drawing area with comfortable outer margins
-    const padX = Math.max(30, W * 0.04);
-    const padTop = 68; // Space below top HUD switcher button
-    const padBottom = 42; // Space above bottom stage banner
-    const availW = W - padX * 2;
-    const availH = H - padTop - padBottom;
-
-    // Horizontal scale: maps base [100..980] across availW
-    const scaleX = Math.max(1.0, availW / 980);
-    // Vertical scale: maps base [90..430] across availH
-    const scaleY = Math.max(1.0, availH / 370);
-
-    const mapX = (origX) => (origX - 540) * scaleX + W / 2;
-    const mapY = (origY) => (origY - 260) * scaleY + (padTop + availH / 2);
-
-    const nodePosMap = {};
-    FIGURE3F_3TIER_NODES.forEach((n) => {
-      nodePosMap[n.key] = {
-        key: n.key,
-        id: n.id,
-        node_id: n.node_id,
-        renderedX: mapX(n.x),
-        renderedY: mapY(n.y),
-        tier: n.tier,
-        zone: n.zone,
-        label: n.label,
-        role: n.role
-      };
-    });
-
-    return {
-      scaleX,
-      scaleY,
-      mapX,
-      mapY,
-      nodePosMap,
-      hull: {
-        x: mapX(80),
-        y: mapY(190),
-        w: 920 * scaleX,
-        h: 118 * scaleY
-      },
-      capsules: [
-        {
-          zone: 2,
-          name: "ZONE 2 (Physical Base Clients)",
-          color: "#059669",
-          fill: "rgba(5, 150, 105, 0.08)",
-          border: "rgba(5, 150, 105, 0.35)",
-          x: mapX(50),
-          y: mapY(372),
-          w: 290 * scaleX,
-          h: 104 * scaleY,
-          centerX: mapX(195)
-        },
-        {
-          zone: 4,
-          name: "ZONE 4 (Physical Base Clients)",
-          color: "#ea580c",
-          fill: "rgba(234, 88, 12, 0.08)",
-          border: "rgba(234, 88, 12, 0.35)",
-          x: mapX(370),
-          y: mapY(372),
-          w: 340 * scaleX,
-          h: 104 * scaleY,
-          centerX: mapX(540)
-        },
-        {
-          zone: 8,
-          name: "ZONE 8 (Physical Base Clients)",
-          color: "#7c3aed",
-          fill: "rgba(124, 58, 237, 0.08)",
-          border: "rgba(124, 58, 237, 0.35)",
-          x: mapX(740),
-          y: mapY(372),
-          w: 290 * scaleX,
-          h: 104 * scaleY,
-          centerX: mapX(885)
-        }
-      ]
-    };
-  }
 
   // ==========================================================================
   // VIEW 1: FIGURE 3(f) HIERARCHICAL OVERLAY (Strictly Isolated)
@@ -6338,12 +6431,434 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
   }
 
   function runFrame(now) {
-    if (currentStep !== 20) return;
+    if (currentStep !== 20 && currentStep !== 21) return;
 
     try {
       renderCanvas(now);
     } catch (err) {
-      console.error("[STEP 20 CANVAS ERROR]", err);
+      console.error("[STEP 20/21 CANVAS ERROR]", err);
+    }
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+// Step 22: Hierarchical Semantic Peer Search & Discovery Animation
+function animateStep22PeerDiscovery(discoveryPackets, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const startTime = performance.now();
+  const CYCLE_MS = 3800;
+
+  const packets = (discoveryPackets && discoveryPackets.length > 0) ? discoveryPackets : [
+    { from: 2, to: 1, path: [2, 1], type: "REQ_PEER_DISCOVERY", query_sig: [1, 2, 3], super_cluster: "SC-1" },
+    { from: 4, to: 5, path: [4, 5], type: "REQ_PEER_DISCOVERY", query_sig: [4, 5, 6], super_cluster: "SC-2" },
+    { from: 6, to: 7, path: [6, 7], type: "REQ_PEER_DISCOVERY", query_sig: [8, 9, 10], super_cluster: "SC-3" },
+    { from: 9, to: 1, path: [9, 8, 6, 4, 1], type: "REQ_PEER_DISCOVERY", super_cluster: "SC-1", query_sig: [1, 2, 3] },
+    { from: 3, to: 5, path: [3, 5], type: "REQ_PEER_DISCOVERY", super_cluster: "SC-2", query_sig: [4, 5, 6] },
+    { from: 8, to: 5, path: [8, 6, 5], type: "REQ_PEER_DISCOVERY", super_cluster: "SC-2", query_sig: [4, 5, 6] },
+    { from: 7, to: 10, path: [7, 9, 10], type: "REQ_PEER_DISCOVERY", super_cluster: "SC-3", query_sig: [8, 9, 10] },
+  ];
+
+  function getPointAlongPath(path, prog, posMap) {
+    if (!path || path.length === 0) return null;
+    if (path.length === 1) return posMap[path[0]];
+    const numSegs = path.length - 1;
+    const clampedProg = Math.max(0, Math.min(0.9999, prog));
+    const segIdx = Math.floor(clampedProg * numSegs);
+    const segProg = (clampedProg * numSegs) - segIdx;
+    const pA = posMap[path[segIdx]];
+    const pB = posMap[path[segIdx + 1]];
+    if (!pA || !pB) return null;
+    return {
+      x: pA.x + (pB.x - pA.x) * segProg,
+      y: pA.y + (pB.y - pA.y) * segProg
+    };
+  }
+
+  function drawFloatingTag(ctx, text, x, y, borderColor, bgColor, textColor) {
+    ctx.save();
+    ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+    const textW = ctx.measureText(text).width;
+    const boxH = 14;
+    const boxW = textW + 12;
+    const boxX = x - boxW / 2;
+    const boxY = y - boxH / 2;
+
+    ctx.fillStyle = bgColor || "rgba(15, 23, 42, 0.92)";
+    ctx.strokeStyle = borderColor || "#38bdf8";
+    ctx.lineWidth = 1;
+    ctx.shadowColor = borderColor || "#38bdf8";
+    ctx.shadowBlur = 6;
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = textColor || "#67e8f9";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function renderPhysicalDiscoveryView(now) {
+    if (cy) {
+      cy.elements().style("opacity", 0);
+    }
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    // 1. Top Status Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "PHYSICAL TOPOLOGY: MULTI-HOP DISCOVERY QUERIES TO SUPER-PEERS (C1, C5, C10)";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#38bdf8";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Node position map
+    const physNodePosMap = {};
+    for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          physNodePosMap[id] = { id, x: rp.x, y: rp.y };
+          continue;
+        }
+      }
+      const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
+      physNodePosMap[id] = { id, x: c.x, y: c.y };
+    }
+
+    // 2. Physical Mesh Links
+    ctx.save();
+    PHYSICAL_TOPOLOGY_EDGES.forEach(edge => {
+      const p1 = physNodePosMap[edge.from];
+      const p2 = physNodePosMap[edge.to];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // 3. Highlighted Multi-hop Discovery Routes
+    ctx.save();
+    packets.forEach(pkt => {
+      const path = pkt.path;
+      for (let i = 0; i < path.length - 1; i++) {
+        const pA = physNodePosMap[path[i]];
+        const pB = physNodePosMap[path[i + 1]];
+        if (!pA || !pB) continue;
+        ctx.beginPath();
+        ctx.moveTo(pA.x, pA.y);
+        ctx.lineTo(pB.x, pB.y);
+        ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
+        ctx.lineWidth = 2.0;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+      }
+    });
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 4. Moving Query Pulses & Floating Tags
+    ctx.save();
+    packets.forEach((pkt, idx) => {
+      const phaseOffset = (idx * 0.14) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      if (tPkt < 0.80) {
+        const travelProg = tPkt / 0.80;
+        const pt = getPointAlongPath(pkt.path, travelProg, physNodePosMap);
+        if (pt) {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 5.5, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = "#38bdf8";
+          ctx.shadowBlur = 14;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 8.5, 0, Math.PI * 2);
+          ctx.strokeStyle = "#0284c7";
+          ctx.lineWidth = 1.8;
+          ctx.stroke();
+
+          drawFloatingTag(ctx, "DISCOVERY_QUERY", pt.x, pt.y - 15, "#38bdf8", "rgba(15, 23, 42, 0.90)", "#38bdf8");
+        }
+      } else {
+        const arrProg = (tPkt - 0.80) / 0.20;
+        const destId = pkt.to;
+        const destPos = physNodePosMap[destId];
+        if (destPos) {
+          const rBeacon = NODE_RADIUS + arrProg * 26;
+          ctx.beginPath();
+          ctx.arc(destPos.x, destPos.y, rBeacon, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(56, 189, 248, ${1 - arrProg})`;
+          ctx.lineWidth = 2.4;
+          ctx.shadowColor = "#38bdf8";
+          ctx.shadowBlur = 14;
+          ctx.stroke();
+
+          if (idx === 0 || idx === 3) {
+            drawFloatingTag(ctx, "RESOLVED", destPos.x, destPos.y - NODE_RADIUS - 16, "#10b981", "rgba(6, 78, 59, 0.92)", "#6ee7b7");
+          }
+        }
+      }
+    });
+    ctx.restore();
+
+    // 5. Draw Canonical 10 Nodes
+    for (let id = 1; id <= 10; id++) {
+      const pos = physNodePosMap[id];
+      if (!pos) continue;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
+      const nodeObj = {
+        id,
+        node_id: `C${id}`,
+        x: pos.x,
+        y: pos.y,
+        zone: id <= 3 ? 2 : (id <= 7 ? 4 : 8),
+        tier: [1, 5, 10].includes(id) ? 3 : ([3, 7, 8, 9].includes(id) ? 2 : 1)
+      };
+      drawNode(ctx, nodeObj, isHov, pulse, NODE_RADIUS);
+    }
+
+    ctx.restore();
+  }
+
+  function renderFigure3fDiscoveryView(now) {
+    if (cy) {
+      cy.elements().style("opacity", 0);
+    }
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    // 1. Bottom Stage Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = tCycle < 0.45
+      ? "STAGE 1: LEAF NODES EMIT REQ_PEER_DISCOVERY UPWARD TO LOCAL EXEMPLARS"
+      : (tCycle < 0.85
+        ? "STAGE 2: EXEMPLARS PROPAGATE DISCOVERY QUERIES UPWARD TO SUPER-PEERS (TIER 3)"
+        : "STAGE 3: SUPER-PEERS RESOLVE AUTHORIZED FEDERATION PARTNER SETS (RESOLVED)");
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = canvas.height - 24;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = tCycle < 0.85 ? "#38bdf8" : "#10b981";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = tCycle < 0.85 ? "#38bdf8" : "#34d399";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // 2. Device Silhouettes
+    ctx.save();
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isTop = n.tier === 3;
+      const isMid = n.tier === 2;
+      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
+      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
+      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
+      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Hull & Capsules
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillStyle = "#e11d48";
+    ctx.textAlign = "center";
+    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
+    ctx.restore();
+
+    capsules.forEach(cap => {
+      ctx.save();
+      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
+      ctx.fillStyle = cap.fill;
+      ctx.fill();
+      ctx.strokeStyle = cap.border;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillStyle = cap.color;
+      ctx.textAlign = "center";
+      ctx.fillText(cap.name, cap.centerX, cap.y + 6);
+      ctx.restore();
+    });
+
+    // 3. Hierarchy Links
+    ctx.save();
+    FIGURE3F_3TIER_EDGES.forEach(edge => {
+      const p1 = nodePosMap[edge.fromKey];
+      const p2 = nodePosMap[edge.toKey];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.renderedX, p1.renderedY);
+      ctx.lineTo(p2.renderedX, p2.renderedY);
+      ctx.strokeStyle = edge.type === "SUPER_PEER_OVERLAY" ? "#b91c1c" : edge.color;
+      ctx.lineWidth = edge.type === "SUPER_PEER_OVERLAY" ? 2.2 : 1.8;
+      ctx.setLineDash([5, 5]);
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 4. Upward Moving Query Pulses
+    ctx.save();
+    if (tCycle < 0.45) {
+      const t = tCycle / 0.45;
+      FIGURE3F_3TIER_EDGES.filter(e => e.type === "INTRA_ZONE_CLUSTER").forEach(edge => {
+        const pA = nodePosMap[edge.fromKey];
+        const pB = nodePosMap[edge.toKey];
+        if (!pA || !pB) return;
+        const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
+        const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
+
+        ctx.beginPath();
+        ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = "#38bdf8";
+        ctx.shadowBlur = 12;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(px, py, 7.5, 0, Math.PI * 2);
+        ctx.strokeStyle = "#0284c7";
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        if (edge.toKey === "mid_1" || edge.toKey === "mid_5") {
+          drawFloatingTag(ctx, "DISCOVERY_QUERY", px, py - 14, "#38bdf8", "rgba(15, 23, 42, 0.90)", "#38bdf8");
+        }
+      });
+    } else if (tCycle < 0.85) {
+      const t = (tCycle - 0.45) / 0.40;
+      FIGURE3F_3TIER_EDGES.filter(e => e.type === "SUPER_PEER_OVERLAY").forEach(edge => {
+        const pA = nodePosMap[edge.fromKey];
+        const pB = nodePosMap[edge.toKey];
+        if (!pA || !pB) return;
+        const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
+        const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
+
+        ctx.beginPath();
+        ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = "#38bdf8";
+        ctx.shadowBlur = 16;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(px, py, 9.0, 0, Math.PI * 2);
+        ctx.strokeStyle = "#0284c7";
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, "REQ_PEER_DISCOVERY", px, py - 16, "#38bdf8", "rgba(15, 23, 42, 0.90)", "#38bdf8");
+      });
+    } else {
+      const t = (tCycle - 0.85) / 0.15;
+      ["top_1", "top_5", "top_10"].forEach(key => {
+        const sp = nodePosMap[key];
+        if (!sp) return;
+        const rBeacon = 28 + t * 24;
+        ctx.beginPath();
+        ctx.arc(sp.renderedX, sp.renderedY, rBeacon, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(16, 185, 129, ${1 - t})`;
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#10b981";
+        ctx.shadowBlur = 16;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, "RESOLVED", sp.renderedX, sp.renderedY - 34, "#10b981", "rgba(6, 78, 59, 0.92)", "#6ee7b7");
+      });
+    }
+    ctx.restore();
+
+    // 5. Draw Nodes
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
+      drawNode(ctx, {
+        id: n.id,
+        node_id: n.label,
+        x: p.renderedX,
+        y: p.renderedY,
+        tier: n.tier,
+        zone: n.zone
+      }, isHov, pulse, rad);
+    });
+
+    ctx.restore();
+  }
+
+  function runFrame(now) {
+    if (currentStep !== 22) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentLayout === "figure3f" || currentLayout === "overlay") {
+      renderFigure3fDiscoveryView(now);
+    } else {
+      renderPhysicalDiscoveryView(now);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
@@ -9974,6 +10489,89 @@ function renderNodeModal(node, stepData = currentStepData) {
     } else {
       if (sparseSection) sparseSection.classList.add("hidden");
     }
+
+    // Step 22: Semantic Discovery Resolution Card
+    const discoverySection = document.getElementById("cardDiscoverySection");
+    const discoveryBadge = document.getElementById("cardDiscoveryBadge");
+    const discoveryContent = document.getElementById("cardDiscoveryContent");
+
+    if (currentStep >= 22) {
+      if (discoverySection) discoverySection.classList.remove("hidden");
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "🔍 DISCOVERY_RESOLVED";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-blue-100 text-blue-900 border-blue-400";
+      }
+      if (discoveryBadge) {
+        discoveryBadge.textContent = "RESOLVED (SP MATCH)";
+        discoveryBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-blue-100 text-blue-900 border border-blue-300";
+      }
+      if (discoveryContent) {
+        const partners = mergedNode?.federation_partners || ([1, 2, 9].includes(idNum) ? [1, 2, 9] : ([3, 4, 5, 8].includes(idNum) ? [3, 4, 5, 8] : [6, 7, 10]));
+        const scId = mergedNode?.super_cluster || ([1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3"));
+        const spId = mergedNode?.super_peer || ([1, 2, 9].includes(idNum) ? 1 : ([3, 4, 5, 8].includes(idNum) ? 5 : 10));
+        const scName = mergedNode?.super_cluster_name || (scId === "SC-1" ? "Aviation & Vehicles (C1-C3)" : (scId === "SC-2" ? "Animals (C4-C6)" : "Heavy Transport & Amphibians (C7-C10)"));
+        const targetCls = mergedNode?.target_classes || ([1, 2, 9].includes(idNum) ? "1, 2, 3" : ([3, 4, 5, 8].includes(idNum) ? "4, 5, 6" : "8, 9, 10"));
+        const route = mergedNode?.discovery_route || "Direct / Hierarchical Overlay Routing";
+
+        const partnerBadges = partners.map(p => {
+          const isSelf = p === idNum;
+          return `<span class="px-2 py-0.5 rounded font-mono font-bold text-[10px] ${isSelf ? 'bg-blue-600 text-white shadow-xs ring-1 ring-blue-400' : 'bg-white text-blue-900 border border-blue-300'}">C${p}${isSelf ? ' (You)' : ''}</span>`;
+        }).join(" ");
+
+        discoveryContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <!-- Super-Cluster Match Header -->
+            <div class="p-2.5 rounded-lg border border-blue-200 bg-blue-50/70 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-blue-950 flex items-center gap-1">
+                  <span>🌐</span><span>Resolved Super-Cluster:</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold text-[10px] bg-blue-200 text-blue-900 border border-blue-300">${scId}</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-blue-800 font-semibold">
+                ${scName} (Super-Peer Coordinator: <span class="font-bold text-amber-700">⭐ C${spId}</span>)
+              </div>
+            </div>
+
+            <!-- Matched Federation Partners -->
+            <div class="p-2 bg-slate-50 rounded border border-slate-200 space-y-1">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700">
+                <span class="flex items-center gap-1">
+                  <span>🤝</span><span>Authorized Model Exchange Partners (${partners.length}):</span>
+                </span>
+                <span class="text-[8.5px] text-emerald-700 font-mono font-bold">MATCH: 100%</span>
+              </div>
+              <div class="flex flex-wrap gap-1.5 pt-1">
+                ${partnerBadges}
+              </div>
+            </div>
+
+            <!-- Target Semantic Classes -->
+            <div class="p-2 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono space-y-1">
+              <div class="flex items-center justify-between text-slate-700 font-bold">
+                <span>Target Aggregation Classes:</span>
+                <span class="text-blue-700 font-bold">[${targetCls}]</span>
+              </div>
+              <div class="text-[8.5px] text-slate-500">
+                Models strictly restricted to collaborative aggregation across matching semantic profile coordinates.
+              </div>
+            </div>
+
+            <!-- Active Multi-Hop Routing Path -->
+            <div class="p-2 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono space-y-1">
+              <div class="text-slate-700 font-bold flex items-center gap-1">
+                <span>📡</span><span>Discovery Query Path:</span>
+              </div>
+              <div class="text-blue-800 font-semibold bg-white p-1.5 rounded border border-slate-200 break-words">
+                ${route}
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      if (discoverySection) discoverySection.classList.add("hidden");
+    }
   } else if (currentStep === 19) {
     if (probeSection) probeSection.classList.add("hidden");
     if (bndSection) bndSection.classList.add("hidden");
@@ -10500,7 +11098,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 21; s++) {
+  for (let s = 1; s <= 22; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -10531,6 +11129,8 @@ function updateStepper(step) {
         item.classList.add("step-emerald");
       } else if (step === 21) {
         item.classList.add("step-amber");
+      } else if (step === 22) {
+        item.classList.add("step-blue");
       }
     }
   }
@@ -10560,7 +11160,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 21) {
+    if (step < 22) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -10568,7 +11168,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 21 active (Local Model Parameter Pruning & Sparse Weight Extraction complete)";
+      btnNext.title = "Step 22 active (Hierarchical Semantic Peer Search & Discovery Query complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -10581,7 +11181,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 21);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 22);
 }
 
 function bindActionButtons() {
@@ -10605,16 +11205,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 21) {
+      if (currentStep < 22) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 21 is active (Local Model Parameter Pruning & Sparse Weight Extraction complete).");
+        logToTerminal("INFO", "Step 22 is active (Hierarchical Semantic Peer Search & Discovery Query complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 21)
-  for (let s = 1; s <= 21; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 22)
+  for (let s = 1; s <= 22; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {
