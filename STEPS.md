@@ -623,59 +623,47 @@ The evaluated pairwise Cosine Similarities between the 7 cluster profile masks:
 
 ---
 
-## Step 18 — Super-Peer Designation & Hierarchical Overlay Binding
+## Step 18 — Super-Zone Meta-Cluster & Super-Peer Directives Dispatch (ORDER_SET_SUPER_CLUSTERS)
 
 ### Objective
-Following the formation of the 3 Global Super-Clusters ($\mathcal{SC}_1, \mathcal{SC}_2, \mathcal{SC}_3$) in Step 17, Super-Initiator $C_4$ officially designates the global **Super-Peers** (coordinators of each super-cluster) and binds the Step 13 local intra-zone exemplars to their respective Super-Peer.
+Top-Level Super-Initiator $C_4$ informs base initiators $C_2$ and $C_8$ of the 3 Global Super-Clusters, their dominant signatures, and their designated Super-Peers:
+- **SC-1 (Sig: `[1, 2, 3]`)**: Designated Super-Peer is **Node 1** (governs local exemplars 1, 9).
+- **SC-2 (Sig: `[4, 5, 6]`)**: Designated Super-Peer is **Node 5** (governs local exemplars 3, 5, 8).
+- **SC-3 (Sig: `[8, 9, 10]`)**: Designated Super-Peer is **Node 10** (governs local exemplars 7, 10).
+
+This step strictly transmits across the super-zone overlay backbone from $C_4 \to C_2$ (via $C_1$) and $C_4 \to C_8$ (via $C_6$). Intra-zone notification down to individual exemplars and super-peers occurs separately in Step 19.
 
 ### Mathematical Formulation
-$$\mathcal{SC}_m \longrightarrow SP_m \in \{C_1, C_5, C_{10}\}, \quad e_k \xrightarrow{\text{bind}} SP_m$$
+$$C_4 \xrightarrow{\text{super-zone}} \{C_2, C_8\} \quad : \quad \{\mathcal{SC}_m, \mathbf{s}_m, SP_m \in \{C_1, C_5, C_{10}\}\}$$
 
 Where:
-- $SP_m$ is the appointed Super-Peer for Global Super-Cluster $\mathcal{SC}_m$.
-- $e_k$ is a local intra-zone exemplar node ($e_k \in \{C_1, C_3, C_5, C_7, C_8, C_9, C_{10}\}$).
-- The overlay binding creates an inter-zone coordination channel governed by the Super-Peer.
+- $\mathcal{SC}_m$ denotes Global Super-Cluster $m \in \{1, 2, 3\}$.
+- $\mathbf{s}_m$ denotes the binary profile signature of $\mathcal{SC}_m$.
+- $SP_m$ denotes the designated Global Super-Peer appointed by $C_4$.
 
-### Super-Peer Appointments
-| Super-Cluster | Dominant Classes | Appointed Super-Peer | Governed Local Exemplars | Visual Accent |
-|:---:|:---:|:---:|:---:|:---:|
-| **$\mathcal{SC}_1$** | Classes 1, 2, 3 (Aviation & Vehicles) | **Node 1 ($C_1$)** | $\{C_1, C_9\}$ | Sky Blue (`#38bdf8`) |
-| **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Animals) | **Node 5 ($C_5$)** | $\{C_3, C_5, C_8\}$ | Amber / Orange (`#fbbf24`) |
-| **$\mathcal{SC}_3$** | Classes 7, 8, 9, 10 (Heavy Transport & Amphibians) | **Node 10 ($C_{10}$)** | $\{C_7, C_{10}\}$ | Violet / Magenta (`#c084fc`) |
+### Super-Zone Directives Ledger
+| Super-Cluster | Dominant Classes | Signature | Designated Super-Peer | Governed Exemplars | Governing Initiator Zone |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| **$\mathcal{SC}_1$** | Airplane, Auto, Bird (1, 2, 3) | `[1, 1, 1, 0, 0, 0, 0, 0, 0, 0]` | **Node 1 ($C_1$)** | $\{C_1, C_9\}$ | Zone 2 ($C_2$) / Zone 8 ($C_8$) |
+| **$\mathcal{SC}_2$** | Cat, Deer, Dog (4, 5, 6) | `[0, 0, 0, 1, 1, 1, 0, 0, 0, 0]` | **Node 5 ($C_5$)** | $\{C_3, C_5, C_8\}$ | Zone 4 ($C_4$) / Zone 2 ($C_2$) / Zone 8 ($C_8$) |
+| **$\mathcal{SC}_3$** | Horse, Ship, Truck (8, 9, 10) | `[0, 0, 0, 0, 0, 0, 0, 1, 1, 1]` | **Node 10 ($C_{10}$)** | $\{C_7, C_{10}\}$ | Zone 8 ($C_8$) / Zone 4 ($C_4$) |
 
-### Exemplar Binding Registry
-Each local exemplar node is explicitly bound to the designated Super-Peer for its super-cluster:
-- **Node 1 ($C_1$)**: Bound to **SP 1** (Self / Super-Peer)
-- **Node 9 ($C_9$)**: Bound to **SP 1**
-- **Node 3 ($C_3$)**: Bound to **SP 5**
-- **Node 5 ($C_5$)**: Bound to **SP 5** (Self / Super-Peer)
-- **Node 8 ($C_8$)**: Bound to **SP 5**
-- **Node 7 ($C_7$)**: Bound to **SP 10**
-- **Node 10 ($C_{10}$)**: Bound to **SP 10** (Self / Super-Peer)
-
-### Regular Client Representation
-Nodes that are not exemplars are regular cluster members represented by their local zone exemplar:
-- **Node 2 ($C_2$)**: Represented by local exemplar $C_1$ (Cluster 2-A)
-- **Node 4 ($C_4$)**: Represented by local exemplar $C_5$ (Cluster 4-A)
-- **Node 6 ($C_6$)**: Represented by local exemplar $C_7$ (Cluster 4-B)
-
-### Downstream Control Directives (`ORDER_SET_SUPER_PEER`)
-Super-Initiator $C_4$ dispatches control packets downstream along established super-zone paths to base initiators $C_2$ and $C_8$:
-1. **West Path ($C_4 \to C_1 \to C_2$)**:
+### Backbone Control Packets (`ORDER_SET_SUPER_CLUSTERS`)
+Super-Initiator $C_4$ dispatches two structured directives along the super-zone backbone:
+1. **West Backbone Relay ($C_4 \to C_1 \to C_2$)**:
    - `path`: `[4, 1, 2]`
-   - `type`: `ORDER_SET_SUPER_PEER`
-   - `directives`: `{"super_peer_SC1": 1, "binding_C3": 5}`
-   - Informs $C_2$ that $C_1$ is appointed Super-Peer of $\mathcal{SC}_1$, and local exemplar $C_3$ binds to Super-Peer $C_5$.
-2. **East Path ($C_4 \to C_6 \to C_8$)**:
+   - `type`: `ORDER_SET_SUPER_CLUSTERS`
+   - Informs $C_2$ of all 3 Super-Clusters, signatures, and that $C_1$ is designated Super-Peer for $\mathcal{SC}_1$.
+2. **East Backbone Relay ($C_4 \to C_6 \to C_8$)**:
    - `path`: `[4, 6, 8]`
-   - `type`: `ORDER_SET_SUPER_PEER`
-   - `directives`: `{"binding_C9": 1, "binding_C8": 5, "super_peer_SC3": 10}`
-   - Informs $C_8$ that $C_9$ binds to Super-Peer $C_1$, $C_8$ binds to Super-Peer $C_5$, and $C_{10}$ is appointed Super-Peer of $\mathcal{SC}_3$.
+   - `type`: `ORDER_SET_SUPER_CLUSTERS`
+   - Informs $C_8$ of all 3 Super-Clusters, signatures, and that $C_{10}$ is designated Super-Peer for $\mathcal{SC}_3$.
 
-### The 3-Tier Overlay Hierarchy
-1. **Tier 1 — Regular Clients**: Local non-exemplar nodes ($C_2, C_4, C_6$) communicating exclusively with their intra-zone exemplar.
-2. **Tier 2 — Intra-Zone Exemplars**: Selected cluster representatives ($C_1, C_3, C_5, C_7, C_8, C_9, C_{10}$) bound to global super-peers.
-3. **Tier 3 — Global Super-Peers**: Apex coordinators ($C_1, C_5, C_{10}$) orchestrating inter-zone semantic aggregation across the entire network.
+### Node Lifecycle & State in Step 18
+- **Node 4 ($C_4$)**: `directive_status = "SUPER_ZONE_DIRECTIVES_DISPATCHED"`.
+- **Nodes 2 & 8 ($C_2, C_8$)**: `directive_status = "SUPER_ZONE_DIRECTIVES_RECEIVED"`. Ingests the 3 Super-Clusters and appointed Super-Peers.
+- **Nodes 1, 3, 5, 6, 7, 9, 10**: `directive_status = "AWAITING_INTRA_ZONE_NOTIFICATION"`. Waiting for intra-zone directives from their zone initiator.
+
 
 ---
 

@@ -41,7 +41,10 @@ def test_step18_endpoints_return_200(client):
     assert res_get.status_code == 200
     data_get = res_get.json()
     assert data_get["step"] == 18
-    assert data_get["phase_badge"] == "ACTIVE PHASE: STEP 18: SUPER-PEER DESIGNATION & HIERARCHICAL BINDING"
+    assert data_get["phase_badge"] in (
+        "ACTIVE PHASE: STEP 18: SUPER-ZONE DIRECTIVES DISPATCH (ORDER_SET_SUPER_CLUSTERS)",
+        "ACTIVE PHASE: STEP 18: SUPER-PEER DESIGNATION & HIERARCHICAL BINDING",
+    )
     assert data_get["total_nodes"] == 10
     assert data_get["total_edges"] == 18
     assert data_get["total_steps"] in (18, 19)
@@ -118,13 +121,13 @@ def test_step18_packet_traces_valid_paths(client):
     t2 = trace_map[2]
     assert t2["from"] == 4
     assert t2["path"] == [4, 1, 2]
-    assert t2["type"] == "ORDER_SET_SUPER_PEER"
+    assert t2["type"] in ("ORDER_SET_SUPER_CLUSTERS", "ORDER_SET_SUPER_PEER")
     assert "super_peer_SC1" in t2["directives"]
 
     t8 = trace_map[8]
     assert t8["from"] == 4
     assert t8["path"] == [4, 6, 8]
-    assert t8["type"] == "ORDER_SET_SUPER_PEER"
+    assert t8["type"] in ("ORDER_SET_SUPER_CLUSTERS", "ORDER_SET_SUPER_PEER")
     assert "super_peer_SC3" in t8["directives"]
 
 
@@ -145,8 +148,11 @@ def test_step18_steps_markdown_documentation():
     steps_file = Path(__file__).resolve().parent.parent / "STEPS.md"
     assert steps_file.exists(), "STEPS.md must exist"
     content = steps_file.read_text(encoding="utf-8")
-    assert "## Step 18 — Super-Peer Designation & Hierarchical Overlay Binding" in content
-    assert "ORDER_SET_SUPER_PEER" in content
+    assert (
+        "## Step 18 — Super-Zone Meta-Cluster & Super-Peer Directives Dispatch (ORDER_SET_SUPER_CLUSTERS)" in content
+        or "## Step 18 — Super-Peer Designation & Hierarchical Overlay Binding" in content
+    )
+    assert "ORDER_SET_SUPER_CLUSTERS" in content or "ORDER_SET_SUPER_PEER" in content
     assert "Node 1" in content
     assert "Node 5" in content
     assert "Node 10" in content

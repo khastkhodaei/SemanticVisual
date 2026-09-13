@@ -3904,7 +3904,37 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
         step17_data = _get_10node_step_data_raw(17)
         step18_nodes = copy.deepcopy(step17_data["nodes"])
 
-        # Super-Peer appointments and exemplar bindings
+        # Super-Zone Directives Ledger (3 Global Super-Clusters, signatures, designated Super-Peers, and governed exemplars)
+        super_clusters_ledger = [
+            {
+                "super_cluster_id": "SC-1",
+                "name": "Super-Cluster 1 (Aviation & Vehicles)",
+                "classes": [1, 2, 3],
+                "signature": [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                "designated_super_peer": 1,
+                "governed_exemplars": [1, 9],
+                "governing_initiator_zones": [2, 8],
+            },
+            {
+                "super_cluster_id": "SC-2",
+                "name": "Super-Cluster 2 (Animals)",
+                "classes": [4, 5, 6],
+                "signature": [0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+                "designated_super_peer": 5,
+                "governed_exemplars": [3, 5, 8],
+                "governing_initiator_zones": [4, 2, 8],
+            },
+            {
+                "super_cluster_id": "SC-3",
+                "name": "Super-Cluster 3 (Heavy Transport & Amphibians)",
+                "classes": [8, 9, 10],
+                "signature": [0, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+                "designated_super_peer": 10,
+                "governed_exemplars": [7, 10],
+                "governing_initiator_zones": [8, 4],
+            },
+        ]
+
         super_peer_map = {1: [1, 9], 5: [3, 5, 8], 10: [7, 10]}
         bound_sp_map = {
             1: 1, 2: None, 3: 5, 4: None, 5: 5,
@@ -3916,50 +3946,82 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             n["is_super_peer"] = (nid in [1, 5, 10])
             n["bound_super_peer"] = bound_sp_map.get(nid)
             n["governed_exemplars"] = super_peer_map.get(nid, [])
-            if n["is_super_peer"]:
-                n["role"] = "SUPER_PEER"
-                n["super_peer_title"] = f"Global Super-Peer ({n.get('assigned_super_cluster', 'SC')})"
-            elif n.get("is_exemplar"):
-                n["role"] = "EXEMPLAR"
-                n["super_peer_title"] = f"Intra-Zone Exemplar -> Bound SP C{n['bound_super_peer']}"
+
+            if nid == 4:
+                n["directive_status"] = "SUPER_ZONE_DIRECTIVES_DISPATCHED"
+                n["super_clusters_ledger"] = copy.deepcopy(super_clusters_ledger)
+                n["role"] = "SUPER_INITIATOR"
+                n["super_peer_title"] = "Top-Level Super-Initiator (Directives Dispatched)"
+            elif nid in (2, 8):
+                n["directive_status"] = "SUPER_ZONE_DIRECTIVES_RECEIVED"
+                n["super_clusters_ledger"] = copy.deepcopy(super_clusters_ledger)
+                n["role"] = "ZONE_INITIATOR"
+                n["super_peer_title"] = f"Zone Initiator C{nid} (Directives Received)"
             else:
-                n["role"] = "CLIENT"
-                n["super_peer_title"] = f"Regular Member -> Local Exemplar C{n.get('exemplar_node_id')}"
+                n["directive_status"] = "AWAITING_INTRA_ZONE_NOTIFICATION"
+                n["super_clusters_ledger"] = []
+                if n.get("is_exemplar"):
+                    n["role"] = "EXEMPLAR"
+                    n["super_peer_title"] = "Intra-Zone Exemplar (Awaiting Zone Notification)"
+                else:
+                    n["role"] = "CLIENT"
+                    n["super_peer_title"] = "Regular Member (Awaiting Zone Notification)"
 
         packet_traces = [
             {
                 "from": 4,
                 "to": 2,
                 "path": [4, 1, 2],
-                "type": "ORDER_SET_SUPER_PEER",
-                "directives": {"super_peer_SC1": 1, "binding_C3": 5},
+                "type": "ORDER_SET_SUPER_CLUSTERS",
+                "label": "ORDER_SUPER_CLUSTERS",
+                "directives": {
+                    "super_peer_SC1": 1,
+                    "binding_C3": 5,
+                    "super_clusters": copy.deepcopy(super_clusters_ledger),
+                    "designated_super_peers": {1: 1, 2: 5, 3: 10},
+                },
+                "payload": {
+                    "super_clusters": copy.deepcopy(super_clusters_ledger),
+                    "designated_super_peers": {1: 1, 2: 5, 3: 10},
+                },
             },
             {
                 "from": 4,
                 "to": 8,
                 "path": [4, 6, 8],
-                "type": "ORDER_SET_SUPER_PEER",
-                "directives": {"binding_C9": 1, "binding_C8": 5, "super_peer_SC3": 10},
+                "type": "ORDER_SET_SUPER_CLUSTERS",
+                "label": "ORDER_SUPER_CLUSTERS",
+                "directives": {
+                    "binding_C9": 1,
+                    "binding_C8": 5,
+                    "super_peer_SC3": 10,
+                    "super_clusters": copy.deepcopy(super_clusters_ledger),
+                    "designated_super_peers": {1: 1, 2: 5, 3: 10},
+                },
+                "payload": {
+                    "super_clusters": copy.deepcopy(super_clusters_ledger),
+                    "designated_super_peers": {1: 1, 2: 5, 3: 10},
+                },
             },
         ]
 
         terminal_logs = [
-            "[SUPER-INITIATOR C4] Officially designates Global Super-Peers and establishes hierarchical overlay bindings.",
-            "[SUPER-PEER SC-1] Node 1 designated Super-Peer for SC-1 (Aviation & Vehicles). Governs exemplars [C1, C9].",
-            "[SUPER-PEER SC-2] Node 5 designated Super-Peer for SC-2 (Animals). Governs exemplars [C3, C5, C8].",
-            "[SUPER-PEER SC-3] Node 10 designated Super-Peer for SC-3 (Heavy Transport & Amphibians). Governs exemplars [C7, C10].",
-            "[DIRECTIVE DISPATCH] C4 dispatches ORDER_SET_SUPER_PEER downstream along super-zone paths [4 -> 1 -> 2] and [4 -> 6 -> 8].",
-            "[EXEMPLAR BINDING] Exemplars bound: C1->SP1, C9->SP1 | C3->SP5, C5->SP5, C8->SP5 | C7->SP10, C10->SP10.",
-            "[HIERARCHICAL OVERLAY] 3-tier hierarchy bound: Regular Members -> Intra-Zone Exemplars -> Global Super-Peers.",
+            "[SUPER-INITIATOR C4] Assembles ORDER_SET_SUPER_CLUSTERS backbone control packets from Step 17 Global Meta-Clusters.",
+            "[DIRECTIVE DISPATCH] C4 dispatches ORDER_SET_SUPER_CLUSTERS downstream across super-zone backbone paths [4 -> 1 -> 2] and [4 -> 6 -> 8].",
+            "[WEST BACKBONE RELAY] ORDER_SET_SUPER_CLUSTERS forwarded via C1 to Zone Initiator C2.",
+            "[EAST BACKBONE RELAY] ORDER_SET_SUPER_CLUSTERS forwarded via C6 to Zone Initiator C8.",
+            "[ZONE INITIATOR C2] Ingested 3 Global Super-Clusters; registered SC-1 Super-Peer Node 1.",
+            "[ZONE INITIATOR C8] Ingested 3 Global Super-Clusters; registered SC-3 Super-Peer Node 10.",
+            "[STATUS] Node 4 (DISPATCHED), Nodes 2 & 8 (RECEIVED). Nodes 1, 3, 5, 6, 7, 9, 10 remain AWAITING_INTRA_ZONE_NOTIFICATION for Step 19.",
         ]
 
         return {
             "step": 18,
-            "title": "Step 18: Super-Peer Designation & Hierarchical Overlay Binding",
-            "phase_badge": "ACTIVE PHASE: STEP 18: SUPER-PEER DESIGNATION & HIERARCHICAL BINDING",
-            "description": "Super-Initiator C4 designates Super-Peers (1, 5, 10) and binds local exemplars to coordinate cross-zone federations.",
-            "formula": r"\mathcal{SC}_m \longrightarrow SP_m \in \{C_1, C_5, C_{10}\}, \quad e_k \xrightarrow{\text{bind}} SP_m",
-            "formula_desc": "Super-Initiator C4 designates Super-Peers (1, 5, 10) to coordinate local exemplars across zones.",
+            "title": "Step 18: Super-Zone Meta-Cluster & Super-Peer Directives Dispatch",
+            "phase_badge": "ACTIVE PHASE: STEP 18: SUPER-ZONE DIRECTIVES DISPATCH (ORDER_SET_SUPER_CLUSTERS)",
+            "description": "Top-Level Super-Initiator C4 informs base initiators C2 and C8 of the 3 Global Super-Clusters and designated Super-Peers across the super-zone backbone.",
+            "formula": r"C_4 \xrightarrow{\text{super-zone}} \{C_2, C_8\} \quad : \quad \{\mathcal{SC}_m, \mathbf{s}_m, SP_m \in \{C_1, C_5, C_{10}\}\}",
+            "formula_desc": "Super-Initiator C4 dispatches ORDER_SET_SUPER_CLUSTERS directives along super-zone paths to base initiators C2 and C8.",
             "nodes": step18_nodes,
             "edges": step17_data["edges"],
             "packet_events": packet_traces,
@@ -3970,13 +4032,14 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 {"id": 5, "super_cluster": "SC-2", "governed_exemplars": [3, 5, 8]},
                 {"id": 10, "super_cluster": "SC-3", "governed_exemplars": [7, 10]},
             ],
+            "super_clusters_ledger": super_clusters_ledger,
+            "super_clusters": super_clusters_ledger,
             "exemplar_bindings": {
                 1: 1, 9: 1, 3: 5, 5: 5, 8: 5, 7: 10, 10: 10,
             },
             "regular_member_representations": {
                 2: 1, 4: 5, 6: 7,
             },
-            "super_clusters": step17_data.get("super_clusters", []),
             "similarity_matrix_7x7": step17_data.get("similarity_matrix_7x7", {}),
             "global_cluster_catalog": step17_data.get("global_cluster_catalog", {}),
             "top_level_zone": step17_data.get("top_level_zone", {}),

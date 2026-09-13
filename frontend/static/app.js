@@ -1198,12 +1198,12 @@ function updateUIHeaders(data) {
     if (stepDesc) stepDesc.textContent = "C4 evaluates pairwise Cosine Similarities across cluster masks to form a 7x7 matrix, partitioning the network into 3 cross-zone Super-Clusters.";
   } else if (step === 18) {
     activeBadges.forEach(badge => {
-      badge.textContent = "ACTIVE PHASE: STEP 18: SUPER-PEER DESIGNATION & HIERARCHICAL BINDING";
+      badge.textContent = "ACTIVE PHASE: STEP 18: SUPER-ZONE DIRECTIVES DISPATCH (ORDER_SET_SUPER_CLUSTERS)";
       badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-400";
     });
-    if (stepTag) stepTag.textContent = "STEP 18 / SUPER-PEER DESIGNATION & HIERARCHICAL BINDING";
-    if (stepTitle) stepTitle.textContent = "Step 18: Super-Peer Designation & Hierarchical Overlay Binding";
-    if (stepDesc) stepDesc.textContent = "Super-Initiator C4 designates Super-Peers (1, 5, 10) and binds local exemplars to coordinate cross-zone federations.";
+    if (stepTag) stepTag.textContent = "STEP 18 / SUPER-ZONE DIRECTIVES DISPATCH";
+    if (stepTitle) stepTitle.textContent = "Step 18: Super-Zone Meta-Cluster & Super-Peer Directives Dispatch";
+    if (stepDesc) stepDesc.textContent = "Top-Level Super-Initiator C4 informs base initiators C2 and C8 of the 3 Global Super-Clusters and designated Super-Peers across the super-zone backbone.";
   } else if (step === 19) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 19: SEMANTIC OVERLAY NETWORK (SON) FORMATION";
@@ -4495,25 +4495,25 @@ function renderStep18(data) {
     document.getElementById("activeStepBadge")
   ].filter(Boolean);
   activeBadges.forEach(badge => {
-    badge.textContent = "ACTIVE PHASE: STEP 18: SUPER-PEER DESIGNATION & HIERARCHICAL BINDING";
+    badge.textContent = "ACTIVE PHASE: STEP 18: SUPER-ZONE DIRECTIVES DISPATCH (ORDER_SET_SUPER_CLUSTERS)";
     badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-400";
   });
 
   renderSidebarFormula(
-    "Step 18: Super-Peer Designation & Hierarchical Binding",
-    "\\mathcal{SC}_m \\longrightarrow SP_m \\in \\{C_1, C_5, C_{10}\\}, \\quad e_k \\xrightarrow{\\text{bind}} SP_m",
-    "Super-Initiator C4 designates Super-Peers (1, 5, 10) to coordinate local exemplars across zones.",
-    "Step 18: Super-Peers",
+    "Step 18: Super-Zone Directives Dispatch",
+    "C_4 \\xrightarrow{\\text{super-zone}} \\{C_2, C_8\\} \\quad : \\quad \\{\\mathcal{SC}_m, \\mathbf{s}_m, SP_m \\in \\{C_1, C_5, C_{10}\\}\\}",
+    "Top-Level Super-Initiator C4 informs base initiators C2 and C8 of the 3 Global Super-Clusters and designated Super-Peers across the super-zone backbone.",
+    "Step 18: Super-Zone Directives",
     false,
     "amber"
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "Step 18: Super-Peer Designation & Hierarchical Overlay Binding";
+  if (canvasLabel) canvasLabel.textContent = "Step 18: Super-Zone Meta-Cluster & Super-Peer Directives Dispatch (ORDER_SET_SUPER_CLUSTERS)";
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.innerHTML = '<span>Super-Peers Designated: <span class="text-sky-700 font-bold font-mono">🌟 C1</span> (SC-1), <span class="text-amber-700 font-bold font-mono">🌟 C5</span> (SC-2), <span class="text-purple-700 font-bold font-mono">🌟 C10</span> (SC-3)</span>';
+    statLeaders.innerHTML = '<span>Super-Zone Backbone Dispatch: <span class="text-amber-700 font-bold font-mono">C4 ➔ C2 (West)</span> &amp; <span class="text-amber-700 font-bold font-mono">C4 ➔ C8 (East)</span></span>';
     statLeaders.className = "text-xs font-bold text-slate-800";
   }
 
@@ -4528,16 +4528,16 @@ function renderStep18(data) {
     isStep13Exemplars: true
   });
 
-  logToTerminal("ZONE", "[STEP 18] Super-Peer Designation & Hierarchical Overlay Binding initialized.");
-  logToTerminal("SUCCESS", "Super-Initiator C4 designates Super-Peers: C1 (SC-1), C5 (SC-2), C10 (SC-3).");
-  logToTerminal("INFO", "Dispatched ORDER_SET_SUPER_PEER downstream along super-zone paths [4 -> 1 -> 2] and [4 -> 6 -> 8].");
-  logToTerminal("SUCCESS", "Exemplar bindings established: C1->SP1, C9->SP1 | C3->SP5, C5->SP5, C8->SP5 | C7->SP10, C10->SP10.");
-  logToTerminal("INFO", "3-tier hierarchy established: Regular Members -> Intra-Zone Exemplars -> Global Super-Peers.");
+  logToTerminal("ZONE", "[STEP 18] Super-Zone Meta-Cluster & Super-Peer Directives Dispatch initialized.");
+  logToTerminal("INFO", "[SUPER-INITIATOR C4] Dispatches ORDER_SET_SUPER_CLUSTERS across super-zone paths [4 -> 1 -> 2] and [4 -> 6 -> 8].");
+  logToTerminal("SUCCESS", "[SUPER-CLUSTERS LEDGER] SC-1: SP C1 (Exemplars C1, C9) | SC-2: SP C5 (Exemplars C3, C5, C8) | SC-3: SP C10 (Exemplars C7, C10).");
+  logToTerminal("INFO", "[DIRECTIVE STATUS] C4: SUPER_ZONE_DIRECTIVES_DISPATCHED | C2 & C8: SUPER_ZONE_DIRECTIVES_RECEIVED.");
+  logToTerminal("WARN", "[AWAITING NOTIFICATION] Nodes 1, 3, 5, 6, 7, 9, 10 awaiting intra-zone notification from zone initiators (Step 19).");
 
   animateStep18SuperPeerDirectives(data.packet_traces || [], data.nodes);
 }
 
-// Animate Step 18: Downstream directive dispatches along super-zone paths and Super-Peer halos
+// Animate Step 18: Downstream backbone directives dispatches along super-zone paths to C2 & C8
 function animateStep18SuperPeerDirectives(packets, allNodes) {
   stopCurrentPacketAnimation();
   syncPacketCanvasSize();
@@ -4546,13 +4546,13 @@ function animateStep18SuperPeerDirectives(packets, allNodes) {
   if (!canvas || !cy) return;
   const ctx = canvas.getContext("2d");
 
-  const duration = 4500;
+  const duration = 4000;
   const startTime = performance.now();
 
   function runFrame(now) {
     const elapsed = now - startTime;
     const progress = (elapsed % duration) / duration;
-    const pulse = (Math.sin((elapsed / 800) * Math.PI) + 1) / 2;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -4561,8 +4561,6 @@ function animateStep18SuperPeerDirectives(packets, allNodes) {
     const n2 = getNodeElement(2);
     const n6 = getNodeElement(6);
     const n8 = getNodeElement(8);
-    const n5 = getNodeElement(5);
-    const n10 = getNodeElement(10);
 
     if (!n4 || !n2 || !n8) {
       activeAnimationId = requestAnimationFrame(runFrame);
@@ -4574,30 +4572,30 @@ function animateStep18SuperPeerDirectives(packets, allNodes) {
     const p2 = n2.renderedPosition();
     const p6 = n6 ? n6.renderedPosition() : null;
     const p8 = n8.renderedPosition();
-    const p5 = n5 ? n5.renderedPosition() : null;
-    const p10 = n10 ? n10.renderedPosition() : null;
 
-    // 1. Downstream Directive Paths: C4 -> C1 -> C2 and C4 -> C6 -> C8
+    // 1. Downstream Backbone Relay Paths: C4 -> C1 -> C2 and C4 -> C6 -> C8
     ctx.save();
+    // West Backbone
     ctx.beginPath();
     ctx.moveTo(p4.x, p4.y);
     if (p1) ctx.lineTo(p1.x, p1.y);
     ctx.lineTo(p2.x, p2.y);
-    ctx.strokeStyle = "rgba(245, 158, 11, 0.75)";
-    ctx.lineWidth = 2.4;
+    ctx.strokeStyle = "rgba(245, 158, 11, 0.85)";
+    ctx.lineWidth = 2.6;
     ctx.shadowColor = "#f59e0b";
-    ctx.shadowBlur = 12;
-    ctx.setLineDash([7, 5]);
-    ctx.lineDashOffset = -now / 30; // outward flow from C4
+    ctx.shadowBlur = 14;
+    ctx.setLineDash([8, 5]);
+    ctx.lineDashOffset = -now / 25; // outward flow from C4
     ctx.stroke();
     ctx.closePath();
 
+    // East Backbone
     ctx.beginPath();
     ctx.moveTo(p4.x, p4.y);
     if (p6) ctx.lineTo(p6.x, p6.y);
     ctx.lineTo(p8.x, p8.y);
-    ctx.strokeStyle = "rgba(245, 158, 11, 0.75)";
-    ctx.lineWidth = 2.4;
+    ctx.strokeStyle = "rgba(245, 158, 11, 0.85)";
+    ctx.lineWidth = 2.6;
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
@@ -4607,9 +4605,9 @@ function animateStep18SuperPeerDirectives(packets, allNodes) {
     const aX = (p2.x + p8.x) / 2;
     const aY = p4.y - 48;
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const aText = "ORDER_SET_SUPER_PEER: C4 ➔ C2 & C8 (DOWNSTREAM HIERARCHICAL BINDINGS)";
+    const aText = "ORDER_SET_SUPER_CLUSTERS: C4 ➔ C2 & C8 (SUPER-ZONE BACKBONE BROADCAST)";
     const aW = ctx.measureText(aText).width;
-    ctx.fillStyle = "rgba(120, 53, 15, 0.92)";
+    ctx.fillStyle = "rgba(120, 53, 15, 0.94)";
     ctx.strokeStyle = "#f59e0b";
     ctx.lineWidth = 1.2;
     ctx.beginPath();
@@ -4622,7 +4620,7 @@ function animateStep18SuperPeerDirectives(packets, allNodes) {
     ctx.fillText(aText, aX, aY);
     ctx.restore();
 
-    // 3. Downstream Moving Packets
+    // 3. Moving Packets along 2 hops
     // West Branch: C4 -> C1 -> C2
     let westX, westY;
     const tgt1 = p1 || p2;
@@ -4653,23 +4651,28 @@ function animateStep18SuperPeerDirectives(packets, allNodes) {
       eastY = tgt6.y + (p8.y - tgt6.y) * e;
     }
 
-    [ { x: westX, y: westY, lbl: "ORDER [SP1, C3->SP5]" }, { x: eastX, y: eastY, lbl: "ORDER [SP10, C9->SP1, C8->SP5]" } ].forEach(pkt => {
+    const packetsToDraw = [
+      { x: westX, y: westY, lbl: "ORDER_SUPER_CLUSTERS [SC-1: SP C1]" },
+      { x: eastX, y: eastY, lbl: "ORDER_SUPER_CLUSTERS [SC-3: SP C10]" }
+    ];
+
+    packetsToDraw.forEach(pkt => {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(pkt.x, pkt.y, 7, 0, Math.PI * 2);
+      ctx.arc(pkt.x, pkt.y, 7.5, 0, Math.PI * 2);
       ctx.fillStyle = "#f59e0b";
       ctx.shadowColor = "#f59e0b";
-      ctx.shadowBlur = 14;
+      ctx.shadowBlur = 16;
       ctx.fill();
       ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.8;
       ctx.stroke();
 
       ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
       const w = ctx.measureText(pkt.lbl).width;
-      ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+      ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
       ctx.beginPath();
-      ctx.roundRect(pkt.x - w / 2 - 4, pkt.y - 18, w + 8, 13, 3);
+      ctx.roundRect(pkt.x - w / 2 - 5, pkt.y - 19, w + 10, 14, 3);
       ctx.fill();
       ctx.fillStyle = "#fef3c7";
       ctx.textAlign = "center";
@@ -4678,43 +4681,59 @@ function animateStep18SuperPeerDirectives(packets, allNodes) {
       ctx.restore();
     });
 
-    // 4. Glowing Super-Peer Badges and Halos on C1, C5, C10
-    const superPeers = [
-      { id: 1, pos: p1, sc: "SC-1", color: "#38bdf8", rgb: "56, 189, 248" },
-      { id: 5, pos: p5, sc: "SC-2", color: "#fbbf24", rgb: "251, 191, 36" },
-      { id: 10, pos: p10, sc: "SC-3", color: "#c084fc", rgb: "192, 132, 252" },
-    ];
-
-    superPeers.forEach(sp => {
-      if (!sp.pos) return;
+    // 4. Reception halos on C2 and C8
+    [ { pos: p2, label: "C2: DIRECTIVES RECEIVED" }, { pos: p8, label: "C8: DIRECTIVES RECEIVED" } ].forEach(rec => {
       ctx.save();
-      // Glowing golden outer aura
       ctx.beginPath();
-      ctx.arc(sp.pos.x, sp.pos.y, 32 + pulse * 6, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(245, 158, 11, ${0.4 + pulse * 0.4})`;
-      ctx.lineWidth = 3.0;
-      ctx.shadowColor = "#f59e0b";
-      ctx.shadowBlur = 22 + pulse * 10;
+      ctx.arc(rec.pos.x, rec.pos.y, 28 + pulse * 6, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(16, 185, 129, ${0.4 + pulse * 0.4})`;
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = "#10b981";
+      ctx.shadowBlur = 16 + pulse * 8;
       ctx.stroke();
 
-      // Floating Badge
-      ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-      const bText = `🌟 SUPER-PEER (${sp.sc})`;
-      const bW = ctx.measureText(bText).width;
-      const bY = sp.pos.y + 36;
-      ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
-      ctx.strokeStyle = "#f59e0b";
-      ctx.lineWidth = 1.2;
+      // Small badge
+      ctx.font = "bold 8px ui-monospace, SFMono-Regular, monospace";
+      const bW = ctx.measureText(rec.label).width;
+      ctx.fillStyle = "rgba(6, 78, 59, 0.90)";
+      ctx.strokeStyle = "#10b981";
+      ctx.lineWidth = 1.0;
       ctx.beginPath();
-      ctx.roundRect(sp.pos.x - bW / 2 - 6, bY - 8, bW + 12, 16, 4);
+      ctx.roundRect(rec.pos.x - bW / 2 - 4, rec.pos.y + 28, bW + 8, 14, 3);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = "#fef3c7";
+      ctx.fillStyle = "#d1fae5";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(bText, sp.pos.x, bY);
+      ctx.fillText(rec.label, rec.pos.x, rec.pos.y + 35);
       ctx.restore();
     });
+
+    // 5. C4 Dispatched Halo
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(p4.x, p4.y, 30 + pulse * 5, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(245, 158, 11, ${0.5 + pulse * 0.3})`;
+    ctx.lineWidth = 2.8;
+    ctx.shadowColor = "#f59e0b";
+    ctx.shadowBlur = 20;
+    ctx.stroke();
+
+    ctx.font = "bold 8px ui-monospace, SFMono-Regular, monospace";
+    const c4Lbl = "C4: DIRECTIVES DISPATCHED";
+    const c4W = ctx.measureText(c4Lbl).width;
+    ctx.fillStyle = "rgba(120, 53, 15, 0.92)";
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    ctx.roundRect(p4.x - c4W / 2 - 4, p4.y + 28, c4W + 8, 14, 3);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#fef3c7";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(c4Lbl, p4.x, p4.y + 35);
+    ctx.restore();
 
     activeAnimationId = requestAnimationFrame(runFrame);
   }
@@ -8182,98 +8201,111 @@ function renderNodeModal(node, stepData = currentStepData) {
     if (superClusterSection) superClusterSection.classList.add("hidden");
     if (superPeerSection) superPeerSection.classList.remove("hidden");
 
-    const isSP = [1, 5, 10].includes(idNum) || Boolean(mergedNode?.is_super_peer);
-    const isEx = [1, 3, 5, 7, 8, 9, 10].includes(idNum) || Boolean(mergedNode?.is_exemplar);
-    const boundSP = mergedNode?.bound_super_peer ?? (idNum === 1 || idNum === 9 ? 1 : ([3, 5, 8].includes(idNum) ? 5 : ([7, 10].includes(idNum) ? 10 : null)));
-    const governed = mergedNode?.governed_exemplars || (idNum === 1 ? [1, 9] : (idNum === 5 ? [3, 5, 8] : (idNum === 10 ? [7, 10] : [])));
-    const repExemplar = mergedNode?.exemplar_node_id ?? (idNum === 2 ? 1 : (idNum === 4 ? 5 : (idNum === 6 ? 7 : null)));
-    const scId = mergedNode?.assigned_super_cluster || ([1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3"));
+    const isInitiator = [2, 4, 8].includes(idNum);
 
-    if (isSP) {
-      if (cardStatusBadge) {
-        cardStatusBadge.textContent = `🌟 GLOBAL SUPER-PEER (${scId})`;
-        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+    if (isInitiator) {
+      if (idNum === 4) {
+        if (cardStatusBadge) {
+          cardStatusBadge.textContent = "👑 TOP SUPER-INITIATOR (DISPATCHED)";
+          cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+        }
+        if (superPeerBadge) {
+          superPeerBadge.textContent = "DIRECTIVES_DISPATCHED";
+          superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
+        }
+      } else {
+        if (cardStatusBadge) {
+          cardStatusBadge.textContent = `⭐ ZONE INITIATOR C${idNum} (RECEIVED)`;
+          cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-emerald-100 text-emerald-900 border-emerald-400";
+        }
+        if (superPeerBadge) {
+          superPeerBadge.textContent = "DIRECTIVES_RECEIVED";
+          superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
+        }
       }
-      if (superPeerBadge) {
-        superPeerBadge.textContent = "GLOBAL SUPER-PEER";
-        superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
-      }
-      if (superPeerContent) {
-        const govTags = governed.map(e => `<span class="px-2 py-0.5 bg-amber-50 text-amber-900 rounded border border-amber-300 font-mono font-bold">⭐ Node C${e}</span>`).join(" ");
-        superPeerContent.innerHTML = `
-          <div class="p-3 bg-white rounded-lg border border-amber-300 shadow-xs space-y-2.5">
-            <div class="p-2.5 rounded-lg border border-amber-400 bg-amber-50/80 space-y-1">
-              <div class="flex items-center justify-between">
-                <span class="text-[11px] font-extrabold text-amber-950 flex items-center gap-1.5">
-                  <span>🌟</span>
-                  <span>Appointed Global Super-Peer</span>
-                </span>
-                <span class="px-2 py-0.5 rounded font-mono font-bold text-[9px] bg-white border border-amber-300 text-amber-900">${scId}</span>
-              </div>
-              <div class="text-[9px] text-amber-800">
-                Officially designated by Super-Initiator C4 via ORDER_SET_SUPER_PEER.
-              </div>
-            </div>
-            <div class="p-2.5 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono space-y-1.5">
-              <div class="font-bold text-slate-800">Governed Intra-Zone Exemplars:</div>
-              <div class="flex flex-wrap gap-1.5">
-                ${govTags}
-              </div>
-              <div class="text-[8.5px] text-slate-500 pt-1">Coordinates cross-zone model aggregation for ${scId}.</div>
-            </div>
-          </div>
-        `;
-      }
-    } else if (isEx) {
-      if (cardStatusBadge) {
-        cardStatusBadge.textContent = `⭐ BOUND EXEMPLAR (${scId})`;
-        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-50 text-amber-900 border-amber-300";
-      }
-      if (superPeerBadge) {
-        superPeerBadge.textContent = "BOUND TO SP " + boundSP;
-        superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-50 text-amber-900 border border-amber-300";
-      }
+
       if (superPeerContent) {
         superPeerContent.innerHTML = `
-          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
-            <div class="p-2.5 rounded-lg border border-amber-200 bg-amber-50/50 space-y-1">
-              <div class="flex items-center justify-between">
-                <span class="text-[10.5px] font-bold text-slate-800">Hierarchical Overlay Binding:</span>
-                <span class="px-1.5 py-0.2 rounded font-mono font-bold text-[9px] bg-amber-100 text-amber-900 border border-amber-300">TIER 2</span>
-              </div>
-              <div class="text-[10px] font-mono font-bold text-amber-900">
-                Bound Global Super-Peer: Node C${boundSP}
-              </div>
+          <div class="p-2.5 bg-white rounded-lg border border-amber-300 shadow-xs space-y-2">
+            <div class="p-2 rounded bg-amber-50/80 border border-amber-200 text-[10px] text-amber-950 font-mono">
+              ${idNum === 4 
+                ? '👑 <strong>Top-Level Super-Initiator C4:</strong> Dispatched <code>ORDER_SET_SUPER_CLUSTERS</code> downstream across super-zone backbone paths [4➔1➔2] and [4➔6➔8].' 
+                : `⭐ <strong>Zone Initiator C${idNum}:</strong> Ingested <code>ORDER_SET_SUPER_CLUSTERS</code>. Ready to dispatch intra-zone directives in Step 19.`
+              }
             </div>
-            <div class="text-[9px] text-slate-600 font-mono">
-              Directly federates local cluster updates to Super-Peer C${boundSP} for inter-zone coordination.
+            <div class="text-[9.5px] font-bold text-slate-800 uppercase tracking-wide">
+              Global Super-Zone Directive Ledger:
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-[9px] font-mono border-collapse border border-slate-200">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-700 text-left">
+                    <th class="p-1 border border-slate-200">Super-Cluster</th>
+                    <th class="p-1 border border-slate-200">Dominant Classes</th>
+                    <th class="p-1 border border-slate-200">Super-Peer</th>
+                    <th class="p-1 border border-slate-200">Governed Exemplars</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="${idNum === 2 ? 'bg-sky-100 font-bold text-sky-950 border-sky-300' : 'hover:bg-slate-50'}">
+                    <td class="p-1 border border-slate-200">SC-1</td>
+                    <td class="p-1 border border-slate-200">✈️ 🚗 🐦 (1, 2, 3)</td>
+                    <td class="p-1 border border-slate-200 text-sky-700 font-bold">🌟 Node C1</td>
+                    <td class="p-1 border border-slate-200">{C1, C9}</td>
+                  </tr>
+                  <tr class="${idNum === 4 ? 'bg-amber-100 font-bold text-amber-950 border-amber-300' : 'hover:bg-slate-50'}">
+                    <td class="p-1 border border-slate-200">SC-2</td>
+                    <td class="p-1 border border-slate-200">🐱 🦌 🐶 (4, 5, 6)</td>
+                    <td class="p-1 border border-slate-200 text-amber-700 font-bold">🌟 Node C5</td>
+                    <td class="p-1 border border-slate-200">{C3, C5, C8}</td>
+                  </tr>
+                  <tr class="${idNum === 8 ? 'bg-purple-100 font-bold text-purple-950 border-purple-300' : 'hover:bg-slate-50'}">
+                    <td class="p-1 border border-slate-200">SC-3</td>
+                    <td class="p-1 border border-slate-200">🐴 🚢 🚚 (8, 9, 10)</td>
+                    <td class="p-1 border border-slate-200 text-purple-700 font-bold">🌟 Node C10</td>
+                    <td class="p-1 border border-slate-200">{C7, C10}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         `;
       }
     } else {
       if (cardStatusBadge) {
-        cardStatusBadge.textContent = `CLIENT (LOCAL MEMBER)`;
-        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-800 border-slate-300";
+        cardStatusBadge.textContent = "⏳ AWAITING INTRA-ZONE NOTIFICATION";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-50 text-amber-900 border-amber-300";
       }
       if (superPeerBadge) {
-        superPeerBadge.textContent = "REGULAR MEMBER";
-        superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-700 border border-slate-300";
+        superPeerBadge.textContent = "AWAITING_STEP_19";
+        superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-50 text-amber-900 border border-amber-300";
       }
+
+      const prospectiveRole = [1, 5, 10].includes(idNum)
+        ? `🌟 Appointed Global Super-Peer for ${idNum === 1 ? 'SC-1 (Aviation & Vehicles)' : (idNum === 5 ? 'SC-2 (Animals)' : 'SC-3 (Heavy Transport & Amphibians)')}`
+        : ([3, 7, 8, 9].includes(idNum)
+            ? `⭐ Intra-Zone Exemplar (to be bound to Super-Peer C${idNum === 9 ? 1 : ([3, 8].includes(idNum) ? 5 : 10)})`
+            : `🔹 Regular Member (Zone client, to be notified by Zone Initiator)`
+          );
+
       if (superPeerContent) {
         superPeerContent.innerHTML = `
-          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
-            <div class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 space-y-1">
+          <div class="p-3 bg-white rounded-lg border border-amber-300 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-amber-300 bg-amber-50/80 space-y-1">
               <div class="flex items-center justify-between">
-                <span class="text-[10.5px] font-bold text-slate-800">Tier 1 Regular Client:</span>
-                <span class="px-1.5 py-0.2 rounded font-mono font-bold text-[9px] bg-slate-200 text-slate-700">TIER 1</span>
+                <span class="text-[11px] font-extrabold text-amber-950 flex items-center gap-1.5">
+                  <span>⏳</span>
+                  <span>Awaiting Intra-Zone Notification</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-bold text-[9px] bg-white border border-amber-300 text-amber-900">STEP 19</span>
               </div>
-              <div class="text-[10px] font-mono font-bold text-slate-900">
-                Represented by Local Exemplar: Node C${repExemplar}
+              <div class="text-[9.5px] text-amber-900 font-mono">
+                Super-Initiator C4 has broadcast directives across the inter-zone backbone to Initiators C2 and C8. Intra-zone notification down to individual exemplars and super-peers will occur in Step 19.
               </div>
             </div>
-            <div class="text-[9px] text-slate-600 font-mono">
-              Participates in local cluster training; updates are aggregated through intra-zone exemplar C${repExemplar}.
+            <div class="p-2.5 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono space-y-1">
+              <div class="font-bold text-slate-800">Prospective Assignment in Backbone Ledger:</div>
+              <div class="text-slate-800 font-semibold">${prospectiveRole}</div>
             </div>
           </div>
         `;
