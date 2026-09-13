@@ -161,6 +161,11 @@
         <span class="step-bubble">19</span>
         <span>Intra-Zone Bindings</span>
       </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav20" class="step-item cursor-pointer" title="Jump to Step 20: Semantic Overlay Network (SON) Logical Topology Formation">
+        <span class="step-bubble">20</span>
+        <span>Semantic Overlay</span>
+      </div>
     </nav>
 
     <!-- Session Badge -->
@@ -306,6 +311,11 @@
           <span id="canvasViewLabel" class="font-bold text-slate-800">Physical Ad-Hoc Mesh (50 Dispersed Nodes)</span>
           <span class="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 font-sans ml-1">💡 Click node to pin details</span>
         </div>
+
+        <!-- Floating Dual-Layout Switcher HUD Button (Visible for Step >= 20) -->
+        <button id="btn-toggle-layout" class="hidden absolute top-3 left-1/2 -translate-x-1/2 z-20 layout-toggle-btn cursor-pointer" title="Click to toggle view: Semantic Overlay Layout">
+          🔀 Layout: Physical Topology
+        </button>
 
         <!-- Node Legend Top-Right -->
         <div class="absolute top-3 right-3 z-10 flex items-center gap-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-mono shadow-sm">
@@ -689,6 +699,6 @@
   </main>
 
   <!-- Application JS Logic -->
-  <script src="/static/app.js?v=19.4"></script>
+  <script src="/static/app.js?v=20.0"></script>
 </body>
 </html>

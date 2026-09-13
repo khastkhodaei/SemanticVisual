@@ -11,6 +11,41 @@ let cy = null;
 let activeSelectedNodeId = null;
 let activeSelectedNodeData = null;
 let activeAnimationId = null;
+let currentLayout = "physical"; // "physical" | "overlay"
+let layoutAnimationId = null;
+
+// Dedicated Physical Coordinates (Original ad-hoc placement)
+const PHYSICAL_LAYOUT_COORDS = {
+  1: { x: 130, y: 140 },
+  2: { x: 130, y: 380 },
+  3: { x: 310, y: 380 },
+  4: { x: 310, y: 140 },
+  5: { x: 480, y: 420 },
+  6: { x: 480, y: 240 },
+  7: { x: 480, y: 90 },
+  8: { x: 700, y: 270 },
+  9: { x: 700, y: 140 },
+  10: { x: 840, y: 380 }
+};
+
+// Dedicated Semantic Overlay Layout Coordinates (Clustered into 3 Global Super-Clusters)
+const OVERLAY_LAYOUT_COORDS = {
+  // Super-Cluster 1 (Left Wing / Aviation & Vehicles - Classes 1, 2, 3)
+  1: { x: 180, y: 320 }, // Super-Peer 🌟
+  2: { x: 100, y: 240 }, // Member
+  9: { x: 100, y: 400 }, // Exemplar
+
+  // Super-Cluster 2 (Center Hub / Animals - Classes 4, 5, 6)
+  5: { x: 500, y: 320 }, // Super-Peer 🌟
+  4: { x: 420, y: 220 }, // Member
+  3: { x: 580, y: 220 }, // Exemplar
+  8: { x: 500, y: 440 }, // Exemplar
+
+  // Super-Cluster 3 (Right Wing / Transport & Amphibians - Classes 8, 9, 10)
+  10: { x: 820, y: 320 }, // Super-Peer 🌟
+  7: { x: 900, y: 240 },  // Exemplar
+  6: { x: 900, y: 400 }   // Member
+};
 
 // CIFAR-10 10-Class Definitions (C1 to C10)
 const CIFAR10_CLASSES = {
@@ -225,12 +260,59 @@ function initCytoscape() {
         }
       },
       {
+        selector: "edge.network-physical-edge",
+        style: {
+          "line-color": "#94a3b8",
+          "width": 2.0,
+          "opacity": 0.75,
+          "curve-style": "bezier",
+          "target-arrow-shape": "none",
+          "transition-property": "opacity, line-color, width",
+          "transition-duration": "0.5s",
+          "z-index": 10
+        }
+      },
+      {
         selector: "edge.dimmed-physical",
         style: {
           "line-color": "rgba(148, 163, 184, 0.22)",
           "width": 1.5,
           "opacity": 0.35,
           "z-index": 1
+        }
+      },
+      {
+        selector: "edge.overlay-mode-dimmed",
+        style: {
+          "line-color": "rgba(148, 163, 184, 0.12)",
+          "width": 1.0,
+          "opacity": 0.05,
+          "z-index": 1
+        }
+      },
+      {
+        selector: "edge.semantic-overlay-edge",
+        style: {
+          "curve-style": "bezier",
+          "width": 3.5,
+          "line-color": "data(color)",
+          "opacity": 0.95,
+          "target-arrow-shape": "none",
+          "z-index": 60,
+          "transition-property": "opacity, line-color, width",
+          "transition-duration": "0.5s"
+        }
+      },
+      {
+        selector: "edge.semantic-overlay-tier2",
+        style: {
+          "curve-style": "bezier",
+          "width": 4.0,
+          "line-style": "dashed",
+          "line-dash-pattern": [6, 4],
+          "line-color": "data(color)",
+          "opacity": 1.0,
+          "z-index": 70
         }
       },
       {
@@ -905,20 +987,53 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 19)
+// 4. Main Step Loading Function (Steps 1 to 20)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 19) return;
+  if (stepNumber < 1 || stepNumber > 20) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
   clearClassFilter();
 
   try {
-    const res = await fetch(`/api/v1/storyboard/step/${stepNumber}`);
-    if (!res.ok) throw new Error(`Step ${stepNumber} fetch failed: ${res.statusText}`);
-    const data = await res.json();
+    let data = null;
+    try {
+      const res = await fetch(`/api/v1/storyboard/step/${stepNumber}`);
+      if (res.ok) {
+        data = await res.json();
+      }
+    } catch (e) {
+      console.warn(`Primary fetch for step ${stepNumber} failed:`, e);
+    }
+
+    // Step 20 fallback: If backend endpoint is not yet defined, build Step 20 from Step 19 data
+    if (!data || !data.nodes) {
+      if (stepNumber === 20) {
+        const res19 = await fetch(`/api/v1/storyboard/step/19`);
+        if (!res19.ok) throw new Error(`Step 19 fallback fetch failed: ${res19.statusText}`);
+        const data19 = await res19.json();
+        data = buildStep20FromStep19(data19);
+      } else {
+        throw new Error(`Step ${stepNumber} fetch failed`);
+      }
+    }
+
     currentStep = stepNumber;
     currentStepData = data;
+
+    // Manage Dual-Layout Toggle Button visibility: only available from Step 20 onward
+    const btnToggleLayout = document.getElementById("btn-toggle-layout");
+    if (btnToggleLayout) {
+      if (stepNumber >= 20) {
+        btnToggleLayout.classList.remove("hidden");
+        btnToggleLayout.style.display = "inline-flex";
+        updateLayoutButtonUI();
+      } else {
+        btnToggleLayout.classList.add("hidden");
+        btnToggleLayout.style.display = "none";
+        currentLayout = "physical";
+      }
+    }
 
     updateUIHeaders(data);
     updateStepper(stepNumber);
@@ -1035,6 +1150,13 @@ async function loadStep(stepNumber) {
       } catch (renderErr) {
         console.error("Step 19 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 19 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 20) {
+      try {
+        renderStep20(data);
+      } catch (renderErr) {
+        console.error("Step 20 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 20 Render Error: ${renderErr.message}`);
       }
     }
 
@@ -1226,6 +1348,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 19 / INTRA-ZONE BINDINGS";
     if (stepTitle) stepTitle.textContent = "Step 19: Intra-Zone Super-Peer Designation & Exemplar Hierarchical Binding";
     if (stepDesc) stepDesc.textContent = "Base initiators (C2, C4, C8) notify cluster exemplars of their Super-Peer status and hierarchical bindings strictly across direct 1-hop links.";
+  } else if (step === 20) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 20: SEMANTIC OVERLAY NETWORK (SON) FORMATION";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 20 / SEMANTIC OVERLAY";
+    if (stepTitle) stepTitle.textContent = "Step 20: Semantic Overlay Network (SON) Logical Topology Formation";
+    if (stepDesc) stepDesc.textContent = "Two-tier Semantic Overlay Network (SON) activates 7 logical federation edges across 3 Global Super-Clusters with interactive dual-layout switching.";
   }
 }
 
@@ -5035,6 +5165,547 @@ function animateStep19IntraZoneDirectives(packets, allNodes) {
 const animateStep19SemanticOverlay = animateStep19IntraZoneDirectives;
 
 
+// ============================================================================
+// 5.20 STEP 20: Semantic Overlay Network (SON) Logical Topology Formation
+// Dual-Layout Switcher: Physical Topology <---> Semantic Overlay Layout
+// ============================================================================
+
+function toggleLayout() {
+  if (currentStep < 20) return;
+  const nextLayout = currentLayout === "physical" ? "overlay" : "physical";
+  currentLayout = nextLayout;
+  updateLayoutButtonUI();
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = currentLayout === "overlay"
+      ? "Semantic Overlay Network (SON) — Reorganized 3 Global Super-Clusters"
+      : "Semantic Overlay Network (SON) — Physical Topology with 7 Logical Edges";
+  }
+
+  logToTerminal(
+    "ZONE",
+    nextLayout === "overlay"
+      ? "[DUAL-LAYOUT] Switching to Semantic Overlay Layout: Nodes physically grouped into 3 Super-Clusters."
+      : "[DUAL-LAYOUT] Restoring original Physical Topology Layout: Ad-hoc mesh coordinates restored."
+  );
+
+  animateLayoutTransition(nextLayout);
+}
+
+function updateLayoutButtonUI() {
+  const btn = document.getElementById("btn-toggle-layout");
+  if (!btn) return;
+  if (currentLayout === "overlay") {
+    btn.innerHTML = `<span>✨</span><span>Layout: Semantic Overlay</span>`;
+    btn.classList.add("layout-overlay-active");
+    btn.title = "Click to toggle view: Physical Topology";
+  } else {
+    btn.innerHTML = `<span>🔀</span><span>Layout: Physical Topology</span>`;
+    btn.classList.remove("layout-overlay-active");
+    btn.title = "Click to toggle view: Semantic Overlay Layout";
+  }
+}
+
+function animateLayoutTransition(toLayout, onComplete) {
+  if (!cy) return;
+  if (layoutAnimationId) {
+    cancelAnimationFrame(layoutAnimationId);
+    layoutAnimationId = null;
+  }
+
+  const duration = 500;
+  const startTime = performance.now();
+
+  const startPositions = {};
+  const targetPositions = {};
+
+  for (let id = 1; id <= 10; id++) {
+    const ele = cy.getElementById(`node_${id}`);
+    if (ele && ele.length > 0) {
+      const p = ele.position();
+      startPositions[id] = { x: p.x, y: p.y };
+      const target = toLayout === "overlay" ? OVERLAY_LAYOUT_COORDS[id] : PHYSICAL_LAYOUT_COORDS[id];
+      targetPositions[id] = target || startPositions[id];
+    }
+  }
+
+  const physicalEdges = cy.edges(".network-physical-edge");
+
+  function step(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(1, elapsed / duration);
+    // Cubic easing (easeInOutCubic) for ultra-smooth acceleration & deceleration
+    const eased = progress < 0.5
+      ? 4 * progress * progress * progress
+      : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+    // Smoothly transition physical edges opacity
+    if (physicalEdges && physicalEdges.length > 0) {
+      const startOp = toLayout === "overlay" ? 0.75 : 0.05;
+      const endOp = toLayout === "overlay" ? 0.05 : 0.75;
+      const curOp = startOp + (endOp - startOp) * eased;
+      physicalEdges.style("opacity", curOp);
+    }
+
+    for (let id = 1; id <= 10; id++) {
+      const ele = cy.getElementById(`node_${id}`);
+      if (ele && ele.length > 0 && startPositions[id] && targetPositions[id]) {
+        const x = startPositions[id].x + (targetPositions[id].x - startPositions[id].x) * eased;
+        const y = startPositions[id].y + (targetPositions[id].y - startPositions[id].y) * eased;
+        ele.unlock();
+        ele.position({ x, y });
+        ele.lock();
+      }
+    }
+
+    if (progress < 1) {
+      layoutAnimationId = requestAnimationFrame(step);
+    } else {
+      layoutAnimationId = null;
+      // Guarantee exact pixel placement at end of transition
+      for (let id = 1; id <= 10; id++) {
+        const ele = cy.getElementById(`node_${id}`);
+        if (ele && ele.length > 0 && targetPositions[id]) {
+          ele.unlock();
+          ele.position(targetPositions[id]);
+          ele.lock();
+        }
+      }
+      if (toLayout === "overlay") {
+        physicalEdges.addClass("overlay-mode-dimmed").style("opacity", 0.05);
+      } else {
+        physicalEdges.removeClass("overlay-mode-dimmed").style("opacity", 0.75);
+      }
+      if (onComplete) onComplete();
+    }
+  }
+
+  layoutAnimationId = requestAnimationFrame(step);
+}
+
+function buildStep20FromStep19(data19) {
+  const nodes = JSON.parse(JSON.stringify(data19.nodes || []));
+  const superPeers = [1, 5, 10];
+  const exemplars = [3, 7, 8, 9];
+
+  // Active overlay neighbor map per STEPS.md
+  const overlayNeighbors = {
+    1: [2, 9],
+    2: [1],
+    3: [5],
+    4: [5],
+    5: [3, 4, 8],
+    6: [7],
+    7: [6, 10],
+    8: [5],
+    9: [1],
+    10: [7]
+  };
+
+  const scMap = {
+    1: "SC-1", 2: "SC-1", 9: "SC-1",
+    3: "SC-2", 4: "SC-2", 5: "SC-2", 8: "SC-2",
+    6: "SC-3", 7: "SC-3", 10: "SC-3"
+  };
+
+  nodes.forEach(n => {
+    n.active_overlay_neighbors = overlayNeighbors[n.id] || [];
+    n.assigned_super_cluster = scMap[n.id] || "SC-1";
+    n.super_cluster_id = scMap[n.id] || "SC-1";
+    if (superPeers.includes(n.id)) {
+      n.son_tier = 3;
+      n.son_role = "SUPER_PEER";
+      n.role = "SUPER_PEER";
+      n.is_super_peer = true;
+      n.is_exemplar = true;
+    } else if (exemplars.includes(n.id)) {
+      n.son_tier = 2;
+      n.son_role = "EXEMPLAR";
+      n.role = "EXEMPLAR";
+      n.is_super_peer = false;
+      n.is_exemplar = true;
+    } else {
+      n.son_tier = 1;
+      n.son_role = "MEMBER";
+      n.role = "CLIENT";
+      n.is_super_peer = false;
+      n.is_exemplar = false;
+    }
+  });
+
+  const semanticOverlayEdges = [
+    { from: 2, to: 1, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-1", color: "#38bdf8", label: "C2 ↔ C1" },
+    { from: 9, to: 1, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-1", color: "#38bdf8", label: "C9 ↔ C1" },
+    { from: 4, to: 5, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-2", color: "#fbbf24", label: "C4 ↔ C5" },
+    { from: 3, to: 5, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-2", color: "#fbbf24", label: "C3 ↔ C5" },
+    { from: 8, to: 5, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-2", color: "#fbbf24", label: "C8 ↔ C5" },
+    { from: 6, to: 7, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-3", color: "#c084fc", label: "C6 ↔ C7" },
+    { from: 7, to: 10, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-3", color: "#c084fc", label: "C7 ↔ C10" },
+  ];
+
+  return {
+    step: 20,
+    title: "Step 20: Semantic Overlay Network (SON) Logical Topology Formation",
+    phase_badge: "ACTIVE PHASE: STEP 20: SEMANTIC OVERLAY NETWORK (SON) ACTIVATION",
+    description: "Two-tier Semantic Overlay Network (SON) activated with 7 logical edges across 3 Global Super-Clusters.",
+    formula: "\\mathcal{G}_{\\text{SON}} = (\\mathcal{V}, \\mathcal{E}_{\\text{SON}}) = \\mathcal{E}_{\\text{intra}} \\cup \\mathcal{E}_{\\text{inter}} \\quad (|\\mathcal{E}_{\\text{SON}}| = 7)",
+    formula_desc: "Two-tier logical federation overlay governs model aggregation while physical mesh serves as ad-hoc transport.",
+    nodes: nodes,
+    edges: data19.edges || [],
+    semantic_overlay_edges: semanticOverlayEdges,
+    total_nodes: 10,
+    total_edges: 18,
+    total_steps: 20,
+    active_leaders: [1, 5, 10],
+    terminal_logs: [
+      "[SON ACTIVATION] Two-tier Semantic Overlay Network (SON) logical topology activated.",
+      "[TIER 1 INTRA-CLUSTER] C2 ↔ C1 (SC-1) | C4 ↔ C5 (SC-2) | C6 ↔ C7 (SC-3).",
+      "[TIER 2 INTER-EXEMPLAR] C9 ↔ C1 (SC-1) | C3 ↔ C5, C8 ↔ C5 (SC-2) | C7 ↔ C10 (SC-3).",
+      "[DUAL-LAYOUT READY] Switch between Physical Topology and Semantic Overlay Layout via toolbar switcher."
+    ]
+  };
+}
+
+function renderStep20(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 20: SEMANTIC OVERLAY NETWORK (SON) FORMATION";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-400";
+  });
+
+  renderSidebarFormula(
+    "Step 20: Semantic Overlay Network (SON) Logical Topology",
+    "\\mathcal{G}_{\\text{SON}} = (\\mathcal{V}, \\mathcal{E}_{\\text{SON}}) = \\mathcal{E}_{\\text{intra}} \\cup \\mathcal{E}_{\\text{inter}} \\quad (|\\mathcal{E}_{\\text{SON}}| = 7)",
+    "Two-tier Semantic Overlay Network (SON) activates 7 logical federation edges across 3 Global Super-Clusters. Physical links serve as the underlying transport layer.",
+    "Step 20: Semantic Overlay",
+    false,
+    "emerald"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = currentLayout === "overlay"
+      ? "Semantic Overlay Network (SON) — Reorganized 3 Global Super-Clusters"
+      : "Semantic Overlay Network (SON) — Physical Topology with 7 Logical Edges";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Active Overlay: <span class="text-emerald-700 font-bold font-mono">7 SON Edges</span> &amp; <span class="text-amber-700 font-bold font-mono">3 Super-Peers (C1, C5, C10)</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Position nodes according to currentLayout
+  const targetCoords = currentLayout === "overlay" ? OVERLAY_LAYOUT_COORDS : PHYSICAL_LAYOUT_COORDS;
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = targetCoords[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  const semanticOverlayEdges = data.semantic_overlay_edges || [
+    { from: 2, to: 1, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-1", color: "#38bdf8", label: "C2 ↔ C1" },
+    { from: 9, to: 1, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-1", color: "#38bdf8", label: "C9 ↔ C1" },
+    { from: 4, to: 5, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-2", color: "#fbbf24", label: "C4 ↔ C5" },
+    { from: 3, to: 5, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-2", color: "#fbbf24", label: "C3 ↔ C5" },
+    { from: 8, to: 5, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-2", color: "#fbbf24", label: "C8 ↔ C5" },
+    { from: 6, to: 7, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-3", color: "#c084fc", label: "C6 ↔ C7" },
+    { from: 7, to: 10, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-3", color: "#c084fc", label: "C7 ↔ C10" },
+  ];
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+    isStep17: true,
+    isStep16: true,
+    isStep15: true,
+    isStep13Exemplars: true,
+    dimPhysicalEdges: currentLayout === "overlay",
+    semanticOverlayEdges: semanticOverlayEdges
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("ZONE", "[STEP 20] Semantic Overlay Network (SON) Logical Topology Formation activated.");
+  logToTerminal("INFO", "[TIER 1] Member-to-Exemplar: C2 ↔ C1 (SC-1), C4 ↔ C5 (SC-2), C6 ↔ C7 (SC-3).");
+  logToTerminal("INFO", "[TIER 2] Exemplar-to-Super-Peer: C9 ↔ C1 (SC-1), C3 ↔ C5, C8 ↔ C5 (SC-2), C7 ↔ C10 (SC-3).");
+  logToTerminal("SUCCESS", "[SON OPERATIONAL] 7 active logical edges. Click floating toolbar button to switch layout views.");
+
+  animateStep20SemanticOverlay(semanticOverlayEdges, data.nodes);
+}
+
+function animateStep20SemanticOverlay(overlayEdges, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const edges = overlayEdges || [
+    { from: 2, to: 1, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-1", color: "#38bdf8", label: "C2 ↔ C1" },
+    { from: 9, to: 1, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-1", color: "#38bdf8", label: "C9 ↔ C1" },
+    { from: 4, to: 5, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-2", color: "#fbbf24", label: "C4 ↔ C5" },
+    { from: 3, to: 5, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-2", color: "#fbbf24", label: "C3 ↔ C5" },
+    { from: 8, to: 5, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-2", color: "#fbbf24", label: "C8 ↔ C5" },
+    { from: 6, to: 7, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-3", color: "#c084fc", label: "C6 ↔ C7" },
+    { from: 7, to: 10, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-3", color: "#c084fc", label: "C7 ↔ C10" },
+  ];
+
+  const scClusters = [
+    { id: "SC-1", name: "Aviation & Vehicles", nodes: [1, 2, 9], color: "#38bdf8", rgb: "56, 189, 248", superPeer: 1 },
+    { id: "SC-2", name: "Animals", nodes: [3, 4, 5, 8], color: "#fbbf24", rgb: "251, 191, 36", superPeer: 5 },
+    { id: "SC-3", name: "Transport & Amphibians", nodes: [6, 7, 10], color: "#c084fc", rgb: "192, 132, 252", superPeer: 10 }
+  ];
+
+  const startTime = performance.now();
+
+  function runFrame(now) {
+    if (currentStep !== 20) return;
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 700) * Math.PI) + 1) / 2; // 0..1 smooth pulse
+    const particleProgress = (elapsed % 2400) / 2400; // 0..1 loop for flowing energy particles
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const isOverlayMode = currentLayout === "overlay";
+
+    // 1. Status Banner Top of Canvas (Placed below the layout switcher button)
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = isOverlayMode
+      ? "SEMANTIC OVERLAY LAYOUT: 3 GLOBAL SUPER-CLUSTERS (7 ACTIVE LOGICAL EDGES)"
+      : "PHYSICAL TOPOLOGY VIEW: 18 AD-HOC LINKS + 7 SEMANTIC OVERLAY EDGES";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 46;
+    ctx.fillStyle = isOverlayMode ? "rgba(15, 23, 42, 0.92)" : "rgba(30, 41, 59, 0.92)";
+    ctx.strokeStyle = isOverlayMode ? "#38bdf8" : "#94a3b8";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.roundRect(bX - bW / 2 - 10, bY - 10, bW + 20, 20, 5);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = isOverlayMode ? "#38bdf8" : "#f1f5f9";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // 2. Render 3 Super-Cluster Background Hulls/Auras (Always active, prominent in Overlay Mode)
+    scClusters.forEach(sc => {
+      const positions = sc.nodes.map(id => {
+        const ele = getNodeElement(id);
+        return ele ? ele.renderedPosition() : null;
+      }).filter(Boolean);
+
+      if (positions.length === 0) return;
+
+      const cx = positions.reduce((sum, p) => sum + p.x, 0) / positions.length;
+      const cy_pos = positions.reduce((sum, p) => sum + p.y, 0) / positions.length;
+
+      // In Overlay Mode, draw the enclosing hull/aura clearly around the group
+      if (isOverlayMode && positions.length >= 2) {
+        ctx.save();
+        const sorted = [...positions].sort((a, b) => {
+          return Math.atan2(a.y - cy_pos, a.x - cx) - Math.atan2(b.y - cy_pos, b.x - cx);
+        });
+
+        ctx.beginPath();
+        sorted.forEach((p, idx) => {
+          const dx = p.x - cx;
+          const dy = p.y - cy_pos;
+          const dist = Math.hypot(dx, dy);
+          const push = dist > 0 ? 46 : 30;
+          const px = p.x + (dx / dist) * push;
+          const py = p.y + (dy / dist) * push;
+          if (idx === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        });
+        ctx.closePath();
+
+        // Translucent fill
+        ctx.fillStyle = `rgba(${sc.rgb}, 0.08)`;
+        ctx.shadowColor = sc.color;
+        ctx.shadowBlur = 24 + pulse * 10;
+        ctx.fill();
+
+        // Glowing border
+        ctx.strokeStyle = `rgba(${sc.rgb}, ${0.5 + pulse * 0.35})`;
+        ctx.lineWidth = 2.0;
+        ctx.setLineDash([8, 6]);
+        ctx.lineDashOffset = -now / 35;
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Cluster Title Pill Badge at top of the hull
+        ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+        const tagText = `🌌 ${sc.id}: ${sc.name}`;
+        const tW = ctx.measureText(tagText).width;
+        const tagY = Math.min(...positions.map(p => p.y)) - 28;
+
+        ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+        ctx.strokeStyle = sc.color;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.roundRect(cx - tW / 2 - 8, tagY - 9, tW + 16, 18, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = sc.color;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(tagText, cx, tagY);
+        ctx.restore();
+      }
+
+      // Glowing aura rings around each node in this Super-Cluster
+      positions.forEach(p => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, isOverlayMode ? (26 + pulse * 6) : (24 + pulse * 4), 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(${sc.rgb}, ${isOverlayMode ? (0.4 + pulse * 0.4) : (0.2 + pulse * 0.2)})`;
+        ctx.lineWidth = isOverlayMode ? 2.5 : 1.5;
+        ctx.shadowColor = sc.color;
+        ctx.shadowBlur = isOverlayMode ? (18 + pulse * 10) : 10;
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      // Super-Peer Central Star Indicator
+      const spEle = getNodeElement(sc.superPeer);
+      if (spEle) {
+        const spPos = spEle.renderedPosition();
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(spPos.x, spPos.y, 32 + pulse * 7, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(245, 158, 11, ${0.6 + pulse * 0.4})`;
+        ctx.lineWidth = 3.0;
+        ctx.shadowColor = "#f59e0b";
+        ctx.shadowBlur = 25 + pulse * 10;
+        ctx.stroke();
+
+        // Star badge
+        ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+        const spText = `🌟 SUPER-PEER C${sc.superPeer}`;
+        const spW = ctx.measureText(spText).width;
+        const spY = spPos.y + (isOverlayMode ? 36 : 34);
+        ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.roundRect(spPos.x - spW / 2 - 5, spY - 7, spW + 10, 15, 3);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#fef3c7";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(spText, spPos.x, spY);
+        ctx.restore();
+      }
+    });
+
+    // 3. Prominently Render the 7 Semantic Overlay Edges with Glowing Neon Colors
+    edges.forEach(edge => {
+      const srcEle = getNodeElement(edge.from);
+      const tgtEle = getNodeElement(edge.to);
+      if (!srcEle || !tgtEle) return;
+
+      const pFrom = srcEle.renderedPosition();
+      const pTo = tgtEle.renderedPosition();
+
+      const edgeColor = edge.color || "#38bdf8";
+      const isTier2 = (edge.tier === 2);
+
+      ctx.save();
+      // Outer intense neon glow
+      ctx.beginPath();
+      ctx.moveTo(pFrom.x, pFrom.y);
+      ctx.lineTo(pTo.x, pTo.y);
+      ctx.strokeStyle = edgeColor;
+      ctx.lineWidth = isOverlayMode ? (isTier2 ? 4.5 : 3.8) : 2.8;
+      ctx.shadowColor = edgeColor;
+      ctx.shadowBlur = isOverlayMode ? (22 + pulse * 10) : 12;
+      ctx.stroke();
+
+      // Inner bright white/core highlight
+      ctx.beginPath();
+      ctx.moveTo(pFrom.x, pFrom.y);
+      ctx.lineTo(pTo.x, pTo.y);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.75)";
+      ctx.lineWidth = isOverlayMode ? 1.5 : 1.0;
+      ctx.shadowBlur = 0;
+      ctx.stroke();
+
+      // Flowing Energy Photons / Pulses along the edge
+      const numPhotons = isTier2 ? 3 : 2;
+      for (let pi = 0; pi < numPhotons; pi++) {
+        const offset = (particleProgress + pi / numPhotons) % 1;
+        const px = pFrom.x + (pTo.x - pFrom.x) * offset;
+        const py = pFrom.y + (pTo.y - pFrom.y) * offset;
+
+        ctx.beginPath();
+        ctx.arc(px, py, isOverlayMode ? 4.5 : 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = edgeColor;
+        ctx.shadowBlur = 14;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(px, py, isOverlayMode ? 7.5 : 5.5, 0, Math.PI * 2);
+        ctx.strokeStyle = edgeColor;
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+      }
+
+      // Edge Midpoint Label (Tier 1 vs Tier 2) in Overlay Mode
+      if (isOverlayMode) {
+        const midX = (pFrom.x + pTo.x) / 2;
+        const midY = (pFrom.y + pTo.y) / 2;
+        const tierText = isTier2 ? "Tier 2" : "Tier 1";
+        ctx.font = "bold 8px ui-monospace, SFMono-Regular, monospace";
+        const tW = ctx.measureText(tierText).width;
+
+        ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
+        ctx.strokeStyle = edgeColor;
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        ctx.roundRect(midX - tW / 2 - 4, midY - 6, tW + 8, 12, 3);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(tierText, midX, midY);
+      }
+
+      ctx.restore();
+    });
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+
+
 
 
 // Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
@@ -5321,7 +5992,7 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
     const domIcon = n.dominant_class_icon || n.class_icon || "";
     const isTopInit = Boolean((options.isStep15 || options.isStep14 || options.isStep13TopZone) && (n.id === 4 || n.is_top_initiator));
     const isExemplar = Boolean(options.isStep13Exemplars && (n.is_exemplar !== undefined ? n.is_exemplar : [1, 3, 5, 7, 8, 9, 10].includes(n.id)));
-    const isSuperPeer = Boolean((options.isStep18 || options.isStep19) && (n.is_super_peer !== undefined ? n.is_super_peer : [1, 5, 10].includes(n.id)));
+    const isSuperPeer = Boolean((options.isStep18 || options.isStep19 || options.isStep20) && (n.is_super_peer !== undefined ? n.is_super_peer : [1, 5, 10].includes(n.id)));
     let label = isSuperPeer ? `🌟⭐ C${n.id}` : (isTopInit ? `👑👑 C${n.id}` : (isExemplar ? `⭐ C${n.id}` : (isInit ? `👑 C${n.id}` : `C${n.id}`)));
 
     let bgColor = "#2563eb";
@@ -5334,7 +6005,7 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
     if (isSuperPeer) {
       nodeClasses += "super-peer-node ";
     }
-    if (options.isStep17 || options.isStep18 || options.isStep19) {
+    if (options.isStep17 || options.isStep18 || options.isStep19 || options.isStep20) {
       const scId = n.assigned_super_cluster || ([1, 2, 9].includes(n.id) ? "SC-1" : ([3, 4, 5, 8].includes(n.id) ? "SC-2" : "SC-3"));
       if (scId === "SC-1") {
         nodeClasses += "super-cluster-sc1 ";
@@ -5531,7 +6202,7 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
     // All 18 physical links in the entire network remain uniform, solid, clean slate/neutral lines at all times.
     let edgeClass = "network-physical-edge";
     if (options.dimPhysicalEdges) {
-      edgeClass += " dimmed-physical";
+      edgeClass += " overlay-mode-dimmed dimmed-physical";
     }
     elements.push({
       group: "edges",
@@ -5544,6 +6215,24 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
       }
     });
   });
+
+  if (options.isStep20 && Array.isArray(options.semanticOverlayEdges)) {
+    options.semanticOverlayEdges.forEach((se, idx) => {
+      elements.push({
+        group: "edges",
+        classes: `semantic-overlay-edge ${se.tier === 2 ? 'semantic-overlay-tier2' : 'semantic-overlay-tier1'}`,
+        data: {
+          id: `son_edge_${se.from}_${se.to}`,
+          source: `node_${se.from}`,
+          target: `node_${se.to}`,
+          color: se.color || "#38bdf8",
+          tier: se.tier,
+          label: se.label,
+          is_overlay_edge: true
+        }
+      });
+    });
+  }
 
   cy.elements().remove();
   cy.add(elements);
@@ -5719,7 +6408,12 @@ function renderNodeModal(node, stepData = currentStepData) {
 
   // Header: Node C{id} | Role: INITIATOR / CLIENT | Zone: {assigned_zone} in Step 5 & 6
   if (cardNodeId) {
-    if (currentStep === 19) {
+    if (currentStep >= 20) {
+      const sonTier = mergedNode?.son_tier ?? ([1, 5, 10].includes(idNum) ? 3 : ([3, 7, 8, 9].includes(idNum) ? 2 : 1));
+      const tierStr = sonTier === 3 ? "🌟 TIER-3 SUPER-PEER" : (sonTier === 2 ? "⭐ TIER-2 EXEMPLAR" : "TIER-1 MEMBER");
+      const scStr = mergedNode?.assigned_super_cluster || ([1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3"));
+      cardNodeId.innerHTML = `<span class="text-emerald-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">SON Role: <span class="${sonTier === 3 ? 'text-amber-800 font-bold' : (sonTier === 2 ? 'text-blue-800 font-bold' : 'text-slate-800')}">${tierStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Super-Cluster: <span class="font-bold text-sky-800">${scStr}</span></span>`;
+    } else if (currentStep === 19) {
       const sonTier = mergedNode?.son_tier ?? ([1, 5, 10].includes(idNum) ? 3 : ([3, 7, 8, 9].includes(idNum) ? 2 : 1));
       const tierStr = sonTier === 3 ? "🌟 TIER-3 SUPER-PEER" : (sonTier === 2 ? "⭐ TIER-2 EXEMPLAR" : "TIER-1 MEMBER");
       const scStr = mergedNode?.assigned_super_cluster || ([1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3"));
@@ -8434,7 +9128,109 @@ function renderNodeModal(node, stepData = currentStepData) {
   const overlayBadge = document.getElementById("cardOverlayBadge");
   const overlayContent = document.getElementById("cardOverlayContent");
 
-  if (currentStep === 19) {
+  if (currentStep >= 20) {
+    if (probeSection) probeSection.classList.add("hidden");
+    if (bndSection) bndSection.classList.add("hidden");
+    if (pminSection) pminSection.classList.add("hidden");
+    if (bsSection) bsSection.classList.add("hidden");
+    if (consensusSection) consensusSection.classList.add("hidden");
+    if (orderSection) orderSection.classList.add("hidden");
+    if (sigSection) sigSection.classList.add("hidden");
+    if (clSection) clSection.classList.add("hidden");
+    if (exemplarSection) exemplarSection.classList.add("hidden");
+    if (topZoneSection) topZoneSection.classList.add("hidden");
+    if (catalogReqSection) catalogReqSection.classList.add("hidden");
+    if (globalCatalogSection) globalCatalogSection.classList.add("hidden");
+    if (superClusterSection) superClusterSection.classList.add("hidden");
+    if (superPeerSection) superPeerSection.classList.add("hidden");
+    if (overlaySection) overlaySection.classList.remove("hidden");
+
+    const sonTier = mergedNode?.son_tier ?? ([1, 5, 10].includes(idNum) ? 3 : ([3, 7, 8, 9].includes(idNum) ? 2 : 1));
+    const scId = mergedNode?.assigned_super_cluster || ([1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3"));
+    const overlayNeighbors = mergedNode?.active_overlay_neighbors || ({
+      1: [2, 9], 2: [1], 3: [5], 4: [5], 5: [3, 4, 8],
+      6: [7], 7: [6, 10], 8: [5], 9: [1], 10: [7]
+    }[idNum] || []);
+
+    if (cardStatusBadge) {
+      if (sonTier === 3) {
+        cardStatusBadge.textContent = "🌟 GLOBAL SUPER-PEER";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+      } else if (sonTier === 2) {
+        cardStatusBadge.textContent = "⭐ BOUND EXEMPLAR";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-sky-50 text-sky-900 border-sky-300";
+      } else {
+        cardStatusBadge.textContent = "TIER-1 REGULAR MEMBER";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-800 border-slate-300";
+      }
+    }
+
+    if (overlayBadge) {
+      overlayBadge.textContent = `2-TIER_SON (${scId})`;
+      overlayBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
+    }
+
+    if (overlayContent) {
+      const neighborTags = overlayNeighbors.map(nb => {
+        const nbTier = [1, 5, 10].includes(nb) ? "SP" : ([3, 7, 8, 9].includes(nb) ? "Exemplar" : "Member");
+        const badgeClass = nbTier === "SP" ? "bg-amber-100 text-amber-900 border-amber-300" : (nbTier === "Exemplar" ? "bg-sky-100 text-sky-900 border-sky-300" : "bg-slate-100 text-slate-800 border-slate-300");
+        return `<span class="px-2 py-0.5 rounded border font-mono font-bold text-[9.5px] ${badgeClass}">C${nb} (${nbTier})</span>`;
+      }).join(" ");
+
+      let roleDetails = "";
+      if (sonTier === 3) {
+        roleDetails = `
+          <div class="p-2.5 rounded-lg border border-amber-300 bg-amber-50/80 space-y-1">
+            <div class="font-bold text-amber-950 flex items-center gap-1.5">
+              <span>🌟</span><span>Designated Global Super-Peer</span>
+            </div>
+            <div class="text-[9.5px] text-amber-900 leading-snug">
+              Central coordinator for <strong>${scId}</strong>. Aggregates model updates from bound cluster exemplars and regular members across logical overlay links.
+            </div>
+          </div>
+        `;
+      } else if (sonTier === 2) {
+        const boundSP = idNum === 9 ? 1 : ([3, 8].includes(idNum) ? 5 : 10);
+        roleDetails = `
+          <div class="p-2.5 rounded-lg border border-sky-300 bg-sky-50/70 space-y-1">
+            <div class="font-bold text-sky-950 flex items-center gap-1.5">
+              <span>⭐</span><span>Bound Cluster Exemplar</span>
+            </div>
+            <div class="text-[9.5px] text-sky-900 leading-snug">
+              Federates local cluster parameters to designated Super-Peer <strong>C${boundSP}</strong> via Tier 2 logical overlay edge.
+            </div>
+          </div>
+        `;
+      } else {
+        const localEx = idNum === 2 ? 1 : (idNum === 4 ? 5 : 7);
+        roleDetails = `
+          <div class="p-2.5 rounded-lg border border-slate-200 bg-slate-50 space-y-1">
+            <div class="font-bold text-slate-800 flex items-center gap-1.5">
+              <span>👤</span><span>Tier 1 Regular Member</span>
+            </div>
+            <div class="text-[9.5px] text-slate-600 leading-snug">
+              Transmits local non-IID model updates directly to local cluster representative <strong>C${localEx}</strong> via Tier 1 logical overlay edge.
+            </div>
+          </div>
+        `;
+      }
+
+      overlayContent.innerHTML = `
+        <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+          ${roleDetails}
+          <div class="p-2.5 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono space-y-1.5">
+            <div class="font-bold text-slate-800 flex justify-between items-center">
+              <span>Active Overlay Neighbors (${overlayNeighbors.length}):</span>
+              <span class="text-[9px] text-emerald-700 font-bold">${currentLayout === 'overlay' ? 'Semantic View' : 'Physical View'}</span>
+            </div>
+            <div class="flex flex-wrap gap-1.5 pt-0.5">
+              ${neighborTags}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  } else if (currentStep === 19) {
     if (probeSection) probeSection.classList.add("hidden");
     if (bndSection) bndSection.classList.add("hidden");
     if (pminSection) pminSection.classList.add("hidden");
@@ -8960,7 +9756,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 19; s++) {
+  for (let s = 1; s <= 20; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -8987,7 +9783,7 @@ function updateStepper(step) {
         item.classList.add("step-amber");
       } else if (step === 14) {
         item.classList.add("step-gold");
-      } else if (step === 19) {
+      } else if (step === 19 || step === 20) {
         item.classList.add("step-emerald");
       }
     }
@@ -9018,7 +9814,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 19) {
+    if (step < 20) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -9026,7 +9822,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 19 active (Semantic Overlay Network Formation complete)";
+      btnNext.title = "Step 20 active (Semantic Overlay Network Formation complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -9039,7 +9835,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 19);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 20);
 }
 
 function bindActionButtons() {
@@ -9063,22 +9859,30 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 19) {
+      if (currentStep < 20) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 19 is active (Semantic Overlay Network Formation complete).");
+        logToTerminal("INFO", "Step 20 is active (Semantic Overlay Network Formation complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 19)
-  for (let s = 1; s <= 19; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 20)
+  for (let s = 1; s <= 20; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {
         loadStep(s);
       });
     }
+  }
+
+  // Dual-Layout Switcher Button
+  const btnToggleLayout = document.getElementById("btn-toggle-layout");
+  if (btnToggleLayout) {
+    btnToggleLayout.addEventListener("click", () => {
+      toggleLayout();
+    });
   }
 
   const btnClearLogs = document.getElementById("btnClearLogs");
