@@ -844,7 +844,10 @@ function stopCurrentPacketAnimation() {
   const canvas = document.getElementById("packetCanvas");
   if (canvas) {
     const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (ctx) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
   }
   if (cy) {
     cy.edges().removeClass("wave-active");
@@ -5675,11 +5678,22 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
       } else {
         let found = null;
         for (let id = 1; id <= 10; id++) {
-          const c = PHYSICAL_LAYOUT_COORDS[id];
-          if (!c) continue;
-          const px = c.x + offsetX;
-          const py = c.y + 10;
-          if (Math.hypot(mx - px, my - py) <= 26) {
+          const ele = getNodeElement(id);
+          let px, py;
+          if (ele) {
+            const rp = ele.renderedPosition();
+            if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+              px = rp.x;
+              py = rp.y;
+            }
+          }
+          if (px === undefined) {
+            const c = PHYSICAL_LAYOUT_COORDS[id];
+            if (!c) continue;
+            px = c.x + offsetX;
+            py = c.y + 10;
+          }
+          if (Math.hypot(mx - px, my - py) <= 28) {
             found = { id, x: px, y: py };
             break;
           }
@@ -5705,6 +5719,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
   // VIEW 1: FIGURE 3(f) HIERARCHICAL OVERLAY (Strictly Isolated)
   // ==========================================================================
   function renderFigure3fView(now) {
+    ctx.save();
     const offsetX = Math.max(0, (canvas.width - 1000) / 2);
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
@@ -5989,12 +6004,14 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
       const isHovered = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
       drawNode(ctx, { ...n, x: n.x + offsetX, y: n.y }, isHovered, pulse, 20);
     });
+    ctx.restore();
   }
 
   // ==========================================================================
   // VIEW 2: PHYSICAL TOPOLOGY (Strictly Isolated Canonical View)
   // ==========================================================================
   function renderPhysicalView(now) {
+    ctx.save();
     const offsetX = Math.max(0, (canvas.width - 1000) / 2);
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
@@ -6019,9 +6036,17 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
 
-    // Build position map for the 10 canonical physical nodes (Use exact layout coordinates established in steps 1-19)
+    // Build position map for the 10 canonical physical nodes matching Steps 1-19 exactly
     const physNodePosMap = {};
     for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          physNodePosMap[id] = { id, x: rp.x, y: rp.y };
+          continue;
+        }
+      }
       const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
       physNodePosMap[id] = {
         id,
@@ -6117,12 +6142,15 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
       const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
       drawNode(ctx, { id, x: p.x, y: p.y }, isHov, pulse, 24);
     }
+    ctx.restore();
   }
 
   // ==========================================================================
   // ENFORCE STRICT MUTUALLY EXCLUSIVE RENDERING
   // ==========================================================================
   function renderCanvas(now) {
+    // Force reset transform to identity matrix (1:1 scale, zero translation)
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (currentLayout === "figure3f" || currentLayout === "overlay") {
