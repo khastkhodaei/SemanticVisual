@@ -65,39 +65,38 @@ const PHYSICAL_LAYOUT_COORDS = {
 
 // Figure 3(f) Compliant 3-Tier Hierarchical Overlay Architecture (Faithful Paper Replication)
 const FIGURE3F_3TIER_NODES = [
-  // Tier 3 (Top - Global Super-Peers): 3 standalone node icons evenly spaced horizontally
-  // (No direct horizontal line between 1, 5, 10)
-  { key: "top_1", id: 1, node_id: "C1", tier: 3, role: "SUPER_PEER", x: 200, y: 100, label: "Node 1" },
-  { key: "top_5", id: 5, node_id: "C5", tier: 3, role: "SUPER_PEER", x: 500, y: 100, label: "Node 5" },
-  { key: "top_10", id: 10, node_id: "C10", tier: 3, role: "SUPER_PEER", x: 800, y: 100, label: "Node 10" },
+  // Tier 3 (Top - Global Super-Peers): 3 standalone node icons evenly spaced horizontally (y: 90)
+  { key: "top_1", id: 1, node_id: "C1", tier: 3, role: "SUPER_PEER", x: 200, y: 90, label: "Node 1" },
+  { key: "top_5", id: 5, node_id: "C5", tier: 3, role: "SUPER_PEER", x: 520, y: 90, label: "Node 5" },
+  { key: "top_10", id: 10, node_id: "C10", tier: 3, role: "SUPER_PEER", x: 840, y: 90, label: "Node 10" },
 
-  // Tier 2 (Middle - Intra-Zone Exemplars): Enclosed in a large horizontal light pink / rose oval hull
+  // Tier 2 (Middle - Intra-Zone Exemplars): Enclosed in a large horizontal light pink / rose oval hull (y: 250)
   // Grouped by originating zones from left to right:
   // From Zone 2:
-  { key: "mid_1", id: 1, node_id: "C1", tier: 2, role: "EXEMPLAR", zone: 2, x: 160, y: 280, label: "Node 1" },
-  { key: "mid_3", id: 3, node_id: "C3", tier: 2, role: "EXEMPLAR", zone: 2, x: 240, y: 280, label: "Node 3" },
+  { key: "mid_1", id: 1, node_id: "C1", tier: 2, role: "EXEMPLAR", zone: 2, x: 160, y: 250, label: "Node 1" },
+  { key: "mid_3", id: 3, node_id: "C3", tier: 2, role: "EXEMPLAR", zone: 2, x: 240, y: 250, label: "Node 3" },
   // From Zone 4:
-  { key: "mid_5", id: 5, node_id: "C5", tier: 2, role: "EXEMPLAR", zone: 4, x: 460, y: 280, label: "Node 5" },
-  { key: "mid_7", id: 7, node_id: "C7", tier: 2, role: "EXEMPLAR", zone: 4, x: 540, y: 280, label: "Node 7" },
+  { key: "mid_5", id: 5, node_id: "C5", tier: 2, role: "EXEMPLAR", zone: 4, x: 480, y: 250, label: "Node 5" },
+  { key: "mid_7", id: 7, node_id: "C7", tier: 2, role: "EXEMPLAR", zone: 4, x: 560, y: 250, label: "Node 7" },
   // From Zone 8:
-  { key: "mid_8", id: 8, node_id: "C8", tier: 2, role: "EXEMPLAR", zone: 8, x: 720, y: 280, label: "Node 8" },
-  { key: "mid_9", id: 9, node_id: "C9", tier: 2, role: "EXEMPLAR", zone: 8, x: 790, y: 280, label: "Node 9" },
-  { key: "mid_10", id: 10, node_id: "C10", tier: 2, role: "EXEMPLAR", zone: 8, x: 860, y: 280, label: "Node 10" },
+  { key: "mid_8", id: 8, node_id: "C8", tier: 2, role: "EXEMPLAR", zone: 8, x: 750, y: 250, label: "Node 8" },
+  { key: "mid_9", id: 9, node_id: "C9", tier: 2, role: "EXEMPLAR", zone: 8, x: 825, y: 250, label: "Node 9" },
+  { key: "mid_10", id: 10, node_id: "C10", tier: 2, role: "EXEMPLAR", zone: 8, x: 900, y: 250, label: "Node 10" },
 
-  // Tier 1 (Bottom - Base Clients Grouped into 3 Physical Zones Capsules)
-  // Zone 2 Capsule (Light Yellow/Orange tint): Members: Node 1 (140), Node 2 (200), Node 3 (260) at y: 460
-  { key: "bot_1", id: 1, node_id: "C1", tier: 1, role: "CLIENT", zone: 2, x: 140, y: 460, label: "Node 1" },
-  { key: "bot_2", id: 2, node_id: "C2", tier: 1, role: "CLIENT", zone: 2, x: 200, y: 460, label: "Node 2" },
-  { key: "bot_3", id: 3, node_id: "C3", tier: 1, role: "CLIENT", zone: 2, x: 260, y: 460, label: "Node 3" },
-  // Zone 4 Capsule (Light Green tint): Members: Node 4 (410), Node 5 (470), Node 6 (530), Node 7 (590) at y: 460
-  { key: "bot_4", id: 4, node_id: "C4", tier: 1, role: "CLIENT", zone: 4, x: 410, y: 460, label: "Node 4" },
-  { key: "bot_5", id: 5, node_id: "C5", tier: 1, role: "CLIENT", zone: 4, x: 470, y: 460, label: "Node 5" },
-  { key: "bot_6", id: 6, node_id: "C6", tier: 1, role: "CLIENT", zone: 4, x: 530, y: 460, label: "Node 6" },
-  { key: "bot_7", id: 7, node_id: "C7", tier: 1, role: "CLIENT", zone: 4, x: 590, y: 460, label: "Node 7" },
-  // Zone 8 Capsule (Light Blue tint): Members: Node 8 (730), Node 9 (790), Node 10 (850) at y: 460
-  { key: "bot_8", id: 8, node_id: "C8", tier: 1, role: "CLIENT", zone: 8, x: 730, y: 460, label: "Node 8" },
-  { key: "bot_9", id: 9, node_id: "C9", tier: 1, role: "CLIENT", zone: 8, x: 790, y: 460, label: "Node 9" },
-  { key: "bot_10", id: 10, node_id: "C10", tier: 1, role: "CLIENT", zone: 8, x: 850, y: 460, label: "Node 10" },
+  // Tier 1 (Bottom - Base Clients Grouped into 3 Physical Zones Capsules, y: 430)
+  // Zone 2 Capsule: Members: Node 1 (135), Node 2 (200), Node 3 (265) at y: 430
+  { key: "bot_1", id: 1, node_id: "C1", tier: 1, role: "CLIENT", zone: 2, x: 135, y: 430, label: "Node 1" },
+  { key: "bot_2", id: 2, node_id: "C2", tier: 1, role: "CLIENT", zone: 2, x: 200, y: 430, label: "Node 2" },
+  { key: "bot_3", id: 3, node_id: "C3", tier: 1, role: "CLIENT", zone: 2, x: 265, y: 430, label: "Node 3" },
+  // Zone 4 Capsule: Members: Node 4 (410), Node 5 (470), Node 6 (530), Node 7 (590) at y: 430
+  { key: "bot_4", id: 4, node_id: "C4", tier: 1, role: "CLIENT", zone: 4, x: 410, y: 430, label: "Node 4" },
+  { key: "bot_5", id: 5, node_id: "C5", tier: 1, role: "CLIENT", zone: 4, x: 470, y: 430, label: "Node 5" },
+  { key: "bot_6", id: 6, node_id: "C6", tier: 1, role: "CLIENT", zone: 4, x: 530, y: 430, label: "Node 6" },
+  { key: "bot_7", id: 7, node_id: "C7", tier: 1, role: "CLIENT", zone: 4, x: 590, y: 430, label: "Node 7" },
+  // Zone 8 Capsule: Members: Node 8 (740), Node 9 (800), Node 10 (860) at y: 430
+  { key: "bot_8", id: 8, node_id: "C8", tier: 1, role: "CLIENT", zone: 8, x: 740, y: 430, label: "Node 8" },
+  { key: "bot_9", id: 9, node_id: "C9", tier: 1, role: "CLIENT", zone: 8, x: 800, y: 430, label: "Node 9" },
+  { key: "bot_10", id: 10, node_id: "C10", tier: 1, role: "CLIENT", zone: 8, x: 860, y: 430, label: "Node 10" },
 ];
 
 const FIGURE3F_3TIER_EDGES = [
@@ -5516,7 +5515,7 @@ const PHYSICAL_SEMANTIC_OVERLAY_EDGES = [
  * Shape: Crisp circle with zone color fill, border ring, outer soft aura, centered label, and role badges.
  * Radius: 24px in physical view, 20px in Figure 3(f) view.
  */
-function drawNode(ctx, node, isHovered, pulse, radius = 20) {
+function drawNode(ctx, node, isHovered, pulse, radius = 24) {
   const { x, y, id } = node;
   const numId = typeof id === "number" ? id : parseInt(String(id).replace("C", "").replace("node_", ""), 10);
 
@@ -5573,8 +5572,8 @@ function drawNode(ctx, node, isHovered, pulse, radius = 20) {
   ctx.lineWidth = 1.0;
   ctx.stroke();
 
-  // 4. White Bold Centered Text (C1, C2, ..., C10)
-  const fontPt = radius >= 23 ? 12 : 10.5;
+  // 4. White Bold Centered Text (C1, C2, ..., C10) - bold 14px for physical (26px), bold 13.5px for Fig 3f (24px)
+  const fontPt = radius >= 26 ? 14 : (radius >= 24 ? 13.5 : 11);
   ctx.font = `bold ${fontPt}px ui-monospace, SFMono-Regular, monospace`;
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "center";
@@ -5607,7 +5606,7 @@ function drawNode(ctx, node, isHovered, pulse, radius = 20) {
   }
 
   if (badgeEmoji) {
-    const badgeFont = radius >= 23 ? 11 : 9;
+    const badgeFont = radius >= 26 ? 12 : (radius >= 24 ? 11 : 9);
     ctx.font = `${badgeFont}px system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "bottom";
@@ -5615,7 +5614,8 @@ function drawNode(ctx, node, isHovered, pulse, radius = 20) {
   }
 
   // Small subtle bottom role label
-  ctx.font = `bold ${radius >= 23 ? 8 : 7.5}px ui-monospace, SFMono-Regular, monospace`;
+  const subLabelFont = radius >= 26 ? 8.5 : (radius >= 24 ? 8.0 : 7.5);
+  ctx.font = `bold ${subLabelFont}px ui-monospace, SFMono-Regular, monospace`;
   ctx.fillStyle = ringColor;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
@@ -5635,7 +5635,7 @@ function drawNode(ctx, node, isHovered, pulse, radius = 20) {
  * Backward compatibility alias for test suite referencing drawFigure3fSmartphone
  */
 function drawFigure3fSmartphone(ctx, node, isHovered, pulse) {
-  drawNode(ctx, node, isHovered, pulse, 20);
+  drawNode(ctx, node, isHovered, pulse, 24);
 }
 
 function animateStep20SemanticOverlay(overlayEdges, allNodes) {
@@ -5668,7 +5668,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
         for (const n of FIGURE3F_3TIER_NODES) {
           const nx = n.x + offsetX;
           const ny = n.y;
-          if (Math.hypot(mx - nx, my - ny) <= 22) {
+          if (Math.hypot(mx - nx, my - ny) <= 26) {
             found = n;
             break;
           }
@@ -5758,7 +5758,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
 
-    // 2. TIER 3 (Top - Global Super-Peers): Standalone Header & Nodes (No horizontal line)
+    // 2. TIER 3 (Top - Global Super-Peers, y: 90): Standalone Header & Nodes
     ctx.save();
     ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
     const t3Title = "TIER 3: GLOBAL SUPER-PEERS (OVERLAY PLANE)";
@@ -5766,23 +5766,23 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
     ctx.strokeStyle = "#f59e0b";
     ctx.lineWidth = 1.0;
-    drawRoundedRect(ctx, 500 + offsetX - t3W / 2 - 8, 54 - 8, t3W + 16, 16, 4);
+    drawRoundedRect(ctx, 500 + offsetX - t3W / 2 - 8, 45 - 8, t3W + 16, 16, 4);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#f59e0b";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(t3Title, 500 + offsetX, 54);
+    ctx.fillText(t3Title, 500 + offsetX, 45);
     ctx.restore();
 
-    // 3. TIER 2 (Middle - Intra-Zone Exemplars):
-    // Horizontal rounded capsule across middle (x: 100 to 900, y: 240 to 340) with soft rose fill & dashed border
+    // 3. TIER 2 (Middle - Intra-Zone Exemplars, y: 250):
+    // Horizontal rounded capsule across middle (height 110px, covering y: 195 to 305) with soft rose fill & dashed border
     ctx.save();
     ctx.fillStyle = "rgba(244, 63, 94, 0.08)";
     ctx.strokeStyle = "rgba(244, 63, 94, 0.3)";
     ctx.lineWidth = 1.6;
     ctx.setLineDash([8, 6]);
-    drawRoundedRect(ctx, 100 + offsetX, 240, 800, 100, 50);
+    drawRoundedRect(ctx, 100 + offsetX, 195, 800, 110, 30);
     ctx.fill();
     ctx.stroke();
     ctx.setLineDash([]);
@@ -5794,16 +5794,16 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
     ctx.strokeStyle = "#f43f5e";
     ctx.lineWidth = 1.0;
-    drawRoundedRect(ctx, 500 + offsetX - t2W / 2 - 8, 224 - 8, t2W + 16, 16, 4);
+    drawRoundedRect(ctx, 500 + offsetX - t2W / 2 - 8, 182 - 8, t2W + 16, 16, 4);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#fda4af";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(t2Title, 500 + offsetX, 224);
+    ctx.fillText(t2Title, 500 + offsetX, 182);
     ctx.restore();
 
-    // 4. TIER 1 (Bottom - Base Clients Grouped into 3 Physical Zones Capsules)
+    // 4. TIER 1 (Bottom - Base Clients Grouped into 3 Physical Zones Capsules, y: 430, height 90px: y 385..475)
     const capsules = [
       {
         zone: 2,
@@ -5811,10 +5811,10 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
         color: "#059669",
         fill: "rgba(5, 150, 105, 0.08)",
         border: "rgba(5, 150, 105, 0.3)",
-        x: 95 + offsetX,
-        y: 405,
-        w: 210,
-        h: 105,
+        x: 90 + offsetX,
+        y: 385,
+        w: 220,
+        h: 90,
         centerX: 200 + offsetX
       },
       {
@@ -5824,9 +5824,9 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
         fill: "rgba(234, 88, 12, 0.08)",
         border: "rgba(234, 88, 12, 0.3)",
         x: 360 + offsetX,
-        y: 405,
+        y: 385,
         w: 280,
-        h: 105,
+        h: 90,
         centerX: 500 + offsetX
       },
       {
@@ -5835,11 +5835,11 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
         color: "#7c3aed",
         fill: "rgba(124, 58, 237, 0.08)",
         border: "rgba(124, 58, 237, 0.3)",
-        x: 690 + offsetX,
-        y: 405,
-        w: 210,
-        h: 105,
-        centerX: 795 + offsetX
+        x: 685 + offsetX,
+        y: 385,
+        w: 230,
+        h: 90,
+        centerX: 800 + offsetX
       }
     ];
 
@@ -5858,7 +5858,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
       ctx.fillStyle = cap.color;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillText(cap.name, cap.centerX, cap.y + cap.h - 14);
+      ctx.fillText(cap.name, cap.centerX, cap.y + cap.h - 12);
       ctx.restore();
     });
 
@@ -5999,10 +5999,10 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     }
     ctx.restore();
 
-    // 7. Render All 20 Circular Nodes with drawNode (radius = 20px)
+    // 7. Render All 20 Circular Nodes with drawNode (radius = 24px)
     FIGURE3F_3TIER_NODES.forEach(n => {
       const isHovered = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
-      drawNode(ctx, { ...n, x: n.x + offsetX, y: n.y }, isHovered, pulse, 20);
+      drawNode(ctx, { ...n, x: n.x + offsetX, y: n.y }, isHovered, pulse, 24);
     });
     ctx.restore();
   }
@@ -6134,13 +6134,13 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     });
     ctx.restore();
 
-    // 5. Nodes: Render ONLY the 10 original physical nodes at their canonical step 1 coordinates
+    // 5. Nodes: Render ONLY the 10 original physical nodes at their canonical step 1 coordinates (radius = 26px)
     // (DO NOT render ANY Figure 3 virtual nodes, capsules, or oval hulls in this mode)
     for (let id = 1; id <= 10; id++) {
       const p = physNodePosMap[id];
       if (!p) continue;
       const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
-      drawNode(ctx, { id, x: p.x, y: p.y }, isHov, pulse, 24);
+      drawNode(ctx, { id, x: p.x, y: p.y }, isHov, pulse, 26);
     }
     ctx.restore();
   }
