@@ -489,10 +489,12 @@ function initCytoscape() {
       }
     ],
     layout: { name: "preset" },
-    userZoomingEnabled: true,
-    userPanningEnabled: true,
+    userZoomingEnabled: false,
+    userPanningEnabled: false,
     boxSelectionEnabled: false,
     autoungrabify: true,
+    zoomingEnabled: false,
+    panningEnabled: false,
     minZoom: 0.4,
     maxZoom: 2.5
   });
@@ -505,6 +507,12 @@ function initCytoscape() {
 
   const cyContainer = cy.container();
   if (cyContainer) {
+    // Disable mouse wheel scroll over the graph canvas so viewport position never changes
+    cyContainer.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }, { passive: false });
+
     cyContainer.addEventListener("mousedown", (e) => {
       startX = e.clientX;
       startY = e.clientY;
@@ -877,7 +885,13 @@ function clearClassFilter() {
   cy.edges().forEach(e => {
     e.removeStyle();
   });
+  cy.panningEnabled(true);
+  cy.zoomingEnabled(true);
   cy.fit(undefined, 35);
+  cy.panningEnabled(false);
+  cy.zoomingEnabled(false);
+  cy.userPanningEnabled(false);
+  cy.userZoomingEnabled(false);
   logToTerminal("INFO", "Cleared class filter. All 10 nodes restored to full opacity.");
 }
 
@@ -5535,7 +5549,13 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   cy.add(elements);
   cy.resize();
   cy.layout({ name: "preset" }).run();
+  cy.panningEnabled(true);
+  cy.zoomingEnabled(true);
   cy.fit(undefined, 35);
+  cy.panningEnabled(false);
+  cy.zoomingEnabled(false);
+  cy.userPanningEnabled(false);
+  cy.userZoomingEnabled(false);
   cy.autoungrabify(true);
   cy.nodes().lock();
 
