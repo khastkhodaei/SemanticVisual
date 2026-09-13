@@ -109,6 +109,72 @@ def test_step22_discovery_packet_traces(client):
             )
 
 
+def test_step22_outbound_queries_for_senders(client):
+    """Assert all sender nodes (2, 3, 4, 6, 7, 8, 9) have outbound_query metadata."""
+    res = client.get("/api/v1/storyboard/step/22")
+    assert res.status_code == 200
+    data = res.json()
+    node_map = {n["id"]: n for n in data["nodes"]}
+
+    for nid in [2, 3, 4, 6, 7, 8, 9]:
+        node = node_map[nid]
+        assert node["is_sender"] is True
+        q = node.get("outbound_query")
+        assert q is not None, f"Node {nid} missing outbound_query"
+        assert q["status"] == "OUTBOUND_SENT"
+        assert q["target_sp"] in [1, 5, 10]
+        assert len(q["path"]) >= 2
+        assert q["path"][0] == nid
+        assert q["path"][-1] == q["target_sp"]
+
+    # Specific checks requested
+    assert node_map[6]["outbound_query"]["path"] == [6, 4, 7, 9, 10]
+    assert node_map[6]["outbound_query"]["target_sp"] == 10
+    assert node_map[9]["outbound_query"]["path"] == [9, 7, 4, 1]
+    assert node_map[9]["outbound_query"]["target_sp"] == 1
+
+
+def test_step22_super_peer_inboxes(client):
+    """Assert Super-Peers (1, 5, 10) have populated inboxes with requesting clients and actions."""
+    res = client.get("/api/v1/storyboard/step/22")
+    assert res.status_code == 200
+    data = res.json()
+    node_map = {n["id"]: n for n in data["nodes"]}
+
+    # SP 1: Requests from Nodes 2 and 9
+    sp1 = node_map[1]
+    assert sp1["is_super_peer"] is True
+    inbox1_senders = [item["from"] for item in sp1["sp_inbox"]]
+    assert sorted(inbox1_senders) == [2, 9]
+
+    # SP 5: Requests from Nodes 3, 4, and 8
+    sp5 = node_map[5]
+    assert sp5["is_super_peer"] is True
+    inbox5_senders = [item["from"] for item in sp5["sp_inbox"]]
+    assert sorted(inbox5_senders) == [3, 4, 8]
+
+    # SP 10: Requests from Nodes 6 and 7
+    sp10 = node_map[10]
+    assert sp10["is_super_peer"] is True
+    inbox10_senders = [item["from"] for item in sp10["sp_inbox"]]
+    assert sorted(inbox10_senders) == [6, 7]
+
+
+def test_step22_relay_gateway_activity(client):
+    """Assert relay gateway nodes (4, 7, 9) have active forwarding activity entries."""
+    res = client.get("/api/v1/storyboard/step/22")
+    assert res.status_code == 200
+    data = res.json()
+    node_map = {n["id"]: n for n in data["nodes"]}
+
+    for nid in [4, 7, 9]:
+        node = node_map[nid]
+        assert node["is_relay_gateway"] is True
+        assert len(node["relay_forwarding"]) >= 2
+        for r in node["relay_forwarding"]:
+            assert nid in r["path"][1:-1], f"Node {nid} not intermediate hop in relay path {r['path']}"
+
+
 def test_step22_total_steps_constant():
     """Verify TOTAL_STEPS is 22."""
     assert TOTAL_STEPS == 22

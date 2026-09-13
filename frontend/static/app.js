@@ -10518,6 +10518,162 @@ function renderNodeModal(node, stepData = currentStepData) {
           return `<span class="px-2 py-0.5 rounded font-mono font-bold text-[10px] ${isSelf ? 'bg-blue-600 text-white shadow-xs ring-1 ring-blue-400' : 'bg-white text-blue-900 border border-blue-300'}">C${p}${isSelf ? ' (You)' : ''}</span>`;
         }).join(" ");
 
+        const isSP = [1, 5, 10].includes(idNum);
+        const isSender = [2, 3, 4, 6, 7, 8, 9].includes(idNum);
+        const isRelay = [4, 7, 9].includes(idNum) || (mergedNode?.relay_forwarding && mergedNode.relay_forwarding.length > 0);
+
+        // 1. Senders: Dark glassmorphism Outbound Search Query Card
+        let senderHTML = "";
+        if (isSender) {
+          const qData = mergedNode?.outbound_query || ({
+            2: { target_sp: 1, classes: "1, 2, 3 (Airplane, Auto, Bird)", path: [2, 1] },
+            3: { target_sp: 5, classes: "4, 5, 6 (Cat, Deer, Dog)", path: [3, 5] },
+            4: { target_sp: 5, classes: "4, 5, 6 (Cat, Deer, Dog)", path: [4, 5] },
+            6: { target_sp: 10, classes: "8, 9, 10 (Horse, Ship, Truck)", path: [6, 4, 7, 9, 10] },
+            7: { target_sp: 10, classes: "8, 9, 10 (Horse, Ship, Truck)", path: [7, 9, 10] },
+            8: { target_sp: 5, classes: "4, 5, 6 (Cat, Deer, Dog)", path: [8, 6, 5] },
+            9: { target_sp: 1, classes: "1, 2, 3 (Airplane, Auto, Bird)", path: [9, 7, 4, 1] }
+          }[idNum]);
+
+          const qPathStr = qData?.path ? qData.path.map(n => `C${n}`).join(" &rarr; ") : route;
+          senderHTML = `
+            <div class="p-3 bg-slate-900/95 text-slate-100 rounded-lg border border-cyan-500/50 shadow-md space-y-2 backdrop-blur-sm">
+              <div class="flex items-center justify-between border-b border-slate-700/60 pb-1.5">
+                <span class="text-[10px] font-mono font-bold text-cyan-400 flex items-center gap-1.5">
+                  <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                  OUTBOUND SEARCH QUERY
+                </span>
+                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-700/60 font-bold">REQ_PEER_DISCOVERY</span>
+              </div>
+              <div class="grid grid-cols-1 gap-1.5 text-[9.5px] font-mono">
+                <div class="flex justify-between items-center text-slate-300">
+                  <span class="text-slate-400">Target Destination:</span>
+                  <span class="font-bold text-amber-300">Super-Peer Node C${qData?.target_sp || spId}</span>
+                </div>
+                <div class="flex justify-between items-center text-slate-300">
+                  <span class="text-slate-400">Requested Semantic Profile:</span>
+                  <span class="font-bold text-cyan-200">${qData?.classes || targetCls}</span>
+                </div>
+                <div class="pt-1 border-t border-slate-800">
+                  <div class="text-slate-400 text-[8.5px] mb-0.5">Physical Routing Path:</div>
+                  <div class="bg-slate-950/80 p-1.5 rounded border border-slate-800 text-cyan-300 font-bold break-words">
+                    ${qPathStr}
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        // 2. Relay Gateways: Active Forwarding Activity Tag & Details
+        let relayHTML = "";
+        if (isRelay) {
+          const relayItems = mergedNode?.relay_forwarding || ({
+            4: [
+              { origin: 9, target_sp: 1, path: [9, 7, 4, 1], desc: "Forwarding Node C9 query to SP C1 via (7, 4) -> (4, 1)" },
+              { origin: 6, target_sp: 10, path: [6, 4, 7, 9, 10], desc: "Forwarding Node C6 query to SP C10 via (6, 4) -> (4, 7)" }
+            ],
+            7: [
+              { origin: 9, target_sp: 1, path: [9, 7, 4, 1], desc: "Forwarding Node C9 query to SP C1 via (9, 7) -> (7, 4)" },
+              { origin: 6, target_sp: 10, path: [6, 4, 7, 9, 10], desc: "Forwarding Node C6 query to SP C10 via (4, 7) -> (7, 9)" }
+            ],
+            9: [
+              { origin: 7, target_sp: 10, path: [7, 9, 10], desc: "Forwarding Node C7 query to SP C10 via (7, 9) -> (9, 10)" },
+              { origin: 6, target_sp: 10, path: [6, 4, 7, 9, 10], desc: "Forwarding Node C6 query to SP C10 via (7, 9) -> (9, 10)" }
+            ],
+            6: [
+              { origin: 8, target_sp: 5, path: [8, 6, 5], desc: "Forwarding Node C8 query to SP C5 via (8, 6) -> (6, 5)" }
+            ]
+          }[idNum] || []);
+
+          relayHTML = `
+            <div class="p-2.5 rounded-lg border border-amber-300 bg-amber-50/90 text-amber-950 space-y-1.5 shadow-xs">
+              <div class="flex items-center justify-between font-bold text-[10px]">
+                <span class="flex items-center gap-1.5">
+                  <span class="text-amber-600 font-bold text-xs">⚡</span>
+                  <span class="font-extrabold uppercase tracking-wide">Active Multi-Hop Relay Gateway</span>
+                </span>
+                <span class="px-1.5 py-0.5 rounded text-[8.5px] font-mono bg-amber-200 text-amber-900 border border-amber-400 font-bold">FORWARDING (${relayItems.length})</span>
+              </div>
+              <div class="space-y-1 pt-0.5">
+                ${relayItems.map(r => `
+                  <div class="p-1.5 bg-white rounded border border-amber-200 text-[9px] font-mono">
+                    <div class="flex justify-between items-center text-amber-900 font-bold">
+                      <span>Relaying C${r.origin} &rarr; SP C${r.target_sp}</span>
+                      <span class="text-[8px] px-1 rounded bg-amber-100 text-amber-800">DISCOVERY_QUERY</span>
+                    </div>
+                    <div class="text-slate-600 text-[8.5px] mt-0.5 font-semibold">
+                      Path: ${r.path.map(n => `C${n}`).join(" &rarr; ")}
+                    </div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          `;
+        }
+
+        // 3. Super-Peers: Ingested Queries & Partner Matchmaking Inbox
+        let superPeerInboxHTML = "";
+        if (isSP) {
+          const inboxList = mergedNode?.sp_inbox || ({
+            1: [
+              { from: 2, req_classes: "1, 2, 3 (Airplane, Auto, Bird)", path: [2, 1], match_partners: [1, 2, 9] },
+              { from: 9, req_classes: "1, 2, 3 (Airplane, Auto, Bird)", path: [9, 7, 4, 1], match_partners: [1, 2, 9] }
+            ],
+            5: [
+              { from: 3, req_classes: "4, 5, 6 (Cat, Deer, Dog)", path: [3, 5], match_partners: [3, 4, 5, 8] },
+              { from: 4, req_classes: "4, 5, 6 (Cat, Deer, Dog)", path: [4, 5], match_partners: [3, 4, 5, 8] },
+              { from: 8, req_classes: "4, 5, 6 (Cat, Deer, Dog)", path: [8, 6, 5], match_partners: [3, 4, 5, 8] }
+            ],
+            10: [
+              { from: 6, req_classes: "8, 9, 10 (Horse, Ship, Truck)", path: [6, 4, 7, 9, 10], match_partners: [6, 7, 10] },
+              { from: 7, req_classes: "8, 9, 10 (Horse, Ship, Truck)", path: [7, 9, 10], match_partners: [6, 7, 10] }
+            ]
+          }[idNum] || []);
+
+          const partnerListStr = partners.map(p => `C${p}`).join(", ");
+
+          superPeerInboxHTML = `
+            <div class="p-3 bg-white rounded-lg border border-amber-300 shadow-xs space-y-2">
+              <div class="flex items-center justify-between border-b border-amber-200 pb-1.5">
+                <span class="text-[10.5px] font-mono font-extrabold text-amber-950 flex items-center gap-1.5">
+                  <span>📥</span>
+                  <span>Super-Peer Discovery Inbox & Resolution</span>
+                </span>
+                <span class="px-2 py-0.5 rounded text-[8.5px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                  ${inboxList.length} INCOMING REQUESTS
+                </span>
+              </div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="w-full text-[8.5px] font-mono border-collapse">
+                  <thead>
+                    <tr class="bg-amber-50/80 text-amber-950 border-b border-slate-200 text-left">
+                      <th class="py-1 px-1.5 font-bold">Requesting Client</th>
+                      <th class="py-1 px-1.5 font-bold">Requested Classes</th>
+                      <th class="py-1 px-1.5 font-bold">Routing Path</th>
+                      <th class="py-1 px-1.5 font-bold">Resolution Action</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    ${inboxList.map(item => `
+                      <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-1 px-1.5 font-extrabold text-blue-900 whitespace-nowrap">
+                          <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">C${item.from}</span>
+                        </td>
+                        <td class="py-1 px-1.5 text-slate-700 font-semibold whitespace-nowrap">${item.req_classes}</td>
+                        <td class="py-1 px-1.5 text-slate-600 break-words">${item.path.map(n => `C${n}`).join("&rarr;")}</td>
+                        <td class="py-1 px-1.5 text-emerald-800 font-semibold">
+                          Will authoritatively dispatch partner cluster list [${(item.match_partners || partners).map(p => `C${p}`).join(", ")}] in Step 23.
+                        </td>
+                      </tr>
+                    `).join("")}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+
         discoveryContent.innerHTML = `
           <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
             <!-- Super-Cluster Match Header -->
@@ -10545,6 +10701,15 @@ function renderNodeModal(node, stepData = currentStepData) {
                 ${partnerBadges}
               </div>
             </div>
+
+            <!-- Sender Outbound Search Query Box (if Sender) -->
+            ${senderHTML}
+
+            <!-- Active Multi-Hop Relay Gateway Tag (if Relay) -->
+            ${relayHTML}
+
+            <!-- Super-Peer Discovery Inbox & Resolution Table (if Super-Peer) -->
+            ${superPeerInboxHTML}
 
             <!-- Target Semantic Classes -->
             <div class="p-2 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono space-y-1">

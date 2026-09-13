@@ -4381,6 +4381,53 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             10: "Self-Local Resolution: C10 [10] (Super-Peer Coordinator)",
         }
 
+        # Outbound Search Query Payloads per Sender:
+        STEP22_NODE_QUERIES = {
+            2: {"status": "OUTBOUND_SENT", "target_sp": 1, "target_sc": "SC-1", "classes": "1, 2, 3 (Airplane, Auto, Bird)", "path": [2, 1]},
+            3: {"status": "OUTBOUND_SENT", "target_sp": 5, "target_sc": "SC-2", "classes": "4, 5, 6 (Cat, Deer, Dog)", "path": [3, 5]},
+            4: {"status": "OUTBOUND_SENT", "target_sp": 5, "target_sc": "SC-2", "classes": "4, 5, 6 (Cat, Deer, Dog)", "path": [4, 5]},
+            6: {"status": "OUTBOUND_SENT", "target_sp": 10, "target_sc": "SC-3", "classes": "8, 9, 10 (Horse, Ship, Truck)", "path": [6, 4, 7, 9, 10]},
+            7: {"status": "OUTBOUND_SENT", "target_sp": 10, "target_sc": "SC-3", "classes": "8, 9, 10 (Horse, Ship, Truck)", "path": [7, 9, 10]},
+            8: {"status": "OUTBOUND_SENT", "target_sp": 5, "target_sc": "SC-2", "classes": "4, 5, 6 (Cat, Deer, Dog)", "path": [8, 6, 5]},
+            9: {"status": "OUTBOUND_SENT", "target_sp": 1, "target_sc": "SC-1", "classes": "1, 2, 3 (Airplane, Auto, Bird)", "path": [9, 7, 4, 1]},
+        }
+
+        # Super-Peer Ingested Queries & Resolution Inboxes:
+        STEP22_SP_INBOXES = {
+            1: [
+                {"from": 2, "req_classes": "1, 2, 3", "path": [2, 1], "match_partners": [1, 2, 9]},
+                {"from": 9, "req_classes": "1, 2, 3", "path": [9, 7, 4, 1], "match_partners": [1, 2, 9]},
+            ],
+            5: [
+                {"from": 3, "req_classes": "4, 5, 6", "path": [3, 5], "match_partners": [3, 4, 5, 8]},
+                {"from": 4, "req_classes": "4, 5, 6", "path": [4, 5], "match_partners": [3, 4, 5, 8]},
+                {"from": 8, "req_classes": "4, 5, 6", "path": [8, 6, 5], "match_partners": [3, 4, 5, 8]},
+            ],
+            10: [
+                {"from": 6, "req_classes": "8, 9, 10", "path": [6, 4, 7, 9, 10], "match_partners": [6, 7, 10]},
+                {"from": 7, "req_classes": "8, 9, 10", "path": [7, 9, 10], "match_partners": [6, 7, 10]},
+            ],
+        }
+
+        # Relay Gateway Activity (nodes forwarding discovery packets along physical multi-hop routes):
+        STEP22_RELAY_FORWARDING = {
+            4: [
+                {"origin": 9, "target_sp": 1, "path": [9, 7, 4, 1], "desc": "Forwarding Node C9 query to SP C1 via (7, 4) -> (4, 1)"},
+                {"origin": 6, "target_sp": 10, "path": [6, 4, 7, 9, 10], "desc": "Forwarding Node C6 query to SP C10 via (6, 4) -> (4, 7)"},
+            ],
+            7: [
+                {"origin": 9, "target_sp": 1, "path": [9, 7, 4, 1], "desc": "Forwarding Node C9 query to SP C1 via (9, 7) -> (7, 4)"},
+                {"origin": 6, "target_sp": 10, "path": [6, 4, 7, 9, 10], "desc": "Forwarding Node C6 query to SP C10 via (4, 7) -> (7, 9)"},
+            ],
+            9: [
+                {"origin": 7, "target_sp": 10, "path": [7, 9, 10], "desc": "Forwarding Node C7 query to SP C10 via (7, 9) -> (9, 10)"},
+                {"origin": 6, "target_sp": 10, "path": [6, 4, 7, 9, 10], "desc": "Forwarding Node C6 query to SP C10 via (7, 9) -> (9, 10)"},
+            ],
+            6: [
+                {"origin": 8, "target_sp": 5, "path": [8, 6, 5], "desc": "Forwarding Node C8 query to SP C5 via (8, 6) -> (6, 5)"},
+            ],
+        }
+
         for n in step22_nodes:
             nid = n["id"]
             partners, target_cls, sc_id, sp_id, sc_name = PARTNERS_MAP[nid]
@@ -4391,6 +4438,12 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             n["super_peer"] = sp_id
             n["super_cluster_name"] = sc_name
             n["discovery_route"] = DISCOVERY_ROUTES[nid]
+            n["outbound_query"] = STEP22_NODE_QUERIES.get(nid)
+            n["sp_inbox"] = STEP22_SP_INBOXES.get(nid, [])
+            n["relay_forwarding"] = STEP22_RELAY_FORWARDING.get(nid, [])
+            n["is_super_peer"] = (nid in [1, 5, 10])
+            n["is_sender"] = (nid in [2, 3, 4, 6, 7, 8, 9])
+            n["is_relay_gateway"] = (nid in [4, 7, 9])
 
         terminal_logs = [
             "[TOP-DOWN DISCOVERY] Edge clients dispatch REQ_PEER_DISCOVERY upstream along the SON hierarchy.",
@@ -4436,6 +4489,9 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "packets": discovery_packets,
             "discovery_packets": discovery_packets,
             "packet_traces": discovery_packets,
+            "node_queries": STEP22_NODE_QUERIES,
+            "sp_inboxes": STEP22_SP_INBOXES,
+            "relay_forwarding": STEP22_RELAY_FORWARDING,
             "terminal_logs": terminal_logs,
             "bandwidth_savings": "62.5%",
             "sparsification_p": 3,
