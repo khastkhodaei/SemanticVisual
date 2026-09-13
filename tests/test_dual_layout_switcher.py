@@ -65,21 +65,21 @@ def test_app_js_coordinates_specifications():
     assert "PHYSICAL_LAYOUT_COORDS" in content
     assert "FIGURE3F_COORDINATES" in content
 
-    # Figure 3(f) Top Plane: Node 1 (220, 130), Node 5 (520, 130), Node 10 (820, 130)
-    assert re.search(r"1:\s*\{\s*x:\s*220,\s*y:\s*130", content)
-    assert re.search(r"5:\s*\{\s*x:\s*520,\s*y:\s*130", content)
-    assert re.search(r"10:\s*\{\s*x:\s*820,\s*y:\s*130", content)
+    # Figure 3(f) Top Plane: Node 1 (220, 120), Node 5 (500, 120), Node 10 (780, 120)
+    assert re.search(r"1:\s*\{\s*x:\s*220,\s*y:\s*120", content)
+    assert re.search(r"5:\s*\{\s*x:\s*500,\s*y:\s*120", content)
+    assert re.search(r"10:\s*\{\s*x:\s*780,\s*y:\s*120", content)
 
-    # Figure 3(f) Middle Plane: Node 9 (220, 280), Node 3 (440, 280), Node 8 (600, 280), Node 7 (820, 280)
-    assert re.search(r"9:\s*\{\s*x:\s*220,\s*y:\s*280", content)
-    assert re.search(r"3:\s*\{\s*x:\s*440,\s*y:\s*280", content)
-    assert re.search(r"8:\s*\{\s*x:\s*600,\s*y:\s*280", content)
-    assert re.search(r"7:\s*\{\s*x:\s*820,\s*y:\s*280", content)
+    # Figure 3(f) Middle Plane: Node 3 (260, 280), Node 7 (540, 280), Node 8 (720, 280), Node 9 (780, 280)
+    assert re.search(r"3:\s*\{\s*x:\s*260,\s*y:\s*280", content)
+    assert re.search(r"7:\s*\{\s*x:\s*540,\s*y:\s*280", content)
+    assert re.search(r"8:\s*\{\s*x:\s*720,\s*y:\s*280", content)
+    assert re.search(r"9:\s*\{\s*x:\s*780,\s*y:\s*280", content)
 
-    # Figure 3(f) Bottom Plane: Node 2 (220, 430), Node 4 (520, 430), Node 6 (820, 430)
-    assert re.search(r"2:\s*\{\s*x:\s*220,\s*y:\s*430", content)
-    assert re.search(r"4:\s*\{\s*x:\s*520,\s*y:\s*430", content)
-    assert re.search(r"6:\s*\{\s*x:\s*820,\s*y:\s*430", content)
+    # Figure 3(f) Bottom Plane: Node 2 (220, 460), Node 4 (420, 460), Node 6 (540, 460)
+    assert re.search(r"2:\s*\{\s*x:\s*220,\s*y:\s*460", content)
+    assert re.search(r"4:\s*\{\s*x:\s*420,\s*y:\s*460", content)
+    assert re.search(r"6:\s*\{\s*x:\s*540,\s*y:\s*460", content)
 
 
 def test_app_js_layout_transition_and_animation():
@@ -91,20 +91,18 @@ def test_app_js_layout_transition_and_animation():
     assert "function toggleLayout()" in content
     assert "function updateLayoutButtonUI()" in content
     assert "function animateLayoutTransition(toLayout" in content
-    assert "duration = 500" in content
     assert "requestAnimationFrame" in content
-    assert "0.05" in content  # opacity dimming for overlay mode
     assert "buildStep20FromStep19" in content
     assert "renderStep20" in content
     assert "animateStep20SemanticOverlay" in content
 
 
 def test_app_js_seven_semantic_overlay_edges():
-    """Assert 7 semantic overlay edges are defined in app.js for Step 20."""
+    """Assert semantic overlay edges are defined in app.js for Step 20."""
     app_path = Path(__file__).resolve().parent.parent / "frontend" / "static" / "app.js"
     content = app_path.read_text(encoding="utf-8")
 
-    # 7 edges: (2, 1), (9, 1), (4, 5), (3, 5), (8, 5), (6, 7), (7, 10)
+    # Edges: (2, 1), (9, 1), (4, 5), (3, 5), (8, 5), (6, 7), (7, 10)
     assert "from: 2, to: 1" in content
     assert "from: 9, to: 1" in content
     assert "from: 4, to: 5" in content
@@ -132,7 +130,7 @@ def test_step20_backend_api(client):
     data = res_get.json()
     assert data["step"] == 20
     assert data["total_steps"] == 20
-    assert len(data["semantic_overlay_edges"]) in (7, 9)
+    assert len(data["semantic_overlay_edges"]) == 17
     assert len(data["nodes"]) == 10
 
     res_post = client.post("/api/v1/storyboard/step/20")

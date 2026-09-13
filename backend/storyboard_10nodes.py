@@ -212,42 +212,90 @@ def get_10node_config() -> Dict[str, Any]:
     }
 
 
-FIGURE3F_COORDINATES: Dict[str, Dict[str, Any]] = {
-    # Top Plane: Super-Peers connected by Backbone
-    "1":  {"x": 220, "y": 130, "tier": "SUPER_PEER", "sc": "SC-1"},
-    "5":  {"x": 520, "y": 130, "tier": "SUPER_PEER", "sc": "SC-2"},
-    "10": {"x": 820, "y": 130, "tier": "SUPER_PEER", "sc": "SC-3"},
+# Figure 3(f) Compliant 3-Tier Hierarchical Overlay Data Structures (Strict Paper Replication)
+FIGURE3F_3TIER_NODES: List[Dict[str, Any]] = [
+    # Tier 3 (Top - Global Super-Peers)
+    {"key": "top_1", "id": 1, "node_id": "C1", "tier": 3, "role": "SUPER_PEER", "x": 220, "y": 120, "label": "Node 1"},
+    {"key": "top_5", "id": 5, "node_id": "C5", "tier": 3, "role": "SUPER_PEER", "x": 500, "y": 120, "label": "Node 5"},
+    {"key": "top_10", "id": 10, "node_id": "C10", "tier": 3, "role": "SUPER_PEER", "x": 780, "y": 120, "label": "Node 10"},
 
-    # Middle Plane: Subordinate Exemplars
-    "9":  {"x": 220, "y": 280, "tier": "EXEMPLAR", "sc": "SC-1"},
-    "3":  {"x": 440, "y": 280, "tier": "EXEMPLAR", "sc": "SC-2"},
-    "8":  {"x": 600, "y": 280, "tier": "EXEMPLAR", "sc": "SC-2"},
-    "7":  {"x": 820, "y": 280, "tier": "EXEMPLAR", "sc": "SC-3"},
+    # Tier 2 (Middle - Intra-Zone Exemplars)
+    # Zone 2:
+    {"key": "mid_1", "id": 1, "node_id": "C1", "tier": 2, "role": "EXEMPLAR", "zone": 2, "x": 180, "y": 280, "label": "Node 1"},
+    {"key": "mid_3", "id": 3, "node_id": "C3", "tier": 2, "role": "EXEMPLAR", "zone": 2, "x": 260, "y": 280, "label": "Node 3"},
+    # Zone 4:
+    {"key": "mid_5", "id": 5, "node_id": "C5", "tier": 2, "role": "EXEMPLAR", "zone": 4, "x": 460, "y": 280, "label": "Node 5"},
+    {"key": "mid_7", "id": 7, "node_id": "C7", "tier": 2, "role": "EXEMPLAR", "zone": 4, "x": 540, "y": 280, "label": "Node 7"},
+    # Zone 8:
+    {"key": "mid_8", "id": 8, "node_id": "C8", "tier": 2, "role": "EXEMPLAR", "zone": 8, "x": 720, "y": 280, "label": "Node 8"},
+    {"key": "mid_9", "id": 9, "node_id": "C9", "tier": 2, "role": "EXEMPLAR", "zone": 8, "x": 780, "y": 280, "label": "Node 9"},
+    {"key": "mid_10", "id": 10, "node_id": "C10", "tier": 2, "role": "EXEMPLAR", "zone": 8, "x": 840, "y": 280, "label": "Node 10"},
 
-    # Bottom Plane: Regular Leaf Members
-    "2":  {"x": 220, "y": 430, "tier": "LEAF", "sc": "SC-1"},
-    "4":  {"x": 520, "y": 430, "tier": "LEAF", "sc": "SC-2"},
-    "6":  {"x": 820, "y": 430, "tier": "LEAF", "sc": "SC-3"}
-}
-
-FIGURE3F_EDGES: List[Dict[str, Any]] = [
-    # Top Super-Peer Backbone (Solid glowing platinum)
-    {"source": 1, "target": 5, "type": "SUPER_PEER_BACKBONE", "color": "#f8fafc", "style": "solid", "width": 3, "from": 1, "to": 5, "tier": 2, "label": "C1 ↔ C5 (Backbone)"},
-    {"source": 5, "target": 10, "type": "SUPER_PEER_BACKBONE", "color": "#f8fafc", "style": "solid", "width": 3, "from": 5, "to": 10, "tier": 2, "label": "C5 ↔ C10 (Backbone)"},
-
-    # SC-1 (Sky Blue)
-    {"source": 9, "target": 1, "type": "EXEMPLAR_TO_SP", "color": "#38bdf8", "style": "solid", "width": 2.5, "from": 9, "to": 1, "tier": 2, "label": "C9 ↔ C1"},
-    {"source": 2, "target": 1, "type": "LEAF_TO_SP", "color": "#38bdf8", "style": "dashed", "width": 2, "from": 2, "to": 1, "tier": 1, "label": "C2 ↔ C1"},
-
-    # SC-2 (Amber Gold)
-    {"source": 3, "target": 5, "type": "EXEMPLAR_TO_SP", "color": "#f59e0b", "style": "solid", "width": 2.5, "from": 3, "to": 5, "tier": 2, "label": "C3 ↔ C5"},
-    {"source": 8, "target": 5, "type": "EXEMPLAR_TO_SP", "color": "#f59e0b", "style": "solid", "width": 2.5, "from": 8, "to": 5, "tier": 2, "label": "C8 ↔ C5"},
-    {"source": 4, "target": 5, "type": "LEAF_TO_SP", "color": "#f59e0b", "style": "dashed", "width": 2, "from": 4, "to": 5, "tier": 1, "label": "C4 ↔ C5"},
-
-    # SC-3 (Neon Violet)
-    {"source": 7, "target": 10, "type": "EXEMPLAR_TO_SP", "color": "#c084fc", "style": "solid", "width": 2.5, "from": 7, "to": 10, "tier": 2, "label": "C7 ↔ C10"},
-    {"source": 6, "target": 7, "type": "LEAF_TO_EXEMPLAR", "color": "#c084fc", "style": "dashed", "width": 2, "from": 6, "to": 7, "tier": 1, "label": "C6 ↔ C7"}
+    # Tier 1 (Bottom - Base Clients Grouped into 3 Physical Zones)
+    # Zone 2 Capsule:
+    {"key": "bot_1", "id": 1, "node_id": "C1", "tier": 1, "role": "CLIENT", "zone": 2, "x": 160, "y": 460, "label": "Node 1"},
+    {"key": "bot_2", "id": 2, "node_id": "C2", "tier": 1, "role": "CLIENT", "zone": 2, "x": 220, "y": 460, "label": "Node 2"},
+    {"key": "bot_3", "id": 3, "node_id": "C3", "tier": 1, "role": "CLIENT", "zone": 2, "x": 280, "y": 460, "label": "Node 3"},
+    # Zone 4 Capsule:
+    {"key": "bot_4", "id": 4, "node_id": "C4", "tier": 1, "role": "CLIENT", "zone": 4, "x": 420, "y": 460, "label": "Node 4"},
+    {"key": "bot_5", "id": 5, "node_id": "C5", "tier": 1, "role": "CLIENT", "zone": 4, "x": 480, "y": 460, "label": "Node 5"},
+    {"key": "bot_6", "id": 6, "node_id": "C6", "tier": 1, "role": "CLIENT", "zone": 4, "x": 540, "y": 460, "label": "Node 6"},
+    {"key": "bot_7", "id": 7, "node_id": "C7", "tier": 1, "role": "CLIENT", "zone": 4, "x": 600, "y": 460, "label": "Node 7"},
+    # Zone 8 Capsule:
+    {"key": "bot_8", "id": 8, "node_id": "C8", "tier": 1, "role": "CLIENT", "zone": 8, "x": 720, "y": 460, "label": "Node 8"},
+    {"key": "bot_9", "id": 9, "node_id": "C9", "tier": 1, "role": "CLIENT", "zone": 8, "x": 780, "y": 460, "label": "Node 9"},
+    {"key": "bot_10", "id": 10, "node_id": "C10", "tier": 1, "role": "CLIENT", "zone": 8, "x": 840, "y": 460, "label": "Node 10"},
 ]
+
+FIGURE3F_3TIER_EDGES: List[Dict[str, Any]] = [
+    # A. Bottom-to-Middle Links (Intra-Zone Clustering)
+    # Zone 2 (Warm Yellow/Gold dashed lines: #eab308)
+    {"source": "bot_1", "target": "mid_1", "from_id": 1, "to_id": 1, "from_tier": 1, "to_tier": 2, "zone": 2, "color": "#eab308", "style": "dashed", "width": 2.0, "type": "INTRA_ZONE_CLUSTER", "label": "Bottom 1 -> Middle 1"},
+    {"source": "bot_2", "target": "mid_1", "from_id": 2, "to_id": 1, "from_tier": 1, "to_tier": 2, "zone": 2, "color": "#eab308", "style": "dashed", "width": 2.0, "type": "INTRA_ZONE_CLUSTER", "label": "Bottom 2 -> Middle 1"},
+    {"source": "bot_3", "target": "mid_3", "from_id": 3, "to_id": 3, "from_tier": 1, "to_tier": 2, "zone": 2, "color": "#eab308", "style": "dashed", "width": 2.0, "type": "INTRA_ZONE_CLUSTER", "label": "Bottom 3 -> Middle 3"},
+
+    # Zone 4 (Green dashed lines: #10b981)
+    {"source": "bot_4", "target": "mid_5", "from_id": 4, "to_id": 5, "from_tier": 1, "to_tier": 2, "zone": 4, "color": "#10b981", "style": "dashed", "width": 2.0, "type": "INTRA_ZONE_CLUSTER", "label": "Bottom 4 -> Middle 5"},
+    {"source": "bot_5", "target": "mid_5", "from_id": 5, "to_id": 5, "from_tier": 1, "to_tier": 2, "zone": 4, "color": "#10b981", "style": "dashed", "width": 2.0, "type": "INTRA_ZONE_CLUSTER", "label": "Bottom 5 -> Middle 5"},
+    {"source": "bot_6", "target": "mid_7", "from_id": 6, "to_id": 7, "from_tier": 1, "to_tier": 2, "zone": 4, "color": "#10b981", "style": "dashed", "width": 2.0, "type": "INTRA_ZONE_CLUSTER", "label": "Bottom 6 -> Middle 7"},
+    {"source": "bot_7", "target": "mid_7", "from_id": 7, "to_id": 7, "from_tier": 1, "to_tier": 2, "zone": 4, "color": "#10b981", "style": "dashed", "width": 2.0, "type": "INTRA_ZONE_CLUSTER", "label": "Bottom 7 -> Middle 7"},
+
+    # Zone 8 (Blue dashed lines: #38bdf8)
+    {"source": "bot_8", "target": "mid_8", "from_id": 8, "to_id": 8, "from_tier": 1, "to_tier": 2, "zone": 8, "color": "#38bdf8", "style": "dashed", "width": 2.0, "type": "INTRA_ZONE_CLUSTER", "label": "Bottom 8 -> Middle 8"},
+    {"source": "bot_9", "target": "mid_9", "from_id": 9, "to_id": 9, "from_tier": 1, "to_tier": 2, "zone": 8, "color": "#38bdf8", "style": "dashed", "width": 2.0, "type": "INTRA_ZONE_CLUSTER", "label": "Bottom 9 -> Middle 9"},
+    {"source": "bot_10", "target": "mid_10", "from_id": 10, "to_id": 10, "from_tier": 1, "to_tier": 2, "zone": 8, "color": "#38bdf8", "style": "dashed", "width": 2.0, "type": "INTRA_ZONE_CLUSTER", "label": "Bottom 10 -> Middle 10"},
+
+    # B. Middle-to-Top Links (Inter-Zone Super-Peer Overlays)
+    # Prominent dashed dark reddish-brown / maroon lines (#b91c1c, width 2.5px)
+    # To Super-Peer 1:
+    {"source": "mid_1", "target": "top_1", "from_id": 1, "to_id": 1, "from_tier": 2, "to_tier": 3, "target_sp": 1, "color": "#b91c1c", "style": "dashed", "width": 2.5, "type": "SUPER_PEER_OVERLAY", "label": "Middle 1 -> Top 1 (Vertical)"},
+    {"source": "mid_9", "target": "top_1", "from_id": 9, "to_id": 1, "from_tier": 2, "to_tier": 3, "target_sp": 1, "color": "#b91c1c", "style": "dashed", "width": 2.5, "type": "SUPER_PEER_OVERLAY", "label": "Middle 9 -> Top 1 (Cross-diagonal)"},
+
+    # To Super-Peer 5:
+    {"source": "mid_3", "target": "top_5", "from_id": 3, "to_id": 5, "from_tier": 2, "to_tier": 3, "target_sp": 5, "color": "#b91c1c", "style": "dashed", "width": 2.5, "type": "SUPER_PEER_OVERLAY", "label": "Middle 3 -> Top 5 (Cross-diagonal)"},
+    {"source": "mid_5", "target": "top_5", "from_id": 5, "to_id": 5, "from_tier": 2, "to_tier": 3, "target_sp": 5, "color": "#b91c1c", "style": "dashed", "width": 2.5, "type": "SUPER_PEER_OVERLAY", "label": "Middle 5 -> Top 5 (Vertical)"},
+    {"source": "mid_8", "target": "top_5", "from_id": 8, "to_id": 5, "from_tier": 2, "to_tier": 3, "target_sp": 5, "color": "#b91c1c", "style": "dashed", "width": 2.5, "type": "SUPER_PEER_OVERLAY", "label": "Middle 8 -> Top 5 (Cross-diagonal)"},
+
+    # To Super-Peer 10:
+    {"source": "mid_7", "target": "top_10", "from_id": 7, "to_id": 10, "from_tier": 2, "to_tier": 3, "target_sp": 10, "color": "#b91c1c", "style": "dashed", "width": 2.5, "type": "SUPER_PEER_OVERLAY", "label": "Middle 7 -> Top 10 (Cross-diagonal)"},
+    {"source": "mid_10", "target": "top_10", "from_id": 10, "to_id": 10, "from_tier": 2, "to_tier": 3, "target_sp": 10, "color": "#b91c1c", "style": "dashed", "width": 2.5, "type": "SUPER_PEER_OVERLAY", "label": "Middle 10 -> Top 10 (Vertical)"},
+]
+
+FIGURE3F_EDGES: List[Dict[str, Any]] = FIGURE3F_3TIER_EDGES
+
+FIGURE3F_COORDINATES: Dict[str, Dict[str, Any]] = {
+    # Unique node coordinate mappings
+    "1":  {"x": 220, "y": 120, "tier": "SUPER_PEER", "zone": 2},
+    "2":  {"x": 220, "y": 460, "tier": "CLIENT", "zone": 2},
+    "3":  {"x": 260, "y": 280, "tier": "EXEMPLAR", "zone": 2},
+    "4":  {"x": 420, "y": 460, "tier": "CLIENT", "zone": 4},
+    "5":  {"x": 500, "y": 120, "tier": "SUPER_PEER", "zone": 4},
+    "6":  {"x": 540, "y": 460, "tier": "CLIENT", "zone": 4},
+    "7":  {"x": 540, "y": 280, "tier": "EXEMPLAR", "zone": 4},
+    "8":  {"x": 720, "y": 280, "tier": "EXEMPLAR", "zone": 8},
+    "9":  {"x": 780, "y": 280, "tier": "EXEMPLAR", "zone": 8},
+    "10": {"x": 780, "y": 120, "tier": "SUPER_PEER", "zone": 8},
+}
 
 
 def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
@@ -4161,24 +4209,27 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
 
         terminal_logs = [
             "[SON ACTIVATION] Two-tier Semantic Overlay Network (SON) logical topology activated.",
-            "[FIGURE 3(F)] Hierarchical tree with Super-Peer backbone (C1 <-> C5 <-> C10) and vertical cluster columns.",
-            "[TIER 1 INTRA-CLUSTER] C2 ↔ C1 (SC-1) | C4 ↔ C5 (SC-2) | C6 ↔ C7 (SC-3).",
-            "[TIER 2 INTER-EXEMPLAR] C9 ↔ C1 (SC-1) | C3 ↔ C5, C8 ↔ C5 (SC-2) | C7 ↔ C10 (SC-3).",
-            "[DUAL-LAYOUT READY] Switch between Physical Topology and Figure 3(f) Overlay Tree via toolbar switcher.",
+            "[FIGURE 3(F)] 3-Tier Hierarchical Overlay: Top Global Super-Peers (1, 5, 10), Middle Exemplars Oval, Bottom Zone Capsules.",
+            "[TIER 1 INTRA-ZONE] Zone 2 (C1, C2, C3) | Zone 4 (C4, C5, C6, C7) | Zone 8 (C8, C9, C10).",
+            "[TIER 2 INTRA-ZONE EXEMPLARS] Rose oval hull enclosing 7 exemplars across Zones 2, 4, 8.",
+            "[TIER 3 SUPER-PEER OVERLAYS] Maroon dashed overlay links: Mid 1, 9 -> Top 1 | Mid 3, 5, 8 -> Top 5 | Mid 7, 10 -> Top 10.",
+            "[DUAL-LAYOUT READY] Switch between Physical Topology and Figure 3(f) Hierarchical Overlay via toolbar switcher.",
         ]
 
         return {
             "step": 20,
             "title": "Step 20: 2-Tier Semantic Overlay Network (SON) Dual-View (Figure 3(f))",
             "phase_badge": "ACTIVE PHASE: STEP 20: 2-TIER SEMANTIC OVERLAY NETWORK (FIGURE 3(F))",
-            "description": "Visualizes the complete 2-tier Semantic Overlay Network (SON) replicating Figure 3(f) with Super-Peer backbone links and vertical cluster columns.",
-            "formula": r"\mathcal{G}_{\text{SON}} = (\mathcal{V}, \mathcal{E}_{\text{SON}}) = \mathcal{E}_{\text{intra}} \cup \mathcal{E}_{\text{inter}} \cup \mathcal{E}_{\text{backbone}}",
-            "formula_desc": "Two-tier logical federation overlay governs model aggregation while physical mesh serves as ad-hoc transport.",
+            "description": "Visualizes the complete 2-tier Semantic Overlay Network (SON) replicating Figure 3(f) with 3 horizontal tiers: Tier 3 Global Super-Peers, Tier 2 Intra-Zone Exemplars oval, and Tier 1 Base Client zone capsules.",
+            "formula": r"\mathcal{G}_{\text{SON}} = (\mathcal{V}, \mathcal{E}_{\text{SON}}) = \mathcal{E}_{\text{intra}} \cup \mathcal{E}_{\text{inter}} \cup \mathcal{E}_{\text{overlay}}",
+            "formula_desc": "Two-tier logical federation overlay governs model aggregation across physical zones and global super-peer overlays.",
             "nodes": step20_nodes,
             "edges": step19_data["edges"],
-            "semantic_overlay_edges": FIGURE3F_EDGES,
-            "overlay_edges": FIGURE3F_EDGES,
-            "figure3f_edges": FIGURE3F_EDGES,
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
             "figure3f_coordinates": FIGURE3F_COORDINATES,
             "total_nodes": 10,
             "total_edges": 18,

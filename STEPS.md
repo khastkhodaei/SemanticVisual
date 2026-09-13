@@ -707,36 +707,62 @@ Where:
 
 ## Step 20 — 2-Tier Semantic Overlay Network (SON) Dual-View (Figure 3(f))
 
-According to Figure 3(f) of the SemanticDFL paper, the network visualizes the complete two-tier Semantic Overlay Network (SON), isolating semantic affinity links from physical ad-hoc routing clutter.
+According to Figure 3(f) of the SemanticDFL paper, the network visualizes the complete two-tier Semantic Overlay Network (SON), isolating semantic affinity links from physical ad-hoc routing clutter. In this view, nodes represent roles across 3 horizontal tiers:
 
-### 1. Figure 3(f) Hierarchical Topology
-- **Top Super-Peer Backbone:** Logical edges interconnecting global Super-Peers:
-  $$(C_1 \xleftrightarrow{\text{Backbone}} C_5 \xleftrightarrow{\text{Backbone}} C_{10})$$
-- **Cluster Columns (Figure 3(f)):**
-  - **Column 1 ($\mathcal{SC}_1$ — Sky Blue `#38bdf8`):**
-    - Super-Peer: $C_1$ (Top)
-    - Linked Peers: $C_9$ (Exemplar, mid) $\xleftrightarrow{}$ $C_1$, and $C_2$ (Leaf, bottom) $\xleftrightarrow{}$ $C_1$
-  - **Column 2 ($\mathcal{SC}_2$ — Amber Gold `#f59e0b`):**
-    - Super-Peer: $C_5$ (Top)
-    - Linked Peers: $C_3$ (Exemplar, mid) $\xleftrightarrow{}$ $C_5$, $C_8$ (Exemplar, mid) $\xleftrightarrow{}$ $C_5$, and $C_4$ (Leaf, bottom) $\xleftrightarrow{}$ $C_5$
-  - **Column 3 ($\mathcal{SC}_3$ — Neon Violet `#c084fc`):**
-    - Super-Peer: $C_{10}$ (Top)
-    - Linked Peers: $C_7$ (Exemplar, mid) $\xleftrightarrow{}$ $C_{10}$, and $C_6$ (Leaf, bottom) $\xleftrightarrow{}$ $C_7$
+### 1. Architectural Layout (3 Horizontal Tiers with Role-Based Virtual Nodes)
+- **Tier 3 (Top — Global Super-Peers)**:
+  - Super-Peer 1 ($C_1$, Top-Left, $x: 220, y: 120$)
+  - Super-Peer 5 ($C_5$, Top-Center, $x: 500, y: 120$)
+  - Super-Peer 10 ($C_{10}$, Top-Right, $x: 780, y: 120$)
+  *(No direct horizontal line between 1, 5, 10).*
 
-### 2. Multi-Hop Physical Underlay Mapping
-Every logical link maps to underlying multi-hop physical paths:
-- $(C_1 \leftrightarrow C_5) \implies [1, 4, 5]$
-- $(C_5 \leftrightarrow C_{10}) \implies [5, 10]$
-- $(C_9 \leftrightarrow C_1) \implies [9, 8, 6, 4, 1]$
-- $(C_3 \leftrightarrow C_5) \implies [3, 5]$
-- $(C_8 \leftrightarrow C_5) \implies [8, 6, 5]$
-- $(C_7 \leftrightarrow C_{10}) \implies [7, 9, 10]$
+- **Tier 2 (Middle — Intra-Zone Exemplars)**:
+  Enclosed inside a large horizontal rose/pink oval container (`rgba(244, 63, 94, 0.12)`, border dashed):
+  - From Zone 2: $C_1 (180, 280), C_3 (260, 280)$
+  - From Zone 4: $C_5 (460, 280), C_7 (540, 280)$
+  - From Zone 8: $C_8 (720, 280), C_9 (780, 280), C_{10} (840, 280)$
+
+- **Tier 1 (Bottom — Base Clients Grouped into 3 Physical Zones)**:
+  Rendered inside 3 horizontal colored capsule containers:
+  - **Zone 2 Capsule (Warm Yellow/Gold)**: $C_1 (160), C_2 (220), C_3 (280)$ at $y: 460$
+  - **Zone 4 Capsule (Light Green)**: $C_4 (420), C_5 (480), C_6 (540), C_7 (600)$ at $y: 460$
+  - **Zone 8 Capsule (Light Blue)**: $C_8 (720), C_9 (780), C_{10} (840)$ at $y: 460$
+
+### 2. Edge Connections (Strictly Matching Figure 3(f))
+#### A. Bottom-to-Middle Links (Intra-Zone Clustering):
+Dashed colored lines connecting bottom leaf nodes to middle exemplars:
+- **Zone 2 (Yellow dashed lines)**:
+  - Bottom $C_1 \to$ Middle $C_1$
+  - Bottom $C_2 \to$ Middle $C_1$
+  - Bottom $C_3 \to$ Middle $C_3$
+- **Zone 4 (Green dashed lines)**:
+  - Bottom $C_4 \to$ Middle $C_5$
+  - Bottom $C_5 \to$ Middle $C_5$
+  - Bottom $C_6 \to$ Middle $C_7$
+  - Bottom $C_7 \to$ Middle $C_7$
+- **Zone 8 (Blue dashed lines)**:
+  - Bottom $C_8 \to$ Middle $C_8$
+  - Bottom $C_9 \to$ Middle $C_9$
+  - Bottom $C_{10} \to$ Middle $C_{10}$
+
+#### B. Middle-to-Top Links (Inter-Zone Super-Peer Overlays):
+Prominent dashed dark reddish-brown / maroon lines (`#b91c1c`, width 2.5px):
+- **To Super-Peer 1**:
+  - Middle $C_1 \to$ Top $C_1$ (vertical dashed)
+  - Middle $C_9 \to$ Top $C_1$ (cross-diagonal dashed line from Zone 8 to Top 1)
+- **To Super-Peer 5**:
+  - Middle $C_3 \to$ Top $C_5$ (cross-diagonal dashed line from Zone 2 to Top 5)
+  - Middle $C_5 \to$ Top $C_5$ (vertical dashed)
+  - Middle $C_8 \to$ Top $C_5$ (cross-diagonal dashed line from Zone 8 to Top 5)
+- **To Super-Peer 10**:
+  - Middle $C_7 \to$ Top $C_{10}$ (cross-diagonal dashed line from Zone 4 to Top 10)
+  - Middle $C_{10} \to$ Top $C_{10}$ (vertical dashed)
 
 ### 3. Dual-Layout Switcher
 From Step 20 onward, an interactive dual-layout switcher is available in the canvas toolbar:
-- **`🔀 Layout: Physical Topology`**: Displays nodes in their original ad-hoc physical placement with visible physical links and overlay edges.
-- **`✨ Layout: Figure 3(f) Overlay Tree`**: Smoothly animates nodes (over 500ms using cubic easing) into the 3 distinct Figure 3(f) cluster columns and top horizontal Super-Peer backbone:
-  - Top plane: $C_1 (220, 130), C_5 (520, 130), C_{10} (820, 130)$
-  - Middle plane: $C_9 (220, 280), C_3 (440, 280), C_8 (600, 280), C_7 (820, 280)$
-  - Bottom plane: $C_2 (220, 430), C_4 (520, 430), C_6 (820, 430)$
-  - In Figure 3(f) mode, physical links are completely hidden (opacity: 0), 3 vertical column cards anchor each cluster, and a continuous bi-directional ping-pong heartbeat flows across leaves, exemplars, and the glowing platinum backbone.
+- **`🔀 Layout: Physical Topology`**: Original 10-node ad-hoc physical placement with visible mesh links.
+- **`✨ Layout: Hierarchical Overlay (Figure 3(f))`**: Replicates Figure 3(f) with phone device silhouettes, pink exemplar oval, and 3 colored zone capsules.
+- Continuous ping-pong heartbeat loop flows:
+  1. Leaves in Tier 1 $\to$ Exemplars in Tier 2 (following zone colors).
+  2. Exemplars in Tier 2 $\to$ Super-Peers in Tier 3 (following the maroon cross-overlay lines).
+  3. Super-Peers pulse with global consensus beacon rings, then dispatch weights downward.
