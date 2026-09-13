@@ -744,7 +744,11 @@ In the resulting logical overlay graph $\mathcal{G}_{\text{SON}}$, each node pos
 - **Node 9 ($C_9$)**: Neighbors = $\{C_1\}$
 - **Node 10 ($C_{10}$)**: Neighbors = $\{C_7\}$
 
-
-
-
-
+### Dual-Layout Switcher (Physical Topology $\longleftrightarrow$ Semantic Overlay Layout)
+From Step 20 onward, an interactive dual-layout switcher is available in the canvas toolbar:
+- **`🔀 Layout: Physical Topology`**: Displays nodes in their original ad-hoc physical placement with visible physical links and overlay edges.
+- **`✨ Layout: Semantic Overlay`**: Smoothly animates nodes (over 500ms using cubic easing) into 3 distinct spatial super-cluster groupings:
+  - **Super-Cluster 1 (Left Wing / Aviation & Vehicles)**: $C_1$ (180, 320), $C_2$ (100, 240), $C_9$ (100, 400).
+  - **Super-Cluster 2 (Center Hub / Animals)**: $C_5$ (500, 320), $C_4$ (420, 220), $C_3$ (580, 220), $C_8$ (500, 440).
+  - **Super-Cluster 3 (Right Wing / Transport & Amphibians)**: $C_{10}$ (820, 320), $C_7$ (900, 240), $C_6$ (900, 400).
+  - In overlay mode, physical links are dimmed to opacity 0.05, super-cluster aura hulls encircle each group, and the 7 SON federation edges glow with neon energy pulses.

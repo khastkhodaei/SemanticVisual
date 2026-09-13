@@ -122,3 +122,18 @@ def test_app_js_button_visibility_and_modal():
     assert "currentStep >= 20" in content
     assert "cardOverlaySection" in content
     assert "2-TIER_SON" in content
+
+
+def test_step20_backend_api(client):
+    """Assert backend step 20 API works for GET and POST and returns valid SON data."""
+    res_get = client.get("/api/v1/storyboard/step/20")
+    assert res_get.status_code == 200
+    data = res_get.json()
+    assert data["step"] == 20
+    assert data["total_steps"] == 20
+    assert len(data["semantic_overlay_edges"]) == 7
+    assert len(data["nodes"]) == 10
+
+    res_post = client.post("/api/v1/storyboard/step/20")
+    assert res_post.status_code == 200
+    assert res_post.json()["step"] == 20

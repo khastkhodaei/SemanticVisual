@@ -4080,6 +4080,92 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "boundary_nodes": [1, 6],
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 20:
+        step19_data = _get_10node_step_data_raw(19)
+        step20_nodes = copy.deepcopy(step19_data["nodes"])
+
+        super_peers = [1, 5, 10]
+        exemplars = [3, 7, 8, 9]
+        overlay_neighbors = {
+            1: [2, 9],
+            2: [1],
+            3: [5],
+            4: [5],
+            5: [3, 4, 8],
+            6: [7],
+            7: [6, 10],
+            8: [5],
+            9: [1],
+            10: [7],
+        }
+
+        for n in step20_nodes:
+            nid = n["id"]
+            n["active_overlay_neighbors"] = overlay_neighbors.get(nid, [])
+            if nid in super_peers:
+                n["son_tier"] = 3
+                n["son_role"] = "SUPER_PEER"
+                n["role"] = "SUPER_PEER"
+                n["is_super_peer"] = True
+                n["is_exemplar"] = True
+            elif nid in exemplars:
+                n["son_tier"] = 2
+                n["son_role"] = "EXEMPLAR"
+                n["role"] = "EXEMPLAR"
+                n["is_super_peer"] = False
+                n["is_exemplar"] = True
+            else:
+                n["son_tier"] = 1
+                n["son_role"] = "MEMBER"
+                n["role"] = "CLIENT"
+                n["is_super_peer"] = False
+                n["is_exemplar"] = False
+
+        semantic_overlay_edges = [
+            {"from": 2, "to": 1, "tier": 1, "type": "MEMBER_TO_EXEMPLAR", "super_cluster": "SC-1", "source": 2, "target": 1, "color": "#38bdf8", "label": "C2 ↔ C1"},
+            {"from": 9, "to": 1, "tier": 2, "type": "EXEMPLAR_TO_SUPERPEER", "super_cluster": "SC-1", "source": 9, "target": 1, "color": "#38bdf8", "label": "C9 ↔ C1"},
+            {"from": 4, "to": 5, "tier": 1, "type": "MEMBER_TO_EXEMPLAR", "super_cluster": "SC-2", "source": 4, "target": 5, "color": "#fbbf24", "label": "C4 ↔ C5"},
+            {"from": 3, "to": 5, "tier": 2, "type": "EXEMPLAR_TO_SUPERPEER", "super_cluster": "SC-2", "source": 3, "target": 5, "color": "#fbbf24", "label": "C3 ↔ C5"},
+            {"from": 8, "to": 5, "tier": 2, "type": "EXEMPLAR_TO_SUPERPEER", "super_cluster": "SC-2", "source": 8, "target": 5, "color": "#fbbf24", "label": "C8 ↔ C5"},
+            {"from": 6, "to": 7, "tier": 1, "type": "MEMBER_TO_EXEMPLAR", "super_cluster": "SC-3", "source": 6, "target": 7, "color": "#c084fc", "label": "C6 ↔ C7"},
+            {"from": 7, "to": 10, "tier": 2, "type": "EXEMPLAR_TO_SUPERPEER", "super_cluster": "SC-3", "source": 7, "target": 10, "color": "#c084fc", "label": "C7 ↔ C10"},
+        ]
+
+        terminal_logs = [
+            "[SON ACTIVATION] Two-tier Semantic Overlay Network (SON) logical topology activated.",
+            "[TIER 1 INTRA-CLUSTER] C2 ↔ C1 (SC-1) | C4 ↔ C5 (SC-2) | C6 ↔ C7 (SC-3).",
+            "[TIER 2 INTER-EXEMPLAR] C9 ↔ C1 (SC-1) | C3 ↔ C5, C8 ↔ C5 (SC-2) | C7 ↔ C10 (SC-3).",
+            "[DUAL-LAYOUT READY] Switch between Physical Topology and Semantic Overlay Layout via toolbar switcher.",
+        ]
+
+        return {
+            "step": 20,
+            "title": "Step 20: Semantic Overlay Network (SON) Logical Topology Formation",
+            "phase_badge": "ACTIVE PHASE: STEP 20: SEMANTIC OVERLAY NETWORK (SON) FORMATION",
+            "description": "Two-tier Semantic Overlay Network (SON) activates 7 logical federation edges across 3 Global Super-Clusters.",
+            "formula": r"\mathcal{G}_{\text{SON}} = (\mathcal{V}, \mathcal{E}_{\text{SON}}) = \mathcal{E}_{\text{intra}} \cup \mathcal{E}_{\text{inter}} \quad (|\mathcal{E}_{\text{SON}}| = 7)",
+            "formula_desc": "Two-tier logical federation overlay governs model aggregation while physical mesh serves as ad-hoc transport.",
+            "nodes": step20_nodes,
+            "edges": step19_data["edges"],
+            "semantic_overlay_edges": semantic_overlay_edges,
+            "overlay_edges": semantic_overlay_edges,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step19_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": step19_data.get("super_peers", []),
+            "exemplar_bindings": step19_data.get("exemplar_bindings", {}),
+            "super_clusters": step19_data.get("super_clusters", []),
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -4099,9 +4185,9 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
 
 
 def get_10node_step_data(step_number: int) -> Dict[str, Any]:
-    """Retrieve storyboard step data for 10-node simulation with guaranteed total_steps = 14."""
+    """Retrieve storyboard step data for 10-node simulation with guaranteed total_steps."""
     data = _get_10node_step_data_raw(step_number)
-    data["total_steps"] = TOTAL_STEPS
+    data["total_steps"] = 20 if step_number >= 20 else TOTAL_STEPS
 
     # Ensure all base & step-specific fields are explicitly present on every node
     for n in data.get("nodes", []):

@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SemanticDFL Protocol Simulator | Step 1: Network Creation & Non-IID Data Distribution</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            paperBg: '#f8fafc',
+            paperCard: '#ffffff',
+            paperBorder: '#e2e8f0',
+            paperText: '#0f172a',
+            paperMuted: '#64748b',
+            brandBlue: '#2563eb',
+            brandSky: '#0284c7',
+            brandAmber: '#f59e0b',
+            brandEmerald: '#059669',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Cytoscape.js & Graph Layout Engines (Local Vendor with CDN Fallback) -->
+  <script src="/static/vendor/cytoscape.min.js"></script>
+  <script>window.cytoscape || document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"><\/script>');</script>
+  <script src="/static/vendor/dagre.min.js"></script>
+  <script>window.dagre || document.write('<script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"><\/script>');</script>
+  <script src="/static/vendor/cytoscape-dagre.min.js"></script>
+  <script>window.cytoscapeDagre || document.write('<script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"><\/script>');</script>
+
+  <!-- Chart.js (Local Vendor with CDN Fallback) -->
+  <script src="/static/vendor/chart.umd.min.js"></script>
+  <script>window.Chart || document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"><\/script>');</script>
+
+  <!-- KaTeX (Local Vendor & CDN) -->
+  <link rel="stylesheet" href="/static/vendor/katex.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="/static/vendor/katex.min.js"></script>
+  <script>window.katex || document.write('<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script>');</script>
+  <script src="/static/vendor/auto-render.min.js"></script>
+  <script>window.renderMathInElement || document.write('<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>');</script>
+
+  <!-- Custom Academic Stylesheet -->
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="h-screen w-screen overflow-hidden text-slate-900 flex flex-col bg-slate-50">
+
+  <!-- Top Academic Navigation Header (Compact & Fixed) -->
+  <header class="paper-header px-6 py-2 flex items-center justify-between flex-shrink-0 z-50">
+    <div class="flex items-center space-x-3">
+      <div class="w-3 h-3 rounded-full bg-blue-600 shadow-sm"></div>
+      <div>
+        <h1 class="font-extrabold text-sm tracking-tight text-slate-900 flex items-center gap-2">
+          <span>SEMANTIC-DFL STORYBOARD SIMULATOR</span>
+          <span class="text-[10px] font-semibold font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">ACM 2026</span>
+        </h1>
+        <p class="text-[11px] text-slate-500 font-sans">Decentralized Federated Learning with Semantic Overlay Networks</p>
+      </div>
+    </div>
+
+    <!-- Stepper Indicator -->
+    <nav aria-label="Step progress" class="hidden md:flex items-center space-x-4 text-xs font-medium">
+      <div id="stepNav1" class="step-item active cursor-pointer" title="Jump to Step 1">
+        <span class="step-bubble">1</span>
+        <span>Physical Mesh</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav2" class="step-item cursor-pointer" title="Jump to Step 2">
+        <span class="step-bubble">2</span>
+        <span>Local Vectors</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav3" class="step-item cursor-pointer" title="Jump to Step 3">
+        <span class="step-bubble">3</span>
+        <span>Local VRF</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav4" class="step-item cursor-pointer" title="Jump to Step 4">
+        <span class="step-bubble">4</span>
+        <span>Initiator Election</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav5" class="step-item cursor-pointer" title="Jump to Step 5">
+        <span class="step-bubble">5</span>
+        <span>Zone Creation</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav6" class="step-item cursor-pointer" title="Jump to Step 6">
+        <span class="step-bubble">6</span>
+        <span>Boundary Discovery</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav7" class="step-item cursor-pointer" title="Jump to Step 7">
+        <span class="step-bubble">7</span>
+        <span>P_min Query</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav8" class="step-item cursor-pointer" title="Jump to Step 8">
+        <span class="step-bubble">8</span>
+        <span>Binary Search</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav9" class="step-item cursor-pointer" title="Jump to Step 9">
+        <span class="step-bubble">9</span>
+        <span>Consensus Exchange</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav10" class="step-item cursor-pointer" title="Jump to Step 10">
+        <span class="step-bubble">10</span>
+        <span>Order Extract</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav11" class="step-item cursor-pointer" title="Jump to Step 11">
+        <span class="step-bubble">11</span>
+        <span>Signatures</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav12" class="step-item cursor-pointer" title="Jump to Step 12">
+        <span class="step-bubble">12</span>
+        <span>Clustering</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav13" class="step-item cursor-pointer" title="Jump to Step 13">
+        <span class="step-bubble">13</span>
+        <span>Exemplars</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav14" class="step-item cursor-pointer" title="Jump to Step 14">
+        <span class="step-bubble">14</span>
+        <span>Super-Zone</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav15" class="step-item cursor-pointer" title="Jump to Step 15">
+        <span class="step-bubble">15</span>
+        <span>Catalog Query</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav16" class="step-item cursor-pointer" title="Jump to Step 16">
+        <span class="step-bubble">16</span>
+        <span>Global Catalog</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav17" class="step-item cursor-pointer" title="Jump to Step 17">
+        <span class="step-bubble">17</span>
+        <span>Super-Clusters</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav18" class="step-item cursor-pointer" title="Jump to Step 18: Super-Zone Directives Dispatch">
+        <span class="step-bubble">18</span>
+        <span>Super-Zone Directives</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav19" class="step-item cursor-pointer" title="Jump to Step 19: Intra-Zone Super-Peer Designation & Exemplar Hierarchical Binding">
+        <span class="step-bubble">19</span>
+        <span>Intra-Zone Bindings</span>
+      </div>
+      <span class="text-slate-300">→</span>
+      <div id="stepNav20" class="step-item cursor-pointer" title="Jump to Step 20: Semantic Overlay Network (SON) Logical Topology Formation">
+        <span class="step-bubble">20</span>
+        <span>Semantic Overlay</span>
+      </div>
+    </nav>
+
+    <!-- Session Badge -->
+    <div class="flex items-center space-x-2 text-xs font-mono">
+      <div class="bg-white border border-slate-200 px-3 py-1 rounded-md text-slate-600 flex items-center gap-2 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="text-slate-400">SESSION:</span>
+        <span id="sessionVal" class="font-bold text-slate-800">Initializing...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Step Navigation & Narrative Banner (Compact & Fixed) -->
+  <div class="px-6 py-2 flex-shrink-0 space-y-2">
+    <!-- Action Controls Bar -->
+    <div class="paper-card px-4 py-2 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-2">
+        <button id="btnReset" class="btn-secondary px-3 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 transition-colors">
+          <span>🔄</span>
+          <span>Reset / Step 1</span>
+        </button>
+        <button id="btnPrev" disabled class="btn-secondary px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 transition-colors">
+          <span>◀️</span>
+          <span>Previous Step</span>
+        </button>
+        <button id="btnNext" disabled class="btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed transition-colors" title="Step 1 active - Next steps locked">
+          <span>Next Step (Disabled)</span>
+          <span>🔒</span>
+        </button>
+      </div>
+
+      <!-- Current Step Badge -->
+      <div class="flex items-center gap-2">
+        <span class="text-xs text-slate-500 font-sans">Active Phase:</span>
+        <span id="activePhaseBadge" class="text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+          Step 1: Network Creation
+        </span>
+        <span id="activeStepBadge" class="hidden">Step 1: Network Creation</span>
+      </div>
+    </div>
+
+    <!-- Narrative Info Card -->
+    <div class="paper-card-elevated px-4 py-2 border-slate-200 bg-white">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div class="space-y-1 flex-1">
+          <div class="flex items-center gap-2">
+            <span id="stepTag" class="px-2 py-0.5 text-[10px] font-bold font-mono tracking-wide rounded bg-blue-100 text-blue-800">
+              STEP 1 / NETWORK CREATION
+            </span>
+            <h2 id="stepTitle" class="text-sm font-bold text-slate-900">
+              Step 1: Network Creation & Non-IID Data Distribution
+            </h2>
+          </div>
+          <p id="stepDescription" class="text-xs text-slate-600 font-sans">
+            10 decentralized edge clients connected via 18 physical ad-hoc links. Each node holds local CIFAR-10 data.
+          </p>
+        </div>
+
+        <!-- Quick Summary Badges -->
+        <div class="flex items-center gap-2 text-xs font-mono flex-shrink-0">
+          <div class="bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-center min-w-[85px]">
+            <div class="text-[9px] text-slate-500 font-sans">TOTAL PEERS</div>
+            <div id="statNodes" class="text-xs font-bold text-blue-600">50</div>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-center min-w-[85px]">
+            <div class="text-[9px] text-slate-500 font-sans">DATA CLASSES</div>
+            <div class="text-xs font-bold text-emerald-600">10 Non-IID</div>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-center min-w-[95px]">
+            <div class="text-[9px] text-slate-500 font-sans">AVG DEGREE</div>
+            <div id="statDegree" class="text-xs font-bold text-slate-700">3.8 (3-6)</div>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-center min-w-[110px]">
+            <div class="text-[9px] text-slate-500 font-sans">INITIATORS (R=3)</div>
+            <div id="statLeaders" class="text-xs font-bold text-slate-400">0 Initiators</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid Workspace (Locked Viewport) -->
+  <main class="flex-1 grid grid-cols-12 gap-4 px-6 pb-2 min-h-0 overflow-hidden">
+
+    <!-- Left Sidebar: Step Formula Card at Top + Dataset Classes (3 cols) -->
+    <aside class="col-span-12 lg:col-span-3 flex flex-col min-h-0 space-y-2 overflow-hidden">
+      
+      <!-- Prominent Step Formula Card (Positioned at the TOP of the sidebar) -->
+      <div id="sidebarFormulaCard" class="formula-card flex-shrink-0 space-y-1">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-1">
+          <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1">
+            <span>📐</span>
+            <span id="formulaCardTitle">Step Formula</span>
+          </h3>
+          <span id="formulaCardBadge" class="text-[9px] font-mono font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">Topology</span>
+        </div>
+
+        <!-- KaTeX Math Container -->
+        <div id="sidebarFormula" class="text-xs text-slate-900 py-1 text-center overflow-x-auto min-h-[32px] flex items-center justify-center font-mono">
+          <!-- Rendered dynamically via KaTeX -->
+        </div>
+
+        <p id="sidebarFormulaDesc" class="text-[11px] text-slate-600 leading-snug">
+          Overlay-free physical ad-hoc network. Each peer holds local dataset samples and a 50-dimensional parameter vector.
+        </p>
+      </div>
+
+      <!-- Dataset Classes Card (Scrollable inside, takes remaining flexible height) -->
+      <div id="classListCard" class="paper-card p-3 flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-1.5 flex-shrink-0">
+          <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
+            <span class="mr-1.5">🏷️</span> Dataset Classes (10)
+          </h3>
+          <span class="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">M=50 Dims</span>
+        </div>
+
+        <p class="text-[11px] text-slate-500 my-1 flex-shrink-0">
+          5 clients per class. Each class boosts 5 dimensions ($0.85 \pm 0.05$).
+        </p>
+
+        <!-- Class List Chips -->
+        <div id="classList" class="space-y-1 text-xs font-mono overflow-y-auto min-h-0 flex-1 pr-1">
+          <!-- Populated dynamically by JavaScript -->
+        </div>
+
+        <div class="pt-1.5 border-t border-slate-100 text-[10px] text-slate-500 font-sans flex-shrink-0 flex justify-between">
+          <span>Intra-class: <strong class="text-emerald-600 font-mono">&ge; 0.85</strong></span>
+          <span>Inter-class: <strong class="text-slate-600 font-mono">&approx; 0.00</strong></span>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Center Canvas & Visualization Area (9 cols) -->
+    <section class="col-span-12 lg:col-span-9 flex flex-col min-h-0 space-y-2 overflow-hidden">
+      
+      <!-- Cytoscape Graph Canvas with Click-to-Toggle Modal -->
+      <div class="paper-card relative flex-1 min-h-0 overflow-hidden p-1.5">
+        
+        <!-- Canvas Indicator Top-Left -->
+        <div class="absolute top-3 left-3 z-10 flex items-center gap-2 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-mono shadow-sm">
+          <span class="text-slate-400">TOPOLOGY:</span>
+          <span id="canvasViewLabel" class="font-bold text-slate-800">Physical Ad-Hoc Mesh (50 Dispersed Nodes)</span>
+          <span class="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 font-sans ml-1">💡 Click node to pin details</span>
+        </div>
+
+        <!-- Floating Dual-Layout Switcher HUD Button (Visible for Step >= 20) -->
+        <button id="btn-toggle-layout" class="hidden absolute top-3 left-1/2 -translate-x-1/2 z-20 layout-toggle-btn cursor-pointer" title="Click to toggle view: Semantic Overlay Layout">
+          🔀 Layout: Physical Topology
+        </button>
+
+        <!-- Node Legend Top-Right -->
+        <div class="absolute top-3 right-3 z-10 flex items-center gap-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-mono shadow-sm">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-blue-600"></span>
+            <span class="text-slate-600 text-[11px]">Client Peer</span>
+          </div>
+          <div id="leaderLegendItem" class="hidden flex items-center gap-2">
+            <span class="text-slate-500 font-bold text-[10.5px]">Initiators:</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-800 border border-emerald-950"></span><span class="text-emerald-900 font-bold text-[10.5px]">C4 (Dark Green)</span></span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-800 border border-rose-950"></span><span class="text-rose-900 font-bold text-[10.5px]">C2 (Dark Red)</span></span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-700 border border-yellow-950"></span><span class="text-amber-900 font-bold text-[10.5px]">C8 (Dark Yellow)</span></span>
+          </div>
+          <div id="zoneLegendItem" class="hidden flex items-center gap-2">
+            <span class="text-slate-500 font-bold text-[10.5px]">Zones:</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600 border border-emerald-800"></span><span class="text-emerald-800 font-bold text-[10.5px]">Zone 2 (Emerald)</span></span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-orange-600 border border-orange-800"></span><span class="text-orange-800 font-bold text-[10.5px]">Zone 4 (Coral)</span></span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-purple-600 border border-purple-800"></span><span class="text-purple-800 font-bold text-[10.5px]">Zone 8 (Violet)</span></span>
+          </div>
+          <div id="boundaryLegendItem" class="hidden flex items-center gap-1.5">
+            <span class="w-4 border-t-2 border-dashed border-red-500 inline-block"></span>
+            <span class="text-red-700 font-bold text-[11px]">Zone Boundary</span>
+          </div>
+        </div>
+
+        <!-- Cytoscape Container -->
+        <div id="cy" class="w-full h-full"></div>
+        <!-- Packet Wave Animation Overlay Canvas -->
+        <canvas id="packetCanvas" class="pointer-events-none absolute inset-0 z-10 w-full h-full"></canvas>
+
+        <!-- Pinned Node Details Modal (Click-to-Toggle) -->
+        <div id="nodeInfoCard" class="hidden absolute top-12 right-3 node-tooltip-paper p-3 rounded-xl text-xs font-mono w-84 z-20 border border-slate-300 shadow-xl overflow-y-auto max-h-[520px]">
+          <!-- Header: Node C{id} | Status: NOT_ASSIGNED -->
+          <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-2">
+            <div class="text-blue-700 font-bold text-sm tracking-tight flex items-center gap-1.5" id="cardNodeId">
+              Node C1
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="cardStatusBadge" class="text-[9px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">NOT_ASSIGNED</span>
+              <button id="btnCloseModal" title="Close modal" class="text-slate-400 hover:text-slate-700 p-0.5 rounded hover:bg-slate-100 transition-colors text-xs font-bold leading-none">✕</button>
+            </div>
+          </div>
+
+          <div class="space-y-2.5 text-[11px] text-slate-700 font-sans">
+            <!-- Physical Connectivity: Direct physical neighbors list -->
+            <div>
+              <div class="flex justify-between items-center text-[10px] text-slate-500 mb-1 px-0.5">
+                <span class="font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                  <span>🔗</span>
+                  <span>Connected Neighbors:</span>
+                </span>
+                <span id="cardDegree" class="font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">2 neighbors</span>
+              </div>
+              <div id="cardNeighbors" class="text-[11px] font-mono text-slate-800 bg-slate-50 p-2 rounded-lg border border-slate-200 break-words leading-relaxed font-semibold">
+                C2, C4
+              </div>
+
+              <!-- Client Dataset Classes (Issue #4) -->
+              <div class="mt-2 text-[10.5px] bg-slate-50 p-2 rounded-lg border border-slate-200 leading-snug">
+                <span class="font-bold text-slate-700">Client data classes:</span>
+                <span id="cardClientClasses" class="font-medium text-slate-800 ml-1">Airplane, Automobile, Bird</span>
+              </div>
+            </div>
+
+            <!-- Local Data Distribution: Clean minimal percentage table showing ONLY non-zero classes -->
+            <div id="cardDataDistributionSection" class="pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>📊</span>
+                  <span>Local Data Distribution:</span>
+                </span>
+                <span id="cardDistTotalBadge" class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono font-bold">100% Total</span>
+              </div>
+              <div class="overflow-hidden border border-slate-200 rounded-lg shadow-xs bg-white">
+                <table class="w-full text-[10px] font-mono border-collapse">
+                  <thead>
+                    <tr class="bg-slate-100 text-slate-600 border-b border-slate-200 text-left">
+                      <th class="py-1 px-2 font-semibold">Class</th>
+                      <th class="py-1 px-2 font-semibold">Label</th>
+                      <th class="py-1 px-2 font-semibold text-right">Share</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cardDataDistributionTableBody" class="divide-y divide-slate-100">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Step 2: Normalized 10D Semantic Vector (w_i) -->
+            <div id="cardVectorSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>📐</span>
+                  <span>Normalized Vector (w<sub>i</sub>):</span>
+                </span>
+                <span id="cardVectorNormBadge" class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-100 text-cyan-800 border border-cyan-300 font-mono font-bold">10D &Sigma;=1.0</span>
+              </div>
+
+              <!-- Vector Array Representation -->
+              <div id="cardVectorArray" class="text-[10px] font-mono text-slate-800 bg-slate-50 p-2 rounded-lg border border-slate-200 break-all leading-relaxed font-semibold mb-2 select-all">
+                [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]
+              </div>
+
+              <!-- Visual Mini Bar Profile (Step 5) -->
+              <div id="cardVectorBarsContainer" class="hidden mb-2 p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                <div class="text-[9.5px] font-bold text-slate-600 mb-1.5 flex items-center justify-between">
+                  <span>Vector Profile (Mini Bars):</span>
+                  <span class="text-[9px] text-slate-400 font-normal">w<sub>i,c</sub></span>
+                </div>
+                <div id="cardVectorBars" class="space-y-1"></div>
+              </div>
+
+              <!-- Vector Component Breakdown (Hidden in Step 4+ per Issue #4) -->
+              <div id="cardVectorBreakdownContainer" class="overflow-hidden border border-slate-200 rounded-lg shadow-xs bg-white">
+                <table class="w-full text-[10px] font-mono border-collapse">
+                  <thead>
+                    <tr class="bg-slate-100 text-slate-600 border-b border-slate-200 text-left">
+                      <th class="py-1 px-2 font-semibold">Dim</th>
+                      <th class="py-1 px-2 font-semibold">Class</th>
+                      <th class="py-1 px-2 font-semibold text-right">Weight (w<sub>i,c</sub>)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cardVectorBreakdownBody" class="divide-y divide-slate-100">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Step 3 & 4: Local VRF Score & 1-Hop Neighborhood Scoreboard / Election -->
+            <div id="cardVrfSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>🎲</span>
+                  <span>Local VRF Score:</span>
+                </span>
+                <span id="cardVrfScoreBadge" class="text-[10px] font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-300">&sigma;_self = 0.0000</span>
+              </div>
+
+              <!-- Step 4 Election Decision Banner -->
+              <div id="cardElectionBanner" class="hidden mt-2 p-2 rounded-lg text-[10px] font-bold border transition-colors leading-snug">
+              </div>
+
+              <!-- 1-Hop Neighborhood Scoreboard Table (Step 4 only) -->
+              <div id="cardNeighborhoodScoreboardContainer" class="mt-2">
+                <div class="flex justify-between items-center text-[10px] text-slate-500 mb-1 px-0.5">
+                  <span class="font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                    <span>📋</span>
+                    <span id="cardScoreboardTitle">1-Hop Scoreboard:</span>
+                  </span>
+                  <span id="cardScoreboardSubtitle" class="text-[9px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">Received Scores</span>
+                </div>
+                <div class="overflow-hidden border border-slate-200 rounded-lg shadow-xs bg-white">
+                  <table class="w-full text-[10px] font-mono border-collapse">
+                    <thead>
+                      <tr class="bg-slate-100 text-slate-600 border-b border-slate-200 text-left">
+                        <th class="py-1 px-2 font-semibold">Peer</th>
+                        <th class="py-1 px-2 font-semibold text-right">VRF Score (&sigma;)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="cardNeighborhoodScoreboardBody" class="divide-y divide-slate-100">
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 5: Zone Creation & Probe Status -->
+            <div id="cardProbeSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>📡</span>
+                  <span>Probe Flooding (TTL=1):</span>
+                </span>
+                <span id="cardZoneBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Zone 2</span>
+              </div>
+              <div id="cardProbeContent" class="mt-1 space-y-1.5 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 6: Zone Formation & Boundary Discovery -->
+            <div id="cardBoundaryDiscoverySection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>🌐</span>
+                  <span>Zone Formation & Boundaries:</span>
+                </span>
+                <span id="cardBoundaryDiscoveryBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-purple-100 text-purple-800 border border-purple-300">Zone Assigned</span>
+              </div>
+              <div id="cardBoundaryDiscoveryContent" class="mt-1 space-y-1.5 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 7: Initiator P_min Query Request -->
+            <div id="cardPminQuerySection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>📨</span>
+                  <span>P_min Query Request:</span>
+                </span>
+                <span id="cardPminQueryBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-blue-100 text-blue-800 border border-blue-300">REQ_P_MIN</span>
+              </div>
+              <div id="cardPminQueryContent" class="mt-1 space-y-1.5 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 8: Local Binary Search & P_min Reporting -->
+            <div id="cardBinarySearchSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>🔍</span>
+                  <span>Local Binary Search ($P_{\min}^i$):</span>
+                </span>
+                <span id="cardBinarySearchBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-purple-100 text-purple-800 border border-purple-300">REPORT_P_MIN</span>
+              </div>
+              <div id="cardBinarySearchContent" class="mt-1 space-y-1.5 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 9: Inter-Initiator P_min Exchange & Global Consensus -->
+            <div id="cardConsensusSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>🤝</span>
+                  <span>Inter-Zone Consensus (P=3):</span>
+                </span>
+                <span id="cardConsensusBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-indigo-100 text-indigo-800 border border-indigo-300">CONSENSUS</span>
+              </div>
+              <div id="cardConsensusContent" class="mt-1 space-y-1.5 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 10: Initiator Extraction Order Broadcast -->
+            <div id="cardOrderExtractSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>📜</span>
+                  <span>Extraction Directive (P=3):</span>
+                </span>
+                <span id="cardOrderExtractBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">ORDER_EXTRACT</span>
+              </div>
+              <div id="cardOrderExtractContent" class="mt-1 space-y-1.5 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 11: Top-P Signature Extraction & Dual Representation -->
+            <div id="cardSignatureSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>✨</span>
+                  <span>Top-P Signature (Dual View):</span>
+                </span>
+                <span id="cardSignatureBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-cyan-100 text-cyan-800 border border-cyan-300">TOP_P_SIG</span>
+              </div>
+              <div id="cardSignatureContent" class="mt-1 space-y-2 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 12: Intra-Zone Semantic Clustering (Affinity Propagation) -->
+            <div id="cardClusteringSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>🧩</span>
+                  <span>Semantic Clustering (AP):</span>
+                </span>
+                <span id="cardClusteringBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-violet-100 text-violet-800 border border-violet-300">AP_CLUSTER</span>
+              </div>
+              <div id="cardClusteringContent" class="mt-1 space-y-2 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 13: Intra-Zone Cluster Exemplar Designation & Profile Assignment -->
+            <div id="cardExemplarSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>⭐</span>
+                  <span>Cluster Exemplar Designation:</span>
+                </span>
+                <span id="cardExemplarBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300">EXEMPLAR</span>
+              </div>
+              <div id="cardExemplarContent" class="mt-1 space-y-2 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 14: Hierarchical Top-Level Zone Creation (Figure 3(e)) -->
+            <div id="cardTopZoneSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>👑</span>
+                  <span>Super-Zone Control Plane:</span>
+                </span>
+                <span id="cardTopZoneBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300">Z_TOP</span>
+              </div>
+              <div id="cardTopZoneContent" class="mt-1 space-y-2 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 15: Top-Level Catalog Query Dispatch (REQ_CLUSTER_CATALOG) -->
+            <div id="cardCatalogReqSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>📡</span>
+                  <span>Cluster Catalog Query:</span>
+                </span>
+                <span id="cardCatalogReqBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-cyan-100 text-cyan-900 border border-cyan-300">REQ_CATALOG</span>
+              </div>
+              <div id="cardCatalogReqContent" class="mt-1 space-y-2 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 16: Zone Catalog Response & Global Catalog Aggregation at C4 -->
+            <div id="cardGlobalCatalogSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>🌐</span>
+                  <span>Global Cluster Catalog Registry:</span>
+                </span>
+                <span id="cardGlobalCatalogBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">7_CLUSTERS</span>
+              </div>
+              <div id="cardGlobalCatalogContent" class="mt-1 space-y-2 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 17: Inter-Zone Meta-Clustering & Super-Clusters -->
+            <div id="cardSuperClusterSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>🌌</span>
+                  <span>Cross-Zone Super-Clusters:</span>
+                </span>
+                <span id="cardSuperClusterBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-sky-100 text-sky-900 border border-sky-300">3_SUPER_CLUSTERS</span>
+              </div>
+              <div id="cardSuperClusterContent" class="mt-1 space-y-2 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 18: Super-Zone Meta-Cluster & Super-Peer Directives Dispatch -->
+            <div id="cardSuperPeerSection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>📜</span>
+                  <span>Super-Zone Directive Ledger:</span>
+                </span>
+                <span id="cardSuperPeerBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300">DIRECTIVES</span>
+              </div>
+              <div id="cardSuperPeerContent" class="mt-1 space-y-2 text-[10px] font-mono">
+              </div>
+            </div>
+
+            <!-- Step 19: Semantic Overlay Network (SON) Connections -->
+            <div id="cardOverlaySection" class="hidden pt-2 border-t border-slate-200">
+              <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1 px-0.5">
+                <span class="flex items-center gap-1">
+                  <span>⚡</span>
+                  <span>Active Overlay Connections (SON):</span>
+                </span>
+                <span id="cardOverlayBadge" class="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">2-TIER_SON</span>
+              </div>
+              <div id="cardOverlayContent" class="mt-1 space-y-2 text-[10px] font-mono">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Terminal Console Logs (Fixed Height 28, Non-expanding) -->
+      <div class="paper-card overflow-hidden flex flex-col h-28 flex-shrink-0 border-slate-300">
+        <div class="bg-slate-800 px-4 py-1 flex items-center justify-between text-xs font-mono text-slate-300 flex-shrink-0">
+          <span class="flex items-center gap-2">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>SYSTEM CONSOLE & PROTOCOL TRACE</span>
+          </span>
+          <button id="btnClearLogs" class="text-slate-400 hover:text-white transition-colors">clear</button>
+        </div>
+        <div id="terminalLogs" class="terminal-window p-2.5 overflow-y-auto min-h-0 flex-1 space-y-0.5 text-xs">
+          <div class="text-slate-400">[SYSTEM] Storyboard simulator ready. Initializing ad-hoc physical mesh...</div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Application JS Logic -->
+  <script src="/static/app.js?v=20.0"></script>
+</body>
+</html>
