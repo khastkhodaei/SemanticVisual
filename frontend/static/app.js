@@ -7555,6 +7555,13 @@ function renderNodeModal(node, stepData = currentStepData) {
 
     const card = document.getElementById("nodeInfoCard");
     if (!card) return;
+    if (currentStep === 22) {
+      card.classList.remove("w-84");
+      card.classList.add("w-96", "sm:w-[440px]");
+    } else {
+      card.classList.remove("w-96", "sm:w-[440px]");
+      card.classList.add("w-84");
+    }
 
   const cardNodeId = document.getElementById("cardNodeId");
   const cardStatusBadge = document.getElementById("cardStatusBadge");
@@ -10522,42 +10529,80 @@ function renderNodeModal(node, stepData = currentStepData) {
         const isSender = [2, 3, 4, 6, 7, 8, 9].includes(idNum);
         const isRelay = [4, 7, 9].includes(idNum) || (mergedNode?.relay_forwarding && mergedNode.relay_forwarding.length > 0);
 
-        // 1. Senders: Dark glassmorphism Outbound Search Query Card
+        // 1. Senders: Dispatched REQ_PEER_DISCOVERY Payload with Exact Top-P Numeric Vectors
         let senderHTML = "";
         if (isSender) {
           const qData = mergedNode?.outbound_query || ({
-            2: { target_sp: 1, classes: "1, 2, 3 (Airplane, Auto, Bird)", path: [2, 1] },
-            3: { target_sp: 5, classes: "4, 5, 6 (Cat, Deer, Dog)", path: [3, 5] },
-            4: { target_sp: 5, classes: "4, 5, 6 (Cat, Deer, Dog)", path: [4, 5] },
-            6: { target_sp: 10, classes: "8, 9, 10 (Horse, Ship, Truck)", path: [6, 4, 7, 9, 10] },
-            7: { target_sp: 10, classes: "8, 9, 10 (Horse, Ship, Truck)", path: [7, 9, 10] },
-            8: { target_sp: 5, classes: "4, 5, 6 (Cat, Deer, Dog)", path: [8, 6, 5] },
-            9: { target_sp: 1, classes: "1, 2, 3 (Airplane, Auto, Bird)", path: [9, 7, 4, 1] }
+            2: { target_sp: 1, path: [2, 1], top_p_indices: [1, 2, 3], sparse_vector: [0.19, 0.24, 0.57, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00] },
+            9: { target_sp: 1, path: [9, 7, 4, 1], top_p_indices: [1, 2, 3], sparse_vector: [0.45, 0.32, 0.23, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00] },
+            3: { target_sp: 5, path: [3, 5], top_p_indices: [4, 5, 6], sparse_vector: [0.00, 0.00, 0.00, 0.34, 0.20, 0.46, 0.00, 0.00, 0.00, 0.00] },
+            4: { target_sp: 5, path: [4, 5], top_p_indices: [4, 5, 6], sparse_vector: [0.00, 0.00, 0.00, 0.62, 0.21, 0.17, 0.00, 0.00, 0.00, 0.00] },
+            8: { target_sp: 5, path: [8, 6, 5], top_p_indices: [4, 5, 6], sparse_vector: [0.00, 0.00, 0.00, 0.32, 0.38, 0.30, 0.00, 0.00, 0.00, 0.00] },
+            6: { target_sp: 10, path: [6, 4, 7, 9, 10], top_p_indices: [7, 9, 10], sparse_vector: [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.23, 0.00, 0.34, 0.24] },
+            7: { target_sp: 10, path: [7, 9, 10], top_p_indices: [8, 9, 10], sparse_vector: [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.41, 0.21, 0.27] }
           }[idNum]);
 
-          const qPathStr = qData?.path ? qData.path.map(n => `C${n}`).join(" &rarr; ") : route;
+          const targetSp = qData?.target_sp || spId;
+          const qPath = qData?.path || [];
+          const qPathStr = qPath.length > 0 ? qPath.map(n => `C${n}`).join(" &rarr; ") : route;
+          const topPIndices = qData?.top_p_indices || [1, 2, 3];
+          const sparseVector = qData?.sparse_vector || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+          // 10D Sparse Vector Grid: 10 numerical slots
+          const vectorGridSlots = sparseVector.map((val, idx) => {
+            const dimNum = idx + 1;
+            const numVal = Number(val);
+            const isActive = topPIndices.includes(dimNum) || numVal > 0;
+            if (isActive) {
+              return `
+                <div class="flex flex-col items-center justify-center p-1 rounded bg-cyan-950/90 border border-cyan-400 text-cyan-200 shadow-xs shadow-cyan-500/30">
+                  <span class="text-[7.5px] font-mono text-cyan-400 font-bold">d${dimNum}</span>
+                  <span class="text-[9.5px] font-mono font-extrabold tracking-tight text-emerald-300">${numVal.toFixed(2)}</span>
+                </div>
+              `;
+            } else {
+              return `
+                <div class="flex flex-col items-center justify-center p-1 rounded bg-slate-900/50 border border-slate-800 text-slate-500 opacity-60">
+                  <span class="text-[7.5px] font-mono text-slate-500">d${dimNum}</span>
+                  <span class="text-[9.5px] font-mono font-medium text-slate-500">0.00</span>
+                </div>
+              `;
+            }
+          }).join("");
+
           senderHTML = `
-            <div class="p-3 bg-slate-900/95 text-slate-100 rounded-lg border border-cyan-500/50 shadow-md space-y-2 backdrop-blur-sm">
+            <div class="p-3 bg-slate-900/95 text-slate-100 rounded-lg border border-cyan-500/50 shadow-md space-y-2.5 backdrop-blur-sm">
               <div class="flex items-center justify-between border-b border-slate-700/60 pb-1.5">
-                <span class="text-[10px] font-mono font-bold text-cyan-400 flex items-center gap-1.5">
+                <span class="text-[10px] font-mono font-extrabold text-cyan-400 flex items-center gap-1.5">
                   <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                  OUTBOUND SEARCH QUERY
+                  Dispatched REQ_PEER_DISCOVERY Payload
                 </span>
-                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-700/60 font-bold">REQ_PEER_DISCOVERY</span>
+                <span class="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/90 text-cyan-300 border border-cyan-700/60 font-bold">REQ_PEER_DISCOVERY</span>
               </div>
               <div class="grid grid-cols-1 gap-1.5 text-[9.5px] font-mono">
                 <div class="flex justify-between items-center text-slate-300">
                   <span class="text-slate-400">Target Destination:</span>
-                  <span class="font-bold text-amber-300">Super-Peer Node C${qData?.target_sp || spId}</span>
+                  <span class="font-bold text-amber-300">Super-Peer Node C${targetSp}</span>
                 </div>
                 <div class="flex justify-between items-center text-slate-300">
-                  <span class="text-slate-400">Requested Semantic Profile:</span>
-                  <span class="font-bold text-cyan-200">${qData?.classes || targetCls}</span>
+                  <span class="text-slate-400">Top-P Active Indices:</span>
+                  <span class="font-mono font-bold text-cyan-300 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-700/80">
+                    [${topPIndices.join(", ")}]
+                  </span>
                 </div>
                 <div class="pt-1 border-t border-slate-800">
-                  <div class="text-slate-400 text-[8.5px] mb-0.5">Physical Routing Path:</div>
-                  <div class="bg-slate-950/80 p-1.5 rounded border border-slate-800 text-cyan-300 font-bold break-words">
+                  <div class="text-slate-400 text-[8.5px] mb-1">Physical Routing Path:</div>
+                  <div class="bg-slate-950/90 p-1.5 rounded border border-slate-800 text-cyan-300 font-bold break-words">
                     ${qPathStr}
+                  </div>
+                </div>
+                <div class="pt-1.5 border-t border-slate-800 space-y-1">
+                  <div class="flex items-center justify-between text-[8.5px] text-slate-400">
+                    <span class="font-bold text-slate-300">10D Sparse Vector Grid:</span>
+                    <span class="text-emerald-400 font-bold">P=3 Active Dimensions</span>
+                  </div>
+                  <div class="grid grid-cols-5 sm:grid-cols-10 gap-1 pt-0.5">
+                    ${vectorGridSlots}
                   </div>
                 </div>
               </div>
@@ -10612,63 +10657,86 @@ function renderNodeModal(node, stepData = currentStepData) {
           `;
         }
 
-        // 3. Super-Peers: Ingested Queries & Partner Matchmaking Inbox
+        // 3. Super-Peers: Super-Peer Ingested Discovery Queries Table
         let superPeerInboxHTML = "";
         if (isSP) {
           const inboxList = mergedNode?.sp_inbox || ({
             1: [
-              { from: 2, req_classes: "1, 2, 3 (Airplane, Auto, Bird)", path: [2, 1], match_partners: [1, 2, 9] },
-              { from: 9, req_classes: "1, 2, 3 (Airplane, Auto, Bird)", path: [9, 7, 4, 1], match_partners: [1, 2, 9] }
+              { sender: 2, indices: [1, 2, 3], weights: [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], path: [2, 1] },
+              { sender: 9, indices: [1, 2, 3], weights: [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], path: [9, 7, 4, 1] }
             ],
             5: [
-              { from: 3, req_classes: "4, 5, 6 (Cat, Deer, Dog)", path: [3, 5], match_partners: [3, 4, 5, 8] },
-              { from: 4, req_classes: "4, 5, 6 (Cat, Deer, Dog)", path: [4, 5], match_partners: [3, 4, 5, 8] },
-              { from: 8, req_classes: "4, 5, 6 (Cat, Deer, Dog)", path: [8, 6, 5], match_partners: [3, 4, 5, 8] }
+              { sender: 3, indices: [4, 5, 6], weights: [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], path: [3, 5] },
+              { sender: 4, indices: [4, 5, 6], weights: [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], path: [4, 5] },
+              { sender: 8, indices: [4, 5, 6], weights: [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], path: [8, 6, 5] }
             ],
             10: [
-              { from: 6, req_classes: "8, 9, 10 (Horse, Ship, Truck)", path: [6, 4, 7, 9, 10], match_partners: [6, 7, 10] },
-              { from: 7, req_classes: "8, 9, 10 (Horse, Ship, Truck)", path: [7, 9, 10], match_partners: [6, 7, 10] }
+              { sender: 6, indices: [7, 9, 10], weights: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], path: [6, 4, 7, 9, 10] },
+              { sender: 7, indices: [8, 9, 10], weights: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], path: [7, 9, 10] }
             ]
           }[idNum] || []);
-
-          const partnerListStr = partners.map(p => `C${p}`).join(", ");
 
           superPeerInboxHTML = `
             <div class="p-3 bg-white rounded-lg border border-amber-300 shadow-xs space-y-2">
               <div class="flex items-center justify-between border-b border-amber-200 pb-1.5">
                 <span class="text-[10.5px] font-mono font-extrabold text-amber-950 flex items-center gap-1.5">
                   <span>📥</span>
-                  <span>Super-Peer Discovery Inbox & Resolution</span>
+                  <span>Super-Peer Ingested Discovery Queries</span>
                 </span>
                 <span class="px-2 py-0.5 rounded text-[8.5px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                  ${inboxList.length} INCOMING REQUESTS
+                  ${inboxList.length} INCOMING QUERIES
                 </span>
               </div>
               <div class="overflow-x-auto border border-slate-200 rounded-lg">
                 <table class="w-full text-[8.5px] font-mono border-collapse">
                   <thead>
                     <tr class="bg-amber-50/80 text-amber-950 border-b border-slate-200 text-left">
-                      <th class="py-1 px-1.5 font-bold">Requesting Client</th>
-                      <th class="py-1 px-1.5 font-bold">Requested Classes</th>
-                      <th class="py-1 px-1.5 font-bold">Routing Path</th>
-                      <th class="py-1 px-1.5 font-bold">Resolution Action</th>
+                      <th class="py-1 px-1.5 font-bold whitespace-nowrap">Sender</th>
+                      <th class="py-1 px-1.5 font-bold whitespace-nowrap">Top-P Indices</th>
+                      <th class="py-1 px-1.5 font-bold">10D Sparse Vector Preview</th>
+                      <th class="py-1 px-1.5 font-bold whitespace-nowrap">Arrival Path</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100">
-                    ${inboxList.map(item => `
-                      <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="py-1 px-1.5 font-extrabold text-blue-900 whitespace-nowrap">
-                          <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">C${item.from}</span>
-                        </td>
-                        <td class="py-1 px-1.5 text-slate-700 font-semibold whitespace-nowrap">${item.req_classes}</td>
-                        <td class="py-1 px-1.5 text-slate-600 break-words">${item.path.map(n => `C${n}`).join("&rarr;")}</td>
-                        <td class="py-1 px-1.5 text-emerald-800 font-semibold">
-                          Will authoritatively dispatch partner cluster list [${(item.match_partners || partners).map(p => `C${p}`).join(", ")}] in Step 23.
-                        </td>
-                      </tr>
-                    `).join("")}
+                    ${inboxList.map(item => {
+                      const senderId = item.sender || item.from;
+                      const indices = item.indices || item.top_p_indices || [];
+                      const weights = item.weights || item.sparse_vector || [];
+                      const pathList = item.path || [];
+
+                      const weightsPreview = weights.map(w => {
+                        const num = Number(w);
+                        return num > 0
+                          ? `<span class="text-emerald-700 font-extrabold">${num.toFixed(2)}</span>`
+                          : `<span class="text-slate-300">0</span>`;
+                      }).join(", ");
+
+                      return `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                          <td class="py-1 px-1.5 font-extrabold text-blue-900 whitespace-nowrap">
+                            <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">C${senderId}</span>
+                          </td>
+                          <td class="py-1 px-1.5 whitespace-nowrap">
+                            <span class="px-1.5 py-0.5 rounded bg-cyan-100 text-cyan-900 border border-cyan-200 font-bold font-mono">[${indices.join(", ")}]</span>
+                          </td>
+                          <td class="py-1 px-1.5 font-mono text-[8px] break-all leading-tight">
+                            <div class="bg-slate-50 px-1 py-0.5 rounded border border-slate-200 font-mono">
+                              [${weightsPreview}]
+                            </div>
+                          </td>
+                          <td class="py-1 px-1.5 text-slate-600 whitespace-nowrap font-bold">${pathList.map(n => `C${n}`).join("&rarr;")}</td>
+                        </tr>
+                      `;
+                    }).join("")}
                   </tbody>
                 </table>
+              </div>
+              <div class="p-2 rounded bg-emerald-50 border border-emerald-300 text-emerald-900 text-[8.5px] font-mono flex items-center justify-between font-bold">
+                <span class="flex items-center gap-1">
+                  <span>✅</span>
+                  <span>Status: Authenticated for Intra-Super-Cluster Aggregation.</span>
+                </span>
+                <span class="text-slate-600 font-normal">Step 23 Matchmaking Ready</span>
               </div>
             </div>
           `;
@@ -10898,6 +10966,8 @@ function hideNodeModal() {
   const card = document.getElementById("nodeInfoCard");
   if (card) {
     card.classList.add("hidden");
+    card.classList.remove("w-96", "sm:w-[440px]");
+    card.classList.add("w-84");
     card.style.display = "none";
   }
   activeSelectedNodeId = null;

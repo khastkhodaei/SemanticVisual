@@ -4381,31 +4381,87 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             10: "Self-Local Resolution: C10 [10] (Super-Peer Coordinator)",
         }
 
-        # Outbound Search Query Payloads per Sender:
+        # Outbound Search Query Payloads per Sender (exact Top-P mathematical payloads):
         STEP22_NODE_QUERIES = {
-            2: {"status": "OUTBOUND_SENT", "target_sp": 1, "target_sc": "SC-1", "classes": "1, 2, 3 (Airplane, Auto, Bird)", "path": [2, 1]},
-            3: {"status": "OUTBOUND_SENT", "target_sp": 5, "target_sc": "SC-2", "classes": "4, 5, 6 (Cat, Deer, Dog)", "path": [3, 5]},
-            4: {"status": "OUTBOUND_SENT", "target_sp": 5, "target_sc": "SC-2", "classes": "4, 5, 6 (Cat, Deer, Dog)", "path": [4, 5]},
-            6: {"status": "OUTBOUND_SENT", "target_sp": 10, "target_sc": "SC-3", "classes": "8, 9, 10 (Horse, Ship, Truck)", "path": [6, 4, 7, 9, 10]},
-            7: {"status": "OUTBOUND_SENT", "target_sp": 10, "target_sc": "SC-3", "classes": "8, 9, 10 (Horse, Ship, Truck)", "path": [7, 9, 10]},
-            8: {"status": "OUTBOUND_SENT", "target_sp": 5, "target_sc": "SC-2", "classes": "4, 5, 6 (Cat, Deer, Dog)", "path": [8, 6, 5]},
-            9: {"status": "OUTBOUND_SENT", "target_sp": 1, "target_sc": "SC-1", "classes": "1, 2, 3 (Airplane, Auto, Bird)", "path": [9, 7, 4, 1]},
+            2: {
+                "status": "OUTBOUND_SENT",
+                "target_sp": 1,
+                "target_sc": "SC-1",
+                "path": [2, 1],
+                "top_p_indices": [1, 2, 3],
+                "sparse_vector": [0.19, 0.24, 0.57, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
+                "classes": "1, 2, 3 (Airplane, Auto, Bird)",
+            },
+            9: {
+                "status": "OUTBOUND_SENT",
+                "target_sp": 1,
+                "target_sc": "SC-1",
+                "path": [9, 7, 4, 1],
+                "top_p_indices": [1, 2, 3],
+                "sparse_vector": [0.45, 0.32, 0.23, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
+                "classes": "1, 2, 3 (Airplane, Auto, Bird)",
+            },
+            3: {
+                "status": "OUTBOUND_SENT",
+                "target_sp": 5,
+                "target_sc": "SC-2",
+                "path": [3, 5],
+                "top_p_indices": [4, 5, 6],
+                "sparse_vector": [0.00, 0.00, 0.00, 0.34, 0.20, 0.46, 0.00, 0.00, 0.00, 0.00],
+                "classes": "4, 5, 6 (Cat, Deer, Dog)",
+            },
+            4: {
+                "status": "OUTBOUND_SENT",
+                "target_sp": 5,
+                "target_sc": "SC-2",
+                "path": [4, 5],
+                "top_p_indices": [4, 5, 6],
+                "sparse_vector": [0.00, 0.00, 0.00, 0.62, 0.21, 0.17, 0.00, 0.00, 0.00, 0.00],
+                "classes": "4, 5, 6 (Cat, Deer, Dog)",
+            },
+            8: {
+                "status": "OUTBOUND_SENT",
+                "target_sp": 5,
+                "target_sc": "SC-2",
+                "path": [8, 6, 5],
+                "top_p_indices": [4, 5, 6],
+                "sparse_vector": [0.00, 0.00, 0.00, 0.32, 0.38, 0.30, 0.00, 0.00, 0.00, 0.00],
+                "classes": "4, 5, 6 (Cat, Deer, Dog)",
+            },
+            6: {
+                "status": "OUTBOUND_SENT",
+                "target_sp": 10,
+                "target_sc": "SC-3",
+                "path": [6, 4, 7, 9, 10],
+                "top_p_indices": [7, 9, 10],
+                "sparse_vector": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.23, 0.00, 0.34, 0.24],
+                "classes": "7, 9, 10 (Frog, Ship, Truck)",
+            },
+            7: {
+                "status": "OUTBOUND_SENT",
+                "target_sp": 10,
+                "target_sc": "SC-3",
+                "path": [7, 9, 10],
+                "top_p_indices": [8, 9, 10],
+                "sparse_vector": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.41, 0.21, 0.27],
+                "classes": "8, 9, 10 (Horse, Ship, Truck)",
+            },
         }
 
         # Super-Peer Ingested Queries & Resolution Inboxes:
         STEP22_SP_INBOXES = {
             1: [
-                {"from": 2, "req_classes": "1, 2, 3", "path": [2, 1], "match_partners": [1, 2, 9]},
-                {"from": 9, "req_classes": "1, 2, 3", "path": [9, 7, 4, 1], "match_partners": [1, 2, 9]},
+                {"sender": 2, "from": 2, "indices": [1, 2, 3], "top_p_indices": [1, 2, 3], "weights": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": [2, 1], "req_classes": "1, 2, 3", "match_partners": [1, 2, 9]},
+                {"sender": 9, "from": 9, "indices": [1, 2, 3], "top_p_indices": [1, 2, 3], "weights": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "sparse_vector": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": [9, 7, 4, 1], "req_classes": "1, 2, 3", "match_partners": [1, 2, 9]},
             ],
             5: [
-                {"from": 3, "req_classes": "4, 5, 6", "path": [3, 5], "match_partners": [3, 4, 5, 8]},
-                {"from": 4, "req_classes": "4, 5, 6", "path": [4, 5], "match_partners": [3, 4, 5, 8]},
-                {"from": 8, "req_classes": "4, 5, 6", "path": [8, 6, 5], "match_partners": [3, 4, 5, 8]},
+                {"sender": 3, "from": 3, "indices": [4, 5, 6], "top_p_indices": [4, 5, 6], "weights": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "path": [3, 5], "req_classes": "4, 5, 6", "match_partners": [3, 4, 5, 8]},
+                {"sender": 4, "from": 4, "indices": [4, 5, 6], "top_p_indices": [4, 5, 6], "weights": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": [4, 5], "req_classes": "4, 5, 6", "match_partners": [3, 4, 5, 8]},
+                {"sender": 8, "from": 8, "indices": [4, 5, 6], "top_p_indices": [4, 5, 6], "weights": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "path": [8, 6, 5], "req_classes": "4, 5, 6", "match_partners": [3, 4, 5, 8]},
             ],
             10: [
-                {"from": 6, "req_classes": "8, 9, 10", "path": [6, 4, 7, 9, 10], "match_partners": [6, 7, 10]},
-                {"from": 7, "req_classes": "8, 9, 10", "path": [7, 9, 10], "match_partners": [6, 7, 10]},
+                {"sender": 6, "from": 6, "indices": [7, 9, 10], "top_p_indices": [7, 9, 10], "weights": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "path": [6, 4, 7, 9, 10], "req_classes": "7, 9, 10", "match_partners": [6, 7, 10]},
+                {"sender": 7, "from": 7, "indices": [8, 9, 10], "top_p_indices": [8, 9, 10], "weights": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], "path": [7, 9, 10], "req_classes": "8, 9, 10", "match_partners": [6, 7, 10]},
             ],
         }
 
@@ -4490,7 +4546,9 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "discovery_packets": discovery_packets,
             "packet_traces": discovery_packets,
             "node_queries": STEP22_NODE_QUERIES,
+            "node_search_queries": STEP22_NODE_QUERIES,
             "sp_inboxes": STEP22_SP_INBOXES,
+            "sp_inbox_payloads": STEP22_SP_INBOXES,
             "relay_forwarding": STEP22_RELAY_FORWARDING,
             "terminal_logs": terminal_logs,
             "bandwidth_savings": "62.5%",
@@ -4568,6 +4626,37 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
             n["profile_signature"] = n.get("profile_signature") if isinstance(n.get("profile_signature"), list) else []
 
     return data
+
+
+# Module-level exports for Step 22 Top-P numeric payloads
+STEP22_NODE_QUERIES = {
+    2: {"status": "OUTBOUND_SENT", "target_sp": 1, "target_sc": "SC-1", "path": [2, 1], "top_p_indices": [1, 2, 3], "sparse_vector": [0.19, 0.24, 0.57, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00], "classes": "1, 2, 3 (Airplane, Auto, Bird)"},
+    9: {"status": "OUTBOUND_SENT", "target_sp": 1, "target_sc": "SC-1", "path": [9, 7, 4, 1], "top_p_indices": [1, 2, 3], "sparse_vector": [0.45, 0.32, 0.23, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00], "classes": "1, 2, 3 (Airplane, Auto, Bird)"},
+    3: {"status": "OUTBOUND_SENT", "target_sp": 5, "target_sc": "SC-2", "path": [3, 5], "top_p_indices": [4, 5, 6], "sparse_vector": [0.00, 0.00, 0.00, 0.34, 0.20, 0.46, 0.00, 0.00, 0.00, 0.00], "classes": "4, 5, 6 (Cat, Deer, Dog)"},
+    4: {"status": "OUTBOUND_SENT", "target_sp": 5, "target_sc": "SC-2", "path": [4, 5], "top_p_indices": [4, 5, 6], "sparse_vector": [0.00, 0.00, 0.00, 0.62, 0.21, 0.17, 0.00, 0.00, 0.00, 0.00], "classes": "4, 5, 6 (Cat, Deer, Dog)"},
+    8: {"status": "OUTBOUND_SENT", "target_sp": 5, "target_sc": "SC-2", "path": [8, 6, 5], "top_p_indices": [4, 5, 6], "sparse_vector": [0.00, 0.00, 0.00, 0.32, 0.38, 0.30, 0.00, 0.00, 0.00, 0.00], "classes": "4, 5, 6 (Cat, Deer, Dog)"},
+    6: {"status": "OUTBOUND_SENT", "target_sp": 10, "target_sc": "SC-3", "path": [6, 4, 7, 9, 10], "top_p_indices": [7, 9, 10], "sparse_vector": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.23, 0.00, 0.34, 0.24], "classes": "7, 9, 10 (Frog, Ship, Truck)"},
+    7: {"status": "OUTBOUND_SENT", "target_sp": 10, "target_sc": "SC-3", "path": [7, 9, 10], "top_p_indices": [8, 9, 10], "sparse_vector": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.41, 0.21, 0.27], "classes": "8, 9, 10 (Horse, Ship, Truck)"},
+}
+node_search_queries = STEP22_NODE_QUERIES
+
+STEP22_SP_INBOXES = {
+    1: [
+        {"sender": 2, "from": 2, "indices": [1, 2, 3], "top_p_indices": [1, 2, 3], "weights": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": [2, 1], "req_classes": "1, 2, 3", "match_partners": [1, 2, 9]},
+        {"sender": 9, "from": 9, "indices": [1, 2, 3], "top_p_indices": [1, 2, 3], "weights": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "sparse_vector": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": [9, 7, 4, 1], "req_classes": "1, 2, 3", "match_partners": [1, 2, 9]},
+    ],
+    5: [
+        {"sender": 3, "from": 3, "indices": [4, 5, 6], "top_p_indices": [4, 5, 6], "weights": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "path": [3, 5], "req_classes": "4, 5, 6", "match_partners": [3, 4, 5, 8]},
+        {"sender": 4, "from": 4, "indices": [4, 5, 6], "top_p_indices": [4, 5, 6], "weights": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": [4, 5], "req_classes": "4, 5, 6", "match_partners": [3, 4, 5, 8]},
+        {"sender": 8, "from": 8, "indices": [4, 5, 6], "top_p_indices": [4, 5, 6], "weights": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "path": [8, 6, 5], "req_classes": "4, 5, 6", "match_partners": [3, 4, 5, 8]},
+    ],
+    10: [
+        {"sender": 6, "from": 6, "indices": [7, 9, 10], "top_p_indices": [7, 9, 10], "weights": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "path": [6, 4, 7, 9, 10], "req_classes": "7, 9, 10", "match_partners": [6, 7, 10]},
+        {"sender": 7, "from": 7, "indices": [8, 9, 10], "top_p_indices": [8, 9, 10], "weights": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], "path": [7, 9, 10], "req_classes": "8, 9, 10", "match_partners": [6, 7, 10]},
+    ],
+}
+sp_inbox_payloads = STEP22_SP_INBOXES
+
 
 
 

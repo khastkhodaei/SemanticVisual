@@ -175,8 +175,100 @@ def test_step22_relay_gateway_activity(client):
             assert nid in r["path"][1:-1], f"Node {nid} not intermediate hop in relay path {r['path']}"
 
 
+def test_step22_exact_top_p_numeric_payloads(client):
+    """Assert all senders have exact 10D sparse weight vectors and 3 active Top-P indices."""
+    res = client.get("/api/v1/storyboard/step/22")
+    assert res.status_code == 200
+    data = res.json()
+    node_map = {n["id"]: n for n in data["nodes"]}
+
+    expected_payloads = {
+        2: {
+            "target_sp": 1,
+            "path": [2, 1],
+            "top_p_indices": [1, 2, 3],
+            "sparse_vector": [0.19, 0.24, 0.57, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
+        },
+        9: {
+            "target_sp": 1,
+            "path": [9, 7, 4, 1],
+            "top_p_indices": [1, 2, 3],
+            "sparse_vector": [0.45, 0.32, 0.23, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
+        },
+        3: {
+            "target_sp": 5,
+            "path": [3, 5],
+            "top_p_indices": [4, 5, 6],
+            "sparse_vector": [0.00, 0.00, 0.00, 0.34, 0.20, 0.46, 0.00, 0.00, 0.00, 0.00],
+        },
+        4: {
+            "target_sp": 5,
+            "path": [4, 5],
+            "top_p_indices": [4, 5, 6],
+            "sparse_vector": [0.00, 0.00, 0.00, 0.62, 0.21, 0.17, 0.00, 0.00, 0.00, 0.00],
+        },
+        8: {
+            "target_sp": 5,
+            "path": [8, 6, 5],
+            "top_p_indices": [4, 5, 6],
+            "sparse_vector": [0.00, 0.00, 0.00, 0.32, 0.38, 0.30, 0.00, 0.00, 0.00, 0.00],
+        },
+        6: {
+            "target_sp": 10,
+            "path": [6, 4, 7, 9, 10],
+            "top_p_indices": [7, 9, 10],
+            "sparse_vector": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.23, 0.00, 0.34, 0.24],
+        },
+        7: {
+            "target_sp": 10,
+            "path": [7, 9, 10],
+            "top_p_indices": [8, 9, 10],
+            "sparse_vector": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.41, 0.21, 0.27],
+        },
+    }
+
+    for nid, exp in expected_payloads.items():
+        q = node_map[nid]["outbound_query"]
+        assert q["target_sp"] == exp["target_sp"]
+        assert q["path"] == exp["path"]
+        assert q["top_p_indices"] == exp["top_p_indices"]
+        assert q["sparse_vector"] == exp["sparse_vector"]
+
+
+def test_step22_super_peer_inbox_numeric_vectors(client):
+    """Assert Super-Peers (1, 5, 10) have exact numeric vectors in inboxes."""
+    res = client.get("/api/v1/storyboard/step/22")
+    assert res.status_code == 200
+    data = res.json()
+    node_map = {n["id"]: n for n in data["nodes"]}
+
+    # SP 1
+    sp1_inbox = {item["sender"]: item for item in node_map[1]["sp_inbox"]}
+    assert sp1_inbox[2]["indices"] == [1, 2, 3]
+    assert sp1_inbox[2]["weights"] == [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    assert sp1_inbox[9]["indices"] == [1, 2, 3]
+    assert sp1_inbox[9]["weights"] == [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+    # SP 5
+    sp5_inbox = {item["sender"]: item for item in node_map[5]["sp_inbox"]}
+    assert sp5_inbox[3]["indices"] == [4, 5, 6]
+    assert sp5_inbox[3]["weights"] == [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0]
+    assert sp5_inbox[4]["indices"] == [4, 5, 6]
+    assert sp5_inbox[4]["weights"] == [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0]
+    assert sp5_inbox[8]["indices"] == [4, 5, 6]
+    assert sp5_inbox[8]["weights"] == [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0]
+
+    # SP 10
+    sp10_inbox = {item["sender"]: item for item in node_map[10]["sp_inbox"]}
+    assert sp10_inbox[6]["indices"] == [7, 9, 10]
+    assert sp10_inbox[6]["weights"] == [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24]
+    assert sp10_inbox[7]["indices"] == [8, 9, 10]
+    assert sp10_inbox[7]["weights"] == [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27]
+
+
 def test_step22_total_steps_constant():
     """Verify TOTAL_STEPS is 22."""
     assert TOTAL_STEPS == 22
+
     step22 = get_10node_step_data(22)
     assert step22["total_steps"] == 22
