@@ -2698,234 +2698,57 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "terminal_logs": terminal_logs,
         }
     elif step_number == 13:
-        # Step 13: Intra-Zone Cluster Exemplar Designation & Profile Assignment
-        # Each zone initiator designates official cluster exemplars and transmits ORDER_SET_EXEMPLAR control packets.
+        # Step 13: Intra-Zone Cluster Exemplar Designation & Member Assignment
+        # Each zone initiator designates official cluster exemplars and assigns regular members over direct 1-hop physical links.
         step12_data = get_10node_step_data(12)
         step12_nodes_map = {n["id"]: n for n in step12_data["nodes"]}
 
-        exemplar_assignments = {
-            1: {
-                "is_exemplar": True,
-                "cluster_id": "2-A",
-                "exemplar_for": [1, 2],
-                "exemplar_for_str": ["C1", "C2"],
-                "profile_signature": [1, 2, 3],
-                "profile_signature_classes": ["Airplane (C1)", "Automobile (C2)", "Bird (C3)"],
-                "exemplar_node_id": 1,
-            },
-            2: {
-                "is_exemplar": False,
-                "cluster_id": "2-A",
-                "exemplar_node_id": 1,
-                "profile_signature": [1, 2, 3],
-                "profile_signature_classes": ["Airplane (C1)", "Automobile (C2)", "Bird (C3)"],
-            },
-            3: {
-                "is_exemplar": True,
-                "cluster_id": "2-B",
-                "exemplar_for": [3],
-                "exemplar_for_str": ["C3"],
-                "profile_signature": [4, 5, 6],
-                "profile_signature_classes": ["Cat (C4)", "Deer (C5)", "Dog (C6)"],
-                "exemplar_node_id": 3,
-            },
-            4: {
-                "is_exemplar": False,
-                "cluster_id": "4-A",
-                "exemplar_node_id": 5,
-                "profile_signature": [4, 5, 6],
-                "profile_signature_classes": ["Cat (C4)", "Deer (C5)", "Dog (C6)"],
-            },
-            5: {
-                "is_exemplar": True,
-                "cluster_id": "4-A",
-                "exemplar_for": [4, 5],
-                "exemplar_for_str": ["C4", "C5"],
-                "profile_signature": [4, 5, 6],
-                "profile_signature_classes": ["Cat (C4)", "Deer (C5)", "Dog (C6)"],
-                "exemplar_node_id": 5,
-            },
-            6: {
-                "is_exemplar": False,
-                "cluster_id": "4-B",
-                "exemplar_node_id": 7,
-                "profile_signature": [7, 8, 9, 10],
-                "profile_signature_classes": ["Frog (C7)", "Horse (C8)", "Ship (C9)", "Truck (C10)"],
-            },
-            7: {
-                "is_exemplar": True,
-                "cluster_id": "4-B",
-                "exemplar_for": [6, 7],
-                "exemplar_for_str": ["C6", "C7"],
-                "profile_signature": [7, 8, 9, 10],
-                "profile_signature_classes": ["Frog (C7)", "Horse (C8)", "Ship (C9)", "Truck (C10)"],
-                "exemplar_node_id": 7,
-            },
-            8: {
-                "is_exemplar": True,
-                "cluster_id": "8-A",
-                "exemplar_for": [8],
-                "exemplar_for_str": ["C8"],
-                "profile_signature": [4, 5, 6],
-                "profile_signature_classes": ["Cat (C4)", "Deer (C5)", "Dog (C6)"],
-                "exemplar_node_id": 8,
-            },
-            9: {
-                "is_exemplar": True,
-                "cluster_id": "8-B",
-                "exemplar_for": [9],
-                "exemplar_for_str": ["C9"],
-                "profile_signature": [1, 2, 3],
-                "profile_signature_classes": ["Airplane (C1)", "Automobile (C2)", "Bird (C3)"],
-                "exemplar_node_id": 9,
-            },
-            10: {
-                "is_exemplar": True,
-                "cluster_id": "8-C",
-                "exemplar_for": [10],
-                "exemplar_for_str": ["C10"],
-                "profile_signature": [8, 9, 10],
-                "profile_signature_classes": ["Horse (C8)", "Ship (C9)", "Truck (C10)"],
-                "exemplar_node_id": 10,
-            },
+        packet_traces = [
+            {"from": 2, "to": 1, "path": [2, 1], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "2-A", "peers": [1, 2], "signature": [1, 2, 3], "label": "SET_EXEMPLAR (C1)"},
+            {"from": 2, "to": 3, "path": [2, 3], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "2-B", "peers": [3], "signature": [4, 5, 6], "label": "SET_EXEMPLAR (C3)"},
+            {"from": 2, "to": 2, "path": [2], "type": "ORDER_ASSIGN_EXEMPLAR", "cluster_id": "2-A", "assigned_exemplar": 1, "signature": [1, 2, 3], "label": "LOCAL_ASSIGN (C1)"},
+            {"from": 4, "to": 5, "path": [4, 5], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "4-A", "peers": [4, 5], "signature": [4, 5, 6], "label": "SET_EXEMPLAR (C5)"},
+            {"from": 4, "to": 7, "path": [4, 7], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "4-B", "peers": [6, 7], "signature": [8, 9, 10], "label": "SET_EXEMPLAR (C7)"},
+            {"from": 4, "to": 6, "path": [4, 6], "type": "ORDER_ASSIGN_EXEMPLAR", "cluster_id": "4-B", "assigned_exemplar": 7, "signature": [8, 9, 10], "label": "ASSIGN_EXEMPLAR (C7)"},
+            {"from": 4, "to": 4, "path": [4], "type": "ORDER_ASSIGN_EXEMPLAR", "cluster_id": "4-A", "assigned_exemplar": 5, "signature": [4, 5, 6], "label": "LOCAL_ASSIGN (C5)"},
+            {"from": 8, "to": 8, "path": [8], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "8-A", "peers": [8], "signature": [4, 5, 6], "label": "LOCAL_SET (C8)"},
+            {"from": 8, "to": 9, "path": [8, 9], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "8-B", "peers": [9], "signature": [1, 2, 3], "label": "SET_EXEMPLAR (C9)"},
+            {"from": 8, "to": 10, "path": [8, 10], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "8-C", "peers": [10], "signature": [8, 9, 10], "label": "SET_EXEMPLAR (C10)"},
+        ]
+
+        node_states = {
+            1: {"is_exemplar": True, "assigned_exemplar": 1, "cluster_id": "2-A", "cluster_peers": [1, 2], "profile_signature": [1, 2, 3]},
+            2: {"is_exemplar": False, "assigned_exemplar": 1, "cluster_id": "2-A", "cluster_peers": [1, 2], "profile_signature": [1, 2, 3]},
+            3: {"is_exemplar": True, "assigned_exemplar": 3, "cluster_id": "2-B", "cluster_peers": [3], "profile_signature": [4, 5, 6]},
+            4: {"is_exemplar": False, "assigned_exemplar": 5, "cluster_id": "4-A", "cluster_peers": [4, 5], "profile_signature": [4, 5, 6]},
+            5: {"is_exemplar": True, "assigned_exemplar": 5, "cluster_id": "4-A", "cluster_peers": [4, 5], "profile_signature": [4, 5, 6]},
+            6: {"is_exemplar": False, "assigned_exemplar": 7, "cluster_id": "4-B", "cluster_peers": [6, 7], "profile_signature": [8, 9, 10]},
+            7: {"is_exemplar": True, "assigned_exemplar": 7, "cluster_id": "4-B", "cluster_peers": [6, 7], "profile_signature": [8, 9, 10]},
+            8: {"is_exemplar": True, "assigned_exemplar": 8, "cluster_id": "8-A", "cluster_peers": [8], "profile_signature": [4, 5, 6]},
+            9: {"is_exemplar": True, "assigned_exemplar": 9, "cluster_id": "8-B", "cluster_peers": [9], "profile_signature": [1, 2, 3]},
+            10: {"is_exemplar": True, "assigned_exemplar": 10, "cluster_id": "8-C", "cluster_peers": [10], "profile_signature": [8, 9, 10]},
         }
 
         step13_nodes = []
         for n in nodes:
             nid = n["id"]
             n_copy = dict(step12_nodes_map[nid])
-            assign = exemplar_assignments[nid]
-            n_copy.update(assign)
-            n_copy["cluster_exemplar"] = assign["exemplar_node_id"] if "exemplar_node_id" in assign else nid
-            n_copy["assigned_cluster_id"] = assign["cluster_id"]
-            if assign["is_exemplar"]:
+            st = node_states[nid]
+            n_copy.update(st)
+            n_copy["exemplar_node_id"] = st["assigned_exemplar"]
+            n_copy["exemplar_for"] = list(st["cluster_peers"]) if st["is_exemplar"] else []
+            n_copy["exemplar_for_str"] = [f"C{x}" for x in st["cluster_peers"]] if st["is_exemplar"] else []
+            n_copy["cluster_exemplar"] = st["assigned_exemplar"]
+            n_copy["assigned_cluster_id"] = st["cluster_id"]
+            if st["is_exemplar"]:
                 n_copy["cluster_role"] = "CLUSTER_EXEMPLAR"
                 n_copy["exemplar_badge"] = "⭐ EXEMPLAR"
                 n_copy["status"] = "DESIGNATED_EXEMPLAR"
             else:
                 n_copy["cluster_role"] = "CLUSTER_MEMBER"
-                n_copy["exemplar_badge"] = f"Represented by C{assign['exemplar_node_id']}"
+                n_copy["exemplar_badge"] = f"Represented by C{st['assigned_exemplar']}"
                 n_copy["status"] = "CLUSTER_MEMBER"
             step13_nodes.append(n_copy)
-
-        order_set_exemplar_events = [
-            # Zone 2: Initiator C2 designates C1 and C3
-            {
-                "type": "ORDER_SET_EXEMPLAR",
-                "source": 2,
-                "source_str": "C2",
-                "initiator_id": 2,
-                "target": 1,
-                "target_str": "C1",
-                "exemplar_id": 1,
-                "path": [2, 1],
-                "cluster_id": "2-A",
-                "profile_signature": [1, 2, 3],
-                "peers": [1, 2],
-                "peer_members": [1, 2],
-                "peers_str": ["C1", "C2"],
-                "label": "ORDER_SET_EXEMPLAR (Cluster 2-A: {1, 2, 3})",
-            },
-            {
-                "type": "ORDER_SET_EXEMPLAR",
-                "source": 2,
-                "source_str": "C2",
-                "initiator_id": 2,
-                "target": 3,
-                "target_str": "C3",
-                "exemplar_id": 3,
-                "path": [2, 3],
-                "cluster_id": "2-B",
-                "profile_signature": [4, 5, 6],
-                "peers": [3],
-                "peer_members": [3],
-                "peers_str": ["C3"],
-                "label": "ORDER_SET_EXEMPLAR (Cluster 2-B: {4, 5, 6})",
-            },
-            # Zone 4: Initiator C4 designates C5 and C7
-            {
-                "type": "ORDER_SET_EXEMPLAR",
-                "source": 4,
-                "source_str": "C4",
-                "initiator_id": 4,
-                "target": 5,
-                "target_str": "C5",
-                "exemplar_id": 5,
-                "path": [4, 5],
-                "cluster_id": "4-A",
-                "profile_signature": [4, 5, 6],
-                "peers": [4, 5],
-                "peer_members": [4, 5],
-                "peers_str": ["C4", "C5"],
-                "label": "ORDER_SET_EXEMPLAR (Cluster 4-A: {4, 5, 6})",
-            },
-            {
-                "type": "ORDER_SET_EXEMPLAR",
-                "source": 4,
-                "source_str": "C4",
-                "initiator_id": 4,
-                "target": 7,
-                "target_str": "C7",
-                "exemplar_id": 7,
-                "path": [4, 7],
-                "cluster_id": "4-B",
-                "profile_signature": [7, 8, 9, 10],
-                "peers": [6, 7],
-                "peer_members": [6, 7],
-                "peers_str": ["C6", "C7"],
-                "label": "ORDER_SET_EXEMPLAR (Cluster 4-B: {7, 8, 9, 10})",
-            },
-            # Zone 8: Initiator C8 designates C8, C9, C10
-            {
-                "type": "ORDER_SET_EXEMPLAR",
-                "source": 8,
-                "source_str": "C8",
-                "initiator_id": 8,
-                "target": 8,
-                "target_str": "C8",
-                "exemplar_id": 8,
-                "path": [8],
-                "cluster_id": "8-A",
-                "profile_signature": [4, 5, 6],
-                "peers": [8],
-                "peer_members": [8],
-                "peers_str": ["C8"],
-                "local": True,
-                "label": "ORDER_SET_EXEMPLAR (Cluster 8-A: {4, 5, 6})",
-            },
-            {
-                "type": "ORDER_SET_EXEMPLAR",
-                "source": 8,
-                "source_str": "C8",
-                "initiator_id": 8,
-                "target": 9,
-                "target_str": "C9",
-                "exemplar_id": 9,
-                "path": [8, 9],
-                "cluster_id": "8-B",
-                "profile_signature": [1, 2, 3],
-                "peers": [9],
-                "peer_members": [9],
-                "peers_str": ["C9"],
-                "label": "ORDER_SET_EXEMPLAR (Cluster 8-B: {1, 2, 3})",
-            },
-            {
-                "type": "ORDER_SET_EXEMPLAR",
-                "source": 8,
-                "source_str": "C8",
-                "initiator_id": 8,
-                "target": 10,
-                "target_str": "C10",
-                "exemplar_id": 10,
-                "path": [8, 10],
-                "cluster_id": "8-C",
-                "profile_signature": [8, 9, 10],
-                "peers": [10],
-                "peer_members": [10],
-                "peers_str": ["C10"],
-                "label": "ORDER_SET_EXEMPLAR (Cluster 8-C: {8, 9, 10})",
-            },
-        ]
 
         step13_edges = []
         for e in edges:
@@ -2935,31 +2758,36 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             step13_edges.append(e_copy)
 
         terminal_logs = [
-            "[EXEMPLAR] Step 13 Active: Initiators designating official cluster exemplars and dispatching profiles.",
+            "[EXEMPLAR] Step 13 Active: Initiators designating cluster exemplars and dispatching member assignments.",
             "[Zone 2] Initiator C2 -> ORDER_SET_EXEMPLAR -> Node 1 (Cluster 2-A: {1, 2, 3}, Peers: [C1, C2]).",
             "[Zone 2] Initiator C2 -> ORDER_SET_EXEMPLAR -> Node 3 (Cluster 2-B: {4, 5, 6}, Peers: [C3]).",
+            "[Zone 2] Initiator C2 -> ORDER_ASSIGN_EXEMPLAR -> Node 2 (Self-Assigned to Exemplar C1).",
             "[Zone 4] Initiator C4 -> ORDER_SET_EXEMPLAR -> Node 5 (Cluster 4-A: {4, 5, 6}, Peers: [C4, C5]).",
-            "[Zone 4] Initiator C4 -> ORDER_SET_EXEMPLAR -> Node 7 via C6 (Cluster 4-B: {7, 8, 9, 10}, Peers: [C6, C7]).",
+            "[Zone 4] Initiator C4 -> ORDER_SET_EXEMPLAR -> Node 7 (Cluster 4-B: {8, 9, 10}, Peers: [C6, C7]).",
+            "[Zone 4] Initiator C4 -> ORDER_ASSIGN_EXEMPLAR -> Node 6 (Direct Link [4, 6], Assigned to Exemplar C7).",
+            "[Zone 4] Initiator C4 -> ORDER_ASSIGN_EXEMPLAR -> Node 4 (Self-Assigned to Exemplar C5).",
             "[Zone 8] Initiator C8 -> ORDER_SET_EXEMPLAR -> Node 8 (Cluster 8-A: {4, 5, 6}, Peers: [C8]).",
             "[Zone 8] Initiator C8 -> ORDER_SET_EXEMPLAR -> Node 9 (Cluster 8-B: {1, 2, 3}, Peers: [C9]).",
             "[Zone 8] Initiator C8 -> ORDER_SET_EXEMPLAR -> Node 10 (Cluster 8-C: {8, 9, 10}, Peers: [C10]).",
-            "[EXEMPLAR] All 7 cluster exemplars confirmed. Representatives ready for inter-zone coordination.",
+            "[EXEMPLAR] All 7 cluster exemplars appointed and 3 regular members assigned across direct 1-hop physical routes.",
         ]
 
         return {
             "step": 13,
-            "title": "Step 13: Intra-Zone Cluster Exemplar Designation & Profile Assignment",
-            "phase_badge": "ACTIVE PHASE: STEP 13: CLUSTER EXEMPLAR DESIGNATION",
-            "description": "Zone initiators assign official cluster exemplars and dispatch representative profile signatures via ORDER_SET_EXEMPLAR.",
-            "formula": "\\mathcal{C}_k \\xrightarrow{\\text{AP}} e_k \\in \\mathcal{V}_k, \\quad \\text{ORDER\\_SET\\_EXEMPLAR}(e_k, \\mathbf{s}_{\\mathcal{C}_k})",
-            "formula_desc": "Zone initiators assign official cluster exemplars and dispatch representative profile signatures.",
+            "title": "Step 13: Intra-Zone Cluster Exemplar Designation & Member Assignment",
+            "phase_badge": "ACTIVE PHASE: STEP 13: INTRA-ZONE EXEMPLAR & MEMBER ASSIGNMENT",
+            "description": "Zone initiators designate cluster exemplars and dispatch assignment notices to regular members over direct physical links.",
+            "formula": "\\mathcal{C}_k \\xrightarrow{\\text{AP}} e_k \\in \\mathcal{V}_k, \\quad \\text{ORDER\\_SET\\_EXEMPLAR}(e_k) \\quad \\land \\quad \\text{ORDER\\_ASSIGN\\_EXEMPLAR}(m \\to e_k)",
+            "formula_desc": "Initiators designate cluster exemplars and dispatch assignment notices to regular members over direct physical links.",
             "nodes": step13_nodes,
             "edges": step13_edges,
-            "order_set_exemplar_events": order_set_exemplar_events,
-            "packet_events": order_set_exemplar_events,
-            "packet_exchanges": order_set_exemplar_events,
+            "packet_traces": packet_traces,
+            "order_set_exemplar_events": packet_traces,
+            "packet_events": packet_traces,
+            "packet_exchanges": packet_traces,
             "designated_exemplars": [1, 3, 5, 7, 8, 9, 10],
-            "exemplar_assignments": exemplar_assignments,
+            "exemplar_assignments": node_states,
+            "node_states": node_states,
             "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
             "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
             "total_nodes": 10,
@@ -4308,8 +4136,10 @@ def get_10node_step_data(step_number: int) -> Dict[str, Any]:
         if step_number == 13:
             n["is_exemplar"] = bool(n.get("is_exemplar", False))
             n["cluster_id"] = n.get("cluster_id") or "N/A"
-            n["exemplar_node_id"] = n.get("exemplar_node_id") if n.get("exemplar_node_id") is not None else (nid if n["is_exemplar"] else None)
-            n["exemplar_for"] = n.get("exemplar_for") if isinstance(n.get("exemplar_for"), list) else ([] if not n["is_exemplar"] else [nid])
+            n["assigned_exemplar"] = n.get("assigned_exemplar") if n.get("assigned_exemplar") is not None else (n.get("exemplar_node_id") or nid)
+            n["exemplar_node_id"] = n["assigned_exemplar"]
+            n["cluster_peers"] = n.get("cluster_peers") if isinstance(n.get("cluster_peers"), list) else [nid]
+            n["exemplar_for"] = n.get("exemplar_for") if isinstance(n.get("exemplar_for"), list) else ([] if not n["is_exemplar"] else list(n["cluster_peers"]))
             n["profile_signature"] = n.get("profile_signature") if isinstance(n.get("profile_signature"), list) else []
 
     return data

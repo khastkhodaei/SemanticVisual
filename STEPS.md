@@ -342,43 +342,25 @@ Then, each Initiator executes **Affinity Propagation (AP)** clustering with pref
 
 ---
 
-## Step 13 — Intra-Zone Cluster Exemplar Designation & Profile Assignment
+## Step 13 — Intra-Zone Cluster Exemplar Designation & Member Assignment
 
-Following intra-zone semantic clustering in Step 12, each zone initiator ($C_2, C_4, C_8$) officially designates cluster exemplars and assigns cluster profile signatures.
+Following intra-zone clustering in Step 12, each zone initiator ($C_2, C_4, C_8$) transmits directives across direct 1-hop physical links:
+1. `ORDER_SET_EXEMPLAR`: Appoints designated exemplars ($C_1, C_3, C_5, C_7, C_8, C_9, C_{10}$).
+2. `ORDER_ASSIGN_EXEMPLAR`: Instructs regular members ($C_2, C_4, C_6$) of their assigned cluster exemplar.
 
-The initiator transmits official $\text{ORDER\_SET\_EXEMPLAR}$ control packets to designated exemplar nodes:
-$$\mathcal{C}_k \xrightarrow{\text{AP}} e_k \in \mathcal{V}_k, \quad \text{ORDER\_SET\_EXEMPLAR}(e_k, \mathbf{s}_{\mathcal{C}_k})$$
-Each packet conveys:
-1. Assigned Cluster ID ($\mathcal{C}_k$).
-2. Official Representative Profile Signature ($\mathbf{s}_{\mathcal{C}_k}$).
-3. Supervised member peer set ($\text{peers}(\mathcal{C}_k)$).
-
-### Cluster Exemplar Assignments & Profile Signatures
-
-| Node | Zone | Role | Cluster ID | Exemplar For | Profile Signature (Dominant Classes) |
-|---|---|---|---|---|---|
-| **Node 1 ($C_1$)** | Zone 2 | ⭐ Designated Exemplar | 2-A | $\{C_1, C_2\}$ | $\{1, 2, 3\}$ (Airplane, Automobile, Bird) |
-| **Node 2 ($C_2$)** | Zone 2 | Zone Initiator (Member) | 2-A | — (Represented by $C_1$) | Represented by Exemplar $C_1$ |
-| **Node 3 ($C_3$)** | Zone 2 | ⭐ Designated Exemplar | 2-B | $\{C_3\}$ | $\{4, 5, 6\}$ (Cat, Deer, Dog) |
-| **Node 4 ($C_4$)** | Zone 4 | Zone Initiator (Member) | 4-A | — (Represented by $C_5$) | Represented by Exemplar $C_5$ |
-| **Node 5 ($C_5$)** | Zone 4 | ⭐ Designated Exemplar | 4-A | $\{C_4, C_5\}$ | $\{4, 5, 6\}$ (Cat, Deer, Dog) |
-| **Node 6 ($C_6$)** | Zone 4 | Boundary Gateway (Member)| 4-B | — (Represented by $C_7$) | Represented by Exemplar $C_7$ |
-| **Node 7 ($C_7$)** | Zone 4 | ⭐ Designated Exemplar | 4-B | $\{C_6, C_7\}$ | $\{7, 8, 9, 10\}$ (Frog, Horse, Ship, Truck) |
-| **Node 8 ($C_8$)** | Zone 8 | ⭐ Designated Exemplar / Init | 8-A | $\{C_8\}$ | $\{4, 5, 6\}$ (Cat, Deer, Dog) |
-| **Node 9 ($C_9$)** | Zone 8 | ⭐ Designated Exemplar | 8-B | $\{C_9\}$ | $\{1, 2, 3\}$ (Airplane, Automobile, Bird) |
-| **Node 10 ($C_{10}$)**| Zone 8 | ⭐ Designated Exemplar | 8-C | $\{C_{10}\}$ | $\{8, 9, 10\}$ (Horse, Ship, Truck) |
-
-### Control Packet Transmissions (`ORDER_SET_EXEMPLAR`)
-1. **Zone 2 (Initiator $C_2$):**
-   - $C_2 \to C_1$ (path $[2, 1]$): `ORDER_SET_EXEMPLAR` (Cluster 2-A, Signature $\{1, 2, 3\}$, Peers $\{C_1, C_2\}$)
-   - $C_2 \to C_3$ (path $[2, 3]$): `ORDER_SET_EXEMPLAR` (Cluster 2-B, Signature $\{4, 5, 6\}$, Peers $\{C_3\}$)
-2. **Zone 4 (Initiator $C_4$):**
-   - $C_4 \to C_5$ (path $[4, 5]$): `ORDER_SET_EXEMPLAR` (Cluster 4-A, Signature $\{4, 5, 6\}$, Peers $\{C_4, C_5\}$)
-   - $C_4 \to C_7$ (path $[4, 7]$): `ORDER_SET_EXEMPLAR` (Cluster 4-B, Signature $\{7, 8, 9, 10\}$, Peers $\{C_6, C_7\}$)
-3. **Zone 8 (Initiator $C_8$):**
-   - $C_8 \to C_8$ (local internal): `ORDER_SET_EXEMPLAR` (Cluster 8-A, Signature $\{4, 5, 6\}$, Peers $\{C_8\}$)
-   - $C_8 \to C_9$ (path $[8, 9]$): `ORDER_SET_EXEMPLAR` (Cluster 8-B, Signature $\{1, 2, 3\}$, Peers $\{C_9\}$)
-   - $C_8 \to C_{10}$ (path $[8, 10]$): `ORDER_SET_EXEMPLAR` (Cluster 8-C, Signature $\{8, 9, 10\}$, Peers $\{C_{10}\}$)
+### 10-Packet Trace Ledger (Direct 1-Hop Physical Routes)
+| # | Initiator | Target | Physical Edge | Packet Type | Cluster | Assigned Exemplar / Peers | Signature |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| 1 | $C_2$ | $C_1$ | `[2, 1]` | `ORDER_SET_EXEMPLAR` | 2-A | Exemplar for $\{C_1, C_2\}$ | `[1, 2, 3]` |
+| 2 | $C_2$ | $C_3$ | `[2, 3]` | `ORDER_SET_EXEMPLAR` | 2-B | Exemplar for $\{C_3\}$ | `[4, 5, 6]` |
+| 3 | $C_2$ | $C_2$ | `[2]` (Local) | `ORDER_ASSIGN_EXEMPLAR` | 2-A | Assigned to $C_1$ | `[1, 2, 3]` |
+| 4 | $C_4$ | $C_5$ | `[4, 5]` | `ORDER_SET_EXEMPLAR` | 4-A | Exemplar for $\{C_4, C_5\}$ | `[4, 5, 6]` |
+| 5 | $C_4$ | $C_7$ | `[4, 7]` | `ORDER_SET_EXEMPLAR` | 4-B | Exemplar for $\{C_6, C_7\}$ | `[8, 9, 10]` |
+| 6 | $C_4$ | $C_6$ | `[4, 6]` | `ORDER_ASSIGN_EXEMPLAR` | 4-B | Assigned to $C_7$ | `[8, 9, 10]` |
+| 7 | $C_4$ | $C_4$ | `[4]` (Local) | `ORDER_ASSIGN_EXEMPLAR` | 4-A | Assigned to $C_5$ | `[4, 5, 6]` |
+| 8 | $C_8$ | $C_8$ | `[8]` (Local) | `ORDER_SET_EXEMPLAR` | 8-A | Exemplar for $\{C_8\}$ | `[4, 5, 6]` |
+| 9 | $C_8$ | $C_9$ | `[8, 9]` | `ORDER_SET_EXEMPLAR` | 8-B | Exemplar for $\{C_9\}$ | `[1, 2, 3]` |
+| 10 | $C_8$ | $C_{10}$ | `[8, 10]` | `ORDER_SET_EXEMPLAR` | 8-C | Exemplar for $\{C_{10}\}$ | `[8, 9, 10]` |
 
 ---
 

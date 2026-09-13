@@ -2851,7 +2851,7 @@ function renderStep12(data) {
   logToTerminal("INFO", "Orthogonal distribution in Zone 8 highlights necessity for inter-zone Semantic Overlay links in Step 13.");
 }
 
-// 8j. Storyboard Step 13: Intra-Zone Cluster Exemplar Designation & Profile Assignment
+// 8j. Storyboard Step 13: Intra-Zone Cluster Exemplar Designation & Member Assignment
 function renderStep13(data) {
   stopCurrentPacketAnimation();
 
@@ -2861,21 +2861,21 @@ function renderStep13(data) {
     document.getElementById("activeStepBadge")
   ].filter(Boolean);
   activeBadges.forEach(badge => {
-    badge.textContent = "ACTIVE PHASE: STEP 13: CLUSTER EXEMPLAR DESIGNATION";
+    badge.textContent = "ACTIVE PHASE: STEP 13: INTRA-ZONE EXEMPLAR & MEMBER ASSIGNMENT";
     badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-400";
   });
 
   renderSidebarFormula(
-    "Step 13: Intra-Zone Cluster Exemplar Designation & Profile Assignment",
-    "\\mathcal{C}_k \\xrightarrow{\\text{AP}} e_k \\in \\mathcal{V}_k, \\quad \\text{ORDER\\_SET\\_EXEMPLAR}(e_k, \\mathbf{s}_{\\mathcal{C}_k})",
-    "Zone initiators assign official cluster exemplars and dispatch representative profile signatures.",
+    "Step 13: Intra-Zone Cluster Exemplar Designation & Member Assignment",
+    "\\mathcal{C}_k \\xrightarrow{\\text{AP}} e_k \\in \\mathcal{V}_k, \\quad \\text{ORDER\\_SET\\_EXEMPLAR}(e_k) \\quad \\land \\quad \\text{ORDER\\_ASSIGN\\_EXEMPLAR}(m \\to e_k)",
+    "Initiators designate cluster exemplars and dispatch assignment notices to regular members over direct physical links.",
     "Step 13: Exemplars",
     false,
     "gold"
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "Step 13: Intra-Zone Cluster Exemplar Designation & Profile Assignment";
+  if (canvasLabel) canvasLabel.textContent = "Step 13: Intra-Zone Cluster Exemplar Designation & Member Assignment";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
   if (leaderLegend) leaderLegend.classList.remove("hidden");
@@ -2886,7 +2886,7 @@ function renderStep13(data) {
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.innerHTML = '<span>7 Cluster Exemplars Designated (<span class="text-emerald-700 font-bold">C1, C3</span>, <span class="text-orange-700 font-bold">C5, C7</span>, <span class="text-purple-700 font-bold">C8, C9, C10</span>) → <span class="text-amber-700 font-bold font-mono">ORDER_SET_EXEMPLAR Active</span></span>';
+    statLeaders.innerHTML = '<span>7 Exemplars Designated (<span class="text-emerald-700 font-bold">C1, C3</span>, <span class="text-orange-700 font-bold">C5, C7</span>, <span class="text-purple-700 font-bold">C8, C9, C10</span>) & 3 Members Assigned → <span class="text-amber-700 font-bold font-mono">10 Direct Traces</span></span>';
     statLeaders.className = "text-xs font-bold text-slate-800";
   }
 
@@ -2903,17 +2903,17 @@ function renderStep13(data) {
     cy.nodes().lock();
   }
 
-  logToTerminal("ZONE", "[STEP 13] Intra-Zone Cluster Exemplar Designation & Profile Assignment initiated.");
-  logToTerminal("INFO", "Zone 2 Initiator C2 designated Exemplar C1 (Cluster 2-A: {C1, C2}) and Exemplar C3 (Cluster 2-B: {C3}).");
-  logToTerminal("INFO", "Zone 4 Initiator C4 designated Exemplar C5 (Cluster 4-A: {C4, C5}) and Exemplar C7 (Cluster 4-B: {C6, C7}).");
-  logToTerminal("INFO", "Zone 8 Initiator C8 designated Exemplars C8 (Cluster 8-A: {C8}), C9 (Cluster 8-B: {C9}), C10 (Cluster 8-C: {C10}).");
-  logToTerminal("SUCCESS", "Zone initiators transmitted ORDER_SET_EXEMPLAR control packets containing representative cluster profile signatures.");
+  logToTerminal("ZONE", "[STEP 13] Intra-Zone Cluster Exemplar Designation & Member Assignment initiated.");
+  logToTerminal("INFO", "Zone 2 Initiator C2: Appointed Exemplars C1 (2-A) and C3 (2-B); Self-Assigned Member C2 to C1.");
+  logToTerminal("INFO", "Zone 4 Initiator C4: Appointed Exemplars C5 (4-A) and C7 (4-B); Assigned Member C6 to C7 [4, 6]; Self-Assigned Member C4 to C5.");
+  logToTerminal("INFO", "Zone 8 Initiator C8: Appointed Exemplars C8 (8-A, self), C9 (8-B [8, 9]), and C10 (8-C [8, 10]).");
+  logToTerminal("SUCCESS", "Direct 1-hop physical control ledger confirmed: 7 ORDER_SET_EXEMPLAR & 3 ORDER_ASSIGN_EXEMPLAR directives active.");
 
-  const packets = data.order_set_exemplar_events || data.packet_events || [];
+  const packets = data.packet_traces || data.order_set_exemplar_events || data.packet_events || [];
   animateStep13Exemplars(packets, data.nodes);
 }
 
-// Animate Step 13: Transmission of ORDER_SET_EXEMPLAR from Initiators to Exemplars + Golden Star Badges
+// Animate Step 13: 10-Packet Ledger over Direct 1-Hop Physical Routes + Golden Star Badges
 function animateStep13Exemplars(packets, allNodes) {
   stopCurrentPacketAnimation();
   syncPacketCanvasSize();
@@ -2922,7 +2922,7 @@ function animateStep13Exemplars(packets, allNodes) {
   if (!canvas || !cy) return;
   const ctx = canvas.getContext("2d");
 
-  const duration = 4000; // ms per cycle
+  const duration = 4200; // ms per cycle
   const startTime = performance.now();
 
   function runFrame(now) {
@@ -2943,15 +2943,21 @@ function animateStep13Exemplars(packets, allNodes) {
       return;
     }
 
-    // Exemplar definitions (strictly direct 1-hop physical links)
-    const exemplarDefs = [
-      { id: 1, cluster: "2-A", init: 2, path: [2, 1] },
-      { id: 3, cluster: "2-B", init: 2, path: [2, 3] },
-      { id: 5, cluster: "4-A", init: 4, path: [4, 5] },
-      { id: 7, cluster: "4-B", init: 4, path: [4, 7] },
-      { id: 8, cluster: "8-A", init: 8, path: [8, 8] },
-      { id: 9, cluster: "8-B", init: 8, path: [8, 9] },
-      { id: 10, cluster: "8-C", init: 8, path: [8, 10] }
+    // 10 Packet traces over direct 1-hop physical routes
+    const packetDefs = [
+      // Golden particles along direct physical links (2, 1), (2, 3), (4, 5), (4, 7), (8, 9), (8, 10) displaying SET_EXEMPLAR
+      { from: 2, to: 1, path: [2, 1], type: "ORDER_SET_EXEMPLAR", color: "#f59e0b", label: "SET_EXEMPLAR (C1)" },
+      { from: 2, to: 3, path: [2, 3], type: "ORDER_SET_EXEMPLAR", color: "#f59e0b", label: "SET_EXEMPLAR (C3)" },
+      { from: 2, to: 2, path: [2], type: "ORDER_ASSIGN_EXEMPLAR", color: "#f59e0b", label: "LOCAL_ASSIGN (C1)", isLocal: true },
+      { from: 4, to: 5, path: [4, 5], type: "ORDER_SET_EXEMPLAR", color: "#f59e0b", label: "SET_EXEMPLAR (C5)" },
+      { from: 4, to: 7, path: [4, 7], type: "ORDER_SET_EXEMPLAR", color: "#f59e0b", label: "SET_EXEMPLAR (C7)" },
+      // Cyan particle along link (4, 6) displaying ASSIGN_EXEMPLAR (C7)
+      { from: 4, to: 6, path: [4, 6], type: "ORDER_ASSIGN_EXEMPLAR", color: "#06b6d4", label: "ASSIGN_EXEMPLAR (C7)" },
+      { from: 4, to: 4, path: [4], type: "ORDER_ASSIGN_EXEMPLAR", color: "#f59e0b", label: "LOCAL_ASSIGN (C5)", isLocal: true },
+      // Subtle pulse on Node 8
+      { from: 8, to: 8, path: [8], type: "ORDER_SET_EXEMPLAR", color: "#f59e0b", label: "LOCAL_SET (C8)", isLocal: true },
+      { from: 8, to: 9, path: [8, 9], type: "ORDER_SET_EXEMPLAR", color: "#f59e0b", label: "SET_EXEMPLAR (C9)" },
+      { from: 8, to: 10, path: [8, 10], type: "ORDER_SET_EXEMPLAR", color: "#f59e0b", label: "SET_EXEMPLAR (C10)" }
     ];
 
     // Status Banner at top center of canvas
@@ -2960,8 +2966,8 @@ function animateStep13Exemplars(packets, allNodes) {
     const midY = nodeCoords[4].y - 50;
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
     const statusTxt = progress < 0.65
-      ? "DISPATCHING ORDER_SET_EXEMPLAR CONTROL PACKETS"
-      : "⭐ 7 CLUSTER EXEMPLARS DESIGNATED & PROFILES ASSIGNED";
+      ? "DISPATCHING DIRECTIVES: 7 SET_EXEMPLAR (GOLD) & 3 ASSIGN_EXEMPLAR (CYAN)"
+      : "⭐ 7 CLUSTER EXEMPLARS & 3 MEMBERS ASSIGNED OVER 1-HOP ROUTES";
     const sW = ctx.measureText(statusTxt).width;
     ctx.fillStyle = progress < 0.65 ? "rgba(30, 41, 59, 0.92)" : "rgba(120, 53, 15, 0.95)";
     ctx.strokeStyle = progress < 0.65 ? "#f59e0b" : "#fbbf24";
@@ -2981,56 +2987,58 @@ function animateStep13Exemplars(packets, allNodes) {
       const transitProg = progress / 0.65;
       const easeT = easeInOutQuad(transitProg);
 
-      exemplarDefs.forEach(ex => {
-        if (ex.id === ex.init) {
-          // Local designation (Node 8): Pulsing circle around C8
-          const p = nodeCoords[8];
-          if (p) {
-            ctx.save();
-            const pulseR = 24 + easeT * 18;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, pulseR, 0, Math.PI * 2);
-            ctx.strokeStyle = "rgba(245, 158, 11, 0.85)";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-            ctx.restore();
-          }
-        } else {
-          // Multi-hop or single hop path
-          const path = ex.path;
-          let curX, curY;
-          if (path.length === 2) {
-            const pFrom = nodeCoords[path[0]];
-            const pTo = nodeCoords[path[1]];
-            if (pFrom && pTo) {
-              curX = pFrom.x + (pTo.x - pFrom.x) * easeT;
-              curY = pFrom.y + (pTo.y - pFrom.y) * easeT;
-            }
-          } else if (path.length === 3) {
-            const pFrom = nodeCoords[path[0]];
-            const pMid = nodeCoords[path[1]];
-            const pTo = nodeCoords[path[2]];
-            if (pFrom && pMid && pTo) {
-              if (easeT < 0.5) {
-                const subE = easeT / 0.5;
-                curX = pFrom.x + (pMid.x - pFrom.x) * subE;
-                curY = pFrom.y + (pMid.y - pFrom.y) * subE;
-              } else {
-                const subE = (easeT - 0.5) / 0.5;
-                curX = pMid.x + (pTo.x - pMid.x) * subE;
-                curY = pMid.y + (pTo.y - pMid.y) * subE;
-              }
-            }
-          }
-
-          if (curX !== undefined && curY !== undefined) {
-            drawOrderPacket(ctx, curX, curY, "#f59e0b", `ORDER_SET_EXEMPLAR (C${ex.id})`);
-          }
+      // Subtle pulse on Nodes 2, 4, 8 for local self-assignments
+      [2, 4, 8].forEach(nid => {
+        const p = nodeCoords[nid];
+        if (p) {
+          ctx.save();
+          const pulseR = 20 + easeT * 18;
+          const alpha = Math.max(0, 1 - easeT);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, pulseR, 0, Math.PI * 2);
+          ctx.strokeStyle = nid === 4 ? `rgba(6, 182, 212, ${alpha})` : `rgba(245, 158, 11, ${alpha})`;
+          ctx.lineWidth = 2.2;
+          ctx.stroke();
+          ctx.restore();
         }
+      });
+
+      // Animated particle dots along the hardcoded 1-hop physical links
+      packetDefs.forEach(pk => {
+        if (pk.isLocal) return;
+        const pFrom = nodeCoords[pk.from];
+        const pTo = nodeCoords[pk.to];
+        if (!pFrom || !pTo) return;
+
+        // Render subtle beam line
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(pFrom.x, pFrom.y);
+        ctx.lineTo(pTo.x, pTo.y);
+        ctx.strokeStyle = pk.color === "#06b6d4" ? "rgba(6, 182, 212, 0.45)" : "rgba(245, 158, 11, 0.4)";
+        ctx.lineWidth = 2.0;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.restore();
+
+        const curX = pFrom.x + (pTo.x - pFrom.x) * easeT;
+        const curY = pFrom.y + (pTo.y - pFrom.y) * easeT;
+
+        drawOrderPacket(ctx, curX, curY, pk.color, pk.label);
       });
     }
 
     // Exemplar Established Phase: Draw star badge ⭐ and golden aura on all 7 exemplar nodes
+    const exemplarDefs = [
+      { id: 1, cluster: "2-A" },
+      { id: 3, cluster: "2-B" },
+      { id: 5, cluster: "4-A" },
+      { id: 7, cluster: "4-B" },
+      { id: 8, cluster: "8-A" },
+      { id: 9, cluster: "8-B" },
+      { id: 10, cluster: "8-C" }
+    ];
+
     exemplarDefs.forEach(ex => {
       const p = nodeCoords[ex.id];
       if (!p) return;
@@ -5725,10 +5733,12 @@ function renderNodeModal(node, stepData = currentStepData) {
       const roleStr = isTopInit ? "👑👑 TOP INITIATOR" : (isInit ? "👑 BASE INITIATOR" : "CLIENT");
       cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Role: <span class="${isTopInit ? 'text-amber-800 font-bold' : (isInit ? 'text-amber-700 font-bold' : 'text-slate-800')}">${roleStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Super-Zone: <span class="font-bold text-amber-900">Z_TOP</span></span>`;
     } else if (currentStep === 13) {
-      const isEx = Boolean(mergedNode.is_exemplar);
-      const roleStr = isEx ? "⭐ CLUSTER EXEMPLAR" : "CLUSTER MEMBER";
-      const cId = mergedNode.cluster_id || 'N/A';
-      cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Role: <span class="${isEx ? 'text-amber-600 font-bold' : 'text-slate-800 font-semibold'}">${roleStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Cluster: <span class="font-bold text-violet-900">${cId}</span></span>`;
+      const isEx = Boolean(mergedNode?.is_exemplar);
+      const roleStr = isEx ? "⭐ CLUSTER EXEMPLAR" : "BOUND MEMBER";
+      const cId = mergedNode?.cluster_id || 'N/A';
+      const exTarget = mergedNode?.assigned_exemplar ?? mergedNode?.exemplar_node_id;
+      const subInfo = isEx ? `Cluster: <span class="font-bold text-violet-900">${cId}</span>` : `Assigned Exemplar: <span class="font-bold text-amber-700">Node C${exTarget}</span>`;
+      cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Role: <span class="${isEx ? 'text-amber-600 font-bold' : 'text-slate-800 font-semibold'}">${roleStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">${subInfo}</span>`;
     } else if (currentStep === 5 || currentStep === 6) {
       const isInit = Boolean(nodeData.is_initiator || [2, 4, 8].includes(idNum));
       const roleStr = isInit ? "INITIATOR" : "CLIENT";
@@ -7402,18 +7412,19 @@ function renderNodeModal(node, stepData = currentStepData) {
     if (exemplarSection) exemplarSection.classList.remove("hidden");
 
     // Defensive Exemplar Fields per specification
-    const isExemplar = Boolean(mergedNode.is_exemplar);
-    const clusterId = mergedNode.cluster_id || 'N/A';
-    const exemplarFor = Array.isArray(mergedNode.exemplar_for) ? mergedNode.exemplar_for : [];
-    const profileSig = Array.isArray(mergedNode.profile_signature) ? mergedNode.profile_signature : [];
-    const exemplarNodeId = mergedNode.exemplar_node_id ?? (isExemplar ? (idNum || mergedNode.id) : 'N/A');
+    const isExemplar = Boolean(mergedNode?.is_exemplar);
+    const clusterId = mergedNode?.cluster_id || 'N/A';
+    const exemplarFor = Array.isArray(mergedNode?.exemplar_for) ? mergedNode.exemplar_for : (Array.isArray(mergedNode?.cluster_peers) ? mergedNode.cluster_peers : []);
+    const profileSig = Array.isArray(mergedNode?.profile_signature) ? mergedNode.profile_signature : [];
+    const assignedExemplar = mergedNode?.assigned_exemplar ?? mergedNode?.exemplar_node_id ?? (isExemplar ? (idNum || mergedNode?.id) : 'N/A');
+    const exemplarNodeId = assignedExemplar;
 
-    const assignedZ = mergedNode.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
+    const assignedZ = mergedNode?.assigned_zone || (idNum in {1:1, 2:1, 3:1} ? 2 : idNum in {4:1, 5:1, 6:1, 7:1} ? 4 : 8);
 
     const defaultClusterColors = {
       "2-A": "#059669", "2-B": "#0d9488",
       "4-A": "#ea580c", "4-B": "#d97706",
-      "8-A": "#7c3aed", "8-B": "#6d28d9"
+      "8-A": "#7c3aed", "8-B": "#6d28d9", "8-C": "#4f46e5"
     };
     const cColor = defaultClusterColors[clusterId] || "#2563eb";
 
@@ -7422,17 +7433,17 @@ function renderNodeModal(node, stepData = currentStepData) {
         cardStatusBadge.textContent = "⭐ DESIGNATED CLUSTER EXEMPLAR";
         cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
       } else {
-        cardStatusBadge.textContent = "REGULAR CLUSTER MEMBER";
+        cardStatusBadge.textContent = "Bound Member";
         cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-700 border-slate-300";
       }
     }
 
     if (exemplarBadge) {
       if (isExemplar) {
-        exemplarBadge.textContent = `EXEMPLAR (${clusterId})`;
+        exemplarBadge.textContent = `⭐ DESIGNATED CLUSTER EXEMPLAR (${clusterId})`;
         exemplarBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-400";
       } else {
-        exemplarBadge.textContent = `MEMBER (${clusterId})`;
+        exemplarBadge.textContent = `BOUND MEMBER (${clusterId})`;
         exemplarBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-800 border border-slate-300";
       }
     }
@@ -7468,13 +7479,13 @@ function renderNodeModal(node, stepData = currentStepData) {
                 <span class="font-mono font-bold text-slate-900">${clusterId}</span>
               </div>
               <div class="flex justify-between items-center py-0.5">
-                <span class="text-slate-500 font-semibold">Assigned Cluster Members:</span>
+                <span class="text-slate-500 font-semibold">Supervised Members:</span>
                 <span class="font-mono font-bold text-slate-900 bg-slate-100 px-1.5 py-0.2 rounded">
                   [${peerListStr}]
                 </span>
               </div>
               <div class="pt-1 border-t border-slate-100">
-                <div class="text-slate-500 font-semibold mb-1">Cluster Profile Signature:</div>
+                <div class="text-slate-500 font-semibold mb-1">Profile Signature:</div>
                 <div class="flex flex-wrap gap-1">${sigListStr}</div>
               </div>
             </div>
@@ -7490,7 +7501,7 @@ function renderNodeModal(node, stepData = currentStepData) {
             <div class="flex items-center justify-between">
               <span class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
                 <span>🔗</span>
-                <span>Regular Cluster Member</span>
+                <span>Bound Member (Regular Cluster Member)</span>
               </span>
               <span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold text-white shadow-xs" style="background-color: ${cColor};">
                 Cluster ${clusterId}
@@ -7499,9 +7510,9 @@ function renderNodeModal(node, stepData = currentStepData) {
 
             <div class="space-y-1 text-[10px] text-slate-700 bg-white p-2 rounded border border-slate-200">
               <div class="flex justify-between items-center py-0.5">
-                <span class="text-slate-500 font-semibold">Role / Exemplar Status:</span>
-                <span class="font-mono font-medium text-slate-600 bg-slate-100 px-1.5 py-0.2 rounded">
-                  FALSE (Regular Cluster Member)
+                <span class="text-slate-500 font-semibold">Status:</span>
+                <span class="font-mono font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.2 rounded">
+                  Bound Member
                 </span>
               </div>
               <div class="flex justify-between items-center py-0.5">
@@ -7509,9 +7520,9 @@ function renderNodeModal(node, stepData = currentStepData) {
                 <span class="font-mono font-bold text-slate-900">${clusterId}</span>
               </div>
               <div class="flex justify-between items-center py-0.5">
-                <span class="text-slate-500 font-semibold">Designated Cluster Exemplar:</span>
+                <span class="text-slate-500 font-semibold">Assigned Exemplar:</span>
                 <span class="font-mono font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded">
-                  Node C${exemplarNodeId}
+                  Node C${assignedExemplar}
                 </span>
               </div>
               <div class="flex justify-between items-center py-0.5">
@@ -7521,7 +7532,7 @@ function renderNodeModal(node, stepData = currentStepData) {
                 </span>
               </div>
               <div class="pt-1.5 border-t border-slate-200 text-[9.5px] text-slate-600 font-sans leading-relaxed">
-                Node C${idNum} delegates exemplar coordination to designated leader Node C${exemplarNodeId} and participates in intra-cluster aggregation.
+                Node C${idNum} is assigned to exemplar Node C${assignedExemplar} and participates in intra-cluster aggregation.
               </div>
             </div>
           </div>

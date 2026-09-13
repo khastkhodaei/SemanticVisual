@@ -1,27 +1,18 @@
-"""Automated Verification Suite for Step 13: Intra-Zone Cluster Exemplar Designation & Profile Assignment.
+"""Automated Verification Suite for Step 13: Intra-Zone Cluster Exemplar Designation & Member Assignment.
 
 Verifies:
 1. Endpoints GET and POST /api/v1/storyboard/step/13 return HTTP 200 with complete storyboard payload.
-2. Exemplar designations:
+2. Packet traces ledger has exactly 10 traces:
+   - Direct path [4, 6] exists with ORDER_ASSIGN_EXEMPLAR.
+   - Direct path [4, 7] exists with ORDER_SET_EXEMPLAR.
+   - Exact 1-hop physical routes for all 10 packet traces.
+3. Exemplar designations & member assignments:
    - Nodes 1, 3, 5, 7, 8, 9, 10 have is_exemplar == True.
-   - Nodes 2, 4, 6 have is_exemplar == False.
-3. Detailed node exemplar metadata:
-   - Node 1: cluster_id == "2-A", exemplar_for == [1, 2], profile_signature == [1, 2, 3]
-   - Node 2: cluster_id == "2-A", exemplar_node_id == 1
-   - Node 3: cluster_id == "2-B", exemplar_for == [3], profile_signature == [4, 5, 6]
-   - Node 4: cluster_id == "4-A", exemplar_node_id == 5
-   - Node 5: cluster_id == "4-A", exemplar_for == [4, 5], profile_signature == [4, 5, 6]
-   - Node 6: cluster_id == "4-B", exemplar_node_id == 7
-   - Node 7: cluster_id == "4-B", exemplar_for == [6, 7], profile_signature == [7, 8, 9, 10]
-   - Node 8: cluster_id == "8-A", exemplar_for == [8], profile_signature == [4, 5, 6]
-   - Node 9: cluster_id == "8-B", exemplar_for == [9], profile_signature == [1, 2, 3]
-   - Node 10: cluster_id == "8-C", exemplar_for == [10], profile_signature == [8, 9, 10]
-4. ORDER_SET_EXEMPLAR control packet events:
-   - C2 -> Node 1, C2 -> Node 3
-   - C4 -> Node 5, C4 -> Node 7
-   - C8 -> Node 8, C8 -> Node 9, C8 -> Node 10
+   - Nodes 2, 4, 6 have is_exemplar == False and assigned_exemplar equal to 1, 5, and 7 respectively.
+4. Detailed node metadata for all 10 nodes matching exact specification.
 5. SemanticDFLEngine().run_cluster_exemplar_designation_10nodes() returns valid step 13 data.
-6. STEPS.md contains documentation for Step 13.
+6. STEPS.md contains verbatim documentation for Step 13.
+7. Frontend app.js implements required badges, formula, animation, and inspector modal safety.
 """
 
 from pathlib import Path
@@ -44,10 +35,10 @@ def test_step13_endpoints_return_200(client):
     assert res_get.status_code == 200
     data_get = res_get.json()
     assert data_get["step"] == 13
-    assert data_get["phase_badge"] == "ACTIVE PHASE: STEP 13: CLUSTER EXEMPLAR DESIGNATION"
+    assert data_get["phase_badge"] == "ACTIVE PHASE: STEP 13: INTRA-ZONE EXEMPLAR & MEMBER ASSIGNMENT"
     assert data_get["total_nodes"] == 10
     assert data_get["total_edges"] == 18
-    assert data_get["total_steps"] in (14, 15, 16, 17, 18, 19)
+    assert len(data_get["packet_traces"]) == 10
 
     res_post = client.post("/api/v1/storyboard/step/13")
     assert res_post.status_code == 200
@@ -70,6 +61,61 @@ def test_step13_node_exemplar_flags(client):
     for nid in non_exemplar_ids:
         assert nodes[nid]["is_exemplar"] is False, f"Node {nid} should NOT be an exemplar"
 
+    # Specific assigned_exemplar checks for regular members
+    assert nodes[2]["assigned_exemplar"] == 1
+    assert nodes[4]["assigned_exemplar"] == 5
+    assert nodes[6]["assigned_exemplar"] == 7
+
+
+def test_step13_packet_traces_ledger(client):
+    """Assert packet_traces length is exactly 10, with explicit [4, 6] and [4, 7] routes."""
+    res = client.get("/api/v1/storyboard/step/13")
+    assert res.status_code == 200
+    data = res.json()
+    traces = data.get("packet_traces", [])
+    assert len(traces) == 10
+
+    # Assert direct path [4, 6] exists with ORDER_ASSIGN_EXEMPLAR
+    trace_4_6 = next((t for t in traces if t["path"] == [4, 6]), None)
+    assert trace_4_6 is not None, "Direct 1-hop path [4, 6] must exist in packet traces"
+    assert trace_4_6["type"] == "ORDER_ASSIGN_EXEMPLAR"
+    assert trace_4_6["from"] == 4
+    assert trace_4_6["to"] == 6
+    assert trace_4_6["assigned_exemplar"] == 7
+    assert trace_4_6["cluster_id"] == "4-B"
+    assert trace_4_6["signature"] == [8, 9, 10]
+
+    # Assert direct path [4, 7] exists with ORDER_SET_EXEMPLAR
+    trace_4_7 = next((t for t in traces if t["path"] == [4, 7]), None)
+    assert trace_4_7 is not None, "Direct 1-hop path [4, 7] must exist in packet traces"
+    assert trace_4_7["type"] == "ORDER_SET_EXEMPLAR"
+    assert trace_4_7["from"] == 4
+    assert trace_4_7["to"] == 7
+    assert trace_4_7["peers"] == [6, 7]
+    assert trace_4_7["cluster_id"] == "4-B"
+    assert trace_4_7["signature"] == [8, 9, 10]
+
+    # Verify all 10 paths match the ledger
+    expected_ledger = [
+        {"from": 2, "to": 1, "path": [2, 1], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "2-A"},
+        {"from": 2, "to": 3, "path": [2, 3], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "2-B"},
+        {"from": 2, "to": 2, "path": [2], "type": "ORDER_ASSIGN_EXEMPLAR", "cluster_id": "2-A"},
+        {"from": 4, "to": 5, "path": [4, 5], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "4-A"},
+        {"from": 4, "to": 7, "path": [4, 7], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "4-B"},
+        {"from": 4, "to": 6, "path": [4, 6], "type": "ORDER_ASSIGN_EXEMPLAR", "cluster_id": "4-B"},
+        {"from": 4, "to": 4, "path": [4], "type": "ORDER_ASSIGN_EXEMPLAR", "cluster_id": "4-A"},
+        {"from": 8, "to": 8, "path": [8], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "8-A"},
+        {"from": 8, "to": 9, "path": [8, 9], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "8-B"},
+        {"from": 8, "to": 10, "path": [8, 10], "type": "ORDER_SET_EXEMPLAR", "cluster_id": "8-C"},
+    ]
+
+    for exp in expected_ledger:
+        match = next(
+            (t for t in traces if t["from"] == exp["from"] and t["to"] == exp["to"] and t["path"] == exp["path"] and t["type"] == exp["type"]),
+            None
+        )
+        assert match is not None, f"Missing expected trace {exp} in Step 13 packet ledger"
+
 
 def test_step13_detailed_node_profiles(client):
     """Assert all 10 nodes have exact requested cluster_id, profile signatures, and exemplar mappings."""
@@ -78,121 +124,75 @@ def test_step13_detailed_node_profiles(client):
     data = res.json()
     nodes = {n["id"]: n for n in data["nodes"]}
 
-    # Zone 2 (Initiator: Node 2)
-    # Node 1: is_exemplar: True, cluster_id: "2-A", exemplar_for: [1, 2], profile_signature: [1, 2, 3]
+    # Node 1: is_exemplar: True, assigned_exemplar: 1, cluster_id: "2-A", cluster_peers: [1, 2], profile_signature: [1, 2, 3]
     assert nodes[1]["is_exemplar"] is True
+    assert nodes[1]["assigned_exemplar"] == 1
     assert nodes[1]["cluster_id"] == "2-A"
-    assert nodes[1]["exemplar_for"] == [1, 2]
+    assert nodes[1]["cluster_peers"] == [1, 2]
     assert nodes[1]["profile_signature"] == [1, 2, 3]
 
-    # Node 2: is_exemplar: False, cluster_id: "2-A", exemplar_node_id: 1
+    # Node 2: is_exemplar: False, assigned_exemplar: 1, cluster_id: "2-A", cluster_peers: [1, 2], profile_signature: [1, 2, 3]
     assert nodes[2]["is_exemplar"] is False
+    assert nodes[2]["assigned_exemplar"] == 1
     assert nodes[2]["cluster_id"] == "2-A"
-    assert nodes[2]["exemplar_node_id"] == 1
+    assert nodes[2]["cluster_peers"] == [1, 2]
+    assert nodes[2]["profile_signature"] == [1, 2, 3]
 
-    # Node 3: is_exemplar: True, cluster_id: "2-B", exemplar_for: [3], profile_signature: [4, 5, 6]
+    # Node 3: is_exemplar: True, assigned_exemplar: 3, cluster_id: "2-B", cluster_peers: [3], profile_signature: [4, 5, 6]
     assert nodes[3]["is_exemplar"] is True
+    assert nodes[3]["assigned_exemplar"] == 3
     assert nodes[3]["cluster_id"] == "2-B"
-    assert nodes[3]["exemplar_for"] == [3]
+    assert nodes[3]["cluster_peers"] == [3]
     assert nodes[3]["profile_signature"] == [4, 5, 6]
 
-    # Zone 4 (Initiator: Node 4)
-    # Node 4: is_exemplar: False, cluster_id: "4-A", exemplar_node_id: 5
+    # Node 4: is_exemplar: False, assigned_exemplar: 5, cluster_id: "4-A", cluster_peers: [4, 5], profile_signature: [4, 5, 6]
     assert nodes[4]["is_exemplar"] is False
+    assert nodes[4]["assigned_exemplar"] == 5
     assert nodes[4]["cluster_id"] == "4-A"
-    assert nodes[4]["exemplar_node_id"] == 5
+    assert nodes[4]["cluster_peers"] == [4, 5]
+    assert nodes[4]["profile_signature"] == [4, 5, 6]
 
-    # Node 5: is_exemplar: True, cluster_id: "4-A", exemplar_for: [4, 5], profile_signature: [4, 5, 6]
+    # Node 5: is_exemplar: True, assigned_exemplar: 5, cluster_id: "4-A", cluster_peers: [4, 5], profile_signature: [4, 5, 6]
     assert nodes[5]["is_exemplar"] is True
+    assert nodes[5]["assigned_exemplar"] == 5
     assert nodes[5]["cluster_id"] == "4-A"
-    assert nodes[5]["exemplar_for"] == [4, 5]
+    assert nodes[5]["cluster_peers"] == [4, 5]
     assert nodes[5]["profile_signature"] == [4, 5, 6]
 
-    # Node 6: is_exemplar: False, cluster_id: "4-B", exemplar_node_id: 7
+    # Node 6: is_exemplar: False, assigned_exemplar: 7, cluster_id: "4-B", cluster_peers: [6, 7], profile_signature: [8, 9, 10]
     assert nodes[6]["is_exemplar"] is False
+    assert nodes[6]["assigned_exemplar"] == 7
     assert nodes[6]["cluster_id"] == "4-B"
-    assert nodes[6]["exemplar_node_id"] == 7
+    assert nodes[6]["cluster_peers"] == [6, 7]
+    assert nodes[6]["profile_signature"] == [8, 9, 10]
 
-    # Node 7: is_exemplar: True, cluster_id: "4-B", exemplar_for: [6, 7], profile_signature: [7, 8, 9, 10]
+    # Node 7: is_exemplar: True, assigned_exemplar: 7, cluster_id: "4-B", cluster_peers: [6, 7], profile_signature: [8, 9, 10]
     assert nodes[7]["is_exemplar"] is True
+    assert nodes[7]["assigned_exemplar"] == 7
     assert nodes[7]["cluster_id"] == "4-B"
-    assert nodes[7]["exemplar_for"] == [6, 7]
-    assert nodes[7]["profile_signature"] == [7, 8, 9, 10]
+    assert nodes[7]["cluster_peers"] == [6, 7]
+    assert nodes[7]["profile_signature"] == [8, 9, 10]
 
-    # Zone 8 (Initiator: Node 8)
-    # Node 8: is_exemplar: True, cluster_id: "8-A", exemplar_for: [8], profile_signature: [4, 5, 6]
+    # Node 8: is_exemplar: True, assigned_exemplar: 8, cluster_id: "8-A", cluster_peers: [8], profile_signature: [4, 5, 6]
     assert nodes[8]["is_exemplar"] is True
+    assert nodes[8]["assigned_exemplar"] == 8
     assert nodes[8]["cluster_id"] == "8-A"
-    assert nodes[8]["exemplar_for"] == [8]
+    assert nodes[8]["cluster_peers"] == [8]
     assert nodes[8]["profile_signature"] == [4, 5, 6]
 
-    # Node 9: is_exemplar: True, cluster_id: "8-B", exemplar_for: [9], profile_signature: [1, 2, 3]
+    # Node 9: is_exemplar: True, assigned_exemplar: 9, cluster_id: "8-B", cluster_peers: [9], profile_signature: [1, 2, 3]
     assert nodes[9]["is_exemplar"] is True
+    assert nodes[9]["assigned_exemplar"] == 9
     assert nodes[9]["cluster_id"] == "8-B"
-    assert nodes[9]["exemplar_for"] == [9]
+    assert nodes[9]["cluster_peers"] == [9]
     assert nodes[9]["profile_signature"] == [1, 2, 3]
 
-    # Node 10: is_exemplar: True, cluster_id: "8-C", exemplar_for: [10], profile_signature: [8, 9, 10]
+    # Node 10: is_exemplar: True, assigned_exemplar: 10, cluster_id: "8-C", cluster_peers: [10], profile_signature: [8, 9, 10]
     assert nodes[10]["is_exemplar"] is True
+    assert nodes[10]["assigned_exemplar"] == 10
     assert nodes[10]["cluster_id"] == "8-C"
-    assert nodes[10]["exemplar_for"] == [10]
+    assert nodes[10]["cluster_peers"] == [10]
     assert nodes[10]["profile_signature"] == [8, 9, 10]
-
-
-def test_step13_order_set_exemplar_events(client):
-    """Assert packet traces for ORDER_SET_EXEMPLAR control packets."""
-    res = client.get("/api/v1/storyboard/step/13")
-    assert res.status_code == 200
-    data = res.json()
-    events = data.get("order_set_exemplar_events", [])
-    assert len(events) == 7
-
-    event_map = {(e["initiator_id"], e["exemplar_id"]): e for e in events}
-
-    # C2 -> Node 1, C2 -> Node 3 (Direct 1-Hop)
-    assert (2, 1) in event_map
-    assert event_map[(2, 1)]["cluster_id"] == "2-A"
-    assert event_map[(2, 1)]["profile_signature"] == [1, 2, 3]
-    assert event_map[(2, 1)]["peer_members"] == [1, 2]
-    assert event_map[(2, 1)]["path"] == [2, 1]
-
-    assert (2, 3) in event_map
-    assert event_map[(2, 3)]["cluster_id"] == "2-B"
-    assert event_map[(2, 3)]["profile_signature"] == [4, 5, 6]
-    assert event_map[(2, 3)]["peer_members"] == [3]
-    assert event_map[(2, 3)]["path"] == [2, 3]
-
-    # C4 -> Node 5, C4 -> Node 7 (Strictly Direct 1-Hop, NEVER via C6)
-    assert (4, 5) in event_map
-    assert event_map[(4, 5)]["cluster_id"] == "4-A"
-    assert event_map[(4, 5)]["profile_signature"] == [4, 5, 6]
-    assert event_map[(4, 5)]["peer_members"] == [4, 5]
-    assert event_map[(4, 5)]["path"] == [4, 5]
-
-    assert (4, 7) in event_map
-    assert event_map[(4, 7)]["cluster_id"] == "4-B"
-    assert event_map[(4, 7)]["profile_signature"] == [7, 8, 9, 10]
-    assert event_map[(4, 7)]["peer_members"] == [6, 7]
-    assert event_map[(4, 7)]["path"] == [4, 7], "C4 to C7 must be direct 1-hop physical link [4, 7]"
-    assert 6 not in event_map[(4, 7)]["path"], "C4 to C7 must NEVER route via C6"
-
-    # C8 -> Node 8 (local), C8 -> Node 9, C8 -> Node 10 (Direct 1-Hop)
-    assert (8, 8) in event_map
-    assert event_map[(8, 8)]["cluster_id"] == "8-A"
-    assert event_map[(8, 8)]["profile_signature"] == [4, 5, 6]
-    assert event_map[(8, 8)]["peer_members"] == [8]
-
-    assert (8, 9) in event_map
-    assert event_map[(8, 9)]["cluster_id"] == "8-B"
-    assert event_map[(8, 9)]["profile_signature"] == [1, 2, 3]
-    assert event_map[(8, 9)]["peer_members"] == [9]
-    assert event_map[(8, 9)]["path"] == [8, 9]
-
-    assert (8, 10) in event_map
-    assert event_map[(8, 10)]["cluster_id"] == "8-C"
-    assert event_map[(8, 10)]["profile_signature"] == [8, 9, 10]
-    assert event_map[(8, 10)]["peer_members"] == [10]
-    assert event_map[(8, 10)]["path"] == [8, 10]
 
 
 def test_step13_engine_method():
@@ -200,23 +200,23 @@ def test_step13_engine_method():
     engine = SemanticDFLEngine()
     result = engine.run_cluster_exemplar_designation_10nodes()
     assert result["step"] == 13
-    assert result["total_steps"] in (14, 15, 16, 17, 18, 19)
     assert len(result["nodes"]) == 10
     assert len(result["edges"]) in (17, 18)
     assert result["total_edges"] == 18
-    assert len(result["order_set_exemplar_events"]) == 7
+    assert len(result["packet_traces"]) == 10
 
 
 def test_step13_steps_markdown_documentation():
-    """Assert STEPS.md contains Step 13 cluster exemplar designation documentation."""
+    """Assert STEPS.md contains verbatim Step 13 cluster exemplar designation & member assignment documentation."""
     steps_path = Path(__file__).resolve().parent.parent / "STEPS.md"
     assert steps_path.exists()
     content = steps_path.read_text(encoding="utf-8")
-    assert "Step 13 — Intra-Zone Cluster Exemplar Designation & Profile Assignment" in content
+    assert "Step 13 — Intra-Zone Cluster Exemplar Designation & Member Assignment" in content
     assert "ORDER_SET_EXEMPLAR" in content
-    assert "Node 1" in content
-    assert "Node 5" in content
-    assert "Node 7" in content
+    assert "ORDER_ASSIGN_EXEMPLAR" in content
+    assert "10-Packet Trace Ledger (Direct 1-Hop Physical Routes)" in content
+    assert "`[4, 6]`" in content
+    assert "`[4, 7]`" in content
     assert "Step 14 — Top-Level Initiator Election & Super-Zone Creation (Figure 3(e))" in content
 
 
@@ -241,6 +241,7 @@ def test_step13_frontend_modal_and_drag_safety():
     assert "const exemplarNodeId = " in content
     assert "Regular Cluster Member" in content
     assert "DESIGNATED CLUSTER EXEMPLAR" in content
+    assert "Bound Member" in content
     assert "window.handleNodeClick = handleNodeClick" in content
     assert "window.openNodeModal = openNodeModal" in content
     assert "window.selectNode = selectNode" in content
@@ -259,18 +260,17 @@ def test_step13_payload_contains_all_base_and_exemplar_fields(client):
     required_fields = [
         "id", "zone", "role", "vrf_score", "data_distribution",
         "normalized_vector", "top_p_indices", "binary_mask",
-        "is_exemplar", "cluster_id", "exemplar_node_id", "exemplar_for", "profile_signature"
+        "is_exemplar", "assigned_exemplar", "cluster_id", "cluster_peers", "profile_signature"
     ]
 
     for n in nodes:
         for f in required_fields:
             assert f in n, f"Node {n.get('id')} missing required field '{f}'"
         assert isinstance(n["is_exemplar"], bool)
+        assert isinstance(n["assigned_exemplar"], int)
         assert isinstance(n["cluster_id"], str)
-        assert isinstance(n["exemplar_for"], list)
+        assert isinstance(n["cluster_peers"], list)
         assert isinstance(n["profile_signature"], list)
         assert isinstance(n["data_distribution"], dict)
         assert isinstance(n["normalized_vector"], list)
         assert isinstance(n["binary_mask"], list)
-
-
