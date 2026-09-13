@@ -76,34 +76,34 @@ def test_step20_figure3f_3tier_nodes_specification(client):
     top_1 = node_map["top_1"]
     top_5 = node_map["top_5"]
     top_10 = node_map["top_10"]
-    assert top_1["x"] == 200 and top_1["y"] == 90 and top_1["tier"] == 3
-    assert top_5["x"] == 520 and top_5["y"] == 90 and top_5["tier"] == 3
-    assert top_10["x"] == 840 and top_10["y"] == 90 and top_10["tier"] == 3
+    assert top_1["x"] == 180 and top_1["y"] == 90 and top_1["tier"] == 3
+    assert top_5["x"] == 540 and top_5["y"] == 90 and top_5["tier"] == 3
+    assert top_10["x"] == 900 and top_10["y"] == 90 and top_10["tier"] == 3
 
     # Tier 2 (Middle - Intra-Zone Exemplars, y: 250)
-    assert node_map["mid_1"]["x"] == 160 and node_map["mid_1"]["y"] == 250 and node_map["mid_1"]["zone"] == 2
-    assert node_map["mid_3"]["x"] == 240 and node_map["mid_3"]["y"] == 250 and node_map["mid_3"]["zone"] == 2
-    assert node_map["mid_5"]["x"] == 480 and node_map["mid_5"]["y"] == 250 and node_map["mid_5"]["zone"] == 4
-    assert node_map["mid_7"]["x"] == 560 and node_map["mid_7"]["y"] == 250 and node_map["mid_7"]["zone"] == 4
-    assert node_map["mid_8"]["x"] == 750 and node_map["mid_8"]["y"] == 250 and node_map["mid_8"]["zone"] == 8
-    assert node_map["mid_9"]["x"] == 825 and node_map["mid_9"]["y"] == 250 and node_map["mid_9"]["zone"] == 8
-    assert node_map["mid_10"]["x"] == 900 and node_map["mid_10"]["y"] == 250 and node_map["mid_10"]["zone"] == 8
+    assert node_map["mid_1"]["x"] == 140 and node_map["mid_1"]["y"] == 250 and node_map["mid_1"]["zone"] == 2
+    assert node_map["mid_3"]["x"] == 230 and node_map["mid_3"]["y"] == 250 and node_map["mid_3"]["zone"] == 2
+    assert node_map["mid_5"]["x"] == 490 and node_map["mid_5"]["y"] == 250 and node_map["mid_5"]["zone"] == 4
+    assert node_map["mid_7"]["x"] == 590 and node_map["mid_7"]["y"] == 250 and node_map["mid_7"]["zone"] == 4
+    assert node_map["mid_8"]["x"] == 770 and node_map["mid_8"]["y"] == 250 and node_map["mid_8"]["zone"] == 8
+    assert node_map["mid_9"]["x"] == 850 and node_map["mid_9"]["y"] == 250 and node_map["mid_9"]["zone"] == 8
+    assert node_map["mid_10"]["x"] == 930 and node_map["mid_10"]["y"] == 250 and node_map["mid_10"]["zone"] == 8
 
     # Tier 1 (Bottom - Base Clients Grouped into 3 Physical Zones Capsules, y: 430)
     for k in ["bot_1", "bot_2", "bot_3", "bot_4", "bot_5", "bot_6", "bot_7", "bot_8", "bot_9", "bot_10"]:
         assert node_map[k]["tier"] == 1
         assert node_map[k]["y"] == 430
 
-    assert node_map["bot_1"]["x"] == 135 and node_map["bot_1"]["zone"] == 2
-    assert node_map["bot_2"]["x"] == 200 and node_map["bot_2"]["zone"] == 2
-    assert node_map["bot_3"]["x"] == 265 and node_map["bot_3"]["zone"] == 2
-    assert node_map["bot_4"]["x"] == 410 and node_map["bot_4"]["zone"] == 4
-    assert node_map["bot_5"]["x"] == 470 and node_map["bot_5"]["zone"] == 4
-    assert node_map["bot_6"]["x"] == 530 and node_map["bot_6"]["zone"] == 4
-    assert node_map["bot_7"]["x"] == 590 and node_map["bot_7"]["zone"] == 4
-    assert node_map["bot_8"]["x"] == 740 and node_map["bot_8"]["zone"] == 8
-    assert node_map["bot_9"]["x"] == 800 and node_map["bot_9"]["zone"] == 8
-    assert node_map["bot_10"]["x"] == 860 and node_map["bot_10"]["zone"] == 8
+    assert node_map["bot_1"]["x"] == 110 and node_map["bot_1"]["zone"] == 2
+    assert node_map["bot_2"]["x"] == 195 and node_map["bot_2"]["zone"] == 2
+    assert node_map["bot_3"]["x"] == 280 and node_map["bot_3"]["zone"] == 2
+    assert node_map["bot_4"]["x"] == 435 and node_map["bot_4"]["zone"] == 4
+    assert node_map["bot_5"]["x"] == 505 and node_map["bot_5"]["zone"] == 4
+    assert node_map["bot_6"]["x"] == 575 and node_map["bot_6"]["zone"] == 4
+    assert node_map["bot_7"]["x"] == 645 and node_map["bot_7"]["zone"] == 4
+    assert node_map["bot_8"]["x"] == 800 and node_map["bot_8"]["zone"] == 8
+    assert node_map["bot_9"]["x"] == 885 and node_map["bot_9"]["zone"] == 8
+    assert node_map["bot_10"]["x"] == 970 and node_map["bot_10"]["zone"] == 8
 
 
 def test_step20_figure3f_edges_and_no_horizontal_backbone(client):
