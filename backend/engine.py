@@ -33,7 +33,7 @@ from backend.storyboard_10nodes import (
     sp_inbox_payloads,
 )
 
-TOTAL_STEPS: int = 22
+TOTAL_STEPS: int = 23
 
 
 

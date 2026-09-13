@@ -1103,9 +1103,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 22)
+// 4. Main Step Loading Function (Steps 1 to 23)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 22) return;
+  if (stepNumber < 1 || stepNumber > 23) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -1287,6 +1287,13 @@ async function loadStep(stepNumber) {
       } catch (renderErr) {
         console.error("Step 22 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 22 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 23) {
+      try {
+        renderStep23(data);
+      } catch (renderErr) {
+        console.error("Step 23 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 23 Render Error: ${renderErr.message}`);
       }
     }
 
@@ -1502,6 +1509,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 22 / PEER DISCOVERY";
     if (stepTitle) stepTitle.textContent = "Step 22: Hierarchical Semantic Peer Search & Discovery Query";
     if (stepDesc) stepDesc.textContent = "Clients dispatch REQ_PEER_DISCOVERY up the SON hierarchy. Exemplars forward queries over underlay routes to Super-Peers (C1, C5, C10), which resolve authorized Model Exchange Partner Sets per Super-Cluster.";
+  } else if (step === 23) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 23: SUPER-PEER QUERY MATCHING & DOWNWARD ROUTING";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 23 / DOWNWARD ROUTING";
+    if (stepTitle) stepTitle.textContent = "Step 23: Super-Peer Query Routing & Forwarding to Target Exemplars";
+    if (stepDesc) stepDesc.textContent = "Super-Peers evaluate ingested discovery queries against cluster registries and route authorized discovery match responses downward to Cluster Exemplars (Tier 3 -> Tier 2).";
   }
 }
 
@@ -5338,9 +5353,19 @@ function toggleLayout() {
 
   const canvasLabel = document.getElementById("canvasViewLabel");
   if (canvasLabel) {
-    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
-      ? "Semantic Overlay Network (SON) — Hierarchical Overlay (Figure 3(f))"
-      : "Semantic Overlay Network (SON) — Physical Topology";
+    if (currentStep === 22) {
+      canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+        ? "Semantic Peer Discovery — Hierarchical Overlay (Upward Search Waves)"
+        : "Semantic Peer Discovery — Physical Topology (Multi-Hop Routes to Super-Peers)";
+    } else if (currentStep === 23) {
+      canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+        ? "Super-Peer Downward Forwarding — Hierarchical Overlay (Tier 3 → Tier 2)"
+        : "Super-Peer Downward Forwarding — Physical Topology (Multi-Hop Routes to Exemplars)";
+    } else {
+      canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+        ? "Semantic Overlay Network (SON) — Hierarchical Overlay (Figure 3(f))"
+        : "Semantic Overlay Network (SON) — Physical Topology";
+    }
   }
 
   logToTerminal(
@@ -5654,6 +5679,71 @@ function renderStep22(data) {
 
   const discoveryPackets = data.discovery_packets || data.packets || [];
   animateStep22PeerDiscovery(discoveryPackets, data.nodes);
+}
+
+function renderStep23(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 23: SUPER-PEER QUERY MATCHING & DOWNWARD ROUTING";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-400";
+  });
+
+  renderSidebarFormula(
+    "Step 23: Super-Peer Query Matching & Downward Routing",
+    "SP_m \\xrightarrow{\\text{Sim}(S_i, S_k) = 1.0} e_k \\quad : \\quad \\text{FWD\\_DISCOVERY\\_MATCH}(\\mathcal{P}_{\\text{authorized}})",
+    "Super-Peers route verified match authorizations downward to Tier-2 Cluster Exemplars.",
+    "Step 23: Downward Routing",
+    false,
+    "purple"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      ? "Super-Peer Downward Forwarding — Hierarchical Overlay (Tier 3 → Tier 2)"
+      : "Super-Peer Downward Forwarding — Physical Topology (Multi-Hop Routes to Exemplars)";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Downward Routing: <span class="text-purple-600 font-bold font-mono">4 Exemplars Authorized</span> | Super-Peers: <span class="text-amber-600 font-bold font-mono">C1, C5, C10</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Position nodes according to physical layout on Cytoscape
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = PHYSICAL_LAYOUT_COORDS[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("INFO", "[STEP 23] Super-Peers evaluating ingested queries against cluster registries.");
+  logToTerminal("SUCCESS", "[MATCH] Sim(S_i, S_k) = 1.0 confirmed for SC-1, SC-2, SC-3.");
+  logToTerminal("ZONE", "[DOWNWARD] Super-Peers routing FWD_DISCOVERY_MATCH downward to Exemplars C9, C3, C8, C7.");
+  logToTerminal("TOPOLOGY", "[ROUTING] Tracing physical paths [1, 4, 7, 9], [5, 3], [5, 6, 8], [10, 9, 7].");
+
+  const packetTraces = data.packet_traces || data.discovery_packets || data.packets || [];
+  animateStep23ExemplarRouting(packetTraces, data.nodes);
 }
 
 // Global reference to hover virtual node in Figure 3(f) / Physical
@@ -6867,9 +6957,400 @@ function animateStep22PeerDiscovery(discoveryPackets, allNodes) {
   activeAnimationId = requestAnimationFrame(runFrame);
 }
 
+// Step 23: Super-Peer Query Routing & Forwarding Animation
+function animateStep23ExemplarRouting(packetTraces, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
 
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
 
+  const startTime = performance.now();
+  const CYCLE_MS = 3800;
 
+  const traces = (packetTraces && packetTraces.length > 0) ? packetTraces : [
+    { from: 1, to: 9, path: [1, 4, 7, 9], fromKey: "top_1", toKey: "mid_9", type: "FWD_DISCOVERY_MATCH", matched_cluster: "8-B", matched_peers: [1, 2], signature: [1, 2, 3], label: "FWD_MATCH (C9)" },
+    { from: 5, to: 3, path: [5, 3], fromKey: "top_5", toKey: "mid_3", type: "FWD_DISCOVERY_MATCH", matched_cluster: "2-B", matched_peers: [4, 5, 8], signature: [4, 5, 6], label: "FWD_MATCH (C3)" },
+    { from: 5, to: 8, path: [5, 6, 8], fromKey: "top_5", toKey: "mid_8", type: "FWD_DISCOVERY_MATCH", matched_cluster: "8-A", matched_peers: [3, 4, 5], signature: [4, 5, 6], label: "FWD_MATCH (C8)" },
+    { from: 10, to: 7, path: [10, 9, 7], fromKey: "top_10", toKey: "mid_7", type: "FWD_DISCOVERY_MATCH", matched_cluster: "4-B", matched_peers: [6, 10], signature: [8, 9, 10], label: "FWD_MATCH (C7)" }
+  ];
+
+  traces.forEach(t => {
+    if (!t.fromKey) t.fromKey = `top_${t.from}`;
+    if (!t.toKey) t.toKey = `mid_${t.to}`;
+  });
+
+  function getPointAlongPath(path, prog, posMap) {
+    if (!path || path.length === 0) return null;
+    if (path.length === 1) return posMap[path[0]];
+    const numSegs = path.length - 1;
+    const clampedProg = Math.max(0, Math.min(0.9999, prog));
+    const segIdx = Math.floor(clampedProg * numSegs);
+    const segProg = (clampedProg * numSegs) - segIdx;
+    const pA = posMap[path[segIdx]];
+    const pB = posMap[path[segIdx + 1]];
+    if (!pA || !pB) return null;
+    return {
+      x: pA.x + (pB.x - pA.x) * segProg,
+      y: pA.y + (pB.y - pA.y) * segProg
+    };
+  }
+
+  function drawFloatingTag(ctx, text, x, y, borderColor, bgColor, textColor) {
+    ctx.save();
+    ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+    const textW = ctx.measureText(text).width;
+    const boxH = 14;
+    const boxW = textW + 12;
+    const boxX = x - boxW / 2;
+    const boxY = y - boxH / 2;
+
+    ctx.fillStyle = bgColor || "rgba(15, 23, 42, 0.92)";
+    ctx.strokeStyle = borderColor || "#a855f7";
+    ctx.lineWidth = 1;
+    ctx.shadowColor = borderColor || "#a855f7";
+    ctx.shadowBlur = 6;
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = textColor || "#e9d5ff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function renderPhysicalExemplarRouting(now) {
+    if (cy) {
+      cy.elements().style("opacity", 0);
+    }
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    // 1. Top Status Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "PHYSICAL TOPOLOGY: SUPER-PEERS DOWNWARD ROUTING TO EXEMPLARS [FWD_MATCH]";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#a855f7";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#c084fc";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Node position map
+    const physNodePosMap = {};
+    for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          physNodePosMap[id] = { id, x: rp.x, y: rp.y };
+          continue;
+        }
+      }
+      const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
+      physNodePosMap[id] = { id, x: c.x, y: c.y };
+    }
+
+    // 2. Physical Mesh Links
+    ctx.save();
+    PHYSICAL_TOPOLOGY_EDGES.forEach(edge => {
+      const p1 = physNodePosMap[edge.from];
+      const p2 = physNodePosMap[edge.to];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // 3. Highlighted Multi-hop Forwarding Routes [1,4,7,9], [5,3], [5,6,8], [10,9,7]
+    ctx.save();
+    traces.forEach(pkt => {
+      const path = pkt.path;
+      for (let i = 0; i < path.length - 1; i++) {
+        const pA = physNodePosMap[path[i]];
+        const pB = physNodePosMap[path[i + 1]];
+        if (!pA || !pB) continue;
+        ctx.beginPath();
+        ctx.moveTo(pA.x, pA.y);
+        ctx.lineTo(pB.x, pB.y);
+        ctx.strokeStyle = "rgba(168, 85, 247, 0.45)";
+        ctx.lineWidth = 2.2;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+      }
+    });
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 4. Moving Forwarding Match Pulses & Floating Tags
+    ctx.save();
+    traces.forEach((pkt, idx) => {
+      const phaseOffset = (idx * 0.18) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      if (tPkt < 0.80) {
+        const travelProg = tPkt / 0.80;
+        const pt = getPointAlongPath(pkt.path, travelProg, physNodePosMap);
+        if (pt) {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 6.0, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = "#a855f7";
+          ctx.shadowBlur = 16;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 9.0, 0, Math.PI * 2);
+          ctx.strokeStyle = "#7c3aed";
+          ctx.lineWidth = 2.0;
+          ctx.stroke();
+
+          drawFloatingTag(ctx, pkt.label || "FWD_MATCH", pt.x, pt.y - 16, "#a855f7", "rgba(15, 23, 42, 0.92)", "#f3e8ff");
+        }
+      } else {
+        const arrProg = (tPkt - 0.80) / 0.20;
+        const destId = pkt.to || (pkt.path ? pkt.path[pkt.path.length - 1] : null);
+        const destPos = physNodePosMap[destId];
+        if (destPos) {
+          const rBeacon = NODE_RADIUS + arrProg * 26;
+          ctx.beginPath();
+          ctx.arc(destPos.x, destPos.y, rBeacon, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(168, 85, 247, ${1 - arrProg})`;
+          ctx.lineWidth = 2.4;
+          ctx.shadowColor = "#a855f7";
+          ctx.shadowBlur = 14;
+          ctx.stroke();
+
+          drawFloatingTag(ctx, "MATCH_RECEIVED", destPos.x, destPos.y - NODE_RADIUS - 16, "#10b981", "rgba(6, 78, 59, 0.92)", "#6ee7b7");
+        }
+      }
+    });
+    ctx.restore();
+
+    // 5. Draw Canonical 10 Nodes
+    for (let id = 1; id <= 10; id++) {
+      const pos = physNodePosMap[id];
+      if (!pos) continue;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
+      const nodeObj = {
+        id,
+        node_id: `C${id}`,
+        x: pos.x,
+        y: pos.y,
+        zone: id <= 3 ? 2 : (id <= 7 ? 4 : 8),
+        tier: [1, 5, 10].includes(id) ? 3 : ([3, 7, 8, 9].includes(id) ? 2 : 1)
+      };
+      drawNode(ctx, nodeObj, isHov, pulse, NODE_RADIUS);
+    }
+
+    ctx.restore();
+  }
+
+  function renderFigure3fExemplarRouting(now) {
+    if (cy) {
+      cy.elements().style("opacity", 0);
+    }
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    // 1. Bottom Stage Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = tCycle < 0.75
+      ? "DOWNWARD ROUTING: SUPER-PEERS FORWARD AUTHORIZED MATCHES TO TIER-2 EXEMPLARS (TIER 3 → TIER 2)"
+      : "MATCH INGESTION: EXEMPLARS AUTHENTICATE PARTNER SETS (READY FOR LEAF FORWARDING IN STEP 24)";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = canvas.height - 24;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = tCycle < 0.75 ? "#c084fc" : "#10b981";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = tCycle < 0.75 ? "#e9d5ff" : "#34d399";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // 2. Device Silhouettes
+    ctx.save();
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isTop = n.tier === 3;
+      const isMid = n.tier === 2;
+      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
+      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
+      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
+      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Hull & Capsules
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillStyle = "#e11d48";
+    ctx.textAlign = "center";
+    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
+    ctx.restore();
+
+    capsules.forEach(cap => {
+      ctx.save();
+      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
+      ctx.fillStyle = cap.fill;
+      ctx.fill();
+      ctx.strokeStyle = cap.border;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillStyle = cap.color;
+      ctx.textAlign = "center";
+      ctx.fillText(cap.name, cap.centerX, cap.y + 6);
+      ctx.restore();
+    });
+
+    // 3. Hierarchy Links
+    ctx.save();
+    FIGURE3F_3TIER_EDGES.forEach(edge => {
+      const p1 = nodePosMap[edge.fromKey];
+      const p2 = nodePosMap[edge.toKey];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.renderedX, p1.renderedY);
+      ctx.lineTo(p2.renderedX, p2.renderedY);
+      ctx.strokeStyle = edge.type === "SUPER_PEER_OVERLAY" ? "#b91c1c" : edge.color;
+      ctx.lineWidth = edge.type === "SUPER_PEER_OVERLAY" ? 2.2 : 1.8;
+      ctx.setLineDash([5, 5]);
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 4. Downward Moving Match Packets (Tier 3 Super-Peers -> Tier 2 Exemplars)
+    ctx.save();
+    traces.forEach((pkt, idx) => {
+      const pA = nodePosMap[pkt.fromKey]; // Tier 3 SP
+      const pB = nodePosMap[pkt.toKey];   // Tier 2 Exemplar
+      if (!pA || !pB) return;
+
+      const phaseOffset = (idx * 0.15) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      if (tPkt < 0.75) {
+        const t = tPkt / 0.75;
+        // Floating downward from Super-Peer pA to Exemplar pB
+        const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
+        const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
+
+        ctx.beginPath();
+        ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = "#c084fc";
+        ctx.shadowBlur = 16;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(px, py, 9.0, 0, Math.PI * 2);
+        ctx.strokeStyle = "#7c3aed";
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, pkt.label || "FWD_MATCH", px, py - 16, "#c084fc", "rgba(15, 23, 42, 0.92)", "#f3e8ff");
+      } else {
+        const arrProg = (tPkt - 0.75) / 0.25;
+        const rBeacon = 28 + arrProg * 22;
+        ctx.beginPath();
+        ctx.arc(pB.renderedX, pB.renderedY, rBeacon, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(168, 85, 247, ${1 - arrProg})`;
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#a855f7";
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, "MATCH_INGESTED", pB.renderedX, pB.renderedY - 32, "#10b981", "rgba(6, 78, 59, 0.92)", "#6ee7b7");
+      }
+    });
+    ctx.restore();
+
+    // 5. Draw Nodes
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
+      drawNode(ctx, {
+        id: n.id,
+        node_id: n.label,
+        x: p.renderedX,
+        y: p.renderedY,
+        tier: n.tier,
+        zone: n.zone
+      }, isHov, pulse, rad);
+    });
+
+    ctx.restore();
+  }
+
+  function runFrame(now) {
+    if (currentStep !== 23) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentLayout === "figure3f" || currentLayout === "overlay") {
+      renderFigure3fExemplarRouting(now);
+    } else {
+      renderPhysicalExemplarRouting(now);
+    }
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
 
 // Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
 function animateProbeFloodingWaves(waves, allNodes) {
@@ -7555,7 +8036,7 @@ function renderNodeModal(node, stepData = currentStepData) {
 
     const card = document.getElementById("nodeInfoCard");
     if (!card) return;
-    if (currentStep === 22) {
+    if (currentStep === 22 || currentStep === 23) {
       card.classList.remove("w-84");
       card.classList.add("w-96", "sm:w-[440px]");
     } else {
@@ -10502,7 +10983,7 @@ function renderNodeModal(node, stepData = currentStepData) {
     const discoveryBadge = document.getElementById("cardDiscoveryBadge");
     const discoveryContent = document.getElementById("cardDiscoveryContent");
 
-    if (currentStep >= 22) {
+    if (currentStep === 22) {
       if (discoverySection) discoverySection.classList.remove("hidden");
       if (cardStatusBadge) {
         cardStatusBadge.textContent = "🔍 DISCOVERY_RESOLVED";
@@ -10799,6 +11280,193 @@ function renderNodeModal(node, stepData = currentStepData) {
                 ${route}
               </div>
             </div>
+          </div>
+        `;
+      }
+    } else if (currentStep === 23) {
+      if (discoverySection) discoverySection.classList.remove("hidden");
+      const isSP = [1, 5, 10].includes(idNum);
+      const isEx = [3, 7, 8, 9].includes(idNum);
+
+      if (cardStatusBadge) {
+        if (isSP) {
+          cardStatusBadge.textContent = "🚀 SUPER_PEER_DISPATCH_COMPLETE";
+          cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+        } else if (isEx) {
+          const spId = idNum === 9 ? 1 : (idNum === 7 ? 10 : 5);
+          cardStatusBadge.textContent = `📥 MATCH_RECEIVED_FROM_SP${spId}`;
+          cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-purple-100 text-purple-900 border-purple-400";
+        } else {
+          cardStatusBadge.textContent = "⏳ AWAITING_LEAF_FORWARDING";
+          cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-700 border-slate-300";
+        }
+      }
+
+      if (discoveryBadge) {
+        discoveryBadge.textContent = "STEP 23: DOWNWARD ROUTING";
+        discoveryBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-purple-100 text-purple-900 border border-purple-300";
+      }
+
+      if (discoveryContent) {
+        const partners = mergedNode?.authorized_partners || ([1, 2, 9].includes(idNum) ? [1, 2, 9] : ([3, 4, 5, 8].includes(idNum) ? [3, 4, 5, 8] : [6, 7, 10]));
+        const scId = [1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3");
+        const spId = [1, 2, 9].includes(idNum) ? 1 : ([3, 4, 5, 8].includes(idNum) ? 5 : 10);
+        const sigClasses = [1, 2, 9].includes(idNum) ? [1, 2, 3] : ([3, 4, 5, 8].includes(idNum) ? [4, 5, 6] : [8, 9, 10]);
+
+        const partnerBadges = partners.map(p => {
+          const isSelf = p === idNum;
+          return `<span class="px-2 py-0.5 rounded font-mono font-bold text-[10px] ${isSelf ? 'bg-purple-600 text-white shadow-xs ring-1 ring-purple-400' : 'bg-white text-purple-900 border border-purple-300'}">C${p}${isSelf ? ' (You)' : ''}</span>`;
+        }).join(" ");
+
+        let exemplarInboxHTML = "";
+        if (isEx) {
+          const authInbox = mergedNode?.sp_authorization_inbox || ({
+            9: { authorizing_sp: 1, matched_cluster: "8-B", matched_peers: [1, 2], authorized_partners: [1, 2, 9], signature: [1, 2, 3], path: [1, 4, 7, 9], status: "MATCH_RECEIVED_FROM_SP1", resolution_status: "Ready to forward downward to leaf members in Step 24." },
+            3: { authorizing_sp: 5, matched_cluster: "2-B", matched_peers: [4, 5, 8], authorized_partners: [3, 4, 5, 8], signature: [4, 5, 6], path: [5, 3], status: "MATCH_RECEIVED_FROM_SP5", resolution_status: "Ready to forward downward to leaf members in Step 24." },
+            8: { authorizing_sp: 5, matched_cluster: "8-A", matched_peers: [3, 4, 5], authorized_partners: [3, 4, 5, 8], signature: [4, 5, 6], path: [5, 6, 8], status: "MATCH_RECEIVED_FROM_SP5", resolution_status: "Ready to forward downward to leaf members in Step 24." },
+            7: { authorizing_sp: 10, matched_cluster: "4-B", matched_peers: [6, 10], authorized_partners: [6, 7, 10], signature: [8, 9, 10], path: [10, 9, 7], status: "MATCH_RECEIVED_FROM_SP10", resolution_status: "Ready to forward downward to leaf members in Step 24." }
+          }[idNum]);
+
+          const authSp = authInbox.authorizing_sp;
+          const authPath = authInbox.path || [];
+          const authStatus = authInbox.resolution_status || "Ready to forward downward to leaf members in Step 24.";
+
+          exemplarInboxHTML = `
+            <div class="p-3 bg-slate-900/95 text-slate-100 rounded-lg border border-purple-500/60 shadow-md space-y-2.5 backdrop-blur-sm">
+              <div class="flex items-center justify-between border-b border-slate-700/70 pb-1.5">
+                <span class="text-[10.5px] font-mono font-extrabold text-purple-300 flex items-center gap-1.5">
+                  <span class="inline-block w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+                  Super-Peer Authorization Inbox
+                </span>
+                <span class="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-purple-950/90 text-purple-300 border border-purple-700/80 font-bold">FWD_DISCOVERY_MATCH</span>
+              </div>
+              <div class="grid grid-cols-1 gap-1.5 text-[9.5px] font-mono">
+                <div class="flex justify-between items-center text-slate-300">
+                  <span class="text-slate-400">Authorizing Super-Peer:</span>
+                  <span class="font-bold text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-700/60">🌟 Super-Peer C${authSp}</span>
+                </div>
+                <div class="flex justify-between items-center text-slate-300">
+                  <span class="text-slate-400">Matched Affinity Cluster:</span>
+                  <span class="font-bold text-purple-300">${authInbox.matched_cluster || 'N/A'}</span>
+                </div>
+                <div class="flex justify-between items-center text-slate-300">
+                  <span class="text-slate-400">Verified Semantic Classes:</span>
+                  <span class="font-bold text-cyan-300">[${(authInbox.signature || sigClasses).join(", ")}] (Sim = 1.0)</span>
+                </div>
+                <div class="pt-1 border-t border-slate-800">
+                  <div class="text-slate-400 text-[8.5px] mb-1">Multi-Hop Inbound Path from SP:</div>
+                  <div class="bg-slate-950/90 p-1.5 rounded border border-slate-800 text-purple-300 font-bold break-words">
+                    ${authPath.map(n => `C${n}`).join(" &rarr; ")}
+                  </div>
+                </div>
+                <div class="pt-1.5 border-t border-slate-800 space-y-1">
+                  <div class="flex items-center justify-between text-[8.5px] text-slate-400">
+                    <span class="font-bold text-slate-300">Received Matched Partner Set:</span>
+                    <span class="text-emerald-400 font-bold">${partners.length} Authorized Peers</span>
+                  </div>
+                  <div class="flex flex-wrap gap-1.5 pt-0.5">
+                    ${partnerBadges}
+                  </div>
+                </div>
+                <div class="mt-1 p-2 rounded bg-emerald-950/70 border border-emerald-500/50 text-emerald-300 text-[8.5px] flex items-center justify-between font-bold">
+                  <span class="flex items-center gap-1">
+                    <span>✅</span>
+                    <span>Status: ${authStatus}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        let spHTML = "";
+        if (isSP) {
+          const spDispatches = {
+            1: [{ target_ex: 9, path: [1, 4, 7, 9], peers: [1, 2], classes: [1, 2, 3] }],
+            5: [
+              { target_ex: 3, path: [5, 3], peers: [4, 5, 8], classes: [4, 5, 6] },
+              { target_ex: 8, path: [5, 6, 8], peers: [3, 4, 5], classes: [4, 5, 6] }
+            ],
+            10: [{ target_ex: 7, path: [10, 9, 7], peers: [6, 10], classes: [8, 9, 10] }]
+          }[idNum] || [];
+
+          spHTML = `
+            <div class="p-3 bg-white rounded-lg border border-amber-300 shadow-xs space-y-2">
+              <div class="flex items-center justify-between border-b border-amber-200 pb-1.5">
+                <span class="text-[10.5px] font-mono font-extrabold text-amber-950 flex items-center gap-1.5">
+                  <span>🚀</span>
+                  <span>Super-Peer Matchmaking & Downward Dispatch</span>
+                </span>
+                <span class="px-2 py-0.5 rounded text-[8.5px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                  DISPATCH COMPLETE
+                </span>
+              </div>
+              <div class="text-[9px] font-mono text-slate-700">
+                Evaluation: <span class="text-emerald-700 font-bold">Sim(S_i, S_k) = 1.0</span> on Classes [${sigClasses.join(", ")}].
+              </div>
+              <div class="space-y-1.5 pt-0.5">
+                ${spDispatches.map(d => `
+                  <div class="p-2 bg-amber-50/70 rounded border border-amber-200 text-[9px] font-mono space-y-0.5">
+                    <div class="flex justify-between items-center text-amber-950 font-bold">
+                      <span>Forwarded Match &rarr; Exemplar C${d.target_ex}</span>
+                      <span class="text-[8px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-900 border border-purple-300">FWD_MATCH</span>
+                    </div>
+                    <div class="text-slate-600 text-[8.5px]">Path: ${d.path.map(n => `C${n}`).join(" &rarr; ")}</div>
+                    <div class="text-emerald-800 font-bold text-[8.5px]">Matched Peers: [${d.peers.map(p => `C${p}`).join(", ")}]</div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          `;
+        }
+
+        let leafHTML = "";
+        if (!isSP && !isEx) {
+          const exemplarTarget = idNum === 2 ? 1 : (idNum === 4 ? 5 : 7);
+          leafHTML = `
+            <div class="p-3 bg-white rounded-lg border border-slate-300 shadow-xs space-y-2">
+              <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
+                <span class="text-[10.5px] font-mono font-extrabold text-slate-800 flex items-center gap-1.5">
+                  <span>⏳</span>
+                  <span>Leaf Member State</span>
+                </span>
+                <span class="px-2 py-0.5 rounded text-[8.5px] font-mono font-bold bg-slate-100 text-slate-800 border border-slate-300">
+                  AWAITING_LEAF_FORWARDING
+                </span>
+              </div>
+              <div class="text-[9.5px] font-mono text-slate-700">
+                Assigned Exemplar: <span class="font-bold text-amber-700">⭐ Node C${exemplarTarget}</span>
+              </div>
+              <div class="p-2 rounded bg-slate-50 border border-slate-200 text-[8.5px] font-mono text-slate-600">
+                Super-Peer match responses have reached Tier-2 Exemplars. Exemplar C${exemplarTarget} will forward the authorized partner set downward to this leaf node in Step 24.
+              </div>
+            </div>
+          `;
+        }
+
+        discoveryContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <!-- Super-Cluster Match Header -->
+            <div class="p-2.5 rounded-lg border border-purple-200 bg-purple-50/70 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-purple-950 flex items-center gap-1">
+                  <span>🌐</span><span>Active Super-Cluster:</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold text-[10px] bg-purple-200 text-purple-900 border border-purple-300">${scId}</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-purple-800 font-semibold">
+                Super-Peer Coordinator: <span class="font-bold text-amber-700">⭐ C${spId}</span> | Classes: <span class="font-bold text-purple-900">[${sigClasses.join(", ")}]</span>
+              </div>
+            </div>
+
+            <!-- Exemplar Super-Peer Authorization Inbox (if Exemplar) -->
+            ${exemplarInboxHTML}
+
+            <!-- Super-Peer Matchmaking & Dispatch Details (if Super-Peer) -->
+            ${spHTML}
+
+            <!-- Leaf Member Status (if Leaf) -->
+            ${leafHTML}
           </div>
         `;
       }
@@ -11333,7 +12001,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 22; s++) {
+  for (let s = 1; s <= 23; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -11366,6 +12034,8 @@ function updateStepper(step) {
         item.classList.add("step-amber");
       } else if (step === 22) {
         item.classList.add("step-blue");
+      } else if (step === 23) {
+        item.classList.add("step-purple");
       }
     }
   }
@@ -11395,7 +12065,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 22) {
+    if (step < 23) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -11403,7 +12073,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 22 active (Hierarchical Semantic Peer Search & Discovery Query complete)";
+      btnNext.title = "Step 23 active (Super-Peer Query Routing & Forwarding complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -11416,7 +12086,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 22);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 23);
 }
 
 function bindActionButtons() {
@@ -11440,16 +12110,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 22) {
+      if (currentStep < 23) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 22 is active (Hierarchical Semantic Peer Search & Discovery Query complete).");
+        logToTerminal("INFO", "Step 23 is active (Super-Peer Query Routing & Forwarding complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 22)
-  for (let s = 1; s <= 22; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 23)
+  for (let s = 1; s <= 23; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

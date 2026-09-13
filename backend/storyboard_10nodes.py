@@ -12,7 +12,7 @@ import copy
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 22
+TOTAL_STEPS: int = 23
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -4556,6 +4556,144 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "raw_payload_bytes": 40,
             "sparse_payload_bytes": 15,
         }
+    elif step_number == 23:
+        # Step 23: Super-Peer Query Routing & Forwarding to Target Exemplars
+        step22_data = _get_10node_step_data_raw(22)
+        step23_nodes = copy.deepcopy(step22_data["nodes"])
+
+        # Packet traces: Super-Peers forward authorized matches downward to Tier-2 Exemplars
+        packet_traces = [
+            {
+                "from": 1, "to": 9, "path": [1, 4, 7, 9],
+                "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "8-B",
+                "matched_peers": [1, 2], "signature": [1, 2, 3], "label": "FWD_MATCH (C9)"
+            },
+            {
+                "from": 5, "to": 3, "path": [5, 3],
+                "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "2-B",
+                "matched_peers": [4, 5, 8], "signature": [4, 5, 6], "label": "FWD_MATCH (C3)"
+            },
+            {
+                "from": 5, "to": 8, "path": [5, 6, 8],
+                "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "8-A",
+                "matched_peers": [3, 4, 5], "signature": [4, 5, 6], "label": "FWD_MATCH (C8)"
+            },
+            {
+                "from": 10, "to": 7, "path": [10, 9, 7],
+                "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "4-B",
+                "matched_peers": [6, 10], "signature": [8, 9, 10], "label": "FWD_MATCH (C7)"
+            }
+        ]
+
+        EXEMPLAR_AUTH_INBOXES = {
+            9: {
+                "sp_id": 1,
+                "authorizing_sp": 1,
+                "matched_cluster": "8-B",
+                "matched_peers": [1, 2],
+                "authorized_partners": [1, 2, 9],
+                "signature": [1, 2, 3],
+                "path": [1, 4, 7, 9],
+                "status": "MATCH_RECEIVED_FROM_SP1",
+                "resolution_status": "Ready to forward downward to leaf members in Step 24.",
+            },
+            3: {
+                "sp_id": 5,
+                "authorizing_sp": 5,
+                "matched_cluster": "2-B",
+                "matched_peers": [4, 5, 8],
+                "authorized_partners": [3, 4, 5, 8],
+                "signature": [4, 5, 6],
+                "path": [5, 3],
+                "status": "MATCH_RECEIVED_FROM_SP5",
+                "resolution_status": "Ready to forward downward to leaf members in Step 24.",
+            },
+            8: {
+                "sp_id": 5,
+                "authorizing_sp": 5,
+                "matched_cluster": "8-A",
+                "matched_peers": [3, 4, 5],
+                "authorized_partners": [3, 4, 5, 8],
+                "signature": [4, 5, 6],
+                "path": [5, 6, 8],
+                "status": "MATCH_RECEIVED_FROM_SP5",
+                "resolution_status": "Ready to forward downward to leaf members in Step 24.",
+            },
+            7: {
+                "sp_id": 10,
+                "authorizing_sp": 10,
+                "matched_cluster": "4-B",
+                "matched_peers": [6, 10],
+                "authorized_partners": [6, 7, 10],
+                "signature": [8, 9, 10],
+                "path": [10, 9, 7],
+                "status": "MATCH_RECEIVED_FROM_SP10",
+                "resolution_status": "Ready to forward downward to leaf members in Step 24.",
+            },
+        }
+
+        for n in step23_nodes:
+            nid = n["id"]
+            if nid in [1, 5, 10]:
+                n["status"] = "SUPER_PEER_DISPATCH_COMPLETE"
+                n["sp_dispatch_status"] = "SUPER_PEER_DISPATCH_COMPLETE"
+                n["is_super_peer"] = True
+                n["authorized_partners"] = n.get("federation_partners", [])
+            elif nid in [3, 7, 8, 9]:
+                auth_info = EXEMPLAR_AUTH_INBOXES[nid]
+                n["status"] = auth_info["status"]
+                n["authorized_partners"] = auth_info["authorized_partners"]
+                n["sp_authorization_inbox"] = auth_info
+                n["sp_authorization"] = auth_info
+                n["is_exemplar"] = True
+            else:
+                n["status"] = "AWAITING_LEAF_FORWARDING"
+                n["authorized_partners"] = n.get("federation_partners", [])
+
+        terminal_logs = [
+            "[SUPER-PEER EVALUATION] Super-Peers (C1, C5, C10) evaluate Sim(S_i, S_k) = 1.0 against semantic registries.",
+            "[DOWNWARD ROUTING] SP C1 dispatches FWD_DISCOVERY_MATCH for SC-1 to Exemplar C9 along path [1, 4, 7, 9].",
+            "[DOWNWARD ROUTING] SP C5 dispatches FWD_DISCOVERY_MATCH for SC-2 to Exemplar C3 [5, 3] and Exemplar C8 [5, 6, 8].",
+            "[DOWNWARD ROUTING] SP C10 dispatches FWD_DISCOVERY_MATCH for SC-3 to Exemplar C7 along path [10, 9, 7].",
+            "[EXEMPLAR INGESTION] Exemplars (C3, C7, C8, C9) authenticate received partner sets into local authorization inboxes.",
+            "[DISPATCH STATUS] Tier-3 Super-Peers completed matchmaking dispatch; Exemplars primed to propagate down to leaf peers in Step 24.",
+        ]
+
+        return {
+            "step": 23,
+            "title": "Step 23: Super-Peer Query Routing & Forwarding to Target Exemplars",
+            "phase_badge": "ACTIVE PHASE: STEP 23: SUPER-PEER QUERY MATCHING & DOWNWARD ROUTING",
+            "description": "Super-Peers evaluate ingested discovery queries against cluster registries and route authorized discovery match responses downward to Cluster Exemplars (Tier 3 -> Tier 2).",
+            "formula": r"SP_m \xrightarrow{\text{Sim}(S_i, S_k) = 1.0} e_k \quad : \quad \text{FWD\_DISCOVERY\_MATCH}(\mathcal{P}_{\text{authorized}})",
+            "formula_desc": "Super-Peers route verified match authorizations downward to Tier-2 Cluster Exemplars.",
+            "nodes": step23_nodes,
+            "edges": step22_data["edges"],
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step22_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": [1, 5, 10],
+            "exemplars": [3, 7, 8, 9],
+            "exemplar_auth_inboxes": EXEMPLAR_AUTH_INBOXES,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "packets": packet_traces,
+            "discovery_packets": packet_traces,
+            "packet_traces": packet_traces,
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -4577,7 +4715,9 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
 def get_10node_step_data(step_number: int) -> Dict[str, Any]:
     """Retrieve storyboard step data for 10-node simulation with guaranteed total_steps."""
     data = _get_10node_step_data_raw(step_number)
-    if step_number >= 22:
+    if step_number >= 23:
+        data["total_steps"] = 23
+    elif step_number == 22:
         data["total_steps"] = 22
     elif step_number == 21:
         data["total_steps"] = 21

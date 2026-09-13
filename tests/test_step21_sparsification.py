@@ -87,6 +87,6 @@ def test_step21_multi_class_pruning_nodes_6_7_10(client):
 
 def test_step21_total_steps_constant():
     """Verify TOTAL_STEPS is at least 21."""
-    assert TOTAL_STEPS in (21, 22)
+    assert TOTAL_STEPS in (21, 22, 23)
     step21 = get_10node_step_data(21)
     assert step21["total_steps"] == 21

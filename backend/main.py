@@ -26,7 +26,7 @@ from backend.storyboard_10nodes import (
     TOTAL_STEPS,
 )
 
-TOTAL_STEPS: int = 22
+TOTAL_STEPS: int = 23
 
 
 
@@ -351,12 +351,24 @@ def post_storyboard_step_22():
     return get_10node_step_data(22)
 
 
+@app.get("/api/v1/storyboard/step/23", tags=["Storyboard"])
+def get_storyboard_step_23():
+    """Returns deterministic data for Storyboard Step 23 (Super-Peer Query Routing & Forwarding to Target Exemplars)."""
+    return get_10node_step_data(23)
+
+
+@app.post("/api/v1/storyboard/step/23", tags=["Storyboard"])
+def post_storyboard_step_23():
+    """Execute / return deterministic data for Storyboard Step 23."""
+    return get_10node_step_data(23)
+
+
 @app.get("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
 def get_storyboard_step(step_number: int):
-    """Returns deterministic data for Storyboard Step (1 to 22) for 10-node simulation."""
+    """Returns deterministic data for Storyboard Step (1 to 23) for 10-node simulation."""
     if step_number == 1:
         return load_step1_data()
-    max_steps = max(TOTAL_STEPS, 22)
+    max_steps = max(TOTAL_STEPS, 23)
     if step_number not in list(range(1, max_steps + 1)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -367,10 +379,10 @@ def get_storyboard_step(step_number: int):
 
 @app.post("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
 def post_storyboard_step(step_number: int):
-    """Execute / return deterministic data for Storyboard Step (1 to 22) for 10-node simulation."""
+    """Execute / return deterministic data for Storyboard Step (1 to 23) for 10-node simulation."""
     if step_number == 1:
         return load_step1_data()
-    max_steps = max(TOTAL_STEPS, 22)
+    max_steps = max(TOTAL_STEPS, 23)
     if step_number not in list(range(1, max_steps + 1)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

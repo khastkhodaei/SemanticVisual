@@ -849,4 +849,40 @@ Trace Packets:
 - **Canvas Animations**: Search pulses travel along physical multi-hop links to Super-Peers with floating tag `DISCOVERY_QUERY`, while in Figure 3(f) view they float straight upward from Tier 1 to Tier 2 to Tier 3.
 - **Inspector Modal**: Displays **Semantic Discovery Resolution** card showing matched Federation Partners, resolved target classes, and active aggregation routing paths.
 
+---
+
+## Step 23 — Super-Peer Query Routing & Forwarding to Target Exemplars
+
+Super-Peers evaluate the ingested discovery queries against their local cluster registries and route authorized discovery match responses downward to Cluster Exemplars (Tier 3 -> Tier 2).
+
+### 1. Semantic Match Verification
+$$\text{Sim}(S_i, S_{e_k}) = \frac{\vert{}S_i \cap S_{e_k}\vert{}}{P} = 1.0$$
+- Super-Peer 1: Authorizes SC-1 exchange with Exemplar C9.
+- Super-Peer 5: Authorizes SC-2 exchange with Exemplars C3 and C8.
+- Super-Peer 10: Authorizes SC-3 exchange with Exemplar C7.
+
+### 2. Multi-Hop Forwarding Routes
+- $C_1 \to C_9$: Path $[1, 4, 7, 9]$ (3 hops)
+- $C_5 \to C_3$: Path $[5, 3]$ (1 hop)
+- $C_5 \to C_8$: Path $[5, 6, 8]$ (2 hops)
+- $C_{10} \to C_7$: Path $[10, 9, 7]$ (2 hops)
+
+### 3. Trace Packets
+- `{"from": 1, "to": 9, "path": [1, 4, 7, 9], "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "8-B", "matched_peers": [1, 2], "signature": [1, 2, 3], "label": "FWD_MATCH (C9)"}`
+- `{"from": 5, "to": 3, "path": [5, 3], "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "2-B", "matched_peers": [4, 5, 8], "signature": [4, 5, 6], "label": "FWD_MATCH (C3)"}`
+- `{"from": 5, "to": 8, "path": [5, 6, 8], "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "8-A", "matched_peers": [3, 4, 5], "signature": [4, 5, 6], "label": "FWD_MATCH (C8)"}`
+- `{"from": 10, "to": 7, "path": [10, 9, 7], "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "4-B", "matched_peers": [6, 10], "signature": [8, 9, 10], "label": "FWD_MATCH (C7)"}`
+
+### 4. Peer States & Authorization Inboxes
+- **Exemplar C9**: `status: "MATCH_RECEIVED_FROM_SP1"`, `authorized_partners: [1, 2, 9]`
+- **Exemplar C3**: `status: "MATCH_RECEIVED_FROM_SP5"`, `authorized_partners: [3, 4, 5, 8]`
+- **Exemplar C8**: `status: "MATCH_RECEIVED_FROM_SP5"`, `authorized_partners: [3, 4, 5, 8]`
+- **Exemplar C7**: `status: "MATCH_RECEIVED_FROM_SP10"`, `authorized_partners: [6, 7, 10]`
+- **Super-Peers (C1, C5, C10)**: `status: "SUPER_PEER_DISPATCH_COMPLETE"`
+
+### 5. Dual-View Visualizations
+- **Figure 3(f) View**: Match packets travel from Tier 3 Super-Peers down the dashed lines to Tier 2 Exemplars.
+- **Physical View**: Packets traverse strictly along `[1, 4, 7, 9]`, `[5, 3]`, `[5, 6, 8]`, and `[10, 9, 7]` with label `"FWD_MATCH"`.
+
+
 
