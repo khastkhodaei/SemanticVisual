@@ -19,7 +19,7 @@
     {"id": 5, "pos": {"x": 480, "y": 420}, "neighbors": [3, 4, 6, 10], "distribution": {"C4": 53, "C5": 12, "C6": 35}, "vrf_score": 0.3185},
     {"id": 6, "pos": {"x": 480, "y": 240}, "neighbors": [3, 4, 5, 8, 9], "distribution": {"C7": 23, "C8": 19, "C9": 34, "C10": 24}, "vrf_score": 0.4721},
     {"id": 7, "pos": {"x": 480, "y": 90}, "neighbors": [3, 4, 9], "distribution": {"C7": 11, "C8": 41, "C9": 21, "C10": 27}, "vrf_score": 0.3564},
-    {"id": 8, "pos": {"x": 700, "y": 380}, "neighbors": [6, 9, 10], "distribution": {"C4": 32, "C5": 38, "C6": 30}, "vrf_score": 0.0275},
+    {"id": 8, "pos": {"x": 700, "y": 270}, "neighbors": [6, 9, 10], "distribution": {"C4": 32, "C5": 38, "C6": 30}, "vrf_score": 0.0275},
     {"id": 9, "pos": {"x": 700, "y": 140}, "neighbors": [6, 7, 8, 10], "distribution": {"C1": 45, "C2": 32, "C3": 23}, "vrf_score": 0.2947},
     {"id": 10, "pos": {"x": 840, "y": 380}, "neighbors": [5, 8, 9], "distribution": {"C7": 12, "C8": 43, "C9": 33, "C10": 12}, "vrf_score": 0.4126}
   ]
