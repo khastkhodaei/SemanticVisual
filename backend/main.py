@@ -339,6 +339,18 @@ def post_storyboard_step_21():
     return get_10node_step_data(21)
 
 
+@app.get("/api/v1/storyboard/step/22", tags=["Storyboard"])
+def get_storyboard_step_22():
+    """Returns deterministic data for Storyboard Step 22 (Hierarchical Semantic Peer Search & Discovery Query)."""
+    return get_10node_step_data(22)
+
+
+@app.post("/api/v1/storyboard/step/22", tags=["Storyboard"])
+def post_storyboard_step_22():
+    """Execute / return deterministic data for Storyboard Step 22."""
+    return get_10node_step_data(22)
+
+
 @app.get("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
 def get_storyboard_step(step_number: int):
     """Returns deterministic data for Storyboard Step (1 to 22) for 10-node simulation."""

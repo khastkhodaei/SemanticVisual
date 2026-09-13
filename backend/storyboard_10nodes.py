@@ -4340,17 +4340,15 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
         step21_data = _get_10node_step_data_raw(21)
         step22_nodes = copy.deepcopy(step21_data["nodes"])
 
-        # Discovery Packet Traces as specified:
-        # 1. Members send REQ_PEER_DISCOVERY up to local exemplars.
-        # 2. Exemplars propagate discovery queries along multi-hop underlay routes to Super-Peers.
+        # Discovery Packet Traces (Strictly Valid Step 1 Underlay Edges):
         discovery_packets = [
-            {"from": 2, "to": 1, "path": [2, 1], "type": "REQ_PEER_DISCOVERY", "query_sig": [1, 2, 3], "super_cluster": "SC-1"},
-            {"from": 4, "to": 5, "path": [4, 5], "type": "REQ_PEER_DISCOVERY", "query_sig": [4, 5, 6], "super_cluster": "SC-2"},
-            {"from": 6, "to": 7, "path": [6, 7], "type": "REQ_PEER_DISCOVERY", "query_sig": [8, 9, 10], "super_cluster": "SC-3"},
-            {"from": 9, "to": 1, "path": [9, 8, 6, 4, 1], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-1", "query_sig": [1, 2, 3]},
-            {"from": 3, "to": 5, "path": [3, 5], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-2", "query_sig": [4, 5, 6]},
-            {"from": 8, "to": 5, "path": [8, 6, 5], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-2", "query_sig": [4, 5, 6]},
-            {"from": 7, "to": 10, "path": [7, 9, 10], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-3", "query_sig": [8, 9, 10]},
+            {"from": 2, "to": 1, "path": [2, 1], "type": "REQ_PEER_DISCOVERY", "target_sp": 1, "label": "DISCOVERY_QUERY"},
+            {"from": 9, "to": 1, "path": [9, 7, 4, 1], "type": "REQ_PEER_DISCOVERY", "target_sp": 1, "label": "DISCOVERY_QUERY"},
+            {"from": 4, "to": 5, "path": [4, 5], "type": "REQ_PEER_DISCOVERY", "target_sp": 5, "label": "DISCOVERY_QUERY"},
+            {"from": 3, "to": 5, "path": [3, 5], "type": "REQ_PEER_DISCOVERY", "target_sp": 5, "label": "DISCOVERY_QUERY"},
+            {"from": 8, "to": 5, "path": [8, 6, 5], "type": "REQ_PEER_DISCOVERY", "target_sp": 5, "label": "DISCOVERY_QUERY"},
+            {"from": 7, "to": 10, "path": [7, 9, 10], "type": "REQ_PEER_DISCOVERY", "target_sp": 10, "label": "DISCOVERY_QUERY"},
+            {"from": 6, "to": 10, "path": [6, 4, 7, 9, 10], "type": "REQ_PEER_DISCOVERY", "target_sp": 10, "label": "DISCOVERY_QUERY"},
         ]
 
         # Resolved Peer States:
@@ -4371,16 +4369,16 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
         }
 
         DISCOVERY_ROUTES = {
-            1: "Local Super-Peer & Registry Coordinator for SC-1",
+            1: "Self-Local Resolution: C1 [1] (Super-Peer Coordinator)",
             2: "Direct: C2 -> C1 [2, 1]",
             3: "Direct: C3 -> C5 [3, 5]",
             4: "Direct: C4 -> C5 [4, 5]",
-            5: "Local Super-Peer & Registry Coordinator for SC-2",
-            6: "Exemplar Relay: C6 -> C7 [6, 7] -> C10 [7, 9, 10]",
+            5: "Self-Local Resolution: C5 [5] (Super-Peer Coordinator)",
+            6: "Multi-Hop Underlay: C6 -> C4 -> C7 -> C9 -> C10 [6, 4, 7, 9, 10]",
             7: "Multi-Hop Underlay: C7 -> C9 -> C10 [7, 9, 10]",
             8: "Multi-Hop Underlay: C8 -> C6 -> C5 [8, 6, 5]",
-            9: "Multi-Hop Underlay: C9 -> C8 -> C6 -> C4 -> C1 [9, 8, 6, 4, 1]",
-            10: "Local Super-Peer & Registry Coordinator for SC-3",
+            9: "Multi-Hop Underlay: C9 -> C7 -> C4 -> C1 [9, 7, 4, 1]",
+            10: "Self-Local Resolution: C10 [10] (Super-Peer Coordinator)",
         }
 
         for n in step22_nodes:
@@ -4396,8 +4394,8 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
 
         terminal_logs = [
             "[TOP-DOWN DISCOVERY] Edge clients dispatch REQ_PEER_DISCOVERY upstream along the SON hierarchy.",
-            "[INTRA-ZONE PROPAGATION] Member nodes forward requests to local exemplars (C2->C1, C4->C5, C6->C7).",
-            "[MULTI-HOP ROUTING] Exemplars forward queries across multi-hop underlay routes to Super-Peers: C9->C1 [9,8,6,4,1], C8->C5 [8,6,5], C7->C10 [7,9,10].",
+            "[INTRA-ZONE PROPAGATION] Member nodes forward requests to local exemplars & Super-Peers along valid physical mesh edges.",
+            "[MULTI-HOP ROUTING] Discovery paths strictly traverse physical underlay links: C9->C1 [9,7,4,1], C6->C10 [6,4,7,9,10], C8->C5 [8,6,5], C7->C10 [7,9,10].",
             "[SUPER-PEER MATCHMAKING] Super-Peers (C1, C5, C10) evaluate cosine affinity on semantic profile catalogs.",
             "[DISCOVERY RESOLVED] Super-Cluster SC-1 (Aviation & Vehicles): Federation partners authorized {C1, C2, C9} for target classes [1, 2, 3].",
             "[DISCOVERY RESOLVED] Super-Cluster SC-2 (Animals): Federation partners authorized {C3, C4, C5, C8} for target classes [4, 5, 6].",
@@ -4437,6 +4435,7 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "boundary_nodes": [1, 6],
             "packets": discovery_packets,
             "discovery_packets": discovery_packets,
+            "packet_traces": discovery_packets,
             "terminal_logs": terminal_logs,
             "bandwidth_savings": "62.5%",
             "sparsification_p": 3,

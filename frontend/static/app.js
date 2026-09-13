@@ -6458,13 +6458,13 @@ function animateStep22PeerDiscovery(discoveryPackets, allNodes) {
   const CYCLE_MS = 3800;
 
   const packets = (discoveryPackets && discoveryPackets.length > 0) ? discoveryPackets : [
-    { from: 2, to: 1, path: [2, 1], type: "REQ_PEER_DISCOVERY", query_sig: [1, 2, 3], super_cluster: "SC-1" },
-    { from: 4, to: 5, path: [4, 5], type: "REQ_PEER_DISCOVERY", query_sig: [4, 5, 6], super_cluster: "SC-2" },
-    { from: 6, to: 7, path: [6, 7], type: "REQ_PEER_DISCOVERY", query_sig: [8, 9, 10], super_cluster: "SC-3" },
-    { from: 9, to: 1, path: [9, 8, 6, 4, 1], type: "REQ_PEER_DISCOVERY", super_cluster: "SC-1", query_sig: [1, 2, 3] },
-    { from: 3, to: 5, path: [3, 5], type: "REQ_PEER_DISCOVERY", super_cluster: "SC-2", query_sig: [4, 5, 6] },
-    { from: 8, to: 5, path: [8, 6, 5], type: "REQ_PEER_DISCOVERY", super_cluster: "SC-2", query_sig: [4, 5, 6] },
-    { from: 7, to: 10, path: [7, 9, 10], type: "REQ_PEER_DISCOVERY", super_cluster: "SC-3", query_sig: [8, 9, 10] },
+    { from: 2, to: 1, path: [2, 1], type: "REQ_PEER_DISCOVERY", target_sp: 1, label: "DISCOVERY_QUERY" },
+    { from: 9, to: 1, path: [9, 7, 4, 1], type: "REQ_PEER_DISCOVERY", target_sp: 1, label: "DISCOVERY_QUERY" },
+    { from: 4, to: 5, path: [4, 5], type: "REQ_PEER_DISCOVERY", target_sp: 5, label: "DISCOVERY_QUERY" },
+    { from: 3, to: 5, path: [3, 5], type: "REQ_PEER_DISCOVERY", target_sp: 5, label: "DISCOVERY_QUERY" },
+    { from: 8, to: 5, path: [8, 6, 5], type: "REQ_PEER_DISCOVERY", target_sp: 5, label: "DISCOVERY_QUERY" },
+    { from: 7, to: 10, path: [7, 9, 10], type: "REQ_PEER_DISCOVERY", target_sp: 10, label: "DISCOVERY_QUERY" },
+    { from: 6, to: 10, path: [6, 4, 7, 9, 10], type: "REQ_PEER_DISCOVERY", target_sp: 10, label: "DISCOVERY_QUERY" },
   ];
 
   function getPointAlongPath(path, prog, posMap) {
@@ -6613,11 +6613,11 @@ function animateStep22PeerDiscovery(discoveryPackets, allNodes) {
           ctx.lineWidth = 1.8;
           ctx.stroke();
 
-          drawFloatingTag(ctx, "DISCOVERY_QUERY", pt.x, pt.y - 15, "#38bdf8", "rgba(15, 23, 42, 0.90)", "#38bdf8");
+          drawFloatingTag(ctx, pkt.label || "DISCOVERY_QUERY", pt.x, pt.y - 15, "#38bdf8", "rgba(15, 23, 42, 0.90)", "#38bdf8");
         }
       } else {
         const arrProg = (tPkt - 0.80) / 0.20;
-        const destId = pkt.to;
+        const destId = pkt.target_sp || pkt.to || (pkt.path ? pkt.path[pkt.path.length - 1] : null);
         const destPos = physNodePosMap[destId];
         if (destPos) {
           const rBeacon = NODE_RADIUS + arrProg * 26;

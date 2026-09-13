@@ -820,13 +820,24 @@ Clients query Super-Peers along the overlay hierarchy to resolve authorized mode
 $$q_i \xrightarrow{\text{SON}} SP_m \implies \mathcal{P}_i = \{j \in \mathcal{SC}_m \mid \text{Sim}(\mathbf{m}_i, \mathbf{m}_j) \ge \tau\}$$
 
 ### 2. Search Query Packet Traces & Routing
-- `{"from": 2, "to": 1, "path": [2, 1], "type": "REQ_PEER_DISCOVERY", "query_sig": [1, 2, 3]}`
-- `{"from": 4, "to": 5, "path": [4, 5], "type": "REQ_PEER_DISCOVERY", "query_sig": [4, 5, 6]}`
-- `{"from": 6, "to": 7, "path": [6, 7], "type": "REQ_PEER_DISCOVERY", "query_sig": [8, 9, 10]}`
-- `{"from": 9, "to": 1, "path": [9, 8, 6, 4, 1], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-1"}`
-- `{"from": 3, "to": 5, "path": [3, 5], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-2"}`
-- `{"from": 8, "to": 5, "path": [8, 6, 5], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-2"}`
-- `{"from": 7, "to": 10, "path": [7, 9, 10], "type": "REQ_PEER_DISCOVERY", "super_cluster": "SC-3"}`
+Physical Path Ledger (Strictly Valid Step 1 Edges):
+- Node 2 -> SP 1: Path `[2, 1]` (Direct 1-hop)
+- Node 9 -> SP 1: Path `[9, 7, 4, 1]` (Valid edges: (9,7), (7,4), (4,1))
+- Node 4 -> SP 5: Path `[4, 5]` (Direct 1-hop)
+- Node 3 -> SP 5: Path `[3, 5]` (Direct 1-hop)
+- Node 8 -> SP 5: Path `[8, 6, 5]` (Valid edges: (8,6), (6,5))
+- Node 7 -> SP 10: Path `[7, 9, 10]` (Valid edges: (7,9), (9,10))
+- Node 6 -> SP 10: Path `[6, 4, 7, 9, 10]` (Through its exemplar C7 via valid edges (6,4), (4,7), (7,9), (9,10))
+- Nodes 1, 5, 10: Self-local resolution (`[1]`, `[5]`, `[10]`)
+
+Trace Packets:
+- `{"from": 2, "to": 1, "path": [2, 1], "type": "REQ_PEER_DISCOVERY", "target_sp": 1, "label": "DISCOVERY_QUERY"}`
+- `{"from": 9, "to": 1, "path": [9, 7, 4, 1], "type": "REQ_PEER_DISCOVERY", "target_sp": 1, "label": "DISCOVERY_QUERY"}`
+- `{"from": 4, "to": 5, "path": [4, 5], "type": "REQ_PEER_DISCOVERY", "target_sp": 5, "label": "DISCOVERY_QUERY"}`
+- `{"from": 3, "to": 5, "path": [3, 5], "type": "REQ_PEER_DISCOVERY", "target_sp": 5, "label": "DISCOVERY_QUERY"}`
+- `{"from": 8, "to": 5, "path": [8, 6, 5], "type": "REQ_PEER_DISCOVERY", "target_sp": 5, "label": "DISCOVERY_QUERY"}`
+- `{"from": 7, "to": 10, "path": [7, 9, 10], "type": "REQ_PEER_DISCOVERY", "target_sp": 10, "label": "DISCOVERY_QUERY"}`
+- `{"from": 6, "to": 10, "path": [6, 4, 7, 9, 10], "type": "REQ_PEER_DISCOVERY", "target_sp": 10, "label": "DISCOVERY_QUERY"}`
 
 ### 3. Resolved Peer States & Matchmaking
 - **Nodes 1, 2, 9 (SC-1)**: `search_status: "RESOLVED"`, `federation_partners: [1, 2, 9]`, `target_classes: "1, 2, 3"`

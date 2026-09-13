@@ -3,7 +3,11 @@
 import pytest
 from fastapi.testclient import TestClient
 from backend.main import app
-from backend.storyboard_10nodes import get_10node_step_data, TOTAL_STEPS
+from backend.storyboard_10nodes import (
+    get_10node_step_data,
+    TOTAL_STEPS,
+    STORYBOARD_10_ADJACENCY,
+)
 
 
 @pytest.fixture
@@ -22,7 +26,8 @@ def test_step22_endpoint_success(client):
     assert "Peer Search" in data["title"] or "Discovery" in data["title"]
     assert len(data["nodes"]) == 10
     assert data["total_steps"] == 22
-    assert len(data["discovery_packets"]) == 7
+    assert len(data.get("discovery_packets", [])) == 7
+    assert len(data.get("packet_traces", [])) == 7
 
 
 def test_step22_all_nodes_search_status_resolved(client):
@@ -64,20 +69,44 @@ def test_step22_federation_partner_sets(client):
 
 
 def test_step22_discovery_packet_traces(client):
-    """Assert the 7 specified discovery packet traces are returned."""
+    """Assert packet_traces strictly traverse valid Step 1 physical edges with correct paths."""
     res = client.get("/api/v1/storyboard/step/22")
     assert res.status_code == 200
-    packets = res.json()["discovery_packets"]
+    data = res.json()
+    packets = data.get("packet_traces") or data.get("discovery_packets")
     assert len(packets) == 7
 
-    paths = [p["path"] for p in packets]
-    assert [2, 1] in paths
-    assert [4, 5] in paths
-    assert [6, 7] in paths
-    assert [9, 8, 6, 4, 1] in paths
-    assert [3, 5] in paths
-    assert [8, 6, 5] in paths
-    assert [7, 9, 10] in paths
+    path_by_source = {p["from"]: p["path"] for p in packets}
+
+    # Assert node 6 uses path [6, 4, 7, 9, 10]
+    assert path_by_source[6] == [6, 4, 7, 9, 10], f"Node 6 path mismatch: {path_by_source[6]}"
+
+    # Assert node 9 uses path [9, 7, 4, 1]
+    assert path_by_source[9] == [9, 7, 4, 1], f"Node 9 path mismatch: {path_by_source[9]}"
+
+    # Assert all other paths match specified physical ledger
+    assert path_by_source[2] == [2, 1]
+    assert path_by_source[4] == [4, 5]
+    assert path_by_source[3] == [3, 5]
+    assert path_by_source[8] == [8, 6, 5]
+    assert path_by_source[7] == [7, 9, 10]
+
+    # Assert all paths consist solely of adjacent physical edges in the Step 1 graph
+    for pkt in packets:
+        path = pkt["path"]
+        assert len(path) >= 2, f"Invalid trivial path: {path}"
+        assert pkt["type"] == "REQ_PEER_DISCOVERY"
+        assert pkt.get("label") == "DISCOVERY_QUERY"
+        assert pkt.get("target_sp") == path[-1]
+
+        for i in range(len(path) - 1):
+            u, v = path[i], path[i + 1]
+            assert v in STORYBOARD_10_ADJACENCY[u], (
+                f"Edge ({u}, {v}) in path {path} does NOT exist in Step 1 physical graph!"
+            )
+            assert u in STORYBOARD_10_ADJACENCY[v], (
+                f"Symmetric edge ({v}, {u}) in path {path} does NOT exist in Step 1 physical graph!"
+            )
 
 
 def test_step22_total_steps_constant():
