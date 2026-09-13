@@ -28,24 +28,46 @@ const PHYSICAL_LAYOUT_COORDS = {
   10: { x: 840, y: 380 }
 };
 
-// Dedicated Semantic Overlay Layout Coordinates (Clustered into 3 Global Super-Clusters)
-const OVERLAY_LAYOUT_COORDS = {
-  // Super-Cluster 1 (Left Wing / Aviation & Vehicles - Classes 1, 2, 3)
-  1: { x: 180, y: 320 }, // Super-Peer 🌟
-  2: { x: 100, y: 240 }, // Member
-  9: { x: 100, y: 400 }, // Exemplar
+// Figure 3(f) Compliant 2-Tier Semantic Overlay Tree Coordinates
+const FIGURE3F_COORDINATES = {
+  // Top Plane: Super-Peers connected by Backbone
+  1:  { x: 220, y: 130, tier: "SUPER_PEER", sc: "SC-1" },
+  5:  { x: 520, y: 130, tier: "SUPER_PEER", sc: "SC-2" },
+  10: { x: 820, y: 130, tier: "SUPER_PEER", sc: "SC-3" },
 
-  // Super-Cluster 2 (Center Hub / Animals - Classes 4, 5, 6)
-  5: { x: 500, y: 320 }, // Super-Peer 🌟
-  4: { x: 420, y: 220 }, // Member
-  3: { x: 580, y: 220 }, // Exemplar
-  8: { x: 500, y: 440 }, // Exemplar
+  // Middle Plane: Subordinate Exemplars
+  9:  { x: 220, y: 280, tier: "EXEMPLAR", sc: "SC-1" },
+  3:  { x: 440, y: 280, tier: "EXEMPLAR", sc: "SC-2" },
+  8:  { x: 600, y: 280, tier: "EXEMPLAR", sc: "SC-2" },
+  7:  { x: 820, y: 280, tier: "EXEMPLAR", sc: "SC-3" },
 
-  // Super-Cluster 3 (Right Wing / Transport & Amphibians - Classes 8, 9, 10)
-  10: { x: 820, y: 320 }, // Super-Peer 🌟
-  7: { x: 900, y: 240 },  // Exemplar
-  6: { x: 900, y: 400 }   // Member
+  // Bottom Plane: Regular Leaf Members
+  2:  { x: 220, y: 430, tier: "LEAF", sc: "SC-1" },
+  4:  { x: 520, y: 430, tier: "LEAF", sc: "SC-2" },
+  6:  { x: 820, y: 430, tier: "LEAF", sc: "SC-3" }
 };
+
+const OVERLAY_LAYOUT_COORDS = FIGURE3F_COORDINATES;
+
+// Figure 3(f) Compliant Overlay Edges with Super-Peer Backbone
+const FIGURE3F_EDGES = [
+  // Top Super-Peer Backbone (Solid glowing platinum)
+  { source: 1, target: 5, from: 1, to: 5, type: "SUPER_PEER_BACKBONE", color: "#f8fafc", style: "solid", width: 3, tier: 2, label: "C1 ↔ C5 (Backbone)" },
+  { source: 5, target: 10, from: 5, to: 10, type: "SUPER_PEER_BACKBONE", color: "#f8fafc", style: "solid", width: 3, tier: 2, label: "C5 ↔ C10 (Backbone)" },
+
+  // SC-1 (Sky Blue)
+  { source: 9, target: 1, from: 9, to: 1, type: "EXEMPLAR_TO_SP", color: "#38bdf8", style: "solid", width: 2.5, tier: 2, sc: "SC-1", label: "C9 ↔ C1" },
+  { source: 2, target: 1, from: 2, to: 1, type: "LEAF_TO_SP", color: "#38bdf8", style: "dashed", width: 2, tier: 1, sc: "SC-1", label: "C2 ↔ C1" },
+
+  // SC-2 (Amber Gold)
+  { source: 3, target: 5, from: 3, to: 5, type: "EXEMPLAR_TO_SP", color: "#f59e0b", style: "solid", width: 2.5, tier: 2, sc: "SC-2", label: "C3 ↔ C5" },
+  { source: 8, target: 5, from: 8, to: 5, type: "EXEMPLAR_TO_SP", color: "#f59e0b", style: "solid", width: 2.5, tier: 2, sc: "SC-2", label: "C8 ↔ C5" },
+  { source: 4, target: 5, from: 4, to: 5, type: "LEAF_TO_SP", color: "#f59e0b", style: "dashed", width: 2, tier: 1, sc: "SC-2", label: "C4 ↔ C5" },
+
+  // SC-3 (Neon Violet)
+  { source: 7, target: 10, from: 7, to: 10, type: "EXEMPLAR_TO_SP", color: "#c084fc", style: "solid", width: 2.5, tier: 2, sc: "SC-3", label: "C7 ↔ C10" },
+  { source: 6, target: 7, from: 6, to: 7, type: "LEAF_TO_EXEMPLAR", color: "#c084fc", style: "dashed", width: 2, tier: 1, sc: "SC-3", label: "C6 ↔ C7" }
+];
 
 // CIFAR-10 10-Class Definitions (C1 to C10)
 const CIFAR10_CLASSES = {
@@ -284,18 +306,20 @@ function initCytoscape() {
       {
         selector: "edge.overlay-mode-dimmed",
         style: {
-          "line-color": "rgba(148, 163, 184, 0.12)",
-          "width": 1.0,
-          "opacity": 0.05,
-          "z-index": 1
+          "line-color": "rgba(148, 163, 184, 0.0)",
+          "width": 0,
+          "opacity": 0,
+          "z-index": 1,
+          "visibility": "hidden"
         }
       },
       {
         selector: "edge.semantic-overlay-edge",
         style: {
           "curve-style": "bezier",
-          "width": 3.5,
+          "width": "data(width)",
           "line-color": "data(color)",
+          "line-style": "data(lineStyle)",
           "opacity": 0.95,
           "target-arrow-shape": "none",
           "z-index": 60,
@@ -304,15 +328,24 @@ function initCytoscape() {
         }
       },
       {
-        selector: "edge.semantic-overlay-tier2",
+        selector: "edge.semantic-overlay-backbone",
         style: {
           "curve-style": "bezier",
           "width": 4.0,
-          "line-style": "dashed",
-          "line-dash-pattern": [6, 4],
-          "line-color": "data(color)",
+          "line-color": "#f8fafc",
+          "line-style": "solid",
           "opacity": 1.0,
-          "z-index": 70
+          "z-index": 75,
+          "shadow-blur": 16,
+          "shadow-color": "#f8fafc",
+          "shadow-opacity": 0.85
+        }
+      },
+      {
+        selector: "edge.semantic-overlay-dashed",
+        style: {
+          "line-style": "dashed",
+          "line-dash-pattern": [6, 4]
         }
       },
       {
@@ -5179,14 +5212,14 @@ function toggleLayout() {
   const canvasLabel = document.getElementById("canvasViewLabel");
   if (canvasLabel) {
     canvasLabel.textContent = currentLayout === "overlay"
-      ? "Semantic Overlay Network (SON) — Reorganized 3 Global Super-Clusters"
-      : "Semantic Overlay Network (SON) — Physical Topology with 7 Logical Edges";
+      ? "Semantic Overlay Network (SON) — Figure 3(f) Overlay Tree"
+      : "Semantic Overlay Network (SON) — Physical Topology with Figure 3(f) Overlay";
   }
 
   logToTerminal(
     "ZONE",
     nextLayout === "overlay"
-      ? "[DUAL-LAYOUT] Switching to Semantic Overlay Layout: Nodes physically grouped into 3 Super-Clusters."
+      ? "[DUAL-LAYOUT] Switching to Figure 3(f) Overlay Tree: Top Super-Peer backbone & vertical cluster columns."
       : "[DUAL-LAYOUT] Restoring original Physical Topology Layout: Ad-hoc mesh coordinates restored."
   );
 
@@ -5197,13 +5230,13 @@ function updateLayoutButtonUI() {
   const btn = document.getElementById("btn-toggle-layout");
   if (!btn) return;
   if (currentLayout === "overlay") {
-    btn.innerHTML = `<span>✨</span><span>Layout: Semantic Overlay</span>`;
+    btn.innerHTML = `<span>✨</span><span>Layout: Figure 3(f) Overlay Tree</span>`;
     btn.classList.add("layout-overlay-active");
     btn.title = "Click to toggle view: Physical Topology";
   } else {
     btn.innerHTML = `<span>🔀</span><span>Layout: Physical Topology</span>`;
     btn.classList.remove("layout-overlay-active");
-    btn.title = "Click to toggle view: Semantic Overlay Layout";
+    btn.title = "Click to toggle view: Figure 3(f) Overlay Tree";
   }
 }
 
@@ -5240,10 +5273,10 @@ function animateLayoutTransition(toLayout, onComplete) {
       ? 4 * progress * progress * progress
       : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
-    // Smoothly transition physical edges opacity
+    // Smoothly transition physical edges opacity: in Figure 3(f) mode, completely hide physical links (opacity: 0)
     if (physicalEdges && physicalEdges.length > 0) {
-      const startOp = toLayout === "overlay" ? 0.75 : 0.05;
-      const endOp = toLayout === "overlay" ? 0.05 : 0.75;
+      const startOp = toLayout === "overlay" ? 0.75 : 0;
+      const endOp = toLayout === "overlay" ? 0 : 0.75;
       const curOp = startOp + (endOp - startOp) * eased;
       physicalEdges.style("opacity", curOp);
     }
@@ -5273,7 +5306,7 @@ function animateLayoutTransition(toLayout, onComplete) {
         }
       }
       if (toLayout === "overlay") {
-        physicalEdges.addClass("overlay-mode-dimmed").style("opacity", 0.05);
+        physicalEdges.addClass("overlay-mode-dimmed").style("opacity", 0);
       } else {
         physicalEdges.removeClass("overlay-mode-dimmed").style("opacity", 0.75);
       }
@@ -5289,18 +5322,18 @@ function buildStep20FromStep19(data19) {
   const superPeers = [1, 5, 10];
   const exemplars = [3, 7, 8, 9];
 
-  // Active overlay neighbor map per STEPS.md
+  // Active overlay neighbor map per Figure 3(f)
   const overlayNeighbors = {
-    1: [2, 9],
+    1: [2, 9, 5],
     2: [1],
     3: [5],
     4: [5],
-    5: [3, 4, 8],
+    5: [1, 3, 4, 8, 10],
     6: [7],
     7: [6, 10],
     8: [5],
     9: [1],
-    10: [7]
+    10: [5, 7]
   };
 
   const scMap = {
@@ -5334,35 +5367,28 @@ function buildStep20FromStep19(data19) {
     }
   });
 
-  const semanticOverlayEdges = [
-    { from: 2, to: 1, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-1", color: "#38bdf8", label: "C2 ↔ C1" },
-    { from: 9, to: 1, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-1", color: "#38bdf8", label: "C9 ↔ C1" },
-    { from: 4, to: 5, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-2", color: "#fbbf24", label: "C4 ↔ C5" },
-    { from: 3, to: 5, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-2", color: "#fbbf24", label: "C3 ↔ C5" },
-    { from: 8, to: 5, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-2", color: "#fbbf24", label: "C8 ↔ C5" },
-    { from: 6, to: 7, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-3", color: "#c084fc", label: "C6 ↔ C7" },
-    { from: 7, to: 10, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-3", color: "#c084fc", label: "C7 ↔ C10" },
-  ];
-
   return {
     step: 20,
-    title: "Step 20: Semantic Overlay Network (SON) Logical Topology Formation",
-    phase_badge: "ACTIVE PHASE: STEP 20: SEMANTIC OVERLAY NETWORK (SON) ACTIVATION",
-    description: "Two-tier Semantic Overlay Network (SON) activated with 7 logical edges across 3 Global Super-Clusters.",
-    formula: "\\mathcal{G}_{\\text{SON}} = (\\mathcal{V}, \\mathcal{E}_{\\text{SON}}) = \\mathcal{E}_{\\text{intra}} \\cup \\mathcal{E}_{\\text{inter}} \\quad (|\\mathcal{E}_{\\text{SON}}| = 7)",
+    title: "Step 20: 2-Tier Semantic Overlay Network (SON) Dual-View (Figure 3(f))",
+    phase_badge: "ACTIVE PHASE: STEP 20: 2-TIER SEMANTIC OVERLAY NETWORK (FIGURE 3(F))",
+    description: "Visualizes the complete 2-tier Semantic Overlay Network (SON) replicating Figure 3(f) with Super-Peer backbone links and vertical cluster columns.",
+    formula: "\\mathcal{G}_{\\text{SON}} = (\\mathcal{V}, \\mathcal{E}_{\\text{SON}}) = \\mathcal{E}_{\\text{intra}} \\cup \\mathcal{E}_{\\text{inter}} \\cup \\mathcal{E}_{\\text{backbone}}",
     formula_desc: "Two-tier logical federation overlay governs model aggregation while physical mesh serves as ad-hoc transport.",
     nodes: nodes,
     edges: data19.edges || [],
-    semantic_overlay_edges: semanticOverlayEdges,
+    semantic_overlay_edges: FIGURE3F_EDGES,
+    figure3f_edges: FIGURE3F_EDGES,
+    figure3f_coordinates: FIGURE3F_COORDINATES,
     total_nodes: 10,
     total_edges: 18,
     total_steps: 20,
     active_leaders: [1, 5, 10],
     terminal_logs: [
       "[SON ACTIVATION] Two-tier Semantic Overlay Network (SON) logical topology activated.",
+      "[FIGURE 3(F)] Hierarchical tree with Super-Peer backbone (C1 <-> C5 <-> C10) and vertical cluster columns.",
       "[TIER 1 INTRA-CLUSTER] C2 ↔ C1 (SC-1) | C4 ↔ C5 (SC-2) | C6 ↔ C7 (SC-3).",
       "[TIER 2 INTER-EXEMPLAR] C9 ↔ C1 (SC-1) | C3 ↔ C5, C8 ↔ C5 (SC-2) | C7 ↔ C10 (SC-3).",
-      "[DUAL-LAYOUT READY] Switch between Physical Topology and Semantic Overlay Layout via toolbar switcher."
+      "[DUAL-LAYOUT READY] Switch between Physical Topology and Figure 3(f) Overlay Tree via toolbar switcher."
     ]
   };
 }
@@ -5375,15 +5401,15 @@ function renderStep20(data) {
     document.getElementById("activeStepBadge")
   ].filter(Boolean);
   activeBadges.forEach(badge => {
-    badge.textContent = "ACTIVE PHASE: STEP 20: SEMANTIC OVERLAY NETWORK (SON) FORMATION";
+    badge.textContent = "ACTIVE PHASE: STEP 20: 2-TIER SEMANTIC OVERLAY NETWORK (FIGURE 3(F))";
     badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-400";
   });
 
   renderSidebarFormula(
-    "Step 20: Semantic Overlay Network (SON) Logical Topology",
-    "\\mathcal{G}_{\\text{SON}} = (\\mathcal{V}, \\mathcal{E}_{\\text{SON}}) = \\mathcal{E}_{\\text{intra}} \\cup \\mathcal{E}_{\\text{inter}} \\quad (|\\mathcal{E}_{\\text{SON}}| = 7)",
-    "Two-tier Semantic Overlay Network (SON) activates 7 logical federation edges across 3 Global Super-Clusters. Physical links serve as the underlying transport layer.",
-    "Step 20: Semantic Overlay",
+    "Step 20: 2-Tier Semantic Overlay Network (Figure 3(f))",
+    "\\mathcal{G}_{\\text{SON}} = (\\mathcal{V}, \\mathcal{E}_{\\text{SON}}) = \\mathcal{E}_{\\text{intra}} \\cup \\mathcal{E}_{\\text{inter}} \\cup \\mathcal{E}_{\\text{backbone}}",
+    "According to Figure 3(f), Super-Peers (C1, C5, C10) form the top coordination backbone. Subordinate exemplars and leaf members form vertical cluster columns.",
+    "Step 20: Figure 3(f) SON",
     false,
     "emerald"
   );
@@ -5391,13 +5417,13 @@ function renderStep20(data) {
   const canvasLabel = document.getElementById("canvasViewLabel");
   if (canvasLabel) {
     canvasLabel.textContent = currentLayout === "overlay"
-      ? "Semantic Overlay Network (SON) — Reorganized 3 Global Super-Clusters"
-      : "Semantic Overlay Network (SON) — Physical Topology with 7 Logical Edges";
+      ? "Semantic Overlay Network (SON) — Figure 3(f) Overlay Tree"
+      : "Semantic Overlay Network (SON) — Physical Topology with Figure 3(f) Overlay";
   }
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.innerHTML = '<span>Active Overlay: <span class="text-emerald-700 font-bold font-mono">7 SON Edges</span> &amp; <span class="text-amber-700 font-bold font-mono">3 Super-Peers (C1, C5, C10)</span></span>';
+    statLeaders.innerHTML = '<span>Figure 3(f) Tree: <span class="text-sky-700 font-bold font-mono">SC-1</span>, <span class="text-amber-700 font-bold font-mono">SC-2</span>, <span class="text-purple-700 font-bold font-mono">SC-3</span> &amp; <span class="text-slate-900 font-bold font-mono">SP Backbone</span></span>';
     statLeaders.className = "text-xs font-bold text-slate-800";
   }
 
@@ -5408,15 +5434,7 @@ function renderStep20(data) {
     return Object.assign({}, n, { x: coord.x, y: coord.y });
   });
 
-  const semanticOverlayEdges = data.semantic_overlay_edges || [
-    { from: 2, to: 1, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-1", color: "#38bdf8", label: "C2 ↔ C1" },
-    { from: 9, to: 1, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-1", color: "#38bdf8", label: "C9 ↔ C1" },
-    { from: 4, to: 5, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-2", color: "#fbbf24", label: "C4 ↔ C5" },
-    { from: 3, to: 5, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-2", color: "#fbbf24", label: "C3 ↔ C5" },
-    { from: 8, to: 5, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-2", color: "#fbbf24", label: "C8 ↔ C5" },
-    { from: 6, to: 7, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-3", color: "#c084fc", label: "C6 ↔ C7" },
-    { from: 7, to: 10, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-3", color: "#c084fc", label: "C7 ↔ C10" },
-  ];
+  const overlayEdges = data.figure3f_edges || data.semantic_overlay_edges || FIGURE3F_EDGES;
 
   renderCytoscapeGraph(nodesWithCoords, data.edges, {
     showInitiators: true,
@@ -5430,7 +5448,7 @@ function renderStep20(data) {
     isStep15: true,
     isStep13Exemplars: true,
     dimPhysicalEdges: currentLayout === "overlay",
-    semanticOverlayEdges: semanticOverlayEdges
+    semanticOverlayEdges: overlayEdges
   });
 
   const btnToggle = document.getElementById("btn-toggle-layout");
@@ -5440,12 +5458,12 @@ function renderStep20(data) {
     updateLayoutButtonUI();
   }
 
-  logToTerminal("ZONE", "[STEP 20] Semantic Overlay Network (SON) Logical Topology Formation activated.");
-  logToTerminal("INFO", "[TIER 1] Member-to-Exemplar: C2 ↔ C1 (SC-1), C4 ↔ C5 (SC-2), C6 ↔ C7 (SC-3).");
-  logToTerminal("INFO", "[TIER 2] Exemplar-to-Super-Peer: C9 ↔ C1 (SC-1), C3 ↔ C5, C8 ↔ C5 (SC-2), C7 ↔ C10 (SC-3).");
-  logToTerminal("SUCCESS", "[SON OPERATIONAL] 7 active logical edges. Click floating toolbar button to switch layout views.");
+  logToTerminal("ZONE", "[STEP 20] Figure 3(f) 2-Tier Semantic Overlay Network activated.");
+  logToTerminal("INFO", "[BACKBONE] Inter-Super-Peer Platinum Backbone: C1 ↔ C5 ↔ C10.");
+  logToTerminal("INFO", "[COLUMNS] SC-1 (Sky Blue) | SC-2 (Amber Gold) | SC-3 (Neon Violet).");
+  logToTerminal("SUCCESS", "[SON OPERATIONAL] Continuous bi-directional heartbeat loop active. Toggle layout anytime.");
 
-  animateStep20SemanticOverlay(semanticOverlayEdges, data.nodes);
+  animateStep20SemanticOverlay(overlayEdges, data.nodes);
 }
 
 function animateStep20SemanticOverlay(overlayEdges, allNodes) {
@@ -5456,245 +5474,423 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
   if (!canvas || !cy) return;
   const ctx = canvas.getContext("2d");
 
-  const edges = overlayEdges || [
-    { from: 2, to: 1, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-1", color: "#38bdf8", label: "C2 ↔ C1" },
-    { from: 9, to: 1, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-1", color: "#38bdf8", label: "C9 ↔ C1" },
-    { from: 4, to: 5, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-2", color: "#fbbf24", label: "C4 ↔ C5" },
-    { from: 3, to: 5, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-2", color: "#fbbf24", label: "C3 ↔ C5" },
-    { from: 8, to: 5, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-2", color: "#fbbf24", label: "C8 ↔ C5" },
-    { from: 6, to: 7, tier: 1, type: "MEMBER_TO_EXEMPLAR", sc: "SC-3", color: "#c084fc", label: "C6 ↔ C7" },
-    { from: 7, to: 10, tier: 2, type: "EXEMPLAR_TO_SUPERPEER", sc: "SC-3", color: "#c084fc", label: "C7 ↔ C10" },
-  ];
+  const edges = overlayEdges || FIGURE3F_EDGES;
 
-  const scClusters = [
-    { id: "SC-1", name: "Aviation & Vehicles", nodes: [1, 2, 9], color: "#38bdf8", rgb: "56, 189, 248", superPeer: 1 },
-    { id: "SC-2", name: "Animals", nodes: [3, 4, 5, 8], color: "#fbbf24", rgb: "251, 191, 36", superPeer: 5 },
-    { id: "SC-3", name: "Transport & Amphibians", nodes: [6, 7, 10], color: "#c084fc", rgb: "192, 132, 252", superPeer: 10 }
+  const scColumns = [
+    {
+      id: "SC-1",
+      name: "Aviation & Vehicles",
+      nodes: [1, 9, 2],
+      color: "#38bdf8",
+      rgb: "56, 189, 248",
+      superPeer: 1,
+      centerColX: 220
+    },
+    {
+      id: "SC-2",
+      name: "Animals",
+      nodes: [5, 3, 8, 4],
+      color: "#f59e0b",
+      rgb: "245, 158, 11",
+      superPeer: 5,
+      centerColX: 520
+    },
+    {
+      id: "SC-3",
+      name: "Transport & Amphibians",
+      nodes: [10, 7, 6],
+      color: "#c084fc",
+      rgb: "192, 132, 252",
+      superPeer: 10,
+      centerColX: 820
+    }
   ];
 
   const startTime = performance.now();
+  const CYCLE_MS = 3600; // 3.6s rhythmic ping-pong loop
 
   function runFrame(now) {
     if (currentStep !== 20) return;
     const elapsed = now - startTime;
-    const pulse = (Math.sin((elapsed / 700) * Math.PI) + 1) / 2; // 0..1 smooth pulse
-    const particleProgress = (elapsed % 2400) / 2400; // 0..1 loop for flowing energy particles
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2; // 0..1 smooth pulse
+    const tCycle = elapsed % CYCLE_MS;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const isOverlayMode = currentLayout === "overlay";
 
-    // 1. Status Banner Top of Canvas (Placed below the layout switcher button)
+    // 1. Status / Heartbeat Stage Banner at Top
     ctx.save();
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = isOverlayMode
-      ? "SEMANTIC OVERLAY LAYOUT: 3 GLOBAL SUPER-CLUSTERS (7 ACTIVE LOGICAL EDGES)"
-      : "PHYSICAL TOPOLOGY VIEW: 18 AD-HOC LINKS + 7 SEMANTIC OVERLAY EDGES";
+    let bannerText = "";
+    let bannerColor = "#38bdf8";
+
+    if (isOverlayMode) {
+      if (tCycle < 1200) {
+        bannerText = "✨ FIGURE 3(f) SON: [1/3] ⬆ UPSTREAM AGGREGATION (LEAVES & EXEMPLARS → SUPER-PEERS)";
+        bannerColor = "#38bdf8";
+      } else if (tCycle < 2400) {
+        bannerText = "🌟 FIGURE 3(f) SON: [2/3] ⮀ BACKBONE SYNC (SUPER-PEERS C1 ↔ C5 ↔ C10)";
+        bannerColor = "#f8fafc";
+      } else {
+        bannerText = "✨ FIGURE 3(f) SON: [3/3] ⬇ DOWNSTREAM DISPATCH (GLOBAL WEIGHTS → ALL PARTICIPANTS)";
+        bannerColor = "#c084fc";
+      }
+    } else {
+      bannerText = "PHYSICAL TOPOLOGY VIEW: 18 AD-HOC LINKS + FIGURE 3(f) SEMANTIC OVERLAY";
+      bannerColor = "#94a3b8";
+    }
+
     const bW = ctx.measureText(bannerText).width;
     const bX = canvas.width / 2;
     const bY = 46;
-    ctx.fillStyle = isOverlayMode ? "rgba(15, 23, 42, 0.92)" : "rgba(30, 41, 59, 0.92)";
-    ctx.strokeStyle = isOverlayMode ? "#38bdf8" : "#94a3b8";
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = bannerColor;
     ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.roundRect(bX - bW / 2 - 10, bY - 10, bW + 20, 20, 5);
+    ctx.roundRect(bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = isOverlayMode ? "#38bdf8" : "#f1f5f9";
+    ctx.fillStyle = bannerColor;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
 
-    // 2. Render 3 Super-Cluster Background Hulls/Auras (Always active, prominent in Overlay Mode)
-    scClusters.forEach(sc => {
-      const positions = sc.nodes.map(id => {
-        const ele = getNodeElement(id);
-        return ele ? ele.renderedPosition() : null;
-      }).filter(Boolean);
+    // Retrieve live rendered positions of all 10 nodes
+    const p = {};
+    for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele && ele.length > 0) {
+        p[id] = ele.renderedPosition();
+      }
+    }
 
-      if (positions.length === 0) return;
+    // 2. In Figure 3(f) Overlay Mode: Render Vertical Column Cards
+    if (isOverlayMode) {
+      scColumns.forEach(sc => {
+        const positions = sc.nodes.map(id => p[id]).filter(Boolean);
+        if (positions.length === 0) return;
 
-      const cx = positions.reduce((sum, p) => sum + p.x, 0) / positions.length;
-      const cy_pos = positions.reduce((sum, p) => sum + p.y, 0) / positions.length;
+        const avgX = positions.reduce((sum, pt) => sum + pt.x, 0) / positions.length;
+        const minY = Math.min(...positions.map(pt => pt.y));
+        const maxY = Math.max(...positions.map(pt => pt.y));
 
-      // In Overlay Mode, draw the enclosing hull/aura clearly around the group
-      if (isOverlayMode && positions.length >= 2) {
+        const cardWidth = sc.id === "SC-2" ? 270 : 180;
+        const cardLeft = avgX - cardWidth / 2;
+        const cardTop = minY - 44;
+        const cardHeight = (maxY - minY) + 88;
+
         ctx.save();
-        const sorted = [...positions].sort((a, b) => {
-          return Math.atan2(a.y - cy_pos, a.x - cx) - Math.atan2(b.y - cy_pos, b.x - cx);
-        });
-
-        ctx.beginPath();
-        sorted.forEach((p, idx) => {
-          const dx = p.x - cx;
-          const dy = p.y - cy_pos;
-          const dist = Math.hypot(dx, dy);
-          const push = dist > 0 ? 46 : 30;
-          const px = p.x + (dx / dist) * push;
-          const py = p.y + (dy / dist) * push;
-          if (idx === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        });
-        ctx.closePath();
-
-        // Translucent fill
-        ctx.fillStyle = `rgba(${sc.rgb}, 0.08)`;
+        // Subtle translucent card fill
+        ctx.fillStyle = `rgba(${sc.rgb}, 0.045)`;
         ctx.shadowColor = sc.color;
-        ctx.shadowBlur = 24 + pulse * 10;
+        ctx.shadowBlur = 18 + pulse * 8;
+        ctx.beginPath();
+        ctx.roundRect(cardLeft, cardTop, cardWidth, cardHeight, 14);
         ctx.fill();
 
-        // Glowing border
-        ctx.strokeStyle = `rgba(${sc.rgb}, ${0.5 + pulse * 0.35})`;
-        ctx.lineWidth = 2.0;
+        // Glowing dashed border
+        ctx.strokeStyle = `rgba(${sc.rgb}, ${0.35 + pulse * 0.25})`;
+        ctx.lineWidth = 1.8;
         ctx.setLineDash([8, 6]);
-        ctx.lineDashOffset = -now / 35;
+        ctx.lineDashOffset = -now / 40;
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Cluster Title Pill Badge at top of the hull
+        // Cluster Column Title Pill at top of card
         ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
         const tagText = `🌌 ${sc.id}: ${sc.name}`;
         const tW = ctx.measureText(tagText).width;
-        const tagY = Math.min(...positions.map(p => p.y)) - 28;
+        const tagY = cardTop + 14;
 
         ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
         ctx.strokeStyle = sc.color;
         ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.roundRect(cx - tW / 2 - 8, tagY - 9, tW + 16, 18, 4);
+        ctx.roundRect(avgX - tW / 2 - 8, tagY - 9, tW + 16, 18, 4);
         ctx.fill();
         ctx.stroke();
 
         ctx.fillStyle = sc.color;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(tagText, cx, tagY);
-        ctx.restore();
-      }
-
-      // Glowing aura rings around each node in this Super-Cluster
-      positions.forEach(p => {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, isOverlayMode ? (26 + pulse * 6) : (24 + pulse * 4), 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(${sc.rgb}, ${isOverlayMode ? (0.4 + pulse * 0.4) : (0.2 + pulse * 0.2)})`;
-        ctx.lineWidth = isOverlayMode ? 2.5 : 1.5;
-        ctx.shadowColor = sc.color;
-        ctx.shadowBlur = isOverlayMode ? (18 + pulse * 10) : 10;
-        ctx.stroke();
+        ctx.fillText(tagText, avgX, tagY);
         ctx.restore();
       });
 
-      // Super-Peer Central Star Indicator
-      const spEle = getNodeElement(sc.superPeer);
-      if (spEle) {
-        const spPos = spEle.renderedPosition();
+      // 3. Render the Super-Peer Backbone Horizontal Rail (C1 <---> C5 <---> C10)
+      if (p[1] && p[5] && p[10]) {
         ctx.save();
+        // Outer glowing rail aura
         ctx.beginPath();
-        ctx.arc(spPos.x, spPos.y, 32 + pulse * 7, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(245, 158, 11, ${0.6 + pulse * 0.4})`;
-        ctx.lineWidth = 3.0;
-        ctx.shadowColor = "#f59e0b";
-        ctx.shadowBlur = 25 + pulse * 10;
+        ctx.moveTo(p[1].x, p[1].y);
+        ctx.lineTo(p[10].x, p[10].y);
+        ctx.strokeStyle = "rgba(248, 250, 252, 0.35)";
+        ctx.lineWidth = 8.0;
+        ctx.shadowColor = "#f8fafc";
+        ctx.shadowBlur = 20 + pulse * 8;
         ctx.stroke();
 
-        // Star badge
+        // Inner solid platinum core rail
+        ctx.beginPath();
+        ctx.moveTo(p[1].x, p[1].y);
+        ctx.lineTo(p[10].x, p[10].y);
+        ctx.strokeStyle = "#f8fafc";
+        ctx.lineWidth = 3.2;
+        ctx.shadowBlur = 0;
+        ctx.stroke();
+
+        // Backbone Label Badge above C5
         ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
-        const spText = `🌟 SUPER-PEER C${sc.superPeer}`;
-        const spW = ctx.measureText(spText).width;
-        const spY = spPos.y + (isOverlayMode ? 36 : 34);
-        ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-        ctx.strokeStyle = "#f59e0b";
+        const bbText = "🌟 INTER-SUPER-PEER BACKBONE (C1 ↔ C5 ↔ C10)";
+        const bbW = ctx.measureText(bbText).width;
+        const bbX = p[5].x;
+        const bbY = p[5].y - 34;
+
+        ctx.fillStyle = "rgba(15, 23, 42, 0.96)";
+        ctx.strokeStyle = "#f8fafc";
         ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.roundRect(spPos.x - spW / 2 - 5, spY - 7, spW + 10, 15, 3);
+        ctx.roundRect(bbX - bbW / 2 - 8, bbY - 8, bbW + 16, 16, 4);
         ctx.fill();
         ctx.stroke();
-        ctx.fillStyle = "#fef3c7";
+
+        ctx.fillStyle = "#ffffff";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(spText, spPos.x, spY);
+        ctx.fillText(bbText, bbX, bbY);
         ctx.restore();
       }
-    });
+    }
 
-    // 3. Prominently Render the 7 Semantic Overlay Edges with Glowing Neon Colors
+    // 4. Render Semantic Tree Edges with Neon Glow & Styles
     edges.forEach(edge => {
-      const srcEle = getNodeElement(edge.from);
-      const tgtEle = getNodeElement(edge.to);
-      if (!srcEle || !tgtEle) return;
+      const srcId = edge.from || edge.source;
+      const tgtId = edge.to || edge.target;
+      const pFrom = p[srcId];
+      const pTo = p[tgtId];
+      if (!pFrom || !pTo) return;
 
-      const pFrom = srcEle.renderedPosition();
-      const pTo = tgtEle.renderedPosition();
-
-      const edgeColor = edge.color || "#38bdf8";
-      const isTier2 = (edge.tier === 2);
+      const isBackbone = edge.type === "SUPER_PEER_BACKBONE";
+      const edgeColor = edge.color || (isBackbone ? "#f8fafc" : "#38bdf8");
+      const isDashed = edge.style === "dashed";
 
       ctx.save();
-      // Outer intense neon glow
+      // Outer glow
       ctx.beginPath();
       ctx.moveTo(pFrom.x, pFrom.y);
       ctx.lineTo(pTo.x, pTo.y);
       ctx.strokeStyle = edgeColor;
-      ctx.lineWidth = isOverlayMode ? (isTier2 ? 4.5 : 3.8) : 2.8;
+      ctx.lineWidth = isOverlayMode ? (isBackbone ? 4.5 : (isDashed ? 2.5 : 3.5)) : 2.5;
       ctx.shadowColor = edgeColor;
-      ctx.shadowBlur = isOverlayMode ? (22 + pulse * 10) : 12;
+      ctx.shadowBlur = isOverlayMode ? (18 + pulse * 8) : 10;
+
+      if (isDashed) {
+        ctx.setLineDash([8, 5]);
+      } else {
+        ctx.setLineDash([]);
+      }
       ctx.stroke();
 
-      // Inner bright white/core highlight
+      // Inner crisp white highlight
       ctx.beginPath();
       ctx.moveTo(pFrom.x, pFrom.y);
       ctx.lineTo(pTo.x, pTo.y);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.75)";
-      ctx.lineWidth = isOverlayMode ? 1.5 : 1.0;
+      ctx.strokeStyle = isBackbone ? "#ffffff" : "rgba(255, 255, 255, 0.75)";
+      ctx.lineWidth = isBackbone ? 2.0 : 1.2;
       ctx.shadowBlur = 0;
       ctx.stroke();
+      ctx.restore();
+    });
 
-      // Flowing Energy Photons / Pulses along the edge
-      const numPhotons = isTier2 ? 3 : 2;
-      for (let pi = 0; pi < numPhotons; pi++) {
-        const offset = (particleProgress + pi / numPhotons) % 1;
-        const px = pFrom.x + (pTo.x - pFrom.x) * offset;
-        const py = pFrom.y + (pTo.y - pFrom.y) * offset;
+    // 5. Continuous Ping-Pong Heartbeat Loop Particles
+    // Phase 1 (0..1200ms): Upstream (Leaves/Exemplars -> SP)
+    // Phase 2 (1200..2400ms): Backbone Sync (C1 <-> C5 <-> C10)
+    // Phase 3 (2400..3600ms): Downstream (SP -> Exemplars/Leaves)
+    ctx.save();
+    if (tCycle < 1200) {
+      // UPSTREAM FLOW: Leaf members -> Exemplars -> Super-Peers
+      const t = tCycle / 1200; // 0..1
 
+      const upstreamFlows = [
+        // SC-1 (Sky Blue)
+        { from: 2, to: 1, color: "#38bdf8" },
+        { from: 9, to: 1, color: "#38bdf8" },
+        // SC-2 (Amber Gold)
+        { from: 4, to: 5, color: "#f59e0b" },
+        { from: 3, to: 5, color: "#f59e0b" },
+        { from: 8, to: 5, color: "#f59e0b" },
+        // SC-3 (Neon Violet)
+        { from: 6, to: 7, color: "#c084fc" },
+        { from: 7, to: 10, color: "#c084fc" }
+      ];
+
+      upstreamFlows.forEach(flow => {
+        const pA = p[flow.from];
+        const pB = p[flow.to];
+        if (!pA || !pB) return;
+        const px = pA.x + (pB.x - pA.x) * t;
+        const py = pA.y + (pB.y - pA.y) * t;
+
+        // Glowing particle
         ctx.beginPath();
-        ctx.arc(px, py, isOverlayMode ? 4.5 : 3.5, 0, Math.PI * 2);
+        ctx.arc(px, py, isOverlayMode ? 5.5 : 4.0, 0, Math.PI * 2);
         ctx.fillStyle = "#ffffff";
-        ctx.shadowColor = edgeColor;
-        ctx.shadowBlur = 14;
+        ctx.shadowColor = flow.color;
+        ctx.shadowBlur = 16;
         ctx.fill();
 
         ctx.beginPath();
-        ctx.arc(px, py, isOverlayMode ? 7.5 : 5.5, 0, Math.PI * 2);
-        ctx.strokeStyle = edgeColor;
-        ctx.lineWidth = 1.8;
+        ctx.arc(px, py, isOverlayMode ? 9.0 : 6.5, 0, Math.PI * 2);
+        ctx.strokeStyle = flow.color;
+        ctx.lineWidth = 2.0;
         ctx.stroke();
+      });
+
+      // Super-Peer receiving glow
+      if (t > 0.7) {
+        const recPulse = (t - 0.7) / 0.3;
+        [1, 5, 10].forEach(spId => {
+          const pt = p[spId];
+          if (!pt) return;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 28 + recPulse * 14, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(245, 158, 11, ${1 - recPulse})`;
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+        });
       }
+    } else if (tCycle < 2400) {
+      // BACKBONE SYNC FLOW: C1 <---> C5 <---> C10 along the top rail
+      const t = (tCycle - 1200) / 1200; // 0..1
 
-      // Edge Midpoint Label (Tier 1 vs Tier 2) in Overlay Mode
-      if (isOverlayMode) {
-        const midX = (pFrom.x + pTo.x) / 2;
-        const midY = (pFrom.y + pTo.y) / 2;
-        const tierText = isTier2 ? "Tier 2" : "Tier 1";
-        ctx.font = "bold 8px ui-monospace, SFMono-Regular, monospace";
-        const tW = ctx.measureText(tierText).width;
+      if (p[1] && p[5] && p[10]) {
+        const syncPairs = [
+          // C1 -> C5 and C5 -> C1
+          { ax: p[1].x, ay: p[1].y, bx: p[5].x, by: p[5].y, t: t },
+          { ax: p[5].x, ay: p[5].y, bx: p[1].x, by: p[1].y, t: t },
+          // C5 -> C10 and C10 -> C5
+          { ax: p[5].x, ay: p[5].y, bx: p[10].x, by: p[10].y, t: t },
+          { ax: p[10].x, ay: p[10].y, bx: p[5].x, by: p[5].y, t: t }
+        ];
 
-        ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
-        ctx.strokeStyle = edgeColor;
-        ctx.lineWidth = 1.0;
+        syncPairs.forEach(pair => {
+          const px = pair.ax + (pair.bx - pair.ax) * pair.t;
+          const py = pair.ay + (pair.by - pair.ay) * pair.t;
+
+          ctx.beginPath();
+          ctx.arc(px, py, isOverlayMode ? 6.5 : 4.5, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = "#f8fafc";
+          ctx.shadowBlur = 20;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(px, py, isOverlayMode ? 11.0 : 8.0, 0, Math.PI * 2);
+          ctx.strokeStyle = "#f8fafc";
+          ctx.lineWidth = 2.2;
+          ctx.stroke();
+        });
+
+        // Pulsing Super-Peer Beacon Rings
+        [1, 5, 10].forEach(spId => {
+          const pt = p[spId];
+          if (!pt) return;
+          const beaconSize = 32 + Math.sin(t * Math.PI) * 12;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, beaconSize, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(248, 250, 252, 0.85)";
+          ctx.lineWidth = 3.0;
+          ctx.shadowColor = "#ffffff";
+          ctx.shadowBlur = 18;
+          ctx.stroke();
+        });
+      }
+    } else {
+      // DOWNSTREAM DISPATCH FLOW: Super-Peers -> Exemplars -> Leaf members
+      const t = (tCycle - 2400) / 1200; // 0..1
+
+      const downstreamFlows = [
+        // SC-1 (Sky Blue)
+        { from: 1, to: 9, color: "#38bdf8" },
+        { from: 1, to: 2, color: "#38bdf8" },
+        // SC-2 (Amber Gold)
+        { from: 5, to: 3, color: "#f59e0b" },
+        { from: 5, to: 8, color: "#f59e0b" },
+        { from: 5, to: 4, color: "#f59e0b" },
+        // SC-3 (Neon Violet)
+        { from: 10, to: 7, color: "#c084fc" },
+        { from: 7, to: 6, color: "#c084fc" }
+      ];
+
+      downstreamFlows.forEach(flow => {
+        const pA = p[flow.from];
+        const pB = p[flow.to];
+        if (!pA || !pB) return;
+        const px = pA.x + (pB.x - pA.x) * t;
+        const py = pA.y + (pB.y - pA.y) * t;
+
         ctx.beginPath();
-        ctx.roundRect(midX - tW / 2 - 4, midY - 6, tW + 8, 12, 3);
-        ctx.fill();
-        ctx.stroke();
-
+        ctx.arc(px, py, isOverlayMode ? 5.5 : 4.0, 0, Math.PI * 2);
         ctx.fillStyle = "#ffffff";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(tierText, midX, midY);
-      }
+        ctx.shadowColor = flow.color;
+        ctx.shadowBlur = 16;
+        ctx.fill();
 
+        ctx.beginPath();
+        ctx.arc(px, py, isOverlayMode ? 9.0 : 6.5, 0, Math.PI * 2);
+        ctx.strokeStyle = flow.color;
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+      });
+
+      // Member arrival ripple
+      if (t > 0.7) {
+        const arrPulse = (t - 0.7) / 0.3;
+        [2, 4, 6].forEach(leafId => {
+          const pt = p[leafId];
+          if (!pt) return;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 22 + arrPulse * 12, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(56, 189, 248, ${1 - arrPulse})`;
+          ctx.lineWidth = 2.0;
+          ctx.stroke();
+        });
+      }
+    }
+    ctx.restore();
+
+    // 6. Super-Peer Stars and Exemplar Badges
+    [1, 5, 10].forEach(spId => {
+      const pt = p[spId];
+      if (!pt) return;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 30 + pulse * 6, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(245, 158, 11, ${0.7 + pulse * 0.3})`;
+      ctx.lineWidth = 2.8;
+      ctx.shadowColor = "#f59e0b";
+      ctx.shadowBlur = 20 + pulse * 10;
+      ctx.stroke();
+
+      // Star Badge
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      const spText = `🌟 SP C${spId}`;
+      const spW = ctx.measureText(spText).width;
+      const spY = pt.y + (isOverlayMode ? 34 : 32);
+      ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(pt.x - spW / 2 - 5, spY - 7, spW + 10, 14, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#fef3c7";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(spText, pt.x, spY);
       ctx.restore();
     });
 

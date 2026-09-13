@@ -212,6 +212,44 @@ def get_10node_config() -> Dict[str, Any]:
     }
 
 
+FIGURE3F_COORDINATES: Dict[str, Dict[str, Any]] = {
+    # Top Plane: Super-Peers connected by Backbone
+    "1":  {"x": 220, "y": 130, "tier": "SUPER_PEER", "sc": "SC-1"},
+    "5":  {"x": 520, "y": 130, "tier": "SUPER_PEER", "sc": "SC-2"},
+    "10": {"x": 820, "y": 130, "tier": "SUPER_PEER", "sc": "SC-3"},
+
+    # Middle Plane: Subordinate Exemplars
+    "9":  {"x": 220, "y": 280, "tier": "EXEMPLAR", "sc": "SC-1"},
+    "3":  {"x": 440, "y": 280, "tier": "EXEMPLAR", "sc": "SC-2"},
+    "8":  {"x": 600, "y": 280, "tier": "EXEMPLAR", "sc": "SC-2"},
+    "7":  {"x": 820, "y": 280, "tier": "EXEMPLAR", "sc": "SC-3"},
+
+    # Bottom Plane: Regular Leaf Members
+    "2":  {"x": 220, "y": 430, "tier": "LEAF", "sc": "SC-1"},
+    "4":  {"x": 520, "y": 430, "tier": "LEAF", "sc": "SC-2"},
+    "6":  {"x": 820, "y": 430, "tier": "LEAF", "sc": "SC-3"}
+}
+
+FIGURE3F_EDGES: List[Dict[str, Any]] = [
+    # Top Super-Peer Backbone (Solid glowing platinum)
+    {"source": 1, "target": 5, "type": "SUPER_PEER_BACKBONE", "color": "#f8fafc", "style": "solid", "width": 3, "from": 1, "to": 5, "tier": 2, "label": "C1 ↔ C5 (Backbone)"},
+    {"source": 5, "target": 10, "type": "SUPER_PEER_BACKBONE", "color": "#f8fafc", "style": "solid", "width": 3, "from": 5, "to": 10, "tier": 2, "label": "C5 ↔ C10 (Backbone)"},
+
+    # SC-1 (Sky Blue)
+    {"source": 9, "target": 1, "type": "EXEMPLAR_TO_SP", "color": "#38bdf8", "style": "solid", "width": 2.5, "from": 9, "to": 1, "tier": 2, "label": "C9 ↔ C1"},
+    {"source": 2, "target": 1, "type": "LEAF_TO_SP", "color": "#38bdf8", "style": "dashed", "width": 2, "from": 2, "to": 1, "tier": 1, "label": "C2 ↔ C1"},
+
+    # SC-2 (Amber Gold)
+    {"source": 3, "target": 5, "type": "EXEMPLAR_TO_SP", "color": "#f59e0b", "style": "solid", "width": 2.5, "from": 3, "to": 5, "tier": 2, "label": "C3 ↔ C5"},
+    {"source": 8, "target": 5, "type": "EXEMPLAR_TO_SP", "color": "#f59e0b", "style": "solid", "width": 2.5, "from": 8, "to": 5, "tier": 2, "label": "C8 ↔ C5"},
+    {"source": 4, "target": 5, "type": "LEAF_TO_SP", "color": "#f59e0b", "style": "dashed", "width": 2, "from": 4, "to": 5, "tier": 1, "label": "C4 ↔ C5"},
+
+    # SC-3 (Neon Violet)
+    {"source": 7, "target": 10, "type": "EXEMPLAR_TO_SP", "color": "#c084fc", "style": "solid", "width": 2.5, "from": 7, "to": 10, "tier": 2, "label": "C7 ↔ C10"},
+    {"source": 6, "target": 7, "type": "LEAF_TO_EXEMPLAR", "color": "#c084fc", "style": "dashed", "width": 2, "from": 6, "to": 7, "tier": 1, "label": "C6 ↔ C7"}
+]
+
+
 def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
     """Internal helper to retrieve raw storyboard step data for 10-node simulation."""
     nodes = get_10node_nodes()
@@ -4121,34 +4159,27 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 n["is_super_peer"] = False
                 n["is_exemplar"] = False
 
-        semantic_overlay_edges = [
-            {"from": 2, "to": 1, "tier": 1, "type": "MEMBER_TO_EXEMPLAR", "super_cluster": "SC-1", "source": 2, "target": 1, "color": "#38bdf8", "label": "C2 ↔ C1"},
-            {"from": 9, "to": 1, "tier": 2, "type": "EXEMPLAR_TO_SUPERPEER", "super_cluster": "SC-1", "source": 9, "target": 1, "color": "#38bdf8", "label": "C9 ↔ C1"},
-            {"from": 4, "to": 5, "tier": 1, "type": "MEMBER_TO_EXEMPLAR", "super_cluster": "SC-2", "source": 4, "target": 5, "color": "#fbbf24", "label": "C4 ↔ C5"},
-            {"from": 3, "to": 5, "tier": 2, "type": "EXEMPLAR_TO_SUPERPEER", "super_cluster": "SC-2", "source": 3, "target": 5, "color": "#fbbf24", "label": "C3 ↔ C5"},
-            {"from": 8, "to": 5, "tier": 2, "type": "EXEMPLAR_TO_SUPERPEER", "super_cluster": "SC-2", "source": 8, "target": 5, "color": "#fbbf24", "label": "C8 ↔ C5"},
-            {"from": 6, "to": 7, "tier": 1, "type": "MEMBER_TO_EXEMPLAR", "super_cluster": "SC-3", "source": 6, "target": 7, "color": "#c084fc", "label": "C6 ↔ C7"},
-            {"from": 7, "to": 10, "tier": 2, "type": "EXEMPLAR_TO_SUPERPEER", "super_cluster": "SC-3", "source": 7, "target": 10, "color": "#c084fc", "label": "C7 ↔ C10"},
-        ]
-
         terminal_logs = [
             "[SON ACTIVATION] Two-tier Semantic Overlay Network (SON) logical topology activated.",
+            "[FIGURE 3(F)] Hierarchical tree with Super-Peer backbone (C1 <-> C5 <-> C10) and vertical cluster columns.",
             "[TIER 1 INTRA-CLUSTER] C2 ↔ C1 (SC-1) | C4 ↔ C5 (SC-2) | C6 ↔ C7 (SC-3).",
             "[TIER 2 INTER-EXEMPLAR] C9 ↔ C1 (SC-1) | C3 ↔ C5, C8 ↔ C5 (SC-2) | C7 ↔ C10 (SC-3).",
-            "[DUAL-LAYOUT READY] Switch between Physical Topology and Semantic Overlay Layout via toolbar switcher.",
+            "[DUAL-LAYOUT READY] Switch between Physical Topology and Figure 3(f) Overlay Tree via toolbar switcher.",
         ]
 
         return {
             "step": 20,
-            "title": "Step 20: Semantic Overlay Network (SON) Logical Topology Formation",
-            "phase_badge": "ACTIVE PHASE: STEP 20: SEMANTIC OVERLAY NETWORK (SON) FORMATION",
-            "description": "Two-tier Semantic Overlay Network (SON) activates 7 logical federation edges across 3 Global Super-Clusters.",
-            "formula": r"\mathcal{G}_{\text{SON}} = (\mathcal{V}, \mathcal{E}_{\text{SON}}) = \mathcal{E}_{\text{intra}} \cup \mathcal{E}_{\text{inter}} \quad (|\mathcal{E}_{\text{SON}}| = 7)",
+            "title": "Step 20: 2-Tier Semantic Overlay Network (SON) Dual-View (Figure 3(f))",
+            "phase_badge": "ACTIVE PHASE: STEP 20: 2-TIER SEMANTIC OVERLAY NETWORK (FIGURE 3(F))",
+            "description": "Visualizes the complete 2-tier Semantic Overlay Network (SON) replicating Figure 3(f) with Super-Peer backbone links and vertical cluster columns.",
+            "formula": r"\mathcal{G}_{\text{SON}} = (\mathcal{V}, \mathcal{E}_{\text{SON}}) = \mathcal{E}_{\text{intra}} \cup \mathcal{E}_{\text{inter}} \cup \mathcal{E}_{\text{backbone}}",
             "formula_desc": "Two-tier logical federation overlay governs model aggregation while physical mesh serves as ad-hoc transport.",
             "nodes": step20_nodes,
             "edges": step19_data["edges"],
-            "semantic_overlay_edges": semantic_overlay_edges,
-            "overlay_edges": semantic_overlay_edges,
+            "semantic_overlay_edges": FIGURE3F_EDGES,
+            "overlay_edges": FIGURE3F_EDGES,
+            "figure3f_edges": FIGURE3F_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
             "total_nodes": 10,
             "total_edges": 18,
             "unique_edges": len(step19_data["edges"]),

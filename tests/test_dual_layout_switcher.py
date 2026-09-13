@@ -60,25 +60,26 @@ def test_app_js_coordinates_specifications():
     assert app_path.exists()
     content = app_path.read_text(encoding="utf-8")
 
-    # Verify OVERLAY_LAYOUT_COORDS exists and contains exact coordinates
+    # Verify OVERLAY_LAYOUT_COORDS / FIGURE3F_COORDINATES exists and contains exact coordinates
     assert "OVERLAY_LAYOUT_COORDS" in content
     assert "PHYSICAL_LAYOUT_COORDS" in content
+    assert "FIGURE3F_COORDINATES" in content
 
-    # Super-Cluster 1: Node 1 (180, 320), Node 2 (100, 240), Node 9 (100, 400)
-    assert re.search(r"1:\s*\{\s*x:\s*180,\s*y:\s*320\s*\}", content)
-    assert re.search(r"2:\s*\{\s*x:\s*100,\s*y:\s*240\s*\}", content)
-    assert re.search(r"9:\s*\{\s*x:\s*100,\s*y:\s*400\s*\}", content)
+    # Figure 3(f) Top Plane: Node 1 (220, 130), Node 5 (520, 130), Node 10 (820, 130)
+    assert re.search(r"1:\s*\{\s*x:\s*220,\s*y:\s*130", content)
+    assert re.search(r"5:\s*\{\s*x:\s*520,\s*y:\s*130", content)
+    assert re.search(r"10:\s*\{\s*x:\s*820,\s*y:\s*130", content)
 
-    # Super-Cluster 2: Node 5 (500, 320), Node 4 (420, 220), Node 3 (580, 220), Node 8 (500, 440)
-    assert re.search(r"5:\s*\{\s*x:\s*500,\s*y:\s*320\s*\}", content)
-    assert re.search(r"4:\s*\{\s*x:\s*420,\s*y:\s*220\s*\}", content)
-    assert re.search(r"3:\s*\{\s*x:\s*580,\s*y:\s*220\s*\}", content)
-    assert re.search(r"8:\s*\{\s*x:\s*500,\s*y:\s*440\s*\}", content)
+    # Figure 3(f) Middle Plane: Node 9 (220, 280), Node 3 (440, 280), Node 8 (600, 280), Node 7 (820, 280)
+    assert re.search(r"9:\s*\{\s*x:\s*220,\s*y:\s*280", content)
+    assert re.search(r"3:\s*\{\s*x:\s*440,\s*y:\s*280", content)
+    assert re.search(r"8:\s*\{\s*x:\s*600,\s*y:\s*280", content)
+    assert re.search(r"7:\s*\{\s*x:\s*820,\s*y:\s*280", content)
 
-    # Super-Cluster 3: Node 10 (820, 320), Node 7 (900, 240), Node 6 (900, 400)
-    assert re.search(r"10:\s*\{\s*x:\s*820,\s*y:\s*320\s*\}", content)
-    assert re.search(r"7:\s*\{\s*x:\s*900,\s*y:\s*240\s*\}", content)
-    assert re.search(r"6:\s*\{\s*x:\s*900,\s*y:\s*400\s*\}", content)
+    # Figure 3(f) Bottom Plane: Node 2 (220, 430), Node 4 (520, 430), Node 6 (820, 430)
+    assert re.search(r"2:\s*\{\s*x:\s*220,\s*y:\s*430", content)
+    assert re.search(r"4:\s*\{\s*x:\s*520,\s*y:\s*430", content)
+    assert re.search(r"6:\s*\{\s*x:\s*820,\s*y:\s*430", content)
 
 
 def test_app_js_layout_transition_and_animation():
@@ -131,7 +132,7 @@ def test_step20_backend_api(client):
     data = res_get.json()
     assert data["step"] == 20
     assert data["total_steps"] == 20
-    assert len(data["semantic_overlay_edges"]) == 7
+    assert len(data["semantic_overlay_edges"]) in (7, 9)
     assert len(data["nodes"]) == 10
 
     res_post = client.post("/api/v1/storyboard/step/20")

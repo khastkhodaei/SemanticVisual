@@ -23,6 +23,8 @@ from backend.storyboard_10nodes import (
     get_10node_config,
     get_10node_step_data,
     TOTAL_STEPS,
+    FIGURE3F_COORDINATES,
+    FIGURE3F_EDGES,
 )
 
 TOTAL_STEPS: int = 17

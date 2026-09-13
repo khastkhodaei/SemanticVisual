@@ -705,50 +705,38 @@ Where:
 
 ---
 
-## Step 20 — Semantic Overlay Network (SON) Logical Topology Formation
+## Step 20 — 2-Tier Semantic Overlay Network (SON) Dual-View (Figure 3(f))
 
-### Objective
-With Super-Peers designated and exemplar bindings finalized, the network activates the official **two-tier Semantic Overlay Network (SON)** ($\mathcal{G}_{\text{SON}}$). Physical ad-hoc links remain as the underlying transport layer, while logical SON edges govern model updates and semantic aggregation.
+According to Figure 3(f) of the SemanticDFL paper, the network visualizes the complete two-tier Semantic Overlay Network (SON), isolating semantic affinity links from physical ad-hoc routing clutter.
 
-### Mathematical Formulation
-$$\mathcal{E}_{\text{SON}} = \mathcal{E}_{\text{intra}} \cup \mathcal{E}_{\text{inter}} \subset \mathcal{V} \times \mathcal{V}$$
+### 1. Figure 3(f) Hierarchical Topology
+- **Top Super-Peer Backbone:** Logical edges interconnecting global Super-Peers:
+  $$(C_1 \xleftrightarrow{\text{Backbone}} C_5 \xleftrightarrow{\text{Backbone}} C_{10})$$
+- **Cluster Columns (Figure 3(f)):**
+  - **Column 1 ($\mathcal{SC}_1$ — Sky Blue `#38bdf8`):**
+    - Super-Peer: $C_1$ (Top)
+    - Linked Peers: $C_9$ (Exemplar, mid) $\xleftrightarrow{}$ $C_1$, and $C_2$ (Leaf, bottom) $\xleftrightarrow{}$ $C_1$
+  - **Column 2 ($\mathcal{SC}_2$ — Amber Gold `#f59e0b`):**
+    - Super-Peer: $C_5$ (Top)
+    - Linked Peers: $C_3$ (Exemplar, mid) $\xleftrightarrow{}$ $C_5$, $C_8$ (Exemplar, mid) $\xleftrightarrow{}$ $C_5$, and $C_4$ (Leaf, bottom) $\xleftrightarrow{}$ $C_5$
+  - **Column 3 ($\mathcal{SC}_3$ — Neon Violet `#c084fc`):**
+    - Super-Peer: $C_{10}$ (Top)
+    - Linked Peers: $C_7$ (Exemplar, mid) $\xleftrightarrow{}$ $C_{10}$, and $C_6$ (Leaf, bottom) $\xleftrightarrow{}$ $C_7$
 
-$$\mathcal{G}_{\text{SON}} = (\mathcal{V}, \mathcal{E}_{\text{SON}})$$
+### 2. Multi-Hop Physical Underlay Mapping
+Every logical link maps to underlying multi-hop physical paths:
+- $(C_1 \leftrightarrow C_5) \implies [1, 4, 5]$
+- $(C_5 \leftrightarrow C_{10}) \implies [5, 10]$
+- $(C_9 \leftrightarrow C_1) \implies [9, 8, 6, 4, 1]$
+- $(C_3 \leftrightarrow C_5) \implies [3, 5]$
+- $(C_8 \leftrightarrow C_5) \implies [8, 6, 5]$
+- $(C_7 \leftrightarrow C_{10}) \implies [7, 9, 10]$
 
-Where:
-- $\mathcal{E}_{\text{intra}}$ denotes Tier 1 intra-zone member-to-exemplar edges ($|\mathcal{E}_{\text{intra}}| = 3$).
-- $\mathcal{E}_{\text{inter}}$ denotes Tier 2 inter-zone exemplar-to-superpeer edges ($|\mathcal{E}_{\text{inter}}| = 4$).
-- Total active logical edges: $|\mathcal{E}_{\text{SON}}| = 7$.
-
-### 2-Tier Logical Edge Registry
-| Tier | Edge | Type | Super-Cluster | Source | Target | Semantic Meaning |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---|
-| **Tier 1** | $(C_2 \leftrightarrow C_1)$ | `MEMBER_TO_EXEMPLAR` | $\mathcal{SC}_1$ | $C_2$ | $C_1$ | Member $C_2$ connects to local exemplar $C_1$ |
-| **Tier 1** | $(C_4 \leftrightarrow C_5)$ | `MEMBER_TO_EXEMPLAR` | $\mathcal{SC}_2$ | $C_4$ | $C_5$ | Member $C_4$ connects to local exemplar $C_5$ |
-| **Tier 1** | $(C_6 \leftrightarrow C_7)$ | `MEMBER_TO_EXEMPLAR` | $\mathcal{SC}_3$ | $C_6$ | $C_7$ | Member $C_6$ connects to local exemplar $C_7$ |
-| **Tier 2** | $(C_9 \leftrightarrow C_1)$ | `EXEMPLAR_TO_SUPERPEER` | $\mathcal{SC}_1$ | $C_9$ | $C_1$ | Exemplar $C_9$ federates with Super-Peer $C_1$ |
-| **Tier 2** | $(C_3 \leftrightarrow C_5)$ | `EXEMPLAR_TO_SUPERPEER` | $\mathcal{SC}_2$ | $C_3$ | $C_5$ | Exemplar $C_3$ federates with Super-Peer $C_5$ |
-| **Tier 2** | $(C_8 \leftrightarrow C_5)$ | `EXEMPLAR_TO_SUPERPEER` | $\mathcal{SC}_2$ | $C_8$ | $C_5$ | Exemplar $C_8$ federates with Super-Peer $C_5$ |
-| **Tier 2** | $(C_7 \leftrightarrow C_{10})$ | `EXEMPLAR_TO_SUPERPEER` | $\mathcal{SC}_3$ | $C_7$ | $C_{10}$ | Exemplar $C_7$ federates with Super-Peer $C_{10}$ |
-
-### Active Overlay Neighbor Map
-In the resulting logical overlay graph $\mathcal{G}_{\text{SON}}$, each node possesses the following active overlay neighbor list:
-- **Node 1 ($C_1$)**: Neighbors = $\{C_2, C_9\}$
-- **Node 2 ($C_2$)**: Neighbors = $\{C_1\}$
-- **Node 3 ($C_3$)**: Neighbors = $\{C_5\}$
-- **Node 4 ($C_4$)**: Neighbors = $\{C_5\}$
-- **Node 5 ($C_5$)**: Neighbors = $\{C_3, C_4, C_8\}$
-- **Node 6 ($C_6$)**: Neighbors = $\{C_7\}$
-- **Node 7 ($C_7$)**: Neighbors = $\{C_6, C_{10}\}$
-- **Node 8 ($C_8$)**: Neighbors = $\{C_5\}$
-- **Node 9 ($C_9$)**: Neighbors = $\{C_1\}$
-- **Node 10 ($C_{10}$)**: Neighbors = $\{C_7\}$
-
-### Dual-Layout Switcher (Physical Topology $\longleftrightarrow$ Semantic Overlay Layout)
+### 3. Dual-Layout Switcher
 From Step 20 onward, an interactive dual-layout switcher is available in the canvas toolbar:
 - **`🔀 Layout: Physical Topology`**: Displays nodes in their original ad-hoc physical placement with visible physical links and overlay edges.
-- **`✨ Layout: Semantic Overlay`**: Smoothly animates nodes (over 500ms using cubic easing) into 3 distinct spatial super-cluster groupings:
-  - **Super-Cluster 1 (Left Wing / Aviation & Vehicles)**: $C_1$ (180, 320), $C_2$ (100, 240), $C_9$ (100, 400).
-  - **Super-Cluster 2 (Center Hub / Animals)**: $C_5$ (500, 320), $C_4$ (420, 220), $C_3$ (580, 220), $C_8$ (500, 440).
-  - **Super-Cluster 3 (Right Wing / Transport & Amphibians)**: $C_{10}$ (820, 320), $C_7$ (900, 240), $C_6$ (900, 400).
-  - In overlay mode, physical links are dimmed to opacity 0.05, super-cluster aura hulls encircle each group, and the 7 SON federation edges glow with neon energy pulses.
+- **`✨ Layout: Figure 3(f) Overlay Tree`**: Smoothly animates nodes (over 500ms using cubic easing) into the 3 distinct Figure 3(f) cluster columns and top horizontal Super-Peer backbone:
+  - Top plane: $C_1 (220, 130), C_5 (520, 130), C_{10} (820, 130)$
+  - Middle plane: $C_9 (220, 280), C_3 (440, 280), C_8 (600, 280), C_7 (820, 280)$
+  - Bottom plane: $C_2 (220, 430), C_4 (520, 430), C_6 (820, 430)$
+  - In Figure 3(f) mode, physical links are completely hidden (opacity: 0), 3 vertical column cards anchor each cluster, and a continuous bi-directional ping-pong heartbeat flows across leaves, exemplars, and the glowing platinum backbone.
