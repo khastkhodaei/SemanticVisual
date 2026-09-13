@@ -667,7 +667,63 @@ Super-Initiator $C_4$ dispatches two structured directives along the super-zone 
 
 ---
 
-## Step 19 — Semantic Overlay Network (SON) Logical Topology Formation
+## Step 19 — Intra-Zone Super-Peer Designation & Exemplar Hierarchical Binding
+
+### Objective
+Base initiators ($C_2, C_4, C_8$) enforce strict **direct 1-hop physical routing** within each zone to notify their respective zone exemplars of their official Global Super-Peer appointment or hierarchical binding:
+- **Zone 2 ($C_2$)**:
+  - $C_2 \to C_1$ (direct physical link `[2, 1]`): `ORDER_SET_SUPER_PEER` (Super-Peer for $\mathcal{SC}_1$, subordinates: `[1, 9]`).
+  - $C_2 \to C_3$ (direct physical link `[2, 3]`): `ORDER_BIND_EXEMPLAR` (bound to Super-Peer $C_5$ in $\mathcal{SC}_2$).
+- **Zone 4 ($C_4$)**:
+  - $C_4 \to C_5$ (direct physical link `[4, 5]`): `ORDER_SET_SUPER_PEER` (Super-Peer for $\mathcal{SC}_2$, subordinates: `[3, 5, 8]`).
+  - $C_4 \to C_7$ (direct physical link `[4, 7]`): `ORDER_BIND_EXEMPLAR` (bound to Super-Peer $C_{10}$ in $\mathcal{SC}_3$).
+- **Zone 8 ($C_8$)**:
+  - $C_8 \to C_{10}$ (direct physical link `[8, 10]`): `ORDER_SET_SUPER_PEER` (Super-Peer for $\mathcal{SC}_3$, subordinates: `[7, 10]`).
+  - $C_8 \to C_9$ (direct physical link `[8, 9]`): `ORDER_BIND_EXEMPLAR` (bound to Super-Peer $C_1$ in $\mathcal{SC}_1$).
+  - $C_8$ (local self-state update `[8]`): `ORDER_BIND_EXEMPLAR` (bound to Super-Peer $C_5$ in $\mathcal{SC}_2$).
+
+### Mathematical Formulation
+$$C_{\text{init}} \xrightarrow{\text{1-hop}} e_k \quad : \quad \{\text{SUPER\_PEER}(C_1, C_5, C_{10}) \;\lor\; \text{BIND}(e_k \to SP_m)\}$$
+
+Where:
+- $C_{\text{init}} \in \{C_2, C_4, C_8\}$ denotes the governing Zone Initiator.
+- $e_k$ denotes an intra-zone exemplar node identified in Step 13.
+- $\text{SUPER\_PEER}(C_m)$ promotes exemplar $C_m$ to the Global Super-Peer for its respective Super-Cluster.
+- $\text{BIND}(e_k \to SP_m)$ links subordinate exemplar $e_k$ directly to its designated Global Super-Peer $SP_m$.
+
+### Intra-Zone 1-Hop Control Packet Traces
+| Source | Destination | Physical Path | Control Packet Type | Super-Cluster | Payload / Directive Details |
+|:---:|:---:|:---:|:---:|:---:|:---|
+| $C_2$ | $C_1$ | `[2, 1]` (1-hop) | `ORDER_SET_SUPER_PEER` | $\mathcal{SC}_1$ | Designated Super-Peer; subordinates: `[1, 9]` |
+| $C_2$ | $C_3$ | `[2, 3]` (1-hop) | `ORDER_BIND_EXEMPLAR` | $\mathcal{SC}_2$ | Bound to Super-Peer $C_5$ |
+| $C_4$ | $C_5$ | `[4, 5]` (1-hop) | `ORDER_SET_SUPER_PEER` | $\mathcal{SC}_2$ | Designated Super-Peer; subordinates: `[3, 5, 8]` |
+| $C_4$ | $C_7$ | `[4, 7]` (1-hop) | `ORDER_BIND_EXEMPLAR` | $\mathcal{SC}_3$ | Bound to Super-Peer $C_{10}$ |
+| $C_8$ | $C_{10}$ | `[8, 10]` (1-hop) | `ORDER_SET_SUPER_PEER` | $\mathcal{SC}_3$ | Designated Super-Peer; subordinates: `[7, 10]` |
+| $C_8$ | $C_9$ | `[8, 9]` (1-hop) | `ORDER_BIND_EXEMPLAR` | $\mathcal{SC}_1$ | Bound to Super-Peer $C_1$ |
+| $C_8$ | $C_8$ | `[8]` (local) | `ORDER_BIND_EXEMPLAR` | $\mathcal{SC}_2$ | Bound to Super-Peer $C_5$ |
+
+### Node Lifecycle & State in Step 19
+- **Global Super-Peers (Nodes 1, 5, 10)**:
+  - `is_super_peer`: `true`
+  - `super_cluster_id`: `"SC-1"` (for Node 1), `"SC-2"` (for Node 5), `"SC-3"` (for Node 10)
+  - `governed_exemplars`: `[1, 9]` (Node 1), `[3, 5, 8]` (Node 5), `[7, 10]` (Node 10)
+  - `bound_super_peer`: Self (`1`, `5`, `10`)
+  - `role`: `"SUPER_PEER"`
+- **Subordinate Exemplars (Nodes 3, 7, 8, 9)**:
+  - `is_super_peer`: `false`
+  - `is_exemplar`: `true`
+  - `bound_super_peer`: `5` (Node 3), `10` (Node 7), `5` (Node 8), `1` (Node 9)
+  - `super_cluster_id`: `"SC-2"` (Node 3, Node 8), `"SC-3"` (Node 7), `"SC-1"` (Node 9)
+  - `role`: `"EXEMPLAR"`
+- **Regular Members (Nodes 2, 4, 6)**:
+  - `is_super_peer`: `false`
+  - `is_exemplar`: `false`
+  - `bound_super_peer`: `None`
+  - Represented at cluster level by local exemplar ($C_2 \to C_1$, $C_4 \to C_5$, $C_6 \to C_7$).
+
+---
+
+## Step 20 — Semantic Overlay Network (SON) Logical Topology Formation
 
 ### Objective
 With Super-Peers designated and exemplar bindings finalized, the network activates the official **two-tier Semantic Overlay Network (SON)** ($\mathcal{G}_{\text{SON}}$). Physical ad-hoc links remain as the underlying transport layer, while logical SON edges govern model updates and semantic aggregation.
@@ -706,14 +762,6 @@ In the resulting logical overlay graph $\mathcal{G}_{\text{SON}}$, each node pos
 - **Node 9 ($C_9$)**: Neighbors = $\{C_1\}$
 - **Node 10 ($C_{10}$)**: Neighbors = $\{C_7\}$
 
-### Visual Overlay & Aesthetic Design
-- **Physical Underlay**: The 18 base physical links are dimmed to a subtle semi-transparent slate (`rgba(148, 163, 184, 0.25)`), serving as the physical communication foundation.
-- **Logical SON Overlay**: The 7 active semantic edges are rendered as vibrant, glowing neon links color-coded according to their respective Super-Cluster:
-  - **$\mathcal{SC}_1$ Links**: Neon Sky Blue (`#38bdf8`)
-  - **$\mathcal{SC}_2$ Links**: Neon Amber / Gold (`#fbbf24`)
-  - **$\mathcal{SC}_3$ Links**: Neon Violet / Magenta (`#c084fc`)
-  - **Tier 1 Links**: 2px dashed glowing stroke.
-  - **Tier 2 Links**: 3px solid glowing stroke with animated pulsing directional particle flow toward Super-Peers.
 
 
 

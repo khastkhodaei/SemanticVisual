@@ -4063,62 +4063,175 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
         step18_data = _get_10node_step_data_raw(18)
         step19_nodes = copy.deepcopy(step18_data["nodes"])
 
-        # Official 2-tier Semantic Overlay Network (SON) logical edge registry
-        semantic_overlay_edges = [
-            # Tier 1 - Intra-zone
-            {"tier": 1, "source": 2, "target": 1, "super_cluster": "SC-1", "type": "MEMBER_TO_EXEMPLAR"},
-            {"tier": 1, "source": 4, "target": 5, "super_cluster": "SC-2", "type": "MEMBER_TO_EXEMPLAR"},
-            {"tier": 1, "source": 6, "target": 7, "super_cluster": "SC-3", "type": "MEMBER_TO_EXEMPLAR"},
-            # Tier 2 - Inter-zone
-            {"tier": 2, "source": 9, "target": 1, "super_cluster": "SC-1", "type": "EXEMPLAR_TO_SUPERPEER"},
-            {"tier": 2, "source": 3, "target": 5, "super_cluster": "SC-2", "type": "EXEMPLAR_TO_SUPERPEER"},
-            {"tier": 2, "source": 8, "target": 5, "super_cluster": "SC-2", "type": "EXEMPLAR_TO_SUPERPEER"},
-            {"tier": 2, "source": 7, "target": 10, "super_cluster": "SC-3", "type": "EXEMPLAR_TO_SUPERPEER"},
-        ]
+        # Super-Peer designations and exemplar bindings
+        # Node 1 -> SP for SC-1, subordinates: [1, 9]
+        # Node 5 -> SP for SC-2, subordinates: [3, 5, 8]
+        # Node 10 -> SP for SC-3, subordinates: [7, 10]
+        # Node 3 -> bound to SP 5 in SC-2
+        # Node 7 -> bound to SP 10 in SC-3
+        # Node 8 -> bound to SP 5 in SC-2
+        # Node 9 -> bound to SP 1 in SC-1
 
-        overlay_neighbors_map = {
-            1: [2, 9],
-            2: [1],
-            3: [5],
-            4: [5],
-            5: [3, 4, 8],
-            6: [7],
-            7: [6, 10],
-            8: [5],
-            9: [1],
-            10: [7],
+        super_peer_map = {1: [1, 9], 5: [3, 5, 8], 10: [7, 10]}
+        bound_sp_map = {
+            1: 1, 2: None, 3: 5, 4: None, 5: 5,
+            6: None, 7: 10, 8: 5, 9: 1, 10: 10,
+        }
+        sc_map = {
+            1: "SC-1", 2: "SC-1", 3: "SC-2", 4: "SC-2", 5: "SC-2",
+            6: "SC-3", 7: "SC-3", 8: "SC-2", 9: "SC-1", 10: "SC-3",
         }
 
         for n in step19_nodes:
             nid = n["id"]
-            n["active_overlay_neighbors"] = overlay_neighbors_map.get(nid, [])
-            n["son_tier"] = 3 if n.get("is_super_peer") else (2 if n.get("is_exemplar") else 1)
+            n["is_super_peer"] = (nid in [1, 5, 10])
+            n["super_cluster_id"] = sc_map.get(nid)
+            n["assigned_super_cluster"] = sc_map.get(nid)
+            n["bound_super_peer"] = bound_sp_map.get(nid)
+            n["governed_exemplars"] = super_peer_map.get(nid, [])
+
+            if n["is_super_peer"]:
+                n["is_exemplar"] = True
+                n["role"] = "SUPER_PEER"
+                n["super_peer_title"] = f"Designated Global Super-Peer ({n['super_cluster_id']})"
+                n["directive_status"] = "SUPER_PEER_APPOINTMENT_ACCEPTED"
+            elif nid in [3, 7, 8, 9]:
+                n["is_exemplar"] = True
+                n["role"] = "EXEMPLAR"
+                n["super_peer_title"] = f"Bound Intra-Zone Exemplar -> Bound SP C{n['bound_super_peer']}"
+                n["directive_status"] = "EXEMPLAR_BINDING_ACCEPTED"
+            else:
+                n["is_exemplar"] = False
+                n["bound_super_peer"] = None
+                n["directive_status"] = "REGULAR_MEMBER_ACTIVE"
+                if nid == 4:
+                    n["role"] = "SUPER_INITIATOR"
+                    n["super_peer_title"] = "Super-Initiator (Directives Notified)"
+                elif nid == 2:
+                    n["role"] = "ZONE_INITIATOR"
+                    n["super_peer_title"] = "Zone 2 Initiator (Directives Notified)"
+                elif nid == 8:
+                    n["role"] = "ZONE_INITIATOR"
+                    n["super_peer_title"] = "Zone 8 Initiator (Directives Notified)"
+                else:
+                    n["role"] = "CLIENT"
+                    n["super_peer_title"] = f"Regular Member -> Local Exemplar C{n.get('exemplar_node_id')}"
+
+        # Strict 1-hop physical control traces within each zone
+        packet_traces = [
+            {
+                "from": 2,
+                "to": 1,
+                "path": [2, 1],
+                "type": "ORDER_SET_SUPER_PEER",
+                "label": "SET_SUPER_PEER",
+                "super_cluster": "SC-1",
+                "subordinates": [1, 9],
+                "directives": {"super_cluster": "SC-1", "super_peer": 1, "subordinates": [1, 9]},
+                "payload": {"super_cluster": "SC-1", "super_peer": 1, "subordinates": [1, 9]},
+            },
+            {
+                "from": 2,
+                "to": 3,
+                "path": [2, 3],
+                "type": "ORDER_BIND_EXEMPLAR",
+                "label": "BIND_SP",
+                "super_cluster": "SC-2",
+                "bound_sp": 5,
+                "directives": {"super_cluster": "SC-2", "bound_sp": 5},
+                "payload": {"super_cluster": "SC-2", "bound_sp": 5},
+            },
+            {
+                "from": 4,
+                "to": 5,
+                "path": [4, 5],
+                "type": "ORDER_SET_SUPER_PEER",
+                "label": "SET_SUPER_PEER",
+                "super_cluster": "SC-2",
+                "subordinates": [3, 5, 8],
+                "directives": {"super_cluster": "SC-2", "super_peer": 5, "subordinates": [3, 5, 8]},
+                "payload": {"super_cluster": "SC-2", "super_peer": 5, "subordinates": [3, 5, 8]},
+            },
+            {
+                "from": 4,
+                "to": 7,
+                "path": [4, 7],
+                "type": "ORDER_BIND_EXEMPLAR",
+                "label": "BIND_SP",
+                "super_cluster": "SC-3",
+                "bound_sp": 10,
+                "directives": {"super_cluster": "SC-3", "bound_sp": 10},
+                "payload": {"super_cluster": "SC-3", "bound_sp": 10},
+            },
+            {
+                "from": 8,
+                "to": 10,
+                "path": [8, 10],
+                "type": "ORDER_SET_SUPER_PEER",
+                "label": "SET_SUPER_PEER",
+                "super_cluster": "SC-3",
+                "subordinates": [7, 10],
+                "directives": {"super_cluster": "SC-3", "super_peer": 10, "subordinates": [7, 10]},
+                "payload": {"super_cluster": "SC-3", "super_peer": 10, "subordinates": [7, 10]},
+            },
+            {
+                "from": 8,
+                "to": 9,
+                "path": [8, 9],
+                "type": "ORDER_BIND_EXEMPLAR",
+                "label": "BIND_SP",
+                "super_cluster": "SC-1",
+                "bound_sp": 1,
+                "directives": {"super_cluster": "SC-1", "bound_sp": 1},
+                "payload": {"super_cluster": "SC-1", "bound_sp": 1},
+            },
+            {
+                "from": 8,
+                "to": 8,
+                "path": [8],
+                "type": "ORDER_BIND_EXEMPLAR",
+                "label": "BIND_LOCAL_SP",
+                "super_cluster": "SC-2",
+                "bound_sp": 5,
+                "directives": {"super_cluster": "SC-2", "bound_sp": 5},
+                "payload": {"super_cluster": "SC-2", "bound_sp": 5},
+            },
+        ]
 
         terminal_logs = [
-            "[SON FORMATION] Two-tier Semantic Overlay Network (SON) G_SON activated.",
-            "[TIER-1 INTRA-ZONE] Connected regular members to local exemplars: (C2 <-> C1), (C4 <-> C5), (C6 <-> C7).",
-            "[TIER-2 INTER-ZONE] Connected local exemplars to bound Super-Peers: SC-1 (C9 <-> C1), SC-2 (C3 <-> C5, C8 <-> C5), SC-3 (C7 <-> C10).",
-            "[LOGICAL TOPOLOGY] 7 active semantic overlay links established across 3 Super-Clusters.",
-            "[PHYSICAL UNDERLAY] Base 18-edge ad-hoc mesh dimmed to transport substrate.",
+            "[INTRA-ZONE DIRECTIVES] Base initiators dispatch 1-hop physical notifications to zone exemplars.",
+            "[ZONE 2 DISPATCH] C2 -> C1 (ORDER_SET_SUPER_PEER, SC-1, subordinates [1, 9]) | C2 -> C3 (ORDER_BIND_EXEMPLAR, bound SP 5).",
+            "[ZONE 4 DISPATCH] C4 -> C5 (ORDER_SET_SUPER_PEER, SC-2, subordinates [3, 5, 8]) | C4 -> C7 (ORDER_BIND_EXEMPLAR, bound SP 10).",
+            "[ZONE 8 DISPATCH] C8 -> C10 (ORDER_SET_SUPER_PEER, SC-3, subordinates [7, 10]) | C8 -> C9 (ORDER_BIND_EXEMPLAR, bound SP 1) | C8 local bind to SP 5.",
+            "[SUPER-PEERS CONFIRMED] Node 1 (SC-1), Node 5 (SC-2), Node 10 (SC-3) accepted Global Super-Peer appointments.",
+            "[EXEMPLARS BOUND] C9 -> SP 1 | C3, C8 -> SP 5 | C7 -> SP 10.",
+            "[TOPOLOGY STATUS] All 10 nodes finalized hierarchical bindings. Ready for Semantic Overlay Network activation.",
         ]
 
         return {
             "step": 19,
-            "title": "Step 19: Semantic Overlay Network (SON) Logical Topology Formation",
-            "phase_badge": "ACTIVE PHASE: STEP 19: SEMANTIC OVERLAY NETWORK (SON) FORMATION",
-            "description": "Two-tier Semantic Overlay Network (SON) activated: 3 Tier-1 intra-zone links and 4 Tier-2 inter-zone links.",
-            "formula": r"\mathcal{E}_{\text{SON}} = \mathcal{E}_{\text{intra}} \cup \mathcal{E}_{\text{inter}} \subset \mathcal{V} \times \mathcal{V}, \quad \mathcal{G}_{\text{SON}} = (\mathcal{V}, \mathcal{E}_{\text{SON}})",
-            "formula_desc": "Active logical edges connect members to exemplars, and exemplars to super-peers across physical zones.",
+            "title": "Step 19: Intra-Zone Super-Peer Designation & Exemplar Hierarchical Binding",
+            "phase_badge": "ACTIVE PHASE: STEP 19: INTRA-ZONE SUPER-PEER & EXEMPLAR BINDING",
+            "description": "Base initiators (C2, C4, C8) notify zone exemplars of Super-Peer appointments and hierarchical bindings strictly across direct 1-hop physical links.",
+            "formula": r"C_{\text{init}} \xrightarrow{\text{1-hop}} e_k \quad : \quad \{\text{SUPER\_PEER}(C_1, C_5, C_{10}) \;\lor\; \text{BIND}(e_k \to SP_m)\}",
+            "formula_desc": "Base initiators notify cluster exemplars of their Super-Peer status and hierarchical bindings strictly across 1-hop links.",
             "nodes": step19_nodes,
             "edges": step18_data["edges"],
-            "semantic_overlay_edges": semantic_overlay_edges,
-            "tier1_overlay_edges": [e for e in semantic_overlay_edges if e["tier"] == 1],
-            "tier2_overlay_edges": [e for e in semantic_overlay_edges if e["tier"] == 2],
-            "packet_events": [],
-            "packet_exchanges": [],
-            "packet_traces": [],
-            "super_peers": step18_data.get("super_peers", []),
-            "exemplar_bindings": step18_data.get("exemplar_bindings", {}),
+            "packet_events": packet_traces,
+            "packet_exchanges": packet_traces,
+            "packet_traces": packet_traces,
+            "super_peers": [
+                {"id": 1, "super_cluster": "SC-1", "governed_exemplars": [1, 9]},
+                {"id": 5, "super_cluster": "SC-2", "governed_exemplars": [3, 5, 8]},
+                {"id": 10, "super_cluster": "SC-3", "governed_exemplars": [7, 10]},
+            ],
+            "exemplar_bindings": {
+                1: 1, 9: 1, 3: 5, 5: 5, 8: 5, 7: 10, 10: 10,
+            },
+            "regular_member_representations": {
+                2: 1, 4: 5, 6: 7,
+            },
+            "super_clusters_ledger": step18_data.get("super_clusters_ledger", []),
             "super_clusters": step18_data.get("super_clusters", []),
             "similarity_matrix_7x7": step18_data.get("similarity_matrix_7x7", {}),
             "global_cluster_catalog": step18_data.get("global_cluster_catalog", {}),

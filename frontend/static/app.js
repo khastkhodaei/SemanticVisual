@@ -1206,12 +1206,12 @@ function updateUIHeaders(data) {
     if (stepDesc) stepDesc.textContent = "Top-Level Super-Initiator C4 informs base initiators C2 and C8 of the 3 Global Super-Clusters and designated Super-Peers across the super-zone backbone.";
   } else if (step === 19) {
     activeBadges.forEach(badge => {
-      badge.textContent = "ACTIVE PHASE: STEP 19: SEMANTIC OVERLAY NETWORK (SON) FORMATION";
-      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-400";
+      badge.textContent = "ACTIVE PHASE: STEP 19: INTRA-ZONE SUPER-PEER & EXEMPLAR BINDING";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-400";
     });
-    if (stepTag) stepTag.textContent = "STEP 19 / SEMANTIC OVERLAY NETWORK (SON) FORMATION";
-    if (stepTitle) stepTitle.textContent = "Step 19: Semantic Overlay Network (SON) Logical Topology Formation";
-    if (stepDesc) stepDesc.textContent = "Active logical edges connect members to exemplars, and exemplars to super-peers across physical zones.";
+    if (stepTag) stepTag.textContent = "STEP 19 / INTRA-ZONE BINDINGS";
+    if (stepTitle) stepTitle.textContent = "Step 19: Intra-Zone Super-Peer Designation & Exemplar Hierarchical Binding";
+    if (stepDesc) stepDesc.textContent = "Base initiators (C2, C4, C8) notify cluster exemplars of their Super-Peer status and hierarchical bindings strictly across direct 1-hop links.";
   }
 }
 
@@ -4742,7 +4742,7 @@ function animateStep18SuperPeerDirectives(packets, allNodes) {
 }
 
 
-// 5.19 STEP 19: Semantic Overlay Network (SON) Logical Topology Formation
+// 5.19 STEP 19: Intra-Zone Super-Peer Designation & Exemplar Hierarchical Binding
 function renderStep19(data) {
   stopCurrentPacketAnimation();
 
@@ -4751,25 +4751,25 @@ function renderStep19(data) {
     document.getElementById("activeStepBadge")
   ].filter(Boolean);
   activeBadges.forEach(badge => {
-    badge.textContent = "ACTIVE PHASE: STEP 19: SEMANTIC OVERLAY NETWORK (SON) FORMATION";
-    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-400";
+    badge.textContent = "ACTIVE PHASE: STEP 19: INTRA-ZONE SUPER-PEER & EXEMPLAR BINDING";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-400";
   });
 
   renderSidebarFormula(
-    "Step 19: Semantic Overlay Network (SON) Formation",
-    "\\mathcal{E}_{\\text{SON}} = \\mathcal{E}_{\\text{intra}} \\cup \\mathcal{E}_{\\text{inter}} \\subset \\mathcal{V} \\times \\mathcal{V}, \\quad \\mathcal{G}_{\\text{SON}} = (\\mathcal{V}, \\mathcal{E}_{\\text{SON}})",
-    "Active logical edges connect members to exemplars, and exemplars to super-peers across physical zones.",
-    "Step 19: Semantic Overlay",
+    "Step 19: Intra-Zone Super-Peer & Exemplar Binding",
+    "C_{\\text{init}} \\xrightarrow{\\text{1-hop}} e_k \\quad : \\quad \\{\\text{SUPER\\_PEER}(C_1, C_5, C_{10}) \\;\\lor\\; \\text{BIND}(e_k \\to SP_m)\\}",
+    "Base initiators notify cluster exemplars of their Super-Peer status and hierarchical bindings strictly across 1-hop links.",
+    "Step 19: Intra-Zone Bindings",
     false,
-    "emerald"
+    "amber"
   );
 
   const canvasLabel = document.getElementById("canvasViewLabel");
-  if (canvasLabel) canvasLabel.textContent = "Step 19: 2-Tier Semantic Overlay Network (SON) Activated (7 Logical Edges)";
+  if (canvasLabel) canvasLabel.textContent = "Step 19: Intra-Zone Super-Peer Designation & Exemplar Hierarchical Binding";
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.innerHTML = '<span>SON Topology Active: <span class="text-emerald-700 font-bold font-mono">7 Logical Edges</span> (3 Intra-Zone Tier-1, 4 Inter-Zone Tier-2)</span>';
+    statLeaders.innerHTML = '<span>1-Hop Intra-Zone Dispatches: <span class="text-amber-700 font-bold font-mono">SPs (C1, C5, C10)</span> &amp; <span class="text-sky-700 font-bold font-mono">Bound Exemplars (C3, C7, C8, C9)</span></span>';
     statLeaders.className = "text-xs font-bold text-slate-800";
   }
 
@@ -4777,7 +4777,6 @@ function renderStep19(data) {
     showInitiators: true,
     useTonalZoneColors: true,
     clusterHalos: true,
-    dimPhysicalEdges: true,
     isStep19: true,
     isStep18: true,
     isStep17: true,
@@ -4786,16 +4785,17 @@ function renderStep19(data) {
     isStep13Exemplars: true
   });
 
-  logToTerminal("ZONE", "[STEP 19] Semantic Overlay Network (SON) activated.");
-  logToTerminal("SUCCESS", "Tier-1 Intra-Zone links active: (C2 <-> C1), (C4 <-> C5), (C6 <-> C7).");
-  logToTerminal("SUCCESS", "Tier-2 Inter-Zone links active: SC-1 (C9 <-> C1), SC-2 (C3 <-> C5, C8 <-> C5), SC-3 (C7 <-> C10).");
-  logToTerminal("INFO", "Physical 18-edge topology serves as transport underlay for 7 vibrant semantic overlay links.");
+  logToTerminal("ZONE", "[STEP 19] Intra-Zone Super-Peer Designation & Exemplar Hierarchical Binding initialized.");
+  logToTerminal("INFO", "[ZONE 2] C2 -> C1 (ORDER_SET_SUPER_PEER, SC-1) | C2 -> C3 (ORDER_BIND_EXEMPLAR -> SP 5).");
+  logToTerminal("INFO", "[ZONE 4] C4 -> C5 (ORDER_SET_SUPER_PEER, SC-2) | C4 -> C7 (ORDER_BIND_EXEMPLAR -> SP 10).");
+  logToTerminal("INFO", "[ZONE 8] C8 -> C10 (ORDER_SET_SUPER_PEER, SC-3) | C8 -> C9 (ORDER_BIND_EXEMPLAR -> SP 1) | C8 local bind -> SP 5.");
+  logToTerminal("SUCCESS", "[SUPER-PEERS ACCEPTED] C1 (SC-1, [1, 9]), C5 (SC-2, [3, 5, 8]), C10 (SC-3, [7, 10]).");
 
-  animateStep19SemanticOverlay(data.semantic_overlay_edges || [], data.nodes);
+  animateStep19IntraZoneDirectives(data.packet_traces || [], data.nodes);
 }
 
-// Animate Step 19: 7 vibrant neon overlay edges (Tier 1 dashed, Tier 2 solid glowing)
-function animateStep19SemanticOverlay(overlayEdges, allNodes) {
+// Animate Step 19: Simultaneous 1-hop physical notifications from zone initiators to exemplars
+function animateStep19IntraZoneDirectives(packets, allNodes) {
   stopCurrentPacketAnimation();
   syncPacketCanvasSize();
 
@@ -4803,123 +4803,203 @@ function animateStep19SemanticOverlay(overlayEdges, allNodes) {
   if (!canvas || !cy) return;
   const ctx = canvas.getContext("2d");
 
-  const duration = 3600;
+  const duration = 3800;
   const startTime = performance.now();
 
-  const scColors = {
-    "SC-1": { hex: "#38bdf8", rgb: "56, 189, 248" },
-    "SC-2": { hex: "#fbbf24", rgb: "251, 191, 36" },
-    "SC-3": { hex: "#c084fc", rgb: "192, 132, 252" },
-  };
+  const oneHopLinks = [
+    { from: 2, to: 1, type: "SUPER_PEER", label: "SET_SUPER_PEER", sc: "SC-1", color: "#f59e0b" },
+    { from: 2, to: 3, type: "BIND", label: "BIND_SP (SP5)", sc: "SC-2", color: "#38bdf8" },
+    { from: 4, to: 5, type: "SUPER_PEER", label: "SET_SUPER_PEER", sc: "SC-2", color: "#f59e0b" },
+    { from: 4, to: 7, type: "BIND", label: "BIND_SP (SP10)", sc: "SC-3", color: "#c084fc" },
+    { from: 8, to: 10, type: "SUPER_PEER", label: "SET_SUPER_PEER", sc: "SC-3", color: "#f59e0b" },
+    { from: 8, to: 9, type: "BIND", label: "BIND_SP (SP1)", sc: "SC-1", color: "#38bdf8" }
+  ];
 
   function runFrame(now) {
     const elapsed = now - startTime;
-    const pulse = (Math.sin((elapsed / 700) * Math.PI) + 1) / 2;
+    const progress = (elapsed % duration) / duration;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // 1. Status Banner
     ctx.save();
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "2-TIER SEMANTIC OVERLAY (SON): 3 TIER-1 (DASHED) | 4 TIER-2 (SOLID NEON GLOW)";
+    const bannerText = "INTRA-ZONE 1-HOP DIRECTIVES: C2, C4, C8 ➔ ZONE EXEMPLARS (SET_SUPER_PEER & BIND_SP)";
     const bW = ctx.measureText(bannerText).width;
     const bX = canvas.width / 2;
     const bY = 24;
-    ctx.fillStyle = "rgba(6, 78, 59, 0.92)";
-    ctx.strokeStyle = "#10b981";
+    ctx.fillStyle = "rgba(120, 53, 15, 0.94)";
+    ctx.strokeStyle = "#f59e0b";
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.roundRect(bX - bW / 2 - 8, bY - 10, bW + 16, 20, 4);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "#d1fae5";
+    ctx.fillStyle = "#fef3c7";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
 
-    // 2. Draw each of the 7 Semantic Overlay Edges
-    overlayEdges.forEach((edge, idx) => {
-      const srcEle = getNodeElement(edge.source);
-      const tgtEle = getNodeElement(edge.target);
+    // 2. Draw 1-hop physical transmission links and moving packets
+    oneHopLinks.forEach(link => {
+      const srcEle = getNodeElement(link.from);
+      const tgtEle = getNodeElement(link.to);
       if (!srcEle || !tgtEle) return;
 
       const pSrc = srcEle.renderedPosition();
       const pTgt = tgtEle.renderedPosition();
-      const sc = scColors[edge.super_cluster] || { hex: "#38bdf8", rgb: "56, 189, 248" };
 
+      // Dashed transmission ray
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(pSrc.x, pSrc.y);
       ctx.lineTo(pTgt.x, pTgt.y);
+      ctx.strokeStyle = link.type === "SUPER_PEER" ? "rgba(245, 158, 11, 0.85)" : "rgba(56, 189, 248, 0.80)";
+      ctx.lineWidth = link.type === "SUPER_PEER" ? 2.6 : 2.0;
+      ctx.shadowColor = link.color;
+      ctx.shadowBlur = 12;
+      ctx.setLineDash([7, 5]);
+      ctx.lineDashOffset = -now / 20;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
 
-      if (edge.tier === 1) {
-        // Tier 1: Intra-zone Member <-> Exemplar (Dashed neon stroke, 2px)
-        ctx.strokeStyle = `rgba(${sc.rgb}, ${0.75 + pulse * 0.25})`;
-        ctx.lineWidth = 2.2;
-        ctx.shadowColor = sc.hex;
-        ctx.shadowBlur = 10;
-        ctx.setLineDash([8, 6]);
-        ctx.lineDashOffset = -now / 35;
-        ctx.stroke();
-        ctx.setLineDash([]);
-      } else {
-        // Tier 2: Inter-zone Exemplar <-> Super-Peer (Solid neon stroke, 3.5px with pulsing glow)
-        ctx.strokeStyle = `rgba(${sc.rgb}, ${0.85 + pulse * 0.15})`;
-        ctx.lineWidth = 3.5;
-        ctx.shadowColor = sc.hex;
-        ctx.shadowBlur = 20 + pulse * 10;
-        ctx.stroke();
+      // Moving packet dot
+      const e = easeInOutQuad(progress);
+      const curX = pSrc.x + (pTgt.x - pSrc.x) * e;
+      const curY = pSrc.y + (pTgt.y - pSrc.y) * e;
 
-        // Traveling pulse particle along Tier 2 edge
-        const tProgress = ((elapsed + idx * 800) % 2400) / 2400;
-        const pX = pSrc.x + (pTgt.x - pSrc.x) * tProgress;
-        const pY = pSrc.y + (pTgt.y - pSrc.y) * tProgress;
-
-        ctx.beginPath();
-        ctx.arc(pX, pY, 4.5, 0, Math.PI * 2);
-        ctx.fillStyle = "#ffffff";
-        ctx.shadowColor = sc.hex;
-        ctx.shadowBlur = 14;
-        ctx.fill();
-      }
-
-      // Small middle pill badge denoting link tier
-      const midX = (pSrc.x + pTgt.x) / 2;
-      const midY = (pSrc.y + pTgt.y) / 2;
-      const tag = edge.tier === 1 ? `T1: C${edge.source}⇄C${edge.target}` : `T2: C${edge.source}⇄SP${edge.target}`;
-      ctx.font = "bold 8px ui-monospace, SFMono-Regular, monospace";
-      const tagW = ctx.measureText(tag).width;
-
-      ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
-      ctx.strokeStyle = sc.hex;
-      ctx.lineWidth = 1.0;
+      ctx.save();
       ctx.beginPath();
-      ctx.roundRect(midX - tagW / 2 - 4, midY - 6, tagW + 8, 12, 3);
+      ctx.arc(curX, curY, link.type === "SUPER_PEER" ? 7.5 : 6.5, 0, Math.PI * 2);
+      ctx.fillStyle = link.color;
+      ctx.shadowColor = link.color;
+      ctx.shadowBlur = 14;
       ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.6;
       ctx.stroke();
 
-      ctx.fillStyle = sc.hex;
+      // Packet label
+      ctx.font = "bold 8px ui-monospace, SFMono-Regular, monospace";
+      const lblW = ctx.measureText(link.label).width;
+      ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+      ctx.beginPath();
+      ctx.roundRect(curX - lblW / 2 - 4, curY - 18, lblW + 8, 13, 3);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(tag, midX, midY);
-
+      ctx.fillText(link.label, curX, curY - 12);
       ctx.restore();
     });
 
-    // 3. Draw Halos on Super-Peers (1, 5, 10) and Exemplars
-    [1, 5, 10].forEach(spId => {
-      const ele = getNodeElement(spId);
-      if (!ele) return;
-      const p = ele.renderedPosition();
+    // 3. C8 Local Self-Binding Halo
+    const n8Ele = getNodeElement(8);
+    if (n8Ele) {
+      const p8 = n8Ele.renderedPosition();
       ctx.save();
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 30 + pulse * 5, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(245, 158, 11, ${0.45 + pulse * 0.4})`;
-      ctx.lineWidth = 2.5;
-      ctx.shadowColor = "#f59e0b";
-      ctx.shadowBlur = 18;
+      ctx.arc(p8.x, p8.y, 28 + pulse * 5, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.75)";
+      ctx.lineWidth = 2.0;
+      ctx.shadowColor = "#38bdf8";
+      ctx.shadowBlur = 12;
       ctx.stroke();
+
+      ctx.font = "bold 7.5px ui-monospace, SFMono-Regular, monospace";
+      const c8Tag = "C8: LOCAL BIND ➔ SP5";
+      const c8W = ctx.measureText(c8Tag).width;
+      ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+      ctx.beginPath();
+      ctx.roundRect(p8.x - c8W / 2 - 3, p8.y + 26, c8W + 6, 12, 3);
+      ctx.fill();
+      ctx.fillStyle = "#bae6fd";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(c8Tag, p8.x, p8.y + 32);
+      ctx.restore();
+    }
+
+    // 4. Halos & Badges on Super-Peers (1, 5, 10)
+    const superPeers = [
+      { id: 1, sc: "SC-1" },
+      { id: 5, sc: "SC-2" },
+      { id: 10, sc: "SC-3" }
+    ];
+
+    superPeers.forEach(sp => {
+      const ele = getNodeElement(sp.id);
+      if (!ele) return;
+      const p = ele.renderedPosition();
+
+      ctx.save();
+      // Glowing golden outer aura
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 32 + pulse * 6, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(245, 158, 11, ${0.5 + pulse * 0.4})`;
+      ctx.lineWidth = 3.0;
+      ctx.shadowColor = "#f59e0b";
+      ctx.shadowBlur = 20 + pulse * 8;
+      ctx.stroke();
+
+      // Floating Badge
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      const bText = `🌟 SUPER-PEER (${sp.sc})`;
+      const bW = ctx.measureText(bText).width;
+      const bY = p.y + 36;
+      ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(p.x - bW / 2 - 5, bY - 7, bW + 10, 15, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#fef3c7";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(bText, p.x, bY);
+      ctx.restore();
+    });
+
+    // 5. Halos & Badges on Bound Exemplars (3, 7, 9)
+    const boundExemplars = [
+      { id: 9, sp: 1, sc: "SC-1", color: "#38bdf8" },
+      { id: 3, sp: 5, sc: "SC-2", color: "#38bdf8" },
+      { id: 7, sp: 10, sc: "SC-3", color: "#c084fc" }
+    ];
+
+    boundExemplars.forEach(ex => {
+      const ele = getNodeElement(ex.id);
+      if (!ele) return;
+      const p = ele.renderedPosition();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 28 + pulse * 4, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(56, 189, 248, ${0.4 + pulse * 0.3})`;
+      ctx.lineWidth = 2.0;
+      ctx.shadowColor = ex.color;
+      ctx.shadowBlur = 14;
+      ctx.stroke();
+
+      ctx.font = "bold 8px ui-monospace, SFMono-Regular, monospace";
+      const exText = `⭐ BOUND ➔ SP C${ex.sp}`;
+      const exW = ctx.measureText(exText).width;
+      const exY = p.y + 32;
+      ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
+      ctx.strokeStyle = ex.color;
+      ctx.lineWidth = 1.0;
+      ctx.beginPath();
+      ctx.roundRect(p.x - exW / 2 - 4, exY - 7, exW + 8, 14, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#e0f2fe";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(exText, p.x, exY);
       ctx.restore();
     });
 
@@ -4928,6 +5008,9 @@ function animateStep19SemanticOverlay(overlayEdges, allNodes) {
 
   activeAnimationId = requestAnimationFrame(runFrame);
 }
+
+// Retain alias for any legacy references
+const animateStep19SemanticOverlay = animateStep19IntraZoneDirectives;
 
 
 
@@ -8334,50 +8417,100 @@ function renderNodeModal(node, stepData = currentStepData) {
     if (catalogReqSection) catalogReqSection.classList.add("hidden");
     if (globalCatalogSection) globalCatalogSection.classList.add("hidden");
     if (superClusterSection) superClusterSection.classList.add("hidden");
-    if (superPeerSection) superPeerSection.classList.add("hidden");
-    if (overlaySection) overlaySection.classList.remove("hidden");
+    if (overlaySection) overlaySection.classList.add("hidden");
+    if (superPeerSection) superPeerSection.classList.remove("hidden");
 
-    const overlayNeighbors = mergedNode?.active_overlay_neighbors || [];
-    const sonTier = mergedNode?.son_tier ?? ([1, 5, 10].includes(idNum) ? 3 : ([3, 7, 8, 9].includes(idNum) ? 2 : 1));
-    const scId = mergedNode?.assigned_super_cluster || ([1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3"));
+    const isSP = [1, 5, 10].includes(idNum) || Boolean(mergedNode?.is_super_peer);
+    const isEx = [3, 7, 8, 9].includes(idNum) || (Boolean(mergedNode?.is_exemplar) && !isSP);
+    const boundSP = mergedNode?.bound_super_peer ?? (idNum === 9 ? 1 : ([3, 8].includes(idNum) ? 5 : ([7, 10].includes(idNum) ? 10 : (isSP ? idNum : null))));
+    const governed = mergedNode?.governed_exemplars || (idNum === 1 ? [1, 9] : (idNum === 5 ? [3, 5, 8] : (idNum === 10 ? [7, 10] : [])));
+    const scId = mergedNode?.super_cluster_id || mergedNode?.assigned_super_cluster || ([1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3"));
 
-    const tierLabel = sonTier === 3 ? "TIER 3 (SUPER-PEER)" : (sonTier === 2 ? "TIER 2 (EXEMPLAR)" : "TIER 1 (MEMBER)");
-    const tierBadgeBg = sonTier === 3 ? "bg-amber-100 text-amber-900 border-amber-300" : (sonTier === 2 ? "bg-blue-100 text-blue-900 border-blue-300" : "bg-slate-100 text-slate-800 border-slate-300");
-
-    if (cardStatusBadge) {
-      cardStatusBadge.textContent = `SON ACTIVE: ${tierLabel}`;
-      cardStatusBadge.className = `text-[9px] font-semibold px-2 py-0.5 rounded border font-bold ${tierBadgeBg}`;
-    }
-    if (overlayBadge) {
-      overlayBadge.textContent = `${overlayNeighbors.length} OVERLAY LINKS`;
-      overlayBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
-    }
-    if (overlayContent) {
-      const neighborTags = overlayNeighbors.map(nbr => `<span class="px-2 py-0.5 bg-emerald-50 text-emerald-900 rounded border border-emerald-300 font-mono font-bold">⚡ C${nbr}</span>`).join(" ");
-
-      overlayContent.innerHTML = `
-        <div class="p-3 bg-white rounded-lg border border-emerald-300 shadow-xs space-y-2.5">
-          <div class="p-2.5 rounded-lg border border-emerald-300 bg-emerald-50/70 space-y-1">
-            <div class="flex items-center justify-between">
-              <span class="text-[10.5px] font-bold text-emerald-950">Semantic Overlay Hierarchy:</span>
-              <span class="px-2 py-0.5 rounded font-mono font-bold text-[9px] ${tierBadgeBg}">${tierLabel}</span>
+    if (isSP) {
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = `🌟 DESIGNATED GLOBAL SUPER-PEER`;
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+      }
+      if (superPeerBadge) {
+        superPeerBadge.textContent = "GLOBAL SUPER-PEER";
+        superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
+      }
+      if (superPeerContent) {
+        const govTags = governed.map(e => `<span class="px-2 py-0.5 bg-amber-50 text-amber-900 rounded border border-amber-300 font-mono font-bold">⭐ Node C${e}</span>`).join(" ");
+        superPeerContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-amber-300 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-amber-400 bg-amber-50/80 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-amber-950 flex items-center gap-1.5">
+                  <span>🌟</span>
+                  <span>DESIGNATED GLOBAL SUPER-PEER</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-bold text-[9px] bg-white border border-amber-300 text-amber-900">${scId}</span>
+              </div>
+              <div class="text-[9.5px] text-amber-900 font-mono">
+                Appointed by Zone Initiator via direct 1-hop <code>ORDER_SET_SUPER_PEER</code> directive. Leads cross-zone model aggregation for <strong>${scId}</strong>.
+              </div>
             </div>
-            <div class="text-[9.5px] font-mono text-emerald-900">
-              Super-Cluster: <strong>${scId}</strong>
+            <div class="p-2.5 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono space-y-1.5">
+              <div class="font-bold text-slate-800">Governed Exemplars:</div>
+              <div class="flex flex-wrap gap-1.5">
+                ${govTags}
+              </div>
+              <div class="text-[8.5px] text-slate-500 pt-1">Directly coordinates federation updates from these bound cluster exemplars.</div>
             </div>
           </div>
-
-          <div class="p-2.5 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono space-y-1.5">
-            <div class="font-bold text-slate-800">Active Overlay Neighbors (SON Links):</div>
-            <div class="flex flex-wrap gap-1.5">
-              ${neighborTags || '<span class="text-slate-400">None</span>'}
+        `;
+      }
+    } else if (isEx) {
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = `⭐ BOUND EXEMPLAR (SP C${boundSP})`;
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-sky-50 text-sky-900 border-sky-300";
+      }
+      if (superPeerBadge) {
+        superPeerBadge.textContent = `BOUND_TO_SP_${boundSP}`;
+        superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-sky-100 text-sky-900 border border-sky-300";
+      }
+      if (superPeerContent) {
+        superPeerContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-sky-300 bg-sky-50/70 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[10.5px] font-bold text-sky-950">Hierarchical Exemplar Binding:</span>
+                <span class="px-1.5 py-0.2 rounded font-mono font-bold text-[9px] bg-sky-200 text-sky-900 border border-sky-300">${scId}</span>
+              </div>
+              <div class="text-[10.5px] font-mono font-bold text-sky-950">
+                Bound Super-Peer: Node C${boundSP}
+              </div>
             </div>
-            <div class="text-[8.5px] text-slate-500 pt-1">
-              Active bidirectional model exchange channel routed through the Semantic Overlay Network.
+            <div class="text-[9.5px] text-slate-600 font-mono">
+              Notified via direct 1-hop <code>ORDER_BIND_EXEMPLAR</code> from Zone Initiator. Federates local cluster models directly to Super-Peer C${boundSP}.
             </div>
           </div>
-        </div>
-      `;
+        `;
+      }
+    } else {
+      if (cardStatusBadge) {
+        const isInit = [2, 4, 8].includes(idNum);
+        cardStatusBadge.textContent = isInit ? (idNum === 4 ? "👑 TOP SUPER-INITIATOR" : `⭐ ZONE INITIATOR C${idNum}`) : "CLIENT (REGULAR MEMBER)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-800 border-slate-300";
+      }
+      if (superPeerBadge) {
+        superPeerBadge.textContent = "INTRA_ZONE_ACTIVE";
+        superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-700 border border-slate-300";
+      }
+      if (superPeerContent) {
+        const repExemplar = idNum === 2 ? 1 : (idNum === 4 ? 5 : (idNum === 6 ? 7 : null));
+        superPeerContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2">
+            <div class="text-[10px] font-mono text-slate-800">
+              ${[2, 4, 8].includes(idNum)
+                ? `Initiator C${idNum} successfully issued direct 1-hop notifications to its zone exemplars.`
+                : `Regular client node in Zone 4. Represented in local cluster by Exemplar C${repExemplar}.`
+              }
+            </div>
+          </div>
+        `;
+      }
     }
   } else {
     if (overlaySection) overlaySection.classList.add("hidden");

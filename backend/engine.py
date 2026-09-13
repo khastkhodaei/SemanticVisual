@@ -1733,8 +1733,12 @@ class SemanticDFLEngine:
         """Super-Peer Designation & Hierarchical Binding: C4 appoints Super-Peers (1, 5, 10) and binds local exemplars."""
         return get_10node_step_data(18)
 
+    def run_intra_zone_bindings_10nodes(self) -> Dict[str, Any]:
+        """Step 19: Intra-Zone Super-Peer Designation & Exemplar Hierarchical Binding."""
+        return get_10node_step_data(19)
+
     def run_semantic_overlay_formation_10nodes(self) -> Dict[str, Any]:
-        """Semantic Overlay Network (SON) Formation: 2-tier overlay with 7 logical edges (3 Tier-1, 4 Tier-2)."""
+        """Semantic Overlay Network (SON) Formation."""
         return get_10node_step_data(19)
 
 
