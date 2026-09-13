@@ -5694,11 +5694,12 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
 
       if (isFigure3f) {
         let found = null;
-        for (const n of FIGURE3F_3TIER_NODES) {
-          const nx = n.x + offsetX;
-          const ny = n.y;
-          if (Math.hypot(mx - nx, my - ny) <= 28) {
-            found = n;
+        const layout = getFigure3fLayout(canvas);
+        for (const key of Object.keys(layout.nodePosMap)) {
+          const p = layout.nodePosMap[key];
+          const rHit = p.tier === 3 ? 32 : (p.tier === 2 ? 30 : 28);
+          if (Math.hypot(mx - p.renderedX, my - p.renderedY) <= rHit) {
+            found = p;
             break;
           }
         }
@@ -5745,6 +5746,95 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
   const CYCLE_MS = 4000; // 4.0s full ping-pong heartbeat loop
 
   // ==========================================================================
+  // VIEW 1: FIGURE 3(f) DYNAMIC AUTO-FIT LAYOUT CALCULATION
+  // ==========================================================================
+  function getFigure3fLayout(canvas) {
+    const W = canvas.width;
+    const H = canvas.height;
+    // Available drawing area with comfortable outer margins
+    const padX = Math.max(30, W * 0.04);
+    const padTop = 68; // Space below top HUD switcher button
+    const padBottom = 42; // Space above bottom stage banner
+    const availW = W - padX * 2;
+    const availH = H - padTop - padBottom;
+
+    // Horizontal scale: maps base [100..980] across availW
+    const scaleX = Math.max(1.0, availW / 980);
+    // Vertical scale: maps base [90..430] across availH
+    const scaleY = Math.max(1.0, availH / 370);
+
+    const mapX = (origX) => (origX - 540) * scaleX + W / 2;
+    const mapY = (origY) => (origY - 260) * scaleY + (padTop + availH / 2);
+
+    const nodePosMap = {};
+    FIGURE3F_3TIER_NODES.forEach((n) => {
+      nodePosMap[n.key] = {
+        key: n.key,
+        id: n.id,
+        node_id: n.node_id,
+        renderedX: mapX(n.x),
+        renderedY: mapY(n.y),
+        tier: n.tier,
+        zone: n.zone,
+        label: n.label,
+        role: n.role
+      };
+    });
+
+    return {
+      scaleX,
+      scaleY,
+      mapX,
+      mapY,
+      nodePosMap,
+      hull: {
+        x: mapX(80),
+        y: mapY(190),
+        w: 920 * scaleX,
+        h: 118 * scaleY
+      },
+      capsules: [
+        {
+          zone: 2,
+          name: "ZONE 2 (Physical Base Clients)",
+          color: "#059669",
+          fill: "rgba(5, 150, 105, 0.08)",
+          border: "rgba(5, 150, 105, 0.35)",
+          x: mapX(50),
+          y: mapY(372),
+          w: 290 * scaleX,
+          h: 104 * scaleY,
+          centerX: mapX(195)
+        },
+        {
+          zone: 4,
+          name: "ZONE 4 (Physical Base Clients)",
+          color: "#ea580c",
+          fill: "rgba(234, 88, 12, 0.08)",
+          border: "rgba(234, 88, 12, 0.35)",
+          x: mapX(370),
+          y: mapY(372),
+          w: 340 * scaleX,
+          h: 104 * scaleY,
+          centerX: mapX(540)
+        },
+        {
+          zone: 8,
+          name: "ZONE 8 (Physical Base Clients)",
+          color: "#7c3aed",
+          fill: "rgba(124, 58, 237, 0.08)",
+          border: "rgba(124, 58, 237, 0.35)",
+          x: mapX(740),
+          y: mapY(372),
+          w: 290 * scaleX,
+          h: 104 * scaleY,
+          centerX: mapX(885)
+        }
+      ]
+    };
+  }
+
+  // ==========================================================================
   // VIEW 1: FIGURE 3(f) HIERARCHICAL OVERLAY (Strictly Isolated)
   // ==========================================================================
   function renderFigure3fView(now) {
@@ -5758,15 +5848,13 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     }
 
     ctx.save();
-    // Guarantee 1:1 scale floor (never downscale below 1:1)
-    const scale = Math.max(1.0, 1.0);
-    const baseW = 1080;
-    const offsetX = Math.max(0, (canvas.width - baseW) / 2);
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules, mapX, mapY } = layout;
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
     const tCycle = elapsed % CYCLE_MS;
 
-    // 1. Status / Heartbeat Stage Banner at Top
+    // 1. Status / Heartbeat Stage Banner at Bottom of Canvas (Avoids Top HUD collision)
     ctx.save();
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
     let bannerText = "";
@@ -5785,7 +5873,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
 
     const bW = ctx.measureText(bannerText).width;
     const bX = canvas.width / 2;
-    const bY = 32;
+    const bY = canvas.height - 18;
     ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
     ctx.strokeStyle = bannerColor;
     ctx.lineWidth = 1.2;
@@ -5799,31 +5887,32 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
 
-    // 2. TIER 3 (Top - Global Super-Peers, y: 90): Standalone Header & Nodes
+    // 2. TIER 3 (Top - Global Super-Peers): Standalone Header Badge & Plane
     ctx.save();
     ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
     const t3Title = "TIER 3: GLOBAL SUPER-PEERS (OVERLAY PLANE)";
     const t3W = ctx.measureText(t3Title).width;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+    const t3CenterY = mapY(36);
+    ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
     ctx.strokeStyle = "#f59e0b";
     ctx.lineWidth = 1.0;
-    drawRoundedRect(ctx, 540 + offsetX - t3W / 2 - 8, 45 - 8, t3W + 16, 16, 4);
+    drawRoundedRect(ctx, canvas.width / 2 - t3W / 2 - 8, t3CenterY - 8, t3W + 16, 16, 4);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#f59e0b";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(t3Title, 540 + offsetX, 45);
+    ctx.fillText(t3Title, canvas.width / 2, t3CenterY);
     ctx.restore();
 
-    // 3. TIER 2 (Middle - Intra-Zone Exemplars, y: 250):
-    // Horizontal rounded capsule across middle (height 110px, covering y: 195 to 305) with soft rose fill & dashed border
+    // 3. TIER 2 (Middle - Intra-Zone Exemplars):
+    // Horizontal rounded capsule across middle with soft rose fill & dashed border
     ctx.save();
     ctx.fillStyle = "rgba(244, 63, 94, 0.08)";
-    ctx.strokeStyle = "rgba(244, 63, 94, 0.3)";
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
     ctx.lineWidth = 1.6;
     ctx.setLineDash([8, 6]);
-    drawRoundedRect(ctx, 80 + offsetX, 195, 920, 110, 30);
+    drawRoundedRect(ctx, hull.x, hull.y, hull.w, hull.h, 30);
     ctx.fill();
     ctx.stroke();
     ctx.setLineDash([]);
@@ -5832,59 +5921,21 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
     const t2Title = "TIER 2: INTRA-ZONE EXEMPLARS (ROSE OVAL HULL)";
     const t2W = ctx.measureText(t2Title).width;
+    const t2BadgeY = hull.y - 1;
     ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
     ctx.strokeStyle = "#f43f5e";
     ctx.lineWidth = 1.0;
-    drawRoundedRect(ctx, 540 + offsetX - t2W / 2 - 8, 182 - 8, t2W + 16, 16, 4);
+    drawRoundedRect(ctx, canvas.width / 2 - t2W / 2 - 8, t2BadgeY - 8, t2W + 16, 16, 4);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#fda4af";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(t2Title, 540 + offsetX, 182);
+    ctx.fillText(t2Title, canvas.width / 2, t2BadgeY);
     ctx.restore();
 
-    // 4. TIER 1 (Bottom - Base Clients Grouped into 3 Physical Zones Capsules, y: 430, height 90px: y 385..475)
-    const capsules = [
-      {
-        zone: 2,
-        name: "ZONE 2 (Physical Base Clients)",
-        color: "#059669",
-        fill: "rgba(5, 150, 105, 0.08)",
-        border: "rgba(5, 150, 105, 0.3)",
-        x: 60 + offsetX,
-        y: 385,
-        w: 270,
-        h: 90,
-        centerX: 195 + offsetX
-      },
-      {
-        zone: 4,
-        name: "ZONE 4 (Physical Base Clients)",
-        color: "#ea580c",
-        fill: "rgba(234, 88, 12, 0.08)",
-        border: "rgba(234, 88, 12, 0.3)",
-        x: 380 + offsetX,
-        y: 385,
-        w: 320,
-        h: 90,
-        centerX: 540 + offsetX
-      },
-      {
-        zone: 8,
-        name: "ZONE 8 (Physical Base Clients)",
-        color: "#7c3aed",
-        fill: "rgba(124, 58, 237, 0.08)",
-        border: "rgba(124, 58, 237, 0.3)",
-        x: 750 + offsetX,
-        y: 385,
-        w: 270,
-        h: 90,
-        centerX: 885 + offsetX
-      }
-    ];
-
-    capsules.forEach(cap => {
+    // 4. TIER 1 (Bottom - Base Clients Grouped into 3 Physical Zones Capsules)
+    capsules.forEach((cap) => {
       ctx.save();
       ctx.fillStyle = cap.fill;
       ctx.strokeStyle = cap.border;
@@ -5899,23 +5950,13 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
       ctx.fillStyle = cap.color;
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
-      ctx.fillText(cap.name, cap.centerX, cap.y + cap.h - 12);
+      ctx.fillText(cap.name, cap.centerX, cap.y + 6);
       ctx.restore();
     });
 
     // 5. Draw 17 Dashed Hierarchy Links
-    const nodePosMap = {};
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      nodePosMap[n.key] = {
-        key: n.key,
-        id: n.id,
-        renderedX: n.x + offsetX,
-        renderedY: n.y
-      };
-    });
-
     ctx.save();
-    FIGURE3F_3TIER_EDGES.forEach(edge => {
+    FIGURE3F_3TIER_EDGES.forEach((edge) => {
       const p1 = nodePosMap[edge.fromKey];
       const p2 = nodePosMap[edge.toKey];
       if (!p1 || !p2) return;
@@ -5930,7 +5971,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
         ctx.setLineDash([5, 5]);
         ctx.stroke();
       } else if (edge.type === "SUPER_PEER_OVERLAY") {
-        ctx.strokeStyle = "#dc2626";
+        ctx.strokeStyle = "#b91c1c";
         ctx.lineWidth = edge.width || 2.5;
         ctx.setLineDash([6, 5]);
         ctx.stroke();
@@ -5944,7 +5985,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     if (tCycle < 1400) {
       // [Stage 1: Upstream 0..1400ms]: Leaves in Tier 1 -> Exemplars in Tier 2
       const t = tCycle / 1400;
-      FIGURE3F_3TIER_EDGES.filter(e => e.type === "INTRA_ZONE_CLUSTER").forEach(edge => {
+      FIGURE3F_3TIER_EDGES.filter((e) => e.type === "INTRA_ZONE_CLUSTER").forEach((edge) => {
         const pA = nodePosMap[edge.fromKey];
         const pB = nodePosMap[edge.toKey];
         if (!pA || !pB) return;
@@ -5967,7 +6008,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     } else if (tCycle < 2800) {
       // [Stage 2: Upstream 1400..2800ms]: Exemplars in Tier 2 -> Super-Peers in Tier 3
       const t = (tCycle - 1400) / 1400;
-      FIGURE3F_3TIER_EDGES.filter(e => e.type === "SUPER_PEER_OVERLAY").forEach(edge => {
+      FIGURE3F_3TIER_EDGES.filter((e) => e.type === "SUPER_PEER_OVERLAY").forEach((edge) => {
         const pA = nodePosMap[edge.fromKey];
         const pB = nodePosMap[edge.toKey];
         if (!pA || !pB) return;
@@ -5990,10 +6031,10 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     } else if (tCycle < 3300) {
       // [Stage 3: Pulse 2800..3300ms]: Particles briefly pulse at Super-Peers 1, 5, 10
       const pProg = (tCycle - 2800) / 500;
-      ["top_1", "top_5", "top_10"].forEach(key => {
+      ["top_1", "top_5", "top_10"].forEach((key) => {
         const sp = nodePosMap[key];
         if (!sp) return;
-        const rBeacon = 26 + pProg * 22;
+        const rBeacon = 30 + pProg * 22;
         ctx.beginPath();
         ctx.arc(sp.renderedX, sp.renderedY, rBeacon, 0, Math.PI * 2);
         ctx.strokeStyle = `rgba(245, 158, 11, ${1 - pProg})`;
@@ -6007,7 +6048,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
       const t = (tCycle - 3300) / 700;
 
       // Overlay line returns: Tier 3 -> Tier 2
-      FIGURE3F_3TIER_EDGES.filter(e => e.type === "SUPER_PEER_OVERLAY").forEach(edge => {
+      FIGURE3F_3TIER_EDGES.filter((e) => e.type === "SUPER_PEER_OVERLAY").forEach((edge) => {
         const pA = nodePosMap[edge.toKey]; // Top
         const pB = nodePosMap[edge.fromKey]; // Mid
         if (!pA || !pB) return;
@@ -6023,7 +6064,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
       });
 
       // Intra-zone line returns: Tier 2 -> Tier 1
-      FIGURE3F_3TIER_EDGES.filter(e => e.type === "INTRA_ZONE_CLUSTER").forEach(edge => {
+      FIGURE3F_3TIER_EDGES.filter((e) => e.type === "INTRA_ZONE_CLUSTER").forEach((edge) => {
         const pA = nodePosMap[edge.toKey]; // Mid
         const pB = nodePosMap[edge.fromKey]; // Bot
         if (!pA || !pB) return;
@@ -6040,10 +6081,11 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     }
     ctx.restore();
 
-    // 7. Render All 20 Circular Nodes with drawNode (enforced radius = 26px, font = 14px bold)
-    FIGURE3F_3TIER_NODES.forEach(n => {
+    // 7. Render All 20 Circular Nodes with drawNode (Tier 3: 30px, Tier 2: 28px, Tier 1: 26px)
+    Object.values(nodePosMap).forEach((n) => {
       const isHovered = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
-      drawNode(ctx, { ...n, x: n.x + offsetX, y: n.y }, isHovered, pulse, 26);
+      const nodeR = n.tier === 3 ? 30 : (n.tier === 2 ? 28 : 26);
+      drawNode(ctx, { ...n, x: n.renderedX, y: n.renderedY }, isHovered, pulse, nodeR);
     });
     ctx.restore();
   }
