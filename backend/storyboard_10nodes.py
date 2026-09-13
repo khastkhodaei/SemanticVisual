@@ -215,36 +215,36 @@ def get_10node_config() -> Dict[str, Any]:
 # Figure 3(f) Compliant 3-Tier Hierarchical Overlay Data Structures (Strict Paper Replication)
 FIGURE3F_3TIER_NODES: List[Dict[str, Any]] = [
     # Tier 3 (Top - Global Super-Peers)
-    {"key": "top_1", "id": 1, "node_id": "C1", "tier": 3, "role": "SUPER_PEER", "x": 220, "y": 120, "label": "Node 1"},
-    {"key": "top_5", "id": 5, "node_id": "C5", "tier": 3, "role": "SUPER_PEER", "x": 500, "y": 120, "label": "Node 5"},
-    {"key": "top_10", "id": 10, "node_id": "C10", "tier": 3, "role": "SUPER_PEER", "x": 780, "y": 120, "label": "Node 10"},
+    {"key": "top_1", "id": 1, "node_id": "C1", "tier": 3, "role": "SUPER_PEER", "x": 200, "y": 100, "label": "Node 1"},
+    {"key": "top_5", "id": 5, "node_id": "C5", "tier": 3, "role": "SUPER_PEER", "x": 500, "y": 100, "label": "Node 5"},
+    {"key": "top_10", "id": 10, "node_id": "C10", "tier": 3, "role": "SUPER_PEER", "x": 800, "y": 100, "label": "Node 10"},
 
     # Tier 2 (Middle - Intra-Zone Exemplars)
     # Zone 2:
-    {"key": "mid_1", "id": 1, "node_id": "C1", "tier": 2, "role": "EXEMPLAR", "zone": 2, "x": 180, "y": 280, "label": "Node 1"},
-    {"key": "mid_3", "id": 3, "node_id": "C3", "tier": 2, "role": "EXEMPLAR", "zone": 2, "x": 260, "y": 280, "label": "Node 3"},
+    {"key": "mid_1", "id": 1, "node_id": "C1", "tier": 2, "role": "EXEMPLAR", "zone": 2, "x": 160, "y": 280, "label": "Node 1"},
+    {"key": "mid_3", "id": 3, "node_id": "C3", "tier": 2, "role": "EXEMPLAR", "zone": 2, "x": 240, "y": 280, "label": "Node 3"},
     # Zone 4:
     {"key": "mid_5", "id": 5, "node_id": "C5", "tier": 2, "role": "EXEMPLAR", "zone": 4, "x": 460, "y": 280, "label": "Node 5"},
     {"key": "mid_7", "id": 7, "node_id": "C7", "tier": 2, "role": "EXEMPLAR", "zone": 4, "x": 540, "y": 280, "label": "Node 7"},
     # Zone 8:
     {"key": "mid_8", "id": 8, "node_id": "C8", "tier": 2, "role": "EXEMPLAR", "zone": 8, "x": 720, "y": 280, "label": "Node 8"},
-    {"key": "mid_9", "id": 9, "node_id": "C9", "tier": 2, "role": "EXEMPLAR", "zone": 8, "x": 780, "y": 280, "label": "Node 9"},
-    {"key": "mid_10", "id": 10, "node_id": "C10", "tier": 2, "role": "EXEMPLAR", "zone": 8, "x": 840, "y": 280, "label": "Node 10"},
+    {"key": "mid_9", "id": 9, "node_id": "C9", "tier": 2, "role": "EXEMPLAR", "zone": 8, "x": 790, "y": 280, "label": "Node 9"},
+    {"key": "mid_10", "id": 10, "node_id": "C10", "tier": 2, "role": "EXEMPLAR", "zone": 8, "x": 860, "y": 280, "label": "Node 10"},
 
     # Tier 1 (Bottom - Base Clients Grouped into 3 Physical Zones)
     # Zone 2 Capsule:
-    {"key": "bot_1", "id": 1, "node_id": "C1", "tier": 1, "role": "CLIENT", "zone": 2, "x": 160, "y": 460, "label": "Node 1"},
-    {"key": "bot_2", "id": 2, "node_id": "C2", "tier": 1, "role": "CLIENT", "zone": 2, "x": 220, "y": 460, "label": "Node 2"},
-    {"key": "bot_3", "id": 3, "node_id": "C3", "tier": 1, "role": "CLIENT", "zone": 2, "x": 280, "y": 460, "label": "Node 3"},
+    {"key": "bot_1", "id": 1, "node_id": "C1", "tier": 1, "role": "CLIENT", "zone": 2, "x": 140, "y": 460, "label": "Node 1"},
+    {"key": "bot_2", "id": 2, "node_id": "C2", "tier": 1, "role": "CLIENT", "zone": 2, "x": 200, "y": 460, "label": "Node 2"},
+    {"key": "bot_3", "id": 3, "node_id": "C3", "tier": 1, "role": "CLIENT", "zone": 2, "x": 260, "y": 460, "label": "Node 3"},
     # Zone 4 Capsule:
-    {"key": "bot_4", "id": 4, "node_id": "C4", "tier": 1, "role": "CLIENT", "zone": 4, "x": 420, "y": 460, "label": "Node 4"},
-    {"key": "bot_5", "id": 5, "node_id": "C5", "tier": 1, "role": "CLIENT", "zone": 4, "x": 480, "y": 460, "label": "Node 5"},
-    {"key": "bot_6", "id": 6, "node_id": "C6", "tier": 1, "role": "CLIENT", "zone": 4, "x": 540, "y": 460, "label": "Node 6"},
-    {"key": "bot_7", "id": 7, "node_id": "C7", "tier": 1, "role": "CLIENT", "zone": 4, "x": 600, "y": 460, "label": "Node 7"},
+    {"key": "bot_4", "id": 4, "node_id": "C4", "tier": 1, "role": "CLIENT", "zone": 4, "x": 410, "y": 460, "label": "Node 4"},
+    {"key": "bot_5", "id": 5, "node_id": "C5", "tier": 1, "role": "CLIENT", "zone": 4, "x": 470, "y": 460, "label": "Node 5"},
+    {"key": "bot_6", "id": 6, "node_id": "C6", "tier": 1, "role": "CLIENT", "zone": 4, "x": 530, "y": 460, "label": "Node 6"},
+    {"key": "bot_7", "id": 7, "node_id": "C7", "tier": 1, "role": "CLIENT", "zone": 4, "x": 590, "y": 460, "label": "Node 7"},
     # Zone 8 Capsule:
-    {"key": "bot_8", "id": 8, "node_id": "C8", "tier": 1, "role": "CLIENT", "zone": 8, "x": 720, "y": 460, "label": "Node 8"},
-    {"key": "bot_9", "id": 9, "node_id": "C9", "tier": 1, "role": "CLIENT", "zone": 8, "x": 780, "y": 460, "label": "Node 9"},
-    {"key": "bot_10", "id": 10, "node_id": "C10", "tier": 1, "role": "CLIENT", "zone": 8, "x": 840, "y": 460, "label": "Node 10"},
+    {"key": "bot_8", "id": 8, "node_id": "C8", "tier": 1, "role": "CLIENT", "zone": 8, "x": 730, "y": 460, "label": "Node 8"},
+    {"key": "bot_9", "id": 9, "node_id": "C9", "tier": 1, "role": "CLIENT", "zone": 8, "x": 790, "y": 460, "label": "Node 9"},
+    {"key": "bot_10", "id": 10, "node_id": "C10", "tier": 1, "role": "CLIENT", "zone": 8, "x": 850, "y": 460, "label": "Node 10"},
 ]
 
 FIGURE3F_3TIER_EDGES: List[Dict[str, Any]] = [
@@ -285,16 +285,16 @@ FIGURE3F_EDGES: List[Dict[str, Any]] = FIGURE3F_3TIER_EDGES
 
 FIGURE3F_COORDINATES: Dict[str, Dict[str, Any]] = {
     # Unique node coordinate mappings
-    "1":  {"x": 220, "y": 120, "tier": "SUPER_PEER", "zone": 2},
-    "2":  {"x": 220, "y": 460, "tier": "CLIENT", "zone": 2},
-    "3":  {"x": 260, "y": 280, "tier": "EXEMPLAR", "zone": 2},
-    "4":  {"x": 420, "y": 460, "tier": "CLIENT", "zone": 4},
-    "5":  {"x": 500, "y": 120, "tier": "SUPER_PEER", "zone": 4},
-    "6":  {"x": 540, "y": 460, "tier": "CLIENT", "zone": 4},
+    "1":  {"x": 200, "y": 100, "tier": "SUPER_PEER", "zone": 2},
+    "2":  {"x": 200, "y": 460, "tier": "CLIENT", "zone": 2},
+    "3":  {"x": 240, "y": 280, "tier": "EXEMPLAR", "zone": 2},
+    "4":  {"x": 410, "y": 460, "tier": "CLIENT", "zone": 4},
+    "5":  {"x": 500, "y": 100, "tier": "SUPER_PEER", "zone": 4},
+    "6":  {"x": 530, "y": 460, "tier": "CLIENT", "zone": 4},
     "7":  {"x": 540, "y": 280, "tier": "EXEMPLAR", "zone": 4},
     "8":  {"x": 720, "y": 280, "tier": "EXEMPLAR", "zone": 8},
-    "9":  {"x": 780, "y": 280, "tier": "EXEMPLAR", "zone": 8},
-    "10": {"x": 780, "y": 120, "tier": "SUPER_PEER", "zone": 8},
+    "9":  {"x": 790, "y": 280, "tier": "EXEMPLAR", "zone": 8},
+    "10": {"x": 800, "y": 100, "tier": "SUPER_PEER", "zone": 8},
 }
 
 

@@ -14,6 +14,41 @@ let activeAnimationId = null;
 let currentLayout = "physical"; // "physical" | "overlay"
 let layoutAnimationId = null;
 
+// Universal Canvas Rounded Rectangle Utility & Polyfill
+if (typeof CanvasRenderingContext2D !== "undefined" && !CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
+    if (!radii) radii = 0;
+    const r = typeof radii === "number" ? radii : (Array.isArray(radii) ? radii[0] : 0);
+    const radius = Math.min(Math.max(0, r), Math.abs(w) / 2, Math.abs(h) / 2);
+    this.moveTo(x + radius, y);
+    this.lineTo(x + w - radius, y);
+    this.quadraticCurveTo(x + w, y, x + w, y + radius);
+    this.lineTo(x + w, y + h - radius);
+    this.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    this.lineTo(x + radius, y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - radius);
+    this.lineTo(x, y + radius);
+    this.quadraticCurveTo(x, y, x + radius, y);
+    this.closePath();
+    return this;
+  };
+}
+
+function drawRoundedRect(ctx, x, y, width, height, radius) {
+  const r = Math.min(Math.max(0, radius || 0), Math.abs(width) / 2, Math.abs(height) / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + width - r, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+  ctx.lineTo(x + width, y + height - r);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  ctx.lineTo(x + r, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
 // Dedicated Physical Coordinates (Original ad-hoc placement)
 const PHYSICAL_LAYOUT_COORDS = {
   1: { x: 130, y: 140 },
@@ -32,37 +67,37 @@ const PHYSICAL_LAYOUT_COORDS = {
 const FIGURE3F_3TIER_NODES = [
   // Tier 3 (Top - Global Super-Peers): 3 standalone node icons evenly spaced horizontally
   // (No direct horizontal line between 1, 5, 10)
-  { key: "top_1", id: 1, node_id: "C1", tier: 3, role: "SUPER_PEER", x: 220, y: 120, label: "Node 1" },
-  { key: "top_5", id: 5, node_id: "C5", tier: 3, role: "SUPER_PEER", x: 500, y: 120, label: "Node 5" },
-  { key: "top_10", id: 10, node_id: "C10", tier: 3, role: "SUPER_PEER", x: 780, y: 120, label: "Node 10" },
+  { key: "top_1", id: 1, node_id: "C1", tier: 3, role: "SUPER_PEER", x: 200, y: 100, label: "Node 1" },
+  { key: "top_5", id: 5, node_id: "C5", tier: 3, role: "SUPER_PEER", x: 500, y: 100, label: "Node 5" },
+  { key: "top_10", id: 10, node_id: "C10", tier: 3, role: "SUPER_PEER", x: 800, y: 100, label: "Node 10" },
 
   // Tier 2 (Middle - Intra-Zone Exemplars): Enclosed in a large horizontal light pink / rose oval hull
   // Grouped by originating zones from left to right:
   // From Zone 2:
-  { key: "mid_1", id: 1, node_id: "C1", tier: 2, role: "EXEMPLAR", zone: 2, x: 180, y: 280, label: "Node 1" },
-  { key: "mid_3", id: 3, node_id: "C3", tier: 2, role: "EXEMPLAR", zone: 2, x: 260, y: 280, label: "Node 3" },
+  { key: "mid_1", id: 1, node_id: "C1", tier: 2, role: "EXEMPLAR", zone: 2, x: 160, y: 280, label: "Node 1" },
+  { key: "mid_3", id: 3, node_id: "C3", tier: 2, role: "EXEMPLAR", zone: 2, x: 240, y: 280, label: "Node 3" },
   // From Zone 4:
   { key: "mid_5", id: 5, node_id: "C5", tier: 2, role: "EXEMPLAR", zone: 4, x: 460, y: 280, label: "Node 5" },
   { key: "mid_7", id: 7, node_id: "C7", tier: 2, role: "EXEMPLAR", zone: 4, x: 540, y: 280, label: "Node 7" },
   // From Zone 8:
   { key: "mid_8", id: 8, node_id: "C8", tier: 2, role: "EXEMPLAR", zone: 8, x: 720, y: 280, label: "Node 8" },
-  { key: "mid_9", id: 9, node_id: "C9", tier: 2, role: "EXEMPLAR", zone: 8, x: 780, y: 280, label: "Node 9" },
-  { key: "mid_10", id: 10, node_id: "C10", tier: 2, role: "EXEMPLAR", zone: 8, x: 840, y: 280, label: "Node 10" },
+  { key: "mid_9", id: 9, node_id: "C9", tier: 2, role: "EXEMPLAR", zone: 8, x: 790, y: 280, label: "Node 9" },
+  { key: "mid_10", id: 10, node_id: "C10", tier: 2, role: "EXEMPLAR", zone: 8, x: 860, y: 280, label: "Node 10" },
 
   // Tier 1 (Bottom - Base Clients Grouped into 3 Physical Zones Capsules)
-  // Zone 2 Capsule (Light Yellow/Orange tint): Members: Node 1 (160), Node 2 (220), Node 3 (280) at y: 460
-  { key: "bot_1", id: 1, node_id: "C1", tier: 1, role: "CLIENT", zone: 2, x: 160, y: 460, label: "Node 1" },
-  { key: "bot_2", id: 2, node_id: "C2", tier: 1, role: "CLIENT", zone: 2, x: 220, y: 460, label: "Node 2" },
-  { key: "bot_3", id: 3, node_id: "C3", tier: 1, role: "CLIENT", zone: 2, x: 280, y: 460, label: "Node 3" },
-  // Zone 4 Capsule (Light Green tint): Members: Node 4 (420), Node 5 (480), Node 6 (540), Node 7 (600) at y: 460
-  { key: "bot_4", id: 4, node_id: "C4", tier: 1, role: "CLIENT", zone: 4, x: 420, y: 460, label: "Node 4" },
-  { key: "bot_5", id: 5, node_id: "C5", tier: 1, role: "CLIENT", zone: 4, x: 480, y: 460, label: "Node 5" },
-  { key: "bot_6", id: 6, node_id: "C6", tier: 1, role: "CLIENT", zone: 4, x: 540, y: 460, label: "Node 6" },
-  { key: "bot_7", id: 7, node_id: "C7", tier: 1, role: "CLIENT", zone: 4, x: 600, y: 460, label: "Node 7" },
-  // Zone 8 Capsule (Light Blue tint): Members: Node 8 (720), Node 9 (780), Node 10 (840) at y: 460
-  { key: "bot_8", id: 8, node_id: "C8", tier: 1, role: "CLIENT", zone: 8, x: 720, y: 460, label: "Node 8" },
-  { key: "bot_9", id: 9, node_id: "C9", tier: 1, role: "CLIENT", zone: 8, x: 780, y: 460, label: "Node 9" },
-  { key: "bot_10", id: 10, node_id: "C10", tier: 1, role: "CLIENT", zone: 8, x: 840, y: 460, label: "Node 10" },
+  // Zone 2 Capsule (Light Yellow/Orange tint): Members: Node 1 (140), Node 2 (200), Node 3 (260) at y: 460
+  { key: "bot_1", id: 1, node_id: "C1", tier: 1, role: "CLIENT", zone: 2, x: 140, y: 460, label: "Node 1" },
+  { key: "bot_2", id: 2, node_id: "C2", tier: 1, role: "CLIENT", zone: 2, x: 200, y: 460, label: "Node 2" },
+  { key: "bot_3", id: 3, node_id: "C3", tier: 1, role: "CLIENT", zone: 2, x: 260, y: 460, label: "Node 3" },
+  // Zone 4 Capsule (Light Green tint): Members: Node 4 (410), Node 5 (470), Node 6 (530), Node 7 (590) at y: 460
+  { key: "bot_4", id: 4, node_id: "C4", tier: 1, role: "CLIENT", zone: 4, x: 410, y: 460, label: "Node 4" },
+  { key: "bot_5", id: 5, node_id: "C5", tier: 1, role: "CLIENT", zone: 4, x: 470, y: 460, label: "Node 5" },
+  { key: "bot_6", id: 6, node_id: "C6", tier: 1, role: "CLIENT", zone: 4, x: 530, y: 460, label: "Node 6" },
+  { key: "bot_7", id: 7, node_id: "C7", tier: 1, role: "CLIENT", zone: 4, x: 590, y: 460, label: "Node 7" },
+  // Zone 8 Capsule (Light Blue tint): Members: Node 8 (730), Node 9 (790), Node 10 (850) at y: 460
+  { key: "bot_8", id: 8, node_id: "C8", tier: 1, role: "CLIENT", zone: 8, x: 730, y: 460, label: "Node 8" },
+  { key: "bot_9", id: 9, node_id: "C9", tier: 1, role: "CLIENT", zone: 8, x: 790, y: 460, label: "Node 9" },
+  { key: "bot_10", id: 10, node_id: "C10", tier: 1, role: "CLIENT", zone: 8, x: 850, y: 460, label: "Node 10" },
 ];
 
 const FIGURE3F_3TIER_EDGES = [
@@ -100,16 +135,16 @@ const FIGURE3F_3TIER_EDGES = [
 ];
 
 const FIGURE3F_COORDINATES = {
-  1:  { x: 220, y: 120, tier: "SUPER_PEER", zone: 2 },
-  2:  { x: 220, y: 460, tier: "CLIENT", zone: 2 },
-  3:  { x: 260, y: 280, tier: "EXEMPLAR", zone: 2 },
-  4:  { x: 420, y: 460, tier: "CLIENT", zone: 4 },
-  5:  { x: 500, y: 120, tier: "SUPER_PEER", zone: 4 },
-  6:  { x: 540, y: 460, tier: "CLIENT", zone: 4 },
+  1:  { x: 200, y: 100, tier: "SUPER_PEER", zone: 2 },
+  2:  { x: 200, y: 460, tier: "CLIENT", zone: 2 },
+  3:  { x: 240, y: 280, tier: "EXEMPLAR", zone: 2 },
+  4:  { x: 410, y: 460, tier: "CLIENT", zone: 4 },
+  5:  { x: 500, y: 100, tier: "SUPER_PEER", zone: 4 },
+  6:  { x: 530, y: 460, tier: "CLIENT", zone: 4 },
   7:  { x: 540, y: 280, tier: "EXEMPLAR", zone: 4 },
   8:  { x: 720, y: 280, tier: "EXEMPLAR", zone: 8 },
-  9:  { x: 780, y: 280, tier: "EXEMPLAR", zone: 8 },
-  10: { x: 780, y: 120, tier: "SUPER_PEER", zone: 8 },
+  9:  { x: 790, y: 280, tier: "EXEMPLAR", zone: 8 },
+  10: { x: 800, y: 100, tier: "SUPER_PEER", zone: 8 },
 };
 
 const OVERLAY_LAYOUT_COORDS = FIGURE3F_COORDINATES;
@@ -330,9 +365,9 @@ function initCytoscape() {
       {
         selector: "edge.network-physical-edge",
         style: {
-          "line-color": "#94a3b8",
+          "line-color": "rgba(148, 163, 184, 0.4)",
           "width": 2.0,
-          "opacity": 0.75,
+          "opacity": 0.85,
           "curve-style": "bezier",
           "target-arrow-shape": "none",
           "transition-property": "opacity, line-color, width",
@@ -5436,7 +5471,7 @@ function renderStep20(data) {
     isStep15: true,
     isStep13Exemplars: true,
     dimPhysicalEdges: currentLayout === "overlay",
-    semanticOverlayEdges: overlayEdges
+    semanticOverlayEdges: []
   });
 
   if (cy) {
@@ -5469,9 +5504,9 @@ let figure3fCanvasListenersBound = false;
 
 function drawFigure3fSmartphone(ctx, node, isHovered, pulse) {
   const { x, y, id, node_id, tier, role, zone } = node;
-  const w = 34;
-  const h = 48;
-  const r = 7;
+  const w = 44;
+  const h = 54;
+  const r = 8;
 
   ctx.save();
   ctx.translate(x, y);
@@ -5482,16 +5517,16 @@ function drawFigure3fSmartphone(ctx, node, isHovered, pulse) {
 
   // Tier-based theme colors
   let frameColor = "#475569";
-  let glowColor = "rgba(100, 116, 139, 0.4)";
+  let glowColor = "rgba(100, 116, 139, 0.35)";
   let badgeColor = "#94a3b8";
 
   if (tier === 3) {
     frameColor = "#f59e0b"; // Super-Peer gold
-    glowColor = "rgba(245, 158, 11, 0.6)";
+    glowColor = "rgba(245, 158, 11, 0.55)";
     badgeColor = "#fbbf24";
   } else if (tier === 2) {
     frameColor = "#f43f5e"; // Exemplar rose / pink
-    glowColor = "rgba(244, 63, 94, 0.5)";
+    glowColor = "rgba(244, 63, 94, 0.45)";
     badgeColor = "#fda4af";
   } else {
     // Tier 1 - Base Client in physical zone
@@ -5510,14 +5545,13 @@ function drawFigure3fSmartphone(ctx, node, isHovered, pulse) {
 
   // Outer phone body drop shadow
   ctx.shadowColor = isHovered ? frameColor : glowColor;
-  ctx.shadowBlur = isHovered ? 18 : (tier === 3 ? 14 + pulse * 6 : 8);
+  ctx.shadowBlur = isHovered ? 18 : (tier === 3 ? 12 + (pulse || 0) * 6 : 6);
 
-  // Phone outer bezel
+  // Phone outer bezel (dark fill, sleek border)
   ctx.fillStyle = "#090d16";
   ctx.strokeStyle = frameColor;
-  ctx.lineWidth = isHovered ? 2.4 : (tier === 3 ? 2.0 : 1.5);
-  ctx.beginPath();
-  ctx.roundRect(-w / 2, -h / 2, w, h, r);
+  ctx.lineWidth = isHovered ? 2.4 : (tier === 3 ? 2.0 : 1.6);
+  drawRoundedRect(ctx, -w / 2, -h / 2, w, h, r);
   ctx.fill();
   ctx.stroke();
 
@@ -5526,55 +5560,52 @@ function drawFigure3fSmartphone(ctx, node, isHovered, pulse) {
 
   // Inner screen area
   const screenInset = 3;
-  ctx.fillStyle = "rgba(23, 32, 51, 0.95)";
-  ctx.beginPath();
-  ctx.roundRect(-w / 2 + screenInset, -h / 2 + screenInset, w - screenInset * 2, h - screenInset * 2, r - 2);
+  ctx.fillStyle = "rgba(18, 26, 43, 0.95)";
+  drawRoundedRect(ctx, -w / 2 + screenInset, -h / 2 + screenInset, w - screenInset * 2, h - screenInset * 2, r - 2);
   ctx.fill();
 
   // Top speaker notch
   ctx.fillStyle = "#64748b";
-  ctx.beginPath();
-  ctx.roundRect(-5, -h / 2 + 5, 10, 2, 1);
+  drawRoundedRect(ctx, -6, -h / 2 + 5, 12, 2, 1);
   ctx.fill();
 
   // Top selfie camera dot
   ctx.beginPath();
-  ctx.arc(7, -h / 2 + 6, 1.2, 0, Math.PI * 2);
+  ctx.arc(8, -h / 2 + 6, 1.2, 0, Math.PI * 2);
   ctx.fillStyle = "#475569";
   ctx.fill();
 
-  // Role icon at top of screen
+  // Role icon if tier 3 or 2
   if (tier === 3) {
+    ctx.font = "10px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("🌟", 0, -9);
+  } else if (tier === 2) {
     ctx.font = "9px system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("🌟", 0, -8);
-  } else if (tier === 2) {
-    ctx.font = "8px system-ui, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("💎", 0, -8);
+    ctx.fillText("💎", 0, -9);
   }
 
-  // Node ID text: C1, C2, etc.
-  ctx.font = "bold 11px ui-monospace, SFMono-Regular, monospace";
+  // Node number centered (e.g. 1, 2, 3...)
+  ctx.font = "bold 13px ui-monospace, SFMono-Regular, monospace";
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(node_id || `C${id}`, 0, tier === 1 ? -1 : 5);
+  ctx.fillText(String(id), 0, tier === 1 ? -1 : 6);
 
   // Bottom home indicator bar
-  ctx.fillStyle = "rgba(148, 163, 184, 0.6)";
-  ctx.beginPath();
-  ctx.roundRect(-6, h / 2 - 6, 12, 2, 1);
+  ctx.fillStyle = "rgba(148, 163, 184, 0.5)";
+  drawRoundedRect(ctx, -8, h / 2 - 6, 16, 2, 1);
   ctx.fill();
 
-  // Subtle tier badge below phone
-  ctx.font = "bold 8px ui-monospace, SFMono-Regular, monospace";
+  // Subtle tier/role badge below phone
+  ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
   ctx.fillStyle = badgeColor;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  const roleText = tier === 3 ? "SP" : (tier === 2 ? "EX" : "LEAF");
+  const roleText = tier === 3 ? "SP" : (tier === 2 ? "EX" : `Z${zone || 1}`);
   ctx.fillText(roleText, 0, h / 2 + 4);
 
   ctx.restore();
@@ -5598,17 +5629,17 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
         return;
       }
       const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
+      const scaleX = canvas.width / (rect.width || 1);
+      const scaleY = canvas.height / (rect.height || 1);
       const mx = (e.clientX - rect.left) * scaleX;
       const my = (e.clientY - rect.top) * scaleY;
-      const offsetX = canvas.width / 2 - 500;
+      const offsetX = Math.max(0, (canvas.width - 1000) / 2);
 
       let found = null;
       for (const n of FIGURE3F_3TIER_NODES) {
         const nx = n.x + offsetX;
         const ny = n.y;
-        if (Math.abs(mx - nx) <= 20 && Math.abs(my - ny) <= 26) {
+        if (Math.abs(mx - nx) <= 24 && Math.abs(my - ny) <= 29) {
           found = n;
           break;
         }
@@ -5631,345 +5662,403 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
 
   function runFrame(now) {
     if (currentStep !== 20) return;
-    const elapsed = now - startTime;
-    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2; // 0..1 smooth pulse
-    const tCycle = elapsed % CYCLE_MS;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    try {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const isOverlayMode = currentLayout === "overlay";
-    const offsetX = canvas.width / 2 - 500; // Centers Figure 3(f) in viewport
+      const isOverlayMode = currentLayout === "overlay";
+      const offsetX = Math.max(0, (canvas.width - 1000) / 2); // Centers Figure 3(f) in viewport
 
-    if (isOverlayMode) {
-      // 1. Status / Heartbeat Stage Banner at Top
-      ctx.save();
-      ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-      let bannerText = "";
-      let bannerColor = "#38bdf8";
+      if (isOverlayMode) {
+        const elapsed = now - startTime;
+        const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2; // 0..1 smooth pulse
+        const tCycle = elapsed % CYCLE_MS;
 
-      if (tCycle < 1400) {
-        bannerText = "✨ FIGURE 3(f) SON: [1/3] ⬆ TIER 1 → TIER 2 INTRA-ZONE CLUSTERING";
-        bannerColor = "#10b981";
-      } else if (tCycle < 2800) {
-        bannerText = "🌟 FIGURE 3(f) SON: [2/3] ⤢ TIER 2 → TIER 3 INTER-ZONE SUPER-PEER OVERLAYS";
-        bannerColor = "#b91c1c";
-      } else {
-        bannerText = "💫 FIGURE 3(f) SON: [3/3] ⬇ TIER 3 → TIER 2 → TIER 1 DOWNSTREAM BROADCAST";
-        bannerColor = "#38bdf8";
-      }
-
-      const bW = ctx.measureText(bannerText).width;
-      const bX = canvas.width / 2;
-      const bY = 32;
-      ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-      ctx.strokeStyle = bannerColor;
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.roundRect(bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = bannerColor;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(bannerText, bX, bY);
-      ctx.restore();
-
-      // 2. TIER 3 (Top - Global Super-Peers): Standalone Header & Nodes (No horizontal line)
-      ctx.save();
-      ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-      const t3Title = "TIER 3: GLOBAL SUPER-PEERS (OVERLAY PLANE)";
-      const t3W = ctx.measureText(t3Title).width;
-      ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
-      ctx.strokeStyle = "#f59e0b";
-      ctx.lineWidth = 1.0;
-      ctx.beginPath();
-      ctx.roundRect(500 + offsetX - t3W / 2 - 8, 64 - 8, t3W + 16, 16, 4);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = "#f59e0b";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(t3Title, 500 + offsetX, 64);
-      ctx.restore();
-
-      // 3. TIER 2 (Middle - Intra-Zone Exemplars): Light pink / rose oval hull (rgba(244, 63, 94, 0.12), border dashed)
-      ctx.save();
-      ctx.beginPath();
-      ctx.ellipse(510 + offsetX, 280, 390, 56, 0, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(244, 63, 94, 0.12)";
-      ctx.fill();
-      ctx.strokeStyle = "rgba(244, 63, 94, 0.65)";
-      ctx.lineWidth = 1.8;
-      ctx.setLineDash([8, 6]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Oval Hull Title Badge
-      ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-      const t2Title = "TIER 2: INTRA-ZONE EXEMPLARS (ROSE OVAL HULL)";
-      const t2W = ctx.measureText(t2Title).width;
-      ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
-      ctx.strokeStyle = "#f43f5e";
-      ctx.lineWidth = 1.0;
-      ctx.beginPath();
-      ctx.roundRect(510 + offsetX - t2W / 2 - 8, 216 - 8, t2W + 16, 16, 4);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = "#fda4af";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(t2Title, 510 + offsetX, 216);
-      ctx.restore();
-
-      // 4. TIER 1 (Bottom - Base Clients Grouped into 3 Physical Zones Capsules)
-      const capsules = [
-        {
-          zone: 2,
-          name: "ZONE 2 (Physical Base Clients)",
-          color: "#f59e0b",
-          fill: "rgba(245, 158, 11, 0.12)",
-          border: "rgba(245, 158, 11, 0.55)",
-          x: 120 + offsetX,
-          y: 416,
-          w: 200,
-          h: 88,
-          centerX: 220 + offsetX
-        },
-        {
-          zone: 4,
-          name: "ZONE 4 (Physical Base Clients)",
-          color: "#10b981",
-          fill: "rgba(16, 185, 129, 0.12)",
-          border: "rgba(16, 185, 129, 0.55)",
-          x: 380 + offsetX,
-          y: 416,
-          w: 260,
-          h: 88,
-          centerX: 510 + offsetX
-        },
-        {
-          zone: 8,
-          name: "ZONE 8 (Physical Base Clients)",
-          color: "#38bdf8",
-          fill: "rgba(56, 189, 248, 0.12)",
-          border: "rgba(56, 189, 248, 0.55)",
-          x: 680 + offsetX,
-          y: 416,
-          w: 200,
-          h: 88,
-          centerX: 780 + offsetX
-        }
-      ];
-
-      capsules.forEach(cap => {
+        // 1. Status / Heartbeat Stage Banner at Top
         ctx.save();
-        ctx.fillStyle = cap.fill;
-        ctx.beginPath();
-        ctx.roundRect(cap.x, cap.y, cap.w, cap.h, 24);
-        ctx.fill();
+        ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+        let bannerText = "";
+        let bannerColor = "#38bdf8";
 
-        ctx.strokeStyle = cap.border;
+        if (tCycle < 1400) {
+          bannerText = "✨ FIGURE 3(f) SON: [1/3] ⬆ TIER 1 → TIER 2 INTRA-ZONE CLUSTERING";
+          bannerColor = "#10b981";
+        } else if (tCycle < 2800) {
+          bannerText = "🌟 FIGURE 3(f) SON: [2/3] ⤢ TIER 2 → TIER 3 INTER-ZONE SUPER-PEER OVERLAYS";
+          bannerColor = "#b91c1c";
+        } else {
+          bannerText = "💫 FIGURE 3(f) SON: [3/3] ⬇ TIER 3 → TIER 2 → TIER 1 DOWNSTREAM BROADCAST";
+          bannerColor = "#38bdf8";
+        }
+
+        const bW = ctx.measureText(bannerText).width;
+        const bX = canvas.width / 2;
+        const bY = 32;
+        ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+        ctx.strokeStyle = bannerColor;
+        ctx.lineWidth = 1.2;
+        drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = bannerColor;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(bannerText, bX, bY);
+        ctx.restore();
+
+        // 2. TIER 3 (Top - Global Super-Peers): Standalone Header & Nodes (No horizontal line)
+        ctx.save();
+        ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+        const t3Title = "TIER 3: GLOBAL SUPER-PEERS (OVERLAY PLANE)";
+        const t3W = ctx.measureText(t3Title).width;
+        ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 1.0;
+        drawRoundedRect(ctx, 500 + offsetX - t3W / 2 - 8, 54 - 8, t3W + 16, 16, 4);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#f59e0b";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(t3Title, 500 + offsetX, 54);
+        ctx.restore();
+
+        // 3. TIER 2 (Middle - Intra-Zone Exemplars):
+        // Horizontal rounded capsule across middle (x: 100 to 900, y: 240 to 340) with soft rose fill & dashed border
+        ctx.save();
+        ctx.fillStyle = "rgba(244, 63, 94, 0.08)";
+        ctx.strokeStyle = "rgba(244, 63, 94, 0.3)";
         ctx.lineWidth = 1.6;
-        ctx.setLineDash([7, 5]);
+        ctx.setLineDash([8, 6]);
+        drawRoundedRect(ctx, 100 + offsetX, 240, 800, 100, 50);
+        ctx.fill();
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Capsule Badge
-        ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
-        const cW = ctx.measureText(cap.name).width;
+        // Oval Hull Title Badge
+        ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+        const t2Title = "TIER 2: INTRA-ZONE EXEMPLARS (ROSE OVAL HULL)";
+        const t2W = ctx.measureText(t2Title).width;
         ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
-        ctx.strokeStyle = cap.color;
+        ctx.strokeStyle = "#f43f5e";
         ctx.lineWidth = 1.0;
-        ctx.beginPath();
-        ctx.roundRect(cap.centerX - cW / 2 - 6, cap.y - 8, cW + 12, 15, 3);
+        drawRoundedRect(ctx, 500 + offsetX - t2W / 2 - 8, 224 - 8, t2W + 16, 16, 4);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#fda4af";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(t2Title, 500 + offsetX, 224);
+        ctx.restore();
+
+        // 4. TIER 1 (Bottom - Base Clients Grouped into 3 Physical Zones Capsules)
+        // Zone 2 capsule (around nodes 1, 2, 3 at bottom-left): soft amber/yellow tint rgba(245, 158, 11, 0.08)
+        // Zone 4 capsule (around nodes 4, 5, 6, 7 at bottom-center): soft green tint rgba(16, 185, 129, 0.08)
+        // Zone 8 capsule (around nodes 8, 9, 10 at bottom-right): soft blue tint rgba(59, 130, 246, 0.08)
+        const capsules = [
+          {
+            zone: 2,
+            name: "ZONE 2 (Physical Base Clients)",
+            color: "#f59e0b",
+            fill: "rgba(245, 158, 11, 0.08)",
+            border: "rgba(245, 158, 11, 0.3)",
+            x: 95 + offsetX,
+            y: 405,
+            w: 210,
+            h: 105,
+            centerX: 200 + offsetX
+          },
+          {
+            zone: 4,
+            name: "ZONE 4 (Physical Base Clients)",
+            color: "#10b981",
+            fill: "rgba(16, 185, 129, 0.08)",
+            border: "rgba(16, 185, 129, 0.3)",
+            x: 360 + offsetX,
+            y: 405,
+            w: 280,
+            h: 105,
+            centerX: 500 + offsetX
+          },
+          {
+            zone: 8,
+            name: "ZONE 8 (Physical Base Clients)",
+            color: "#38bdf8",
+            fill: "rgba(59, 130, 246, 0.08)",
+            border: "rgba(59, 130, 246, 0.3)",
+            x: 685 + offsetX,
+            y: 405,
+            w: 210,
+            h: 105,
+            centerX: 790 + offsetX
+          }
+        ];
+
+        capsules.forEach(cap => {
+          ctx.save();
+          ctx.fillStyle = cap.fill;
+          drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 24);
+          ctx.fill();
+
+          ctx.strokeStyle = cap.border;
+          ctx.lineWidth = 1.6;
+          ctx.setLineDash([7, 5]);
+          drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 24);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Capsule Badge
+          ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+          const cW = ctx.measureText(cap.name).width;
+          ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
+          ctx.strokeStyle = cap.color;
+          ctx.lineWidth = 1.0;
+          drawRoundedRect(ctx, cap.centerX - cW / 2 - 6, cap.y - 8, cW + 12, 15, 3);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = cap.color;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(cap.name, cap.centerX, cap.y);
+          ctx.restore();
+        });
+
+        // Quick Lookup Map for virtual nodes with shifted offsetX
+        const nodePosMap = {};
+        FIGURE3F_3TIER_NODES.forEach(n => {
+          nodePosMap[n.key] = {
+            ...n,
+            renderedX: n.x + offsetX,
+            renderedY: n.y
+          };
+        });
+
+        // 5. Render Dashed Hierarchy Connecting Lines
+        // Draw sleek dashed lines (ctx.setLineDash([5, 5]); lineWidth = 2):
+        ctx.save();
+        ctx.lineWidth = 2.0;
+        ctx.setLineDash([5, 5]);
+
+        // Yellow dashed: Bottom 1 -> Mid 1, Bottom 2 -> Mid 1, Bottom 3 -> Mid 3
+        ctx.strokeStyle = "#eab308";
+        ctx.shadowColor = "rgba(234, 179, 8, 0.35)";
+        ctx.shadowBlur = 4;
+        [
+          ["bot_1", "mid_1"],
+          ["bot_2", "mid_1"],
+          ["bot_3", "mid_3"]
+        ].forEach(([fromKey, toKey]) => {
+          const pF = nodePosMap[fromKey];
+          const pT = nodePosMap[toKey];
+          if (pF && pT) {
+            ctx.beginPath();
+            ctx.moveTo(pF.renderedX, pF.renderedY);
+            ctx.lineTo(pT.renderedX, pT.renderedY);
+            ctx.stroke();
+          }
+        });
+
+        // Green dashed: Bottom 4 -> Mid 5, Bottom 5 -> Mid 5, Bottom 6 -> Mid 7, Bottom 7 -> Mid 7
+        ctx.strokeStyle = "#10b981";
+        ctx.shadowColor = "rgba(16, 185, 129, 0.35)";
+        ctx.shadowBlur = 4;
+        [
+          ["bot_4", "mid_5"],
+          ["bot_5", "mid_5"],
+          ["bot_6", "mid_7"],
+          ["bot_7", "mid_7"]
+        ].forEach(([fromKey, toKey]) => {
+          const pF = nodePosMap[fromKey];
+          const pT = nodePosMap[toKey];
+          if (pF && pT) {
+            ctx.beginPath();
+            ctx.moveTo(pF.renderedX, pF.renderedY);
+            ctx.lineTo(pT.renderedX, pT.renderedY);
+            ctx.stroke();
+          }
+        });
+
+        // Blue dashed: Bottom 8 -> Mid 8, Bottom 9 -> Mid 9, Bottom 10 -> Mid 10
+        ctx.strokeStyle = "#38bdf8";
+        ctx.shadowColor = "rgba(56, 189, 248, 0.35)";
+        ctx.shadowBlur = 4;
+        [
+          ["bot_8", "mid_8"],
+          ["bot_9", "mid_9"],
+          ["bot_10", "mid_10"]
+        ].forEach(([fromKey, toKey]) => {
+          const pF = nodePosMap[fromKey];
+          const pT = nodePosMap[toKey];
+          if (pF && pT) {
+            ctx.beginPath();
+            ctx.moveTo(pF.renderedX, pF.renderedY);
+            ctx.lineTo(pT.renderedX, pT.renderedY);
+            ctx.stroke();
+          }
+        });
+
+        // Middle -> Top: Red/Maroon dashed (#b91c1c, lineWidth = 2.5):
+        // Mid 1 -> Top 1, Mid 9 -> Top 1, Mid 3 -> Top 5, Mid 5 -> Top 5, Mid 8 -> Top 5, Mid 7 -> Top 10, Mid 10 -> Top 10
+        ctx.strokeStyle = "#b91c1c";
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "rgba(185, 28, 28, 0.55)";
+        ctx.shadowBlur = 8 + pulse * 4;
+        [
+          ["mid_1", "top_1"],
+          ["mid_9", "top_1"],
+          ["mid_3", "top_5"],
+          ["mid_5", "top_5"],
+          ["mid_8", "top_5"],
+          ["mid_7", "top_10"],
+          ["mid_10", "top_10"]
+        ].forEach(([fromKey, toKey]) => {
+          const pF = nodePosMap[fromKey];
+          const pT = nodePosMap[toKey];
+          if (pF && pT) {
+            ctx.beginPath();
+            ctx.moveTo(pF.renderedX, pF.renderedY);
+            ctx.lineTo(pT.renderedX, pT.renderedY);
+            ctx.stroke();
+          }
+        });
+
+        // Always reset line dash after drawing
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        // 6. Ping-Pong Heartbeat Loop: Small particles traveling along tiers
+        ctx.save();
+        if (tCycle < 1400) {
+          // [Stage 1: Upstream 0..1400ms]: Leaves in Tier 1 -> Exemplars in Tier 2 (following zone colors)
+          const t = tCycle / 1400;
+          FIGURE3F_3TIER_EDGES.filter(e => e.type === "INTRA_ZONE_CLUSTER").forEach(edge => {
+            const pA = nodePosMap[edge.fromKey];
+            const pB = nodePosMap[edge.toKey];
+            if (!pA || !pB) return;
+            const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
+            const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
+
+            ctx.beginPath();
+            ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.shadowColor = edge.color;
+            ctx.shadowBlur = 14;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(px, py, 7.5, 0, Math.PI * 2);
+            ctx.strokeStyle = edge.color;
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+          });
+        } else if (tCycle < 2800) {
+          // [Stage 2: Upstream 1400..2800ms]: Exemplars in Tier 2 -> Super-Peers in Tier 3 (following maroon cross-overlay lines)
+          const t = (tCycle - 1400) / 1400;
+          FIGURE3F_3TIER_EDGES.filter(e => e.type === "SUPER_PEER_OVERLAY").forEach(edge => {
+            const pA = nodePosMap[edge.fromKey];
+            const pB = nodePosMap[edge.toKey];
+            if (!pA || !pB) return;
+            const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
+            const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
+
+            ctx.beginPath();
+            ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.shadowColor = "#ef4444";
+            ctx.shadowBlur = 18;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(px, py, 9.0, 0, Math.PI * 2);
+            ctx.strokeStyle = "#b91c1c";
+            ctx.lineWidth = 2.2;
+            ctx.stroke();
+          });
+        } else if (tCycle < 3300) {
+          // [Stage 3: Pulse 2800..3300ms]: Particles briefly pulse at Super-Peers 1, 5, 10
+          const pProg = (tCycle - 2800) / 500;
+          ["top_1", "top_5", "top_10"].forEach(key => {
+            const sp = nodePosMap[key];
+            if (!sp) return;
+            const rBeacon = 24 + pProg * 20;
+            ctx.beginPath();
+            ctx.arc(sp.renderedX, sp.renderedY, rBeacon, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(245, 158, 11, ${1 - pProg})`;
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = "#f59e0b";
+            ctx.shadowBlur = 16;
+            ctx.stroke();
+          });
+        } else {
+          // [Stage 4: Downstream 3300..4000ms]: Particles travel back downward
+          const t = (tCycle - 3300) / 700;
+
+          // Overlay line returns: Tier 3 -> Tier 2
+          FIGURE3F_3TIER_EDGES.filter(e => e.type === "SUPER_PEER_OVERLAY").forEach(edge => {
+            const pA = nodePosMap[edge.toKey]; // Top
+            const pB = nodePosMap[edge.fromKey]; // Mid
+            if (!pA || !pB) return;
+            const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
+            const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
+
+            ctx.beginPath();
+            ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.shadowColor = "#f87171";
+            ctx.shadowBlur = 12;
+            ctx.fill();
+          });
+
+          // Intra-zone line returns: Tier 2 -> Tier 1
+          FIGURE3F_3TIER_EDGES.filter(e => e.type === "INTRA_ZONE_CLUSTER").forEach(edge => {
+            const pA = nodePosMap[edge.toKey]; // Mid
+            const pB = nodePosMap[edge.fromKey]; // Bot
+            if (!pA || !pB) return;
+            const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
+            const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
+
+            ctx.beginPath();
+            ctx.arc(px, py, 4.0, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.shadowColor = edge.color;
+            ctx.shadowBlur = 10;
+            ctx.fill();
+          });
+        }
+        ctx.restore();
+
+        // 7. Render All 20 Clean Phone Cards
+        FIGURE3F_3TIER_NODES.forEach(n => {
+          const isHovered = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+          drawFigure3fSmartphone(ctx, { ...n, x: n.x + offsetX, y: n.y }, isHovered, pulse);
+        });
+
+      } else {
+        // Physical Topology View
+        ctx.save();
+        ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+        const bannerText = "PHYSICAL TOPOLOGY VIEW: 10 CLIENTS & 18 AD-HOC MESH LINKS";
+        const bW = ctx.measureText(bannerText).width;
+        const bX = canvas.width / 2;
+        const bY = 32;
+        ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+        ctx.strokeStyle = "#94a3b8";
+        ctx.lineWidth = 1.2;
+        drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillStyle = cap.color;
+        ctx.fillStyle = "#94a3b8";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(cap.name, cap.centerX, cap.y);
+        ctx.fillText(bannerText, bX, bY);
         ctx.restore();
-      });
-
-      // Quick Lookup Map for virtual nodes with shifted offsetX
-      const nodePosMap = {};
-      FIGURE3F_3TIER_NODES.forEach(n => {
-        nodePosMap[n.key] = {
-          ...n,
-          renderedX: n.x + offsetX,
-          renderedY: n.y
-        };
-      });
-
-      // 5. Render Edge Connections (Strictly Matching Figure 3(f))
-      FIGURE3F_3TIER_EDGES.forEach(edge => {
-        const pFrom = nodePosMap[edge.fromKey];
-        const pTo = nodePosMap[edge.toKey];
-        if (!pFrom || !pTo) return;
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(pFrom.renderedX, pFrom.renderedY);
-        ctx.lineTo(pTo.renderedX, pTo.renderedY);
-
-        if (edge.type === "SUPER_PEER_OVERLAY") {
-          // Prominent dashed dark reddish-brown / maroon lines (#b91c1c or #991b1b, width 2.5px)
-          ctx.strokeStyle = "#b91c1c";
-          ctx.lineWidth = 2.5;
-          ctx.setLineDash([8, 5]);
-          ctx.shadowColor = "rgba(185, 28, 28, 0.55)";
-          ctx.shadowBlur = 10 + pulse * 6;
-          ctx.stroke();
-
-          // Subtle core highlight
-          ctx.beginPath();
-          ctx.moveTo(pFrom.renderedX, pFrom.renderedY);
-          ctx.lineTo(pTo.renderedX, pTo.renderedY);
-          ctx.strokeStyle = "rgba(254, 202, 202, 0.6)";
-          ctx.lineWidth = 1.0;
-          ctx.stroke();
-        } else {
-          // Bottom-to-Middle Intra-Zone clustering links (dashed colored lines)
-          ctx.strokeStyle = edge.color;
-          ctx.lineWidth = 2.0;
-          ctx.setLineDash([6, 5]);
-          ctx.shadowColor = edge.color;
-          ctx.shadowBlur = 6;
-          ctx.stroke();
-        }
-        ctx.restore();
-      });
-
-      // 6. Ping-Pong Heartbeat Loop: Small particles traveling along tiers
-      ctx.save();
-      if (tCycle < 1400) {
-        // [Stage 1: Upstream 0..1400ms]: Leaves in Tier 1 -> Exemplars in Tier 2 (following zone colors)
-        const t = tCycle / 1400;
-        FIGURE3F_3TIER_EDGES.filter(e => e.type === "INTRA_ZONE_CLUSTER").forEach(edge => {
-          const pA = nodePosMap[edge.fromKey];
-          const pB = nodePosMap[edge.toKey];
-          if (!pA || !pB) return;
-          const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
-          const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
-
-          ctx.beginPath();
-          ctx.arc(px, py, 4.5, 0, Math.PI * 2);
-          ctx.fillStyle = "#ffffff";
-          ctx.shadowColor = edge.color;
-          ctx.shadowBlur = 14;
-          ctx.fill();
-
-          ctx.beginPath();
-          ctx.arc(px, py, 7.5, 0, Math.PI * 2);
-          ctx.strokeStyle = edge.color;
-          ctx.lineWidth = 1.8;
-          ctx.stroke();
-        });
-      } else if (tCycle < 2800) {
-        // [Stage 2: Upstream 1400..2800ms]: Exemplars in Tier 2 -> Super-Peers in Tier 3 (following maroon cross-overlay lines)
-        const t = (tCycle - 1400) / 1400;
-        FIGURE3F_3TIER_EDGES.filter(e => e.type === "SUPER_PEER_OVERLAY").forEach(edge => {
-          const pA = nodePosMap[edge.fromKey];
-          const pB = nodePosMap[edge.toKey];
-          if (!pA || !pB) return;
-          const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
-          const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
-
-          ctx.beginPath();
-          ctx.arc(px, py, 5.5, 0, Math.PI * 2);
-          ctx.fillStyle = "#ffffff";
-          ctx.shadowColor = "#ef4444";
-          ctx.shadowBlur = 18;
-          ctx.fill();
-
-          ctx.beginPath();
-          ctx.arc(px, py, 9.0, 0, Math.PI * 2);
-          ctx.strokeStyle = "#b91c1c";
-          ctx.lineWidth = 2.2;
-          ctx.stroke();
-        });
-      } else if (tCycle < 3300) {
-        // [Stage 3: Pulse 2800..3300ms]: Particles briefly pulse at Super-Peers 1, 5, 10
-        const pProg = (tCycle - 2800) / 500;
-        ["top_1", "top_5", "top_10"].forEach(key => {
-          const sp = nodePosMap[key];
-          if (!sp) return;
-          const rBeacon = 24 + pProg * 20;
-          ctx.beginPath();
-          ctx.arc(sp.renderedX, sp.renderedY, rBeacon, 0, Math.PI * 2);
-          ctx.strokeStyle = `rgba(245, 158, 11, ${1 - pProg})`;
-          ctx.lineWidth = 2.5;
-          ctx.shadowColor = "#f59e0b";
-          ctx.shadowBlur = 16;
-          ctx.stroke();
-        });
-      } else {
-        // [Stage 4: Downstream 3300..4000ms]: Particles travel back downward
-        const t = (tCycle - 3300) / 700;
-
-        // Overlay line returns: Tier 3 -> Tier 2
-        FIGURE3F_3TIER_EDGES.filter(e => e.type === "SUPER_PEER_OVERLAY").forEach(edge => {
-          const pA = nodePosMap[edge.toKey]; // Top
-          const pB = nodePosMap[edge.fromKey]; // Mid
-          if (!pA || !pB) return;
-          const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
-          const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
-
-          ctx.beginPath();
-          ctx.arc(px, py, 4.5, 0, Math.PI * 2);
-          ctx.fillStyle = "#ffffff";
-          ctx.shadowColor = "#f87171";
-          ctx.shadowBlur = 12;
-          ctx.fill();
-        });
-
-        // Intra-zone line returns: Tier 2 -> Tier 1
-        FIGURE3F_3TIER_EDGES.filter(e => e.type === "INTRA_ZONE_CLUSTER").forEach(edge => {
-          const pA = nodePosMap[edge.toKey]; // Mid
-          const pB = nodePosMap[edge.fromKey]; // Bot
-          if (!pA || !pB) return;
-          const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
-          const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
-
-          ctx.beginPath();
-          ctx.arc(px, py, 4.0, 0, Math.PI * 2);
-          ctx.fillStyle = "#ffffff";
-          ctx.shadowColor = edge.color;
-          ctx.shadowBlur = 10;
-          ctx.fill();
-        });
       }
-      ctx.restore();
 
-      // 7. Render All 20 Smartphone Silhouettes
-      FIGURE3F_3TIER_NODES.forEach(n => {
-        const isHovered = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
-        drawFigure3fSmartphone(ctx, { ...n, x: n.x + offsetX, y: n.y }, isHovered, pulse);
-      });
-
-    } else {
-      // Physical Topology View
-      ctx.save();
-      ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-      const bannerText = "PHYSICAL TOPOLOGY VIEW: 10 CLIENTS & 18 AD-HOC MESH LINKS";
-      const bW = ctx.measureText(bannerText).width;
-      const bX = canvas.width / 2;
-      const bY = 32;
-      ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-      ctx.strokeStyle = "#94a3b8";
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.roundRect(bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = "#94a3b8";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(bannerText, bX, bY);
-      ctx.restore();
+    } catch (err) {
+      console.error("[FIGURE 3(f) CANVAS ERROR]", err);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
@@ -6490,23 +6579,8 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
     });
   });
 
-  if (options.isStep20 && Array.isArray(options.semanticOverlayEdges)) {
-    options.semanticOverlayEdges.forEach((se, idx) => {
-      elements.push({
-        group: "edges",
-        classes: `semantic-overlay-edge ${se.tier === 2 ? 'semantic-overlay-tier2' : 'semantic-overlay-tier1'}`,
-        data: {
-          id: `son_edge_${se.from}_${se.to}`,
-          source: `node_${se.from}`,
-          target: `node_${se.to}`,
-          color: se.color || "#38bdf8",
-          tier: se.tier,
-          label: se.label,
-          is_overlay_edge: true
-        }
-      });
-    });
-  }
+  // Note: In Step 20, all Figure 3(f) hierarchical overlay structures are drawn exclusively
+  // on #packetCanvas. Cytoscape elements strictly maintain the 10 physical nodes & 18 physical links.
 
   cy.elements().remove();
   cy.add(elements);

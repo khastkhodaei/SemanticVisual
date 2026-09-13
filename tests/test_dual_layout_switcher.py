@@ -65,21 +65,21 @@ def test_app_js_coordinates_specifications():
     assert "PHYSICAL_LAYOUT_COORDS" in content
     assert "FIGURE3F_COORDINATES" in content
 
-    # Figure 3(f) Top Plane: Node 1 (220, 120), Node 5 (500, 120), Node 10 (780, 120)
-    assert re.search(r"1:\s*\{\s*x:\s*220,\s*y:\s*120", content)
-    assert re.search(r"5:\s*\{\s*x:\s*500,\s*y:\s*120", content)
-    assert re.search(r"10:\s*\{\s*x:\s*780,\s*y:\s*120", content)
+    # Figure 3(f) Top Plane: Node 1 (200, 100), Node 5 (500, 100), Node 10 (800, 100)
+    assert re.search(r"1:\s*\{\s*x:\s*200,\s*y:\s*100", content)
+    assert re.search(r"5:\s*\{\s*x:\s*500,\s*y:\s*100", content)
+    assert re.search(r"10:\s*\{\s*x:\s*800,\s*y:\s*100", content)
 
-    # Figure 3(f) Middle Plane: Node 3 (260, 280), Node 7 (540, 280), Node 8 (720, 280), Node 9 (780, 280)
-    assert re.search(r"3:\s*\{\s*x:\s*260,\s*y:\s*280", content)
+    # Figure 3(f) Middle Plane: Node 3 (240, 280), Node 7 (540, 280), Node 8 (720, 280), Node 9 (790, 280)
+    assert re.search(r"3:\s*\{\s*x:\s*240,\s*y:\s*280", content)
     assert re.search(r"7:\s*\{\s*x:\s*540,\s*y:\s*280", content)
     assert re.search(r"8:\s*\{\s*x:\s*720,\s*y:\s*280", content)
-    assert re.search(r"9:\s*\{\s*x:\s*780,\s*y:\s*280", content)
+    assert re.search(r"9:\s*\{\s*x:\s*790,\s*y:\s*280", content)
 
-    # Figure 3(f) Bottom Plane: Node 2 (220, 460), Node 4 (420, 460), Node 6 (540, 460)
-    assert re.search(r"2:\s*\{\s*x:\s*220,\s*y:\s*460", content)
-    assert re.search(r"4:\s*\{\s*x:\s*420,\s*y:\s*460", content)
-    assert re.search(r"6:\s*\{\s*x:\s*540,\s*y:\s*460", content)
+    # Figure 3(f) Bottom Plane: Node 2 (200, 460), Node 4 (410, 460), Node 6 (530, 460)
+    assert re.search(r"2:\s*\{\s*x:\s*200,\s*y:\s*460", content)
+    assert re.search(r"4:\s*\{\s*x:\s*410,\s*y:\s*460", content)
+    assert re.search(r"6:\s*\{\s*x:\s*530,\s*y:\s*460", content)
 
 
 def test_app_js_layout_transition_and_animation():
