@@ -891,9 +891,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 17)
+// 4. Main Step Loading Function (Steps 1 to 19)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 17) return;
+  if (stepNumber < 1 || stepNumber > 19) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -5589,7 +5589,17 @@ function renderNodeModal(node, stepData = currentStepData) {
 
   // Header: Node C{id} | Role: INITIATOR / CLIENT | Zone: {assigned_zone} in Step 5 & 6
   if (cardNodeId) {
-    if (currentStep === 17) {
+    if (currentStep === 19) {
+      const sonTier = mergedNode?.son_tier ?? ([1, 5, 10].includes(idNum) ? 3 : ([3, 7, 8, 9].includes(idNum) ? 2 : 1));
+      const tierStr = sonTier === 3 ? "🌟 TIER-3 SUPER-PEER" : (sonTier === 2 ? "⭐ TIER-2 EXEMPLAR" : "TIER-1 MEMBER");
+      const scStr = mergedNode?.assigned_super_cluster || ([1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3"));
+      cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">SON Role: <span class="${sonTier === 3 ? 'text-amber-800 font-bold' : (sonTier === 2 ? 'text-blue-800 font-bold' : 'text-slate-800')}">${tierStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Super-Cluster: <span class="font-bold text-sky-800">${scStr}</span></span>`;
+    } else if (currentStep === 18) {
+      const isSP = Boolean(mergedNode?.is_super_peer || [1, 5, 10].includes(idNum));
+      const roleStr = isSP ? "🌟 GLOBAL SUPER-PEER" : (mergedNode?.is_exemplar ? "⭐ INTRA-ZONE EXEMPLAR" : "REGULAR MEMBER");
+      const scStr = mergedNode?.assigned_super_cluster || ([1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3"));
+      cardNodeId.innerHTML = `<span class="text-amber-800 font-bold font-mono text-sm">Node C${idNum}</span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Role: <span class="${isSP ? 'text-amber-800 font-bold' : 'text-slate-800'}">${roleStr}</span></span> <span class="text-slate-300">|</span> <span class="text-slate-600 text-xs font-semibold">Super-Cluster: <span class="font-bold text-sky-800">${scStr}</span></span>`;
+    } else if (currentStep === 17) {
       const isTopInit = Boolean(idNum === 4 || mergedNode?.is_top_initiator);
       const isInit = Boolean([2, 4, 8].includes(idNum) || mergedNode?.is_initiator);
       const roleStr = isTopInit ? "👑👑 SUPER-INITIATOR" : (isInit ? "👑 BASE INITIATOR" : "CLIENT");
@@ -8754,7 +8764,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 17; s++) {
+  for (let s = 1; s <= 19; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -8777,10 +8787,12 @@ function updateStepper(step) {
         item.classList.add("step-cyan");
       } else if (step === 12) {
         item.classList.add("step-violet");
-      } else if (step === 13) {
+      } else if (step === 13 || step === 18) {
         item.classList.add("step-amber");
       } else if (step === 14) {
         item.classList.add("step-gold");
+      } else if (step === 19) {
+        item.classList.add("step-emerald");
       }
     }
   }
