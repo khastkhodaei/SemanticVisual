@@ -1103,9 +1103,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 20)
+// 4. Main Step Loading Function (Steps 1 to 21)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 20) return;
+  if (stepNumber < 1 || stepNumber > 21) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -1273,6 +1273,13 @@ async function loadStep(stepNumber) {
       } catch (renderErr) {
         console.error("Step 20 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 20 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 21) {
+      try {
+        renderStep21(data);
+      } catch (renderErr) {
+        console.error("Step 21 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 21 Render Error: ${renderErr.message}`);
       }
     }
 
@@ -1472,6 +1479,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 20 / SEMANTIC OVERLAY";
     if (stepTitle) stepTitle.textContent = "Step 20: Semantic Overlay Network (SON) Logical Topology Formation";
     if (stepDesc) stepDesc.textContent = "Two-tier Semantic Overlay Network (SON) activates 7 logical federation edges across 3 Global Super-Clusters with interactive dual-layout switching.";
+  } else if (step === 21) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 21: MODEL WEIGHT PRUNING & SPARSIFICATION (P = 3)";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 21 / SPARSE PRUNING";
+    if (stepTitle) stepTitle.textContent = "Step 21: Local Model Parameter Pruning & Sparse Weight Extraction (P = 3)";
+    if (stepDesc) stepDesc.textContent = "Clients apply Top-P sparsification (P = 3) via Hadamard product w_i ⊙ m_i, reducing wire payload from 40 Bytes to 15 Bytes (62.5% bandwidth savings).";
   }
 }
 
@@ -5495,6 +5510,72 @@ function renderStep20(data) {
   animateStep20SemanticOverlay(overlayEdges, data.nodes);
 }
 
+function renderStep21(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 21: MODEL WEIGHT PRUNING & SPARSIFICATION (P = 3)";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-900 border border-amber-400";
+  });
+
+  renderSidebarFormula(
+    "Step 21: Local Model Parameter Pruning (P = 3)",
+    "\\mathbf{w}_i^{\\text{sparse}} = \\mathbf{w}_i \\odot \\mathbf{m}_i, \\quad \\|\\mathbf{w}_i^{\\text{sparse}}\\|_0 \\le 3",
+    "Clients prune parameters down to top-P coordinates, slashing payload size from 40B to 15B (-62.5%).",
+    "Step 21: Top-P Pruning",
+    false,
+    "amber"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      ? "Federated Data Plane — Hierarchical Overlay (Primed Sparse Models P=3)"
+      : "Federated Data Plane — Physical Mesh (Primed Sparse Models P=3)";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Model Sparsification: <span class="text-amber-600 font-bold font-mono">P = 3</span> | Wire: <span class="text-emerald-600 font-bold font-mono">15 Bytes (-62.5%)</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Position nodes according to physical layout on Cytoscape
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = PHYSICAL_LAYOUT_COORDS[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  const overlayEdges = data.figure3f_edges || data.semantic_overlay_edges || FIGURE3F_3TIER_EDGES;
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("INFO", "[STEP 21] Transitioning into Federated Data Plane: Top-P sparsification (P=3).");
+  logToTerminal("ZONE", "[PRUNING] Pruned non-top-3 weights to 0.00: Node 6 (Class 8), Node 7 (Class 7), Node 10 (Class 7).");
+  logToTerminal("SUCCESS", "[COMPRESSION] Wire payload reduced from 40B to 15B (62.5% bandwidth savings).");
+  logToTerminal("INFO", "[PRIMED] All 10 client local models are primed with warm glowing cores.");
+
+  animateStep20SemanticOverlay(overlayEdges, data.nodes);
+}
+
 // Global reference to hover virtual node in Figure 3(f) / Physical
 let figure3fHoveredVirtualNode = null;
 let figure3fCanvasListenersBound = false;
@@ -5599,6 +5680,25 @@ function drawNode(ctx, node, isHovered, pulse, radius = NODE_RADIUS) {
   ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
   ctx.lineWidth = 1.0;
   ctx.stroke();
+
+  // Step 21+: Warm Neon Pulsing Core Glow representing model weight readiness
+  if (currentStep >= 21) {
+    const primedPulse = (pulse || 0);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.72, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(251, 191, 36, ${0.25 + primedPulse * 0.25})`;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 4 + primedPulse * 3, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(245, 158, 11, ${0.4 + primedPulse * 0.4})`;
+    ctx.lineWidth = 1.8;
+    ctx.shadowColor = "#f59e0b";
+    ctx.shadowBlur = 10 + primedPulse * 8;
+    ctx.stroke();
+    ctx.restore();
+  }
 
   // 4. White Bold Centered Text (C1, C2, ..., C10) - 14px bold centered text
   const fontPt = radius >= 24 ? 14 : 12;
@@ -9771,6 +9871,109 @@ function renderNodeModal(node, stepData = currentStepData) {
         </div>
       `;
     }
+
+    // Step 21: Sparse Model Compression Card (P=3)
+    const sparseSection = document.getElementById("cardSparseSection");
+    const sparseBadge = document.getElementById("cardSparseBadge");
+    const sparseContent = document.getElementById("cardSparseContent");
+
+    if (currentStep >= 21) {
+      if (sparseSection) sparseSection.classList.remove("hidden");
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "📦 LOCAL_SPARSE_MODEL_READY";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+      }
+      if (sparseBadge) {
+        sparseBadge.textContent = "15B WIRE (-62.5%)";
+        sparseBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
+      }
+      if (sparseContent) {
+        const rawWeights = mergedNode?.raw_weights || (STORYBOARD_10_VECTORS[idNum] || []);
+        const sparseWeights = mergedNode?.sparse_weights || [];
+        const activeIndices = mergedNode?.active_indices || [];
+        const prunedIndices = mergedNode?.pruned_indices || [];
+
+        const classNames = [
+          "Airplane", "Automobile", "Bird", "Cat", "Deer",
+          "Dog", "Frog", "Horse", "Ship", "Truck"
+        ];
+
+        let slotRows = "";
+        for (let i = 0; i < 10; i++) {
+          const classIdx = i + 1;
+          const rawVal = (rawWeights[i] !== undefined) ? Number(rawWeights[i]).toFixed(2) : "0.00";
+          const sparseVal = (sparseWeights[i] !== undefined) ? Number(sparseWeights[i]).toFixed(2) : "0.00";
+          const isActive = activeIndices.includes(classIdx);
+          const isPruned = prunedIndices.includes(classIdx) || (parseFloat(rawVal) > 0 && parseFloat(sparseVal) === 0);
+
+          let statusPill = "";
+          let rowClass = "text-slate-400";
+          if (isActive) {
+            statusPill = '<span class="px-1.5 py-0.2 rounded font-bold text-[8.5px] bg-emerald-100 text-emerald-800 border border-emerald-300">TOP-P</span>';
+            rowClass = "text-slate-900 font-semibold bg-emerald-50/50";
+          } else if (isPruned) {
+            statusPill = '<span class="px-1.5 py-0.2 rounded font-bold text-[8.5px] bg-rose-100 text-rose-800 border border-rose-300 line-through">PRUNED (0.00)</span>';
+            rowClass = "text-rose-700 bg-rose-50/40";
+          } else {
+            statusPill = '<span class="px-1.5 py-0.2 rounded font-bold text-[8.5px] text-slate-400">0.00</span>';
+          }
+
+          slotRows += `
+            <tr class="${rowClass} border-b border-slate-100">
+              <td class="py-1 px-1.5 font-mono text-[9.5px]">C${classIdx} (${classNames[i]})</td>
+              <td class="py-1 px-1.5 text-right font-mono text-[9.5px]">${rawVal}</td>
+              <td class="py-1 px-1.5 text-right font-mono text-[9.5px] ${isActive ? 'text-emerald-700 font-bold' : (isPruned ? 'text-rose-600 line-through' : 'text-slate-400')}">${sparseVal}</td>
+              <td class="py-1 px-1.5 text-center">${statusPill}</td>
+            </tr>
+          `;
+        }
+
+        sparseContent.innerHTML = `
+          <!-- Bandwidth Compression Highlight Box -->
+          <div class="p-2.5 rounded-lg border border-amber-300 bg-amber-50/80 space-y-1.5">
+            <div class="flex items-center justify-between text-[10.5px]">
+              <span class="font-bold text-amber-950 flex items-center gap-1">
+                <span>✂️</span><span>Wire Payload: 15 Bytes (3 floats + 3 indices) | Savings: 62.5%</span>
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[9.5px] font-mono">
+              <div class="bg-white/90 p-1.5 rounded border border-amber-200">
+                <div class="text-slate-500 font-sans text-[8.5px] font-bold">RAW DENSE PAYLOAD</div>
+                <div class="font-bold text-slate-800 text-xs">40 Bytes</div>
+                <div class="text-[8px] text-slate-500">10 float32 weights × 4B</div>
+              </div>
+              <div class="bg-emerald-50/90 p-1.5 rounded border border-emerald-300">
+                <div class="text-emerald-700 font-sans text-[8.5px] font-bold">SPARSE WIRE PAYLOAD</div>
+                <div class="font-bold text-emerald-800 text-xs">15 Bytes</div>
+                <div class="text-[8px] text-emerald-600">3 floats (12B) + 3 uint8 (3B)</div>
+              </div>
+            </div>
+            <div class="text-[9px] text-amber-900 leading-snug">
+              Hadamard sparsification $\\mathbf{w}_i^{\\text{sparse}} = \\mathbf{w}_i \\odot \\mathbf{m}_i$ ($P = 3$). Prunes non-top-3 dimensions strictly to 0.00.
+            </div>
+          </div>
+
+          <!-- 10-Slot Weights Comparison Table -->
+          <div class="overflow-hidden border border-slate-200 rounded-lg shadow-xs bg-white">
+            <table class="w-full text-[9.5px] font-mono border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-600 border-b border-slate-200 text-left">
+                  <th class="py-1 px-1.5 font-semibold">Class</th>
+                  <th class="py-1 px-1.5 font-semibold text-right">Raw Dense</th>
+                  <th class="py-1 px-1.5 font-semibold text-right">Sparse (P=3)</th>
+                  <th class="py-1 px-1.5 font-semibold text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${slotRows}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+    } else {
+      if (sparseSection) sparseSection.classList.add("hidden");
+    }
   } else if (currentStep === 19) {
     if (probeSection) probeSection.classList.add("hidden");
     if (bndSection) bndSection.classList.add("hidden");
@@ -10297,7 +10500,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 20; s++) {
+  for (let s = 1; s <= 21; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -10326,6 +10529,8 @@ function updateStepper(step) {
         item.classList.add("step-gold");
       } else if (step === 19 || step === 20) {
         item.classList.add("step-emerald");
+      } else if (step === 21) {
+        item.classList.add("step-amber");
       }
     }
   }
@@ -10355,7 +10560,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 20) {
+    if (step < 21) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -10363,7 +10568,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 20 active (Semantic Overlay Network Formation complete)";
+      btnNext.title = "Step 21 active (Local Model Parameter Pruning & Sparse Weight Extraction complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -10376,7 +10581,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 20);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 21);
 }
 
 function bindActionButtons() {
@@ -10400,16 +10605,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 20) {
+      if (currentStep < 21) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 20 is active (Semantic Overlay Network Formation complete).");
+        logToTerminal("INFO", "Step 21 is active (Local Model Parameter Pruning & Sparse Weight Extraction complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 20)
-  for (let s = 1; s <= 20; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 21)
+  for (let s = 1; s <= 21; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

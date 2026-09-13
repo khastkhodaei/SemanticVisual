@@ -12,7 +12,7 @@ import copy
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 19
+TOTAL_STEPS: int = 21
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -4248,6 +4248,94 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "boundary_nodes": [1, 6],
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 21:
+        step20_data = _get_10node_step_data_raw(20)
+        step21_nodes = copy.deepcopy(step20_data["nodes"])
+
+        # Top-P (P=3) sparse weights and active indices as specified:
+        # Node 1: sparse_weights: [0.46, 0.17, 0.37, 0, 0, 0, 0, 0, 0, 0], active_indices: [1, 2, 3]
+        # Node 2: sparse_weights: [0.19, 0.24, 0.57, 0, 0, 0, 0, 0, 0, 0], active_indices: [1, 2, 3]
+        # Node 3: sparse_weights: [0, 0, 0, 0.34, 0.20, 0.46, 0, 0, 0, 0], active_indices: [4, 5, 6]
+        # Node 4: sparse_weights: [0, 0, 0, 0.62, 0.21, 0.17, 0, 0, 0, 0], active_indices: [4, 5, 6]
+        # Node 5: sparse_weights: [0, 0, 0, 0.53, 0.12, 0.35, 0, 0, 0, 0], active_indices: [4, 5, 6]
+        # Node 6: sparse_weights: [0, 0, 0, 0, 0, 0, 0.23, 0, 0.34, 0.24], active_indices: [7, 9, 10] (Pruned class 8)
+        # Node 7: sparse_weights: [0, 0, 0, 0, 0, 0, 0, 0.41, 0.21, 0.27], active_indices: [8, 9, 10] (Pruned class 7)
+        # Node 8: sparse_weights: [0, 0, 0, 0.32, 0.38, 0.30, 0, 0, 0, 0], active_indices: [4, 5, 6]
+        # Node 9: sparse_weights: [0.45, 0.32, 0.23, 0, 0, 0, 0, 0, 0, 0], active_indices: [1, 2, 3]
+        # Node 10: sparse_weights: [0, 0, 0, 0, 0, 0, 0, 0.43, 0.33, 0.12], active_indices: [8, 9, 10] (Pruned class 7)
+        SPARSE_WEIGHTS_MAP = {
+            1: ([0.46, 0.17, 0.37, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [1, 2, 3], []),
+            2: ([0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [1, 2, 3], []),
+            3: ([0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], [4, 5, 6], []),
+            4: ([0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], [4, 5, 6], []),
+            5: ([0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0], [4, 5, 6], []),
+            6: ([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], [7, 9, 10], [8]),
+            7: ([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], [8, 9, 10], [7]),
+            8: ([0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], [4, 5, 6], []),
+            9: ([0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [1, 2, 3], []),
+            10: ([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 0.33, 0.12], [8, 9, 10], [7]),
+        }
+
+        for n in step21_nodes:
+            nid = n["id"]
+            sparse_vec, active_idx, pruned_idx = SPARSE_WEIGHTS_MAP[nid]
+            raw_vec = list(STORYBOARD_10_VECTORS[nid])
+            n["raw_weights"] = raw_vec
+            n["sparse_weights"] = sparse_vec
+            n["active_indices"] = active_idx
+            n["pruned_indices"] = pruned_idx
+            n["status"] = "LOCAL_SPARSE_MODEL_READY"
+            n["raw_bytes"] = 40
+            n["sparse_bytes"] = 15
+            n["bandwidth_savings"] = "62.5%"
+            n["sparsification_p"] = 3
+            n["weights_primed"] = True
+
+        terminal_logs = [
+            "[FEDERATED DATA PLANE] Transitioning into Federated Data Plane for local model aggregation.",
+            "[TOP-P SPARSIFICATION] Each client computed Hadamard product w_i ⊙ m_i with P = 3.",
+            "[PARAMETER PRUNING] Multi-class clients pruned non-top-3 weights: C6 (pruned Class 8), C7 (pruned Class 7), C10 (pruned Class 7).",
+            "[COMPRESSION PAYLOAD] 10 float32 dense weights (40 Bytes) compressed to 3 float32 + 3 uint8 indices (15 Bytes).",
+            "[BANDWIDTH EFFICIENCY] Achieved 62.5% reduction in wireless transmission payload across all 10 edge peers.",
+            "[MODEL STATUS] All 10 client local models primed (LOCAL_SPARSE_MODEL_READY) for hierarchical aggregation.",
+        ]
+
+        return {
+            "step": 21,
+            "title": "Step 21: Local Model Parameter Pruning & Sparse Weight Extraction (P = 3)",
+            "phase_badge": "ACTIVE PHASE: STEP 21: MODEL WEIGHT PRUNING & SPARSIFICATION (P = 3)",
+            "description": "Each client applies Top-P sparsification (P = 3) via Hadamard product w_i ⊙ m_i. Non-top-3 coordinates in multi-class peers are pruned strictly to 0.00, reducing wire payload from 40 Bytes to 15 Bytes (62.5% bandwidth savings).",
+            "formula": r"\mathbf{w}_i^{\text{sparse}} = \mathbf{w}_i \odot \mathbf{m}_i, \quad \|\mathbf{w}_i^{\text{sparse}}\|_0 \le 3",
+            "formula_desc": "Clients prune parameters down to top-P coordinates, slashing payload size from 40B to 15B (-62.5%).",
+            "nodes": step21_nodes,
+            "edges": step20_data["edges"],
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step20_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": step20_data.get("super_peers", []),
+            "exemplar_bindings": step20_data.get("exemplar_bindings", {}),
+            "super_clusters": step20_data.get("super_clusters", []),
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+            "bandwidth_savings": "62.5%",
+            "sparsification_p": 3,
+            "raw_payload_bytes": 40,
+            "sparse_payload_bytes": 15,
+        }
     else:
         return {
             "step": step_number,
@@ -4269,7 +4357,12 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
 def get_10node_step_data(step_number: int) -> Dict[str, Any]:
     """Retrieve storyboard step data for 10-node simulation with guaranteed total_steps."""
     data = _get_10node_step_data_raw(step_number)
-    data["total_steps"] = 20 if step_number >= 20 else TOTAL_STEPS
+    if step_number >= 21:
+        data["total_steps"] = 21
+    elif step_number == 20:
+        data["total_steps"] = 20
+    else:
+        data["total_steps"] = 19
 
     # Ensure all base & step-specific fields are explicitly present on every node
     for n in data.get("nodes", []):

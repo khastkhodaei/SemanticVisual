@@ -766,3 +766,41 @@ From Step 20 onward, an interactive dual-layout switcher is available in the can
   1. Leaves in Tier 1 $\to$ Exemplars in Tier 2 (following zone colors).
   2. Exemplars in Tier 2 $\to$ Super-Peers in Tier 3 (following the maroon cross-overlay lines).
   3. Super-Peers pulse with global consensus beacon rings, then dispatch weights downward.
+
+---
+
+## Step 21 — Local Model Parameter Pruning & Sparse Weight Extraction ($P = 3$)
+
+### Objective
+Transition into the Federated Data Plane. Following semantic overlay construction, edge clients prepare model updates for cross-zone aggregation by pruning parameters down to top-$P$ semantic dimensions ($P = 3$).
+
+### 1. Mathematical Formulation
+Each client applies Top-$P$ sparsification ($P = 3$) by computing the Hadamard product between its local normalized model weight vector $\mathbf{w}_i$ and its binary semantic profile mask $\mathbf{m}_i$:
+$$\mathbf{w}_i^{\text{sparse}} = \mathbf{w}_i \odot \mathbf{m}_i, \quad \|\mathbf{w}_i^{\text{sparse}}\|_0 \le 3$$
+
+### 2. Client Sparsification States
+For nodes possessing $>3$ non-zero dataset classes (Nodes 6, 7, and 10), non-top-3 weights are strictly pruned to $0.00$:
+- **Node 1**: $\mathbf{w}_1^{\text{sparse}} = [0.46, 0.17, 0.37, 0, 0, 0, 0, 0, 0, 0]$, Active: $\{1, 2, 3\}$
+- **Node 2**: $\mathbf{w}_2^{\text{sparse}} = [0.19, 0.24, 0.57, 0, 0, 0, 0, 0, 0, 0]$, Active: $\{1, 2, 3\}$
+- **Node 3**: $\mathbf{w}_3^{\text{sparse}} = [0, 0, 0, 0.34, 0.20, 0.46, 0, 0, 0, 0]$, Active: $\{4, 5, 6\}$
+- **Node 4**: $\mathbf{w}_4^{\text{sparse}} = [0, 0, 0, 0.62, 0.21, 0.17, 0, 0, 0, 0]$, Active: $\{4, 5, 6\}$
+- **Node 5**: $\mathbf{w}_5^{\text{sparse}} = [0, 0, 0, 0.53, 0.12, 0.35, 0, 0, 0, 0]$, Active: $\{4, 5, 6\}$
+- **Node 6**: $\mathbf{w}_6^{\text{sparse}} = [0, 0, 0, 0, 0, 0, 0.23, 0, 0.34, 0.24]$, Active: $\{7, 9, 10\}$ (Pruned Class 8: $0.19 \to 0.00$)
+- **Node 7**: $\mathbf{w}_7^{\text{sparse}} = [0, 0, 0, 0, 0, 0, 0, 0.41, 0.21, 0.27]$, Active: $\{8, 9, 10\}$ (Pruned Class 7: $0.11 \to 0.00$)
+- **Node 8**: $\mathbf{w}_8^{\text{sparse}} = [0, 0, 0, 0.32, 0.38, 0.30, 0, 0, 0, 0]$, Active: $\{4, 5, 6\}$
+- **Node 9**: $\mathbf{w}_9^{\text{sparse}} = [0.45, 0.32, 0.23, 0, 0, 0, 0, 0, 0, 0]$, Active: $\{1, 2, 3\}$
+- **Node 10**: $\mathbf{w}_{10}^{\text{sparse}} = [0, 0, 0, 0, 0, 0, 0, 0.43, 0.33, 0.12]$, Active: $\{8, 9, 10\}$ (Pruned Class 7: $0.12 \to 0.00$)
+
+All nodes transition to `status: "LOCAL_SPARSE_MODEL_READY"`.
+
+### 3. Compression & Bandwidth Efficiency
+- **Raw Dense Vector**: 10 float32 values $\times$ 4 Bytes = **40 Bytes**.
+- **Sparse Wire Payload**: 3 non-zero float32 values (12 Bytes) + 3 coordinate index uint8 bytes (3 Bytes) = **15 Bytes**.
+- **Bandwidth Reduction**:
+  $$\text{Savings} = \frac{40 - 15}{40} = 62.5\%$$
+
+### 4. Visualization & Dual-Layout Integration
+- Both **Physical View** and **Figure 3(f) View** remain active and togglable via the toolbar switcher.
+- Nodes emit a warm internal neon pulse glow indicating local model parameter extraction is complete and ready for hierarchical aggregation.
+- Node Inspector Modals display the interactive **Sparsification & Compression Box** comparing raw dense vectors with pruned sparse representations.
+
