@@ -50,7 +50,7 @@ def test_step14_endpoints_return_200(client):
     assert data_get["phase_badge"] == "ACTIVE PHASE: STEP 14: TOP-LEVEL INITIATOR ELECTION & SUPER-ZONE (C4 👑👑)"
     assert data_get["total_nodes"] == 10
     assert data_get["total_edges"] == 18
-    assert data_get["total_steps"] in (14, 15, 16, 17)
+    assert data_get["total_steps"] in (14, 15, 16, 17, 18, 19)
 
     res_post = client.post("/api/v1/storyboard/step/14")
     assert res_post.status_code == 200
@@ -251,7 +251,7 @@ def test_step14_engine_method():
     engine = SemanticDFLEngine()
     result = engine.run_top_level_zone_creation_10nodes()
     assert result["step"] == 14
-    assert result["total_steps"] in (14, 15, 16, 17)
+    assert result["total_steps"] in (14, 15, 16, 17, 18, 19)
     assert len(result["nodes"]) == 10
     assert result["top_level_zone"]["root_initiator"] == 4
     assert set(result["top_level_zone"]["member_initiators"]) == {2, 4, 8}

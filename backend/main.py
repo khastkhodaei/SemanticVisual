@@ -26,7 +26,7 @@ from backend.storyboard_10nodes import (
     TOTAL_STEPS,
 )
 
-TOTAL_STEPS: int = 17
+TOTAL_STEPS: int = 19
 
 
 
@@ -289,6 +289,30 @@ def get_storyboard_step_17():
 def post_storyboard_step_17():
     """Execute / return deterministic data for Storyboard Step 17."""
     return get_10node_step_data(17)
+
+
+@app.get("/api/v1/storyboard/step/18", tags=["Storyboard"])
+def get_storyboard_step_18():
+    """Returns deterministic data for Storyboard Step 18 (Super-Peer Designation & Hierarchical Binding)."""
+    return get_10node_step_data(18)
+
+
+@app.post("/api/v1/storyboard/step/18", tags=["Storyboard"])
+def post_storyboard_step_18():
+    """Execute / return deterministic data for Storyboard Step 18."""
+    return get_10node_step_data(18)
+
+
+@app.get("/api/v1/storyboard/step/19", tags=["Storyboard"])
+def get_storyboard_step_19():
+    """Returns deterministic data for Storyboard Step 19 (Semantic Overlay Network SON Formation)."""
+    return get_10node_step_data(19)
+
+
+@app.post("/api/v1/storyboard/step/19", tags=["Storyboard"])
+def post_storyboard_step_19():
+    """Execute / return deterministic data for Storyboard Step 19."""
+    return get_10node_step_data(19)
 
 
 

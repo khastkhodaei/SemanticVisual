@@ -1729,6 +1729,14 @@ class SemanticDFLEngine:
         """Inter-Zone Meta-Clustering & Super-Clusters: C4 computes 7x7 similarity matrix and forms 3 Global Super-Clusters."""
         return get_10node_step_data(17)
 
+    def run_super_peer_designation_10nodes(self) -> Dict[str, Any]:
+        """Super-Peer Designation & Hierarchical Binding: C4 appoints Super-Peers (1, 5, 10) and binds local exemplars."""
+        return get_10node_step_data(18)
+
+    def run_semantic_overlay_formation_10nodes(self) -> Dict[str, Any]:
+        """Semantic Overlay Network (SON) Formation: 2-tier overlay with 7 logical edges (3 Tier-1, 4 Tier-2)."""
+        return get_10node_step_data(19)
+
 
 
 

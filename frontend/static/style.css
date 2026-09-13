@@ -525,3 +525,54 @@ body {
   background: linear-gradient(135deg, rgba(6, 182, 212, 0.04) 0%, rgba(255, 255, 255, 1) 100%);
 }
 
+/* Step 18: Super-Peer Designation Badges */
+.super-peer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  background-color: #fef3c7;
+  color: #78350f;
+  border: 1px solid #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.35);
+}
+
+.super-peer-card {
+  border-left: 3px solid #f59e0b;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
+}
+
+/* Step 19: Semantic Overlay Network (SON) Badges */
+.overlay-tier1-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 8.5px;
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  background-color: #f8fafc;
+  color: #334155;
+  border: 1px dashed #94a3b8;
+}
+
+.overlay-tier2-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 8.5px;
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  background-color: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #3b82f6;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
+

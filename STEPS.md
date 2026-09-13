@@ -621,5 +621,112 @@ The evaluated pairwise Cosine Similarities between the 7 cluster profile masks:
 - **Ad-Hoc Network Topology**:
   - Base physical links remain clean solid slate lines while nodes display subtle glowing hulls or aura badges indicating their cross-zone super-cluster affinities.
 
+---
+
+## Step 18 — Super-Peer Designation & Hierarchical Overlay Binding
+
+### Objective
+Following the formation of the 3 Global Super-Clusters ($\mathcal{SC}_1, \mathcal{SC}_2, \mathcal{SC}_3$) in Step 17, Super-Initiator $C_4$ officially designates the global **Super-Peers** (coordinators of each super-cluster) and binds the Step 13 local intra-zone exemplars to their respective Super-Peer.
+
+### Mathematical Formulation
+$$\mathcal{SC}_m \longrightarrow SP_m \in \{C_1, C_5, C_{10}\}, \quad e_k \xrightarrow{\text{bind}} SP_m$$
+
+Where:
+- $SP_m$ is the appointed Super-Peer for Global Super-Cluster $\mathcal{SC}_m$.
+- $e_k$ is a local intra-zone exemplar node ($e_k \in \{C_1, C_3, C_5, C_7, C_8, C_9, C_{10}\}$).
+- The overlay binding creates an inter-zone coordination channel governed by the Super-Peer.
+
+### Super-Peer Appointments
+| Super-Cluster | Dominant Classes | Appointed Super-Peer | Governed Local Exemplars | Visual Accent |
+|:---:|:---:|:---:|:---:|:---:|
+| **$\mathcal{SC}_1$** | Classes 1, 2, 3 (Aviation & Vehicles) | **Node 1 ($C_1$)** | $\{C_1, C_9\}$ | Sky Blue (`#38bdf8`) |
+| **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Animals) | **Node 5 ($C_5$)** | $\{C_3, C_5, C_8\}$ | Amber / Orange (`#fbbf24`) |
+| **$\mathcal{SC}_3$** | Classes 7, 8, 9, 10 (Heavy Transport & Amphibians) | **Node 10 ($C_{10}$)** | $\{C_7, C_{10}\}$ | Violet / Magenta (`#c084fc`) |
+
+### Exemplar Binding Registry
+Each local exemplar node is explicitly bound to the designated Super-Peer for its super-cluster:
+- **Node 1 ($C_1$)**: Bound to **SP 1** (Self / Super-Peer)
+- **Node 9 ($C_9$)**: Bound to **SP 1**
+- **Node 3 ($C_3$)**: Bound to **SP 5**
+- **Node 5 ($C_5$)**: Bound to **SP 5** (Self / Super-Peer)
+- **Node 8 ($C_8$)**: Bound to **SP 5**
+- **Node 7 ($C_7$)**: Bound to **SP 10**
+- **Node 10 ($C_{10}$)**: Bound to **SP 10** (Self / Super-Peer)
+
+### Regular Client Representation
+Nodes that are not exemplars are regular cluster members represented by their local zone exemplar:
+- **Node 2 ($C_2$)**: Represented by local exemplar $C_1$ (Cluster 2-A)
+- **Node 4 ($C_4$)**: Represented by local exemplar $C_5$ (Cluster 4-A)
+- **Node 6 ($C_6$)**: Represented by local exemplar $C_7$ (Cluster 4-B)
+
+### Downstream Control Directives (`ORDER_SET_SUPER_PEER`)
+Super-Initiator $C_4$ dispatches control packets downstream along established super-zone paths to base initiators $C_2$ and $C_8$:
+1. **West Path ($C_4 \to C_1 \to C_2$)**:
+   - `path`: `[4, 1, 2]`
+   - `type`: `ORDER_SET_SUPER_PEER`
+   - `directives`: `{"super_peer_SC1": 1, "binding_C3": 5}`
+   - Informs $C_2$ that $C_1$ is appointed Super-Peer of $\mathcal{SC}_1$, and local exemplar $C_3$ binds to Super-Peer $C_5$.
+2. **East Path ($C_4 \to C_6 \to C_8$)**:
+   - `path`: `[4, 6, 8]`
+   - `type`: `ORDER_SET_SUPER_PEER`
+   - `directives`: `{"binding_C9": 1, "binding_C8": 5, "super_peer_SC3": 10}`
+   - Informs $C_8$ that $C_9$ binds to Super-Peer $C_1$, $C_8$ binds to Super-Peer $C_5$, and $C_{10}$ is appointed Super-Peer of $\mathcal{SC}_3$.
+
+### The 3-Tier Overlay Hierarchy
+1. **Tier 1 — Regular Clients**: Local non-exemplar nodes ($C_2, C_4, C_6$) communicating exclusively with their intra-zone exemplar.
+2. **Tier 2 — Intra-Zone Exemplars**: Selected cluster representatives ($C_1, C_3, C_5, C_7, C_8, C_9, C_{10}$) bound to global super-peers.
+3. **Tier 3 — Global Super-Peers**: Apex coordinators ($C_1, C_5, C_{10}$) orchestrating inter-zone semantic aggregation across the entire network.
+
+---
+
+## Step 19 — Semantic Overlay Network (SON) Logical Topology Formation
+
+### Objective
+With Super-Peers designated and exemplar bindings finalized, the network activates the official **two-tier Semantic Overlay Network (SON)** ($\mathcal{G}_{\text{SON}}$). Physical ad-hoc links remain as the underlying transport layer, while logical SON edges govern model updates and semantic aggregation.
+
+### Mathematical Formulation
+$$\mathcal{E}_{\text{SON}} = \mathcal{E}_{\text{intra}} \cup \mathcal{E}_{\text{inter}} \subset \mathcal{V} \times \mathcal{V}$$
+
+$$\mathcal{G}_{\text{SON}} = (\mathcal{V}, \mathcal{E}_{\text{SON}})$$
+
+Where:
+- $\mathcal{E}_{\text{intra}}$ denotes Tier 1 intra-zone member-to-exemplar edges ($|\mathcal{E}_{\text{intra}}| = 3$).
+- $\mathcal{E}_{\text{inter}}$ denotes Tier 2 inter-zone exemplar-to-superpeer edges ($|\mathcal{E}_{\text{inter}}| = 4$).
+- Total active logical edges: $|\mathcal{E}_{\text{SON}}| = 7$.
+
+### 2-Tier Logical Edge Registry
+| Tier | Edge | Type | Super-Cluster | Source | Target | Semantic Meaning |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---|
+| **Tier 1** | $(C_2 \leftrightarrow C_1)$ | `MEMBER_TO_EXEMPLAR` | $\mathcal{SC}_1$ | $C_2$ | $C_1$ | Member $C_2$ connects to local exemplar $C_1$ |
+| **Tier 1** | $(C_4 \leftrightarrow C_5)$ | `MEMBER_TO_EXEMPLAR` | $\mathcal{SC}_2$ | $C_4$ | $C_5$ | Member $C_4$ connects to local exemplar $C_5$ |
+| **Tier 1** | $(C_6 \leftrightarrow C_7)$ | `MEMBER_TO_EXEMPLAR` | $\mathcal{SC}_3$ | $C_6$ | $C_7$ | Member $C_6$ connects to local exemplar $C_7$ |
+| **Tier 2** | $(C_9 \leftrightarrow C_1)$ | `EXEMPLAR_TO_SUPERPEER` | $\mathcal{SC}_1$ | $C_9$ | $C_1$ | Exemplar $C_9$ federates with Super-Peer $C_1$ |
+| **Tier 2** | $(C_3 \leftrightarrow C_5)$ | `EXEMPLAR_TO_SUPERPEER` | $\mathcal{SC}_2$ | $C_3$ | $C_5$ | Exemplar $C_3$ federates with Super-Peer $C_5$ |
+| **Tier 2** | $(C_8 \leftrightarrow C_5)$ | `EXEMPLAR_TO_SUPERPEER` | $\mathcal{SC}_2$ | $C_8$ | $C_5$ | Exemplar $C_8$ federates with Super-Peer $C_5$ |
+| **Tier 2** | $(C_7 \leftrightarrow C_{10})$ | `EXEMPLAR_TO_SUPERPEER` | $\mathcal{SC}_3$ | $C_7$ | $C_{10}$ | Exemplar $C_7$ federates with Super-Peer $C_{10}$ |
+
+### Active Overlay Neighbor Map
+In the resulting logical overlay graph $\mathcal{G}_{\text{SON}}$, each node possesses the following active overlay neighbor list:
+- **Node 1 ($C_1$)**: Neighbors = $\{C_2, C_9\}$
+- **Node 2 ($C_2$)**: Neighbors = $\{C_1\}$
+- **Node 3 ($C_3$)**: Neighbors = $\{C_5\}$
+- **Node 4 ($C_4$)**: Neighbors = $\{C_5\}$
+- **Node 5 ($C_5$)**: Neighbors = $\{C_3, C_4, C_8\}$
+- **Node 6 ($C_6$)**: Neighbors = $\{C_7\}$
+- **Node 7 ($C_7$)**: Neighbors = $\{C_6, C_{10}\}$
+- **Node 8 ($C_8$)**: Neighbors = $\{C_5\}$
+- **Node 9 ($C_9$)**: Neighbors = $\{C_1\}$
+- **Node 10 ($C_{10}$)**: Neighbors = $\{C_7\}$
+
+### Visual Overlay & Aesthetic Design
+- **Physical Underlay**: The 18 base physical links are dimmed to a subtle semi-transparent slate (`rgba(148, 163, 184, 0.25)`), serving as the physical communication foundation.
+- **Logical SON Overlay**: The 7 active semantic edges are rendered as vibrant, glowing neon links color-coded according to their respective Super-Cluster:
+  - **$\mathcal{SC}_1$ Links**: Neon Sky Blue (`#38bdf8`)
+  - **$\mathcal{SC}_2$ Links**: Neon Amber / Gold (`#fbbf24`)
+  - **$\mathcal{SC}_3$ Links**: Neon Violet / Magenta (`#c084fc`)
+  - **Tier 1 Links**: 2px dashed glowing stroke.
+  - **Tier 2 Links**: 3px solid glowing stroke with animated pulsing directional particle flow toward Super-Peers.
+
+
 
 

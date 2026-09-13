@@ -12,7 +12,7 @@ import copy
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 17
+TOTAL_STEPS: int = 19
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -3885,6 +3885,182 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "global_cluster_catalog": global_cluster_catalog,
             "top_level_zone": step16_data.get("top_level_zone", {}),
             "super_zone": step16_data.get("super_zone", {}),
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "top_initiator": 4,
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
+    elif step_number == 18:
+        step17_data = _get_10node_step_data_raw(17)
+        step18_nodes = copy.deepcopy(step17_data["nodes"])
+
+        # Super-Peer appointments and exemplar bindings
+        super_peer_map = {1: [1, 9], 5: [3, 5, 8], 10: [7, 10]}
+        bound_sp_map = {
+            1: 1, 2: None, 3: 5, 4: None, 5: 5,
+            6: None, 7: 10, 8: 5, 9: 1, 10: 10,
+        }
+
+        for n in step18_nodes:
+            nid = n["id"]
+            n["is_super_peer"] = (nid in [1, 5, 10])
+            n["bound_super_peer"] = bound_sp_map.get(nid)
+            n["governed_exemplars"] = super_peer_map.get(nid, [])
+            if n["is_super_peer"]:
+                n["role"] = "SUPER_PEER"
+                n["super_peer_title"] = f"Global Super-Peer ({n.get('assigned_super_cluster', 'SC')})"
+            elif n.get("is_exemplar"):
+                n["role"] = "EXEMPLAR"
+                n["super_peer_title"] = f"Intra-Zone Exemplar -> Bound SP C{n['bound_super_peer']}"
+            else:
+                n["role"] = "CLIENT"
+                n["super_peer_title"] = f"Regular Member -> Local Exemplar C{n.get('exemplar_node_id')}"
+
+        packet_traces = [
+            {
+                "from": 4,
+                "to": 2,
+                "path": [4, 1, 2],
+                "type": "ORDER_SET_SUPER_PEER",
+                "directives": {"super_peer_SC1": 1, "binding_C3": 5},
+            },
+            {
+                "from": 4,
+                "to": 8,
+                "path": [4, 6, 8],
+                "type": "ORDER_SET_SUPER_PEER",
+                "directives": {"binding_C9": 1, "binding_C8": 5, "super_peer_SC3": 10},
+            },
+        ]
+
+        terminal_logs = [
+            "[SUPER-INITIATOR C4] Officially designates Global Super-Peers and establishes hierarchical overlay bindings.",
+            "[SUPER-PEER SC-1] Node 1 designated Super-Peer for SC-1 (Aviation & Vehicles). Governs exemplars [C1, C9].",
+            "[SUPER-PEER SC-2] Node 5 designated Super-Peer for SC-2 (Animals). Governs exemplars [C3, C5, C8].",
+            "[SUPER-PEER SC-3] Node 10 designated Super-Peer for SC-3 (Heavy Transport & Amphibians). Governs exemplars [C7, C10].",
+            "[DIRECTIVE DISPATCH] C4 dispatches ORDER_SET_SUPER_PEER downstream along super-zone paths [4 -> 1 -> 2] and [4 -> 6 -> 8].",
+            "[EXEMPLAR BINDING] Exemplars bound: C1->SP1, C9->SP1 | C3->SP5, C5->SP5, C8->SP5 | C7->SP10, C10->SP10.",
+            "[HIERARCHICAL OVERLAY] 3-tier hierarchy bound: Regular Members -> Intra-Zone Exemplars -> Global Super-Peers.",
+        ]
+
+        return {
+            "step": 18,
+            "title": "Step 18: Super-Peer Designation & Hierarchical Overlay Binding",
+            "phase_badge": "ACTIVE PHASE: STEP 18: SUPER-PEER DESIGNATION & HIERARCHICAL BINDING",
+            "description": "Super-Initiator C4 designates Super-Peers (1, 5, 10) and binds local exemplars to coordinate cross-zone federations.",
+            "formula": r"\mathcal{SC}_m \longrightarrow SP_m \in \{C_1, C_5, C_{10}\}, \quad e_k \xrightarrow{\text{bind}} SP_m",
+            "formula_desc": "Super-Initiator C4 designates Super-Peers (1, 5, 10) to coordinate local exemplars across zones.",
+            "nodes": step18_nodes,
+            "edges": step17_data["edges"],
+            "packet_events": packet_traces,
+            "packet_exchanges": packet_traces,
+            "packet_traces": packet_traces,
+            "super_peers": [
+                {"id": 1, "super_cluster": "SC-1", "governed_exemplars": [1, 9]},
+                {"id": 5, "super_cluster": "SC-2", "governed_exemplars": [3, 5, 8]},
+                {"id": 10, "super_cluster": "SC-3", "governed_exemplars": [7, 10]},
+            ],
+            "exemplar_bindings": {
+                1: 1, 9: 1, 3: 5, 5: 5, 8: 5, 7: 10, 10: 10,
+            },
+            "regular_member_representations": {
+                2: 1, 4: 5, 6: 7,
+            },
+            "super_clusters": step17_data.get("super_clusters", []),
+            "similarity_matrix_7x7": step17_data.get("similarity_matrix_7x7", {}),
+            "global_cluster_catalog": step17_data.get("global_cluster_catalog", {}),
+            "top_level_zone": step17_data.get("top_level_zone", {}),
+            "super_zone": step17_data.get("super_zone", {}),
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(edges),
+            "active_leaders": [2, 4, 8],
+            "top_initiator": 4,
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
+    elif step_number == 19:
+        step18_data = _get_10node_step_data_raw(18)
+        step19_nodes = copy.deepcopy(step18_data["nodes"])
+
+        # Official 2-tier Semantic Overlay Network (SON) logical edge registry
+        semantic_overlay_edges = [
+            # Tier 1 - Intra-zone
+            {"tier": 1, "source": 2, "target": 1, "super_cluster": "SC-1", "type": "MEMBER_TO_EXEMPLAR"},
+            {"tier": 1, "source": 4, "target": 5, "super_cluster": "SC-2", "type": "MEMBER_TO_EXEMPLAR"},
+            {"tier": 1, "source": 6, "target": 7, "super_cluster": "SC-3", "type": "MEMBER_TO_EXEMPLAR"},
+            # Tier 2 - Inter-zone
+            {"tier": 2, "source": 9, "target": 1, "super_cluster": "SC-1", "type": "EXEMPLAR_TO_SUPERPEER"},
+            {"tier": 2, "source": 3, "target": 5, "super_cluster": "SC-2", "type": "EXEMPLAR_TO_SUPERPEER"},
+            {"tier": 2, "source": 8, "target": 5, "super_cluster": "SC-2", "type": "EXEMPLAR_TO_SUPERPEER"},
+            {"tier": 2, "source": 7, "target": 10, "super_cluster": "SC-3", "type": "EXEMPLAR_TO_SUPERPEER"},
+        ]
+
+        overlay_neighbors_map = {
+            1: [2, 9],
+            2: [1],
+            3: [5],
+            4: [5],
+            5: [3, 4, 8],
+            6: [7],
+            7: [6, 10],
+            8: [5],
+            9: [1],
+            10: [7],
+        }
+
+        for n in step19_nodes:
+            nid = n["id"]
+            n["active_overlay_neighbors"] = overlay_neighbors_map.get(nid, [])
+            n["son_tier"] = 3 if n.get("is_super_peer") else (2 if n.get("is_exemplar") else 1)
+
+        terminal_logs = [
+            "[SON FORMATION] Two-tier Semantic Overlay Network (SON) G_SON activated.",
+            "[TIER-1 INTRA-ZONE] Connected regular members to local exemplars: (C2 <-> C1), (C4 <-> C5), (C6 <-> C7).",
+            "[TIER-2 INTER-ZONE] Connected local exemplars to bound Super-Peers: SC-1 (C9 <-> C1), SC-2 (C3 <-> C5, C8 <-> C5), SC-3 (C7 <-> C10).",
+            "[LOGICAL TOPOLOGY] 7 active semantic overlay links established across 3 Super-Clusters.",
+            "[PHYSICAL UNDERLAY] Base 18-edge ad-hoc mesh dimmed to transport substrate.",
+        ]
+
+        return {
+            "step": 19,
+            "title": "Step 19: Semantic Overlay Network (SON) Logical Topology Formation",
+            "phase_badge": "ACTIVE PHASE: STEP 19: SEMANTIC OVERLAY NETWORK (SON) FORMATION",
+            "description": "Two-tier Semantic Overlay Network (SON) activated: 3 Tier-1 intra-zone links and 4 Tier-2 inter-zone links.",
+            "formula": r"\mathcal{E}_{\text{SON}} = \mathcal{E}_{\text{intra}} \cup \mathcal{E}_{\text{inter}} \subset \mathcal{V} \times \mathcal{V}, \quad \mathcal{G}_{\text{SON}} = (\mathcal{V}, \mathcal{E}_{\text{SON}})",
+            "formula_desc": "Active logical edges connect members to exemplars, and exemplars to super-peers across physical zones.",
+            "nodes": step19_nodes,
+            "edges": step18_data["edges"],
+            "semantic_overlay_edges": semantic_overlay_edges,
+            "tier1_overlay_edges": [e for e in semantic_overlay_edges if e["tier"] == 1],
+            "tier2_overlay_edges": [e for e in semantic_overlay_edges if e["tier"] == 2],
+            "packet_events": [],
+            "packet_exchanges": [],
+            "packet_traces": [],
+            "super_peers": step18_data.get("super_peers", []),
+            "exemplar_bindings": step18_data.get("exemplar_bindings", {}),
+            "super_clusters": step18_data.get("super_clusters", []),
+            "similarity_matrix_7x7": step18_data.get("similarity_matrix_7x7", {}),
+            "global_cluster_catalog": step18_data.get("global_cluster_catalog", {}),
+            "top_level_zone": step18_data.get("top_level_zone", {}),
+            "super_zone": step18_data.get("super_zone", {}),
             "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
             "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
             "total_nodes": 10,
