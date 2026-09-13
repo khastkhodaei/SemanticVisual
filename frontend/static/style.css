@@ -628,8 +628,8 @@ body {
 /* Physical Topology Link Styling (Clean, Thin, Subtle Slate Gray) */
 .network-physical-edge,
 .physical-link {
-  stroke: rgba(148, 163, 184, 0.4) !important;
-  stroke-width: 2px !important;
+  stroke: rgba(148, 163, 184, 0.25) !important;
+  stroke-width: 1.5px !important;
 }
 
 

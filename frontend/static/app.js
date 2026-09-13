@@ -5498,117 +5498,171 @@ function renderStep20(data) {
   animateStep20SemanticOverlay(overlayEdges, data.nodes);
 }
 
-// Global reference to hover virtual node in Figure 3(f)
+// Global reference to hover virtual node in Figure 3(f) / Physical
 let figure3fHoveredVirtualNode = null;
 let figure3fCanvasListenersBound = false;
 
-function drawFigure3fSmartphone(ctx, node, isHovered, pulse) {
-  const { x, y, id, node_id, tier, role, zone } = node;
-  const w = 44;
-  const h = 54;
-  const r = 8;
+// 18 Undirected Physical Mesh Topology Edges
+const PHYSICAL_TOPOLOGY_EDGES = [
+  { from: 1, to: 2 },
+  { from: 1, to: 4 },
+  { from: 2, to: 3 },
+  { from: 3, to: 5 },
+  { from: 3, to: 6 },
+  { from: 3, to: 7 },
+  { from: 4, to: 5 },
+  { from: 4, to: 6 },
+  { from: 4, to: 7 },
+  { from: 5, to: 6 },
+  { from: 5, to: 10 },
+  { from: 6, to: 8 },
+  { from: 6, to: 9 },
+  { from: 7, to: 9 },
+  { from: 8, to: 9 },
+  { from: 8, to: 10 },
+  { from: 9, to: 10 },
+  { from: 3, to: 4 },
+];
+
+// Active Semantic Overlay Edges across the 3 Global Super-Clusters in Physical View
+const PHYSICAL_SEMANTIC_OVERLAY_EDGES = [
+  // SC-1 link (9 -> 1) and (2 -> 1): Sky Blue (#38bdf8)
+  { from: 2, to: 1, color: "#38bdf8", cluster: "SC-1", label: "SC-1 (2 -> 1)" },
+  { from: 9, to: 1, color: "#38bdf8", cluster: "SC-1", label: "SC-1 (9 -> 1)" },
+  // SC-2 links (3 -> 5), (8 -> 5), and (4 -> 5): Amber Gold (#f59e0b)
+  { from: 4, to: 5, color: "#f59e0b", cluster: "SC-2", label: "SC-2 (4 -> 5)" },
+  { from: 3, to: 5, color: "#f59e0b", cluster: "SC-2", label: "SC-2 (3 -> 5)" },
+  { from: 8, to: 5, color: "#f59e0b", cluster: "SC-2", label: "SC-2 (8 -> 5)" },
+  // SC-3 links (6 -> 7) and (7 -> 10): Neon Violet (#c084fc)
+  { from: 6, to: 7, color: "#c084fc", cluster: "SC-3", label: "SC-3 (6 -> 7)" },
+  { from: 7, to: 10, color: "#c084fc", cluster: "SC-3", label: "SC-3 (7 -> 10)" },
+];
+
+/**
+ * Standardized Unified Node Renderer for Both Physical & Figure 3(f) Views
+ * Shape: Crisp circle with zone color fill, border ring, outer soft aura, centered label, and role badges.
+ * Radius: 24px in physical view, 20px in Figure 3(f) view.
+ */
+function drawNode(ctx, node, isHovered, pulse, radius = 20) {
+  const { x, y, id } = node;
+  const numId = typeof id === "number" ? id : parseInt(String(id).replace("C", "").replace("node_", ""), 10);
+
+  // Determine Zone Palette (Strictly Preserved):
+  // Zone 2 (1, 2, 3): Emerald Green fill (#059669) with outer soft aura
+  // Zone 4 (4, 5, 6, 7): Coral Orange fill (#ea580c) with outer soft aura
+  // Zone 8 (8, 9, 10): Violet / Purple fill (#7c3aed) with outer soft aura
+  let zone = node.zone;
+  if (!zone) {
+    if (numId <= 3) zone = 2;
+    else if (numId <= 7) zone = 4;
+    else zone = 8;
+  }
+
+  let fillColor = "#059669";
+  let ringColor = "#34d399";
+  let auraColor = "rgba(5, 150, 105, 0.45)";
+
+  if (zone === 4) {
+    fillColor = "#ea580c";
+    ringColor = "#fb923c";
+    auraColor = "rgba(234, 88, 12, 0.45)";
+  } else if (zone === 8) {
+    fillColor = "#7c3aed";
+    ringColor = "#a78bfa";
+    auraColor = "rgba(124, 58, 237, 0.45)";
+  }
+
+  const r = radius * (isHovered ? 1.15 : 1.0);
 
   ctx.save();
   ctx.translate(x, y);
 
-  if (isHovered) {
-    ctx.scale(1.12, 1.12);
-  }
+  // 1. Outer Soft Aura (Glow)
+  ctx.shadowColor = auraColor;
+  ctx.shadowBlur = isHovered ? 24 : (12 + (pulse || 0) * 8);
 
-  // Tier-based theme colors
-  let frameColor = "#475569";
-  let glowColor = "rgba(100, 116, 139, 0.35)";
-  let badgeColor = "#94a3b8";
-
-  if (tier === 3) {
-    frameColor = "#f59e0b"; // Super-Peer gold
-    glowColor = "rgba(245, 158, 11, 0.55)";
-    badgeColor = "#fbbf24";
-  } else if (tier === 2) {
-    frameColor = "#f43f5e"; // Exemplar rose / pink
-    glowColor = "rgba(244, 63, 94, 0.45)";
-    badgeColor = "#fda4af";
-  } else {
-    // Tier 1 - Base Client in physical zone
-    if (zone === 2) {
-      frameColor = "#eab308";
-      glowColor = "rgba(234, 179, 8, 0.4)";
-    } else if (zone === 4) {
-      frameColor = "#10b981";
-      glowColor = "rgba(16, 185, 129, 0.4)";
-    } else {
-      frameColor = "#38bdf8";
-      glowColor = "rgba(56, 189, 248, 0.4)";
-    }
-    badgeColor = frameColor;
-  }
-
-  // Outer phone body drop shadow
-  ctx.shadowColor = isHovered ? frameColor : glowColor;
-  ctx.shadowBlur = isHovered ? 18 : (tier === 3 ? 12 + (pulse || 0) * 6 : 6);
-
-  // Phone outer bezel (dark fill, sleek border)
-  ctx.fillStyle = "#090d16";
-  ctx.strokeStyle = frameColor;
-  ctx.lineWidth = isHovered ? 2.4 : (tier === 3 ? 2.0 : 1.6);
-  drawRoundedRect(ctx, -w / 2, -h / 2, w, h, r);
+  // 2. Main Circular Node Fill
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fillStyle = fillColor;
   ctx.fill();
+
+  // 3. Zone Border Ring
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = isHovered ? "#ffffff" : ringColor;
+  ctx.lineWidth = isHovered ? 2.8 : 2.0;
   ctx.stroke();
 
-  // Reset shadow for crisp inner screen
-  ctx.shadowBlur = 0;
-
-  // Inner screen area
-  const screenInset = 3;
-  ctx.fillStyle = "rgba(18, 26, 43, 0.95)";
-  drawRoundedRect(ctx, -w / 2 + screenInset, -h / 2 + screenInset, w - screenInset * 2, h - screenInset * 2, r - 2);
-  ctx.fill();
-
-  // Top speaker notch
-  ctx.fillStyle = "#64748b";
-  drawRoundedRect(ctx, -6, -h / 2 + 5, 12, 2, 1);
-  ctx.fill();
-
-  // Top selfie camera dot
+  // Subtle interior glass highlight ring
   ctx.beginPath();
-  ctx.arc(8, -h / 2 + 6, 1.2, 0, Math.PI * 2);
-  ctx.fillStyle = "#475569";
-  ctx.fill();
+  ctx.arc(0, 0, Math.max(1, r - 2), 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+  ctx.lineWidth = 1.0;
+  ctx.stroke();
 
-  // Role icon if tier 3 or 2
-  if (tier === 3) {
-    ctx.font = "10px system-ui, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("🌟", 0, -9);
-  } else if (tier === 2) {
-    ctx.font = "9px system-ui, sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("💎", 0, -9);
-  }
-
-  // Node number centered (e.g. 1, 2, 3...)
-  ctx.font = "bold 13px ui-monospace, SFMono-Regular, monospace";
+  // 4. White Bold Centered Text (C1, C2, ..., C10)
+  const fontPt = radius >= 23 ? 12 : 10.5;
+  ctx.font = `bold ${fontPt}px ui-monospace, SFMono-Regular, monospace`;
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(String(id), 0, tier === 1 ? -1 : 6);
+  ctx.fillText(node.node_id || `C${numId}`, 0, 0.5);
 
-  // Bottom home indicator bar
-  ctx.fillStyle = "rgba(148, 163, 184, 0.5)";
-  drawRoundedRect(ctx, -8, h / 2 - 6, 16, 2, 1);
-  ctx.fill();
+  // 5. Role Badges:
+  // - Super-Peers in Tier 3 (or 1, 5, 10 in physical): Gold double star badge (⭐⭐)
+  // - Exemplars in Tier 2 (or 3, 7, 8, 9 in physical): Gold single star badge (⭐)
+  // - Initiator Nodes (2, 4, 8): Crown icon (👑)
+  let badgeEmoji = "";
+  if (node.tier === 3) {
+    badgeEmoji = "⭐⭐";
+  } else if (node.tier === 2) {
+    badgeEmoji = "⭐";
+  } else if (node.tier === 1) {
+    if ([2, 4, 8].includes(numId)) badgeEmoji = "👑";
+  } else {
+    // Physical topology layout
+    if ([1, 5, 10].includes(numId)) {
+      badgeEmoji = "⭐⭐";
+    } else if ([3, 7, 8, 9].includes(numId)) {
+      badgeEmoji = "⭐";
+    }
+    if ([2, 4].includes(numId)) {
+      badgeEmoji = "👑";
+    } else if (numId === 8) {
+      badgeEmoji = "👑⭐";
+    }
+  }
 
-  // Subtle tier/role badge below phone
-  ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
-  ctx.fillStyle = badgeColor;
+  if (badgeEmoji) {
+    const badgeFont = radius >= 23 ? 11 : 9;
+    ctx.font = `${badgeFont}px system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillText(badgeEmoji, 0, -r - 2);
+  }
+
+  // Small subtle bottom role label
+  ctx.font = `bold ${radius >= 23 ? 8 : 7.5}px ui-monospace, SFMono-Regular, monospace`;
+  ctx.fillStyle = ringColor;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  const roleText = tier === 3 ? "SP" : (tier === 2 ? "EX" : `Z${zone || 1}`);
-  ctx.fillText(roleText, 0, h / 2 + 4);
+  let subLabel = "";
+  if (node.tier === 3) subLabel = "SUPER-PEER";
+  else if (node.tier === 2) subLabel = "EXEMPLAR";
+  else if (node.tier === 1) subLabel = `ZONE ${zone}`;
+  else {
+    subLabel = [1, 5, 10].includes(numId) ? "SUPER-PEER" : ([3, 7, 8, 9].includes(numId) ? "EXEMPLAR" : `ZONE ${zone}`);
+  }
+  ctx.fillText(subLabel, 0, r + 3);
 
   ctx.restore();
+}
+
+/**
+ * Backward compatibility alias for test suite referencing drawFigure3fSmartphone
+ */
+function drawFigure3fSmartphone(ctx, node, isHovered, pulse) {
+  drawNode(ctx, node, isHovered, pulse, 20);
 }
 
 function animateStep20SemanticOverlay(overlayEdges, allNodes) {
@@ -5623,7 +5677,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
   if (!figure3fCanvasListenersBound) {
     figure3fCanvasListenersBound = true;
     canvas.addEventListener("pointermove", (e) => {
-      if (currentStep !== 20 || currentLayout !== "overlay") {
+      if (currentStep !== 20) {
         figure3fHoveredVirtualNode = null;
         canvas.style.cursor = "";
         return;
@@ -5633,25 +5687,42 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
       const scaleY = canvas.height / (rect.height || 1);
       const mx = (e.clientX - rect.left) * scaleX;
       const my = (e.clientY - rect.top) * scaleY;
+      const isFigure3f = currentLayout === "figure3f" || currentLayout === "overlay";
       const offsetX = Math.max(0, (canvas.width - 1000) / 2);
 
-      let found = null;
-      for (const n of FIGURE3F_3TIER_NODES) {
-        const nx = n.x + offsetX;
-        const ny = n.y;
-        if (Math.abs(mx - nx) <= 24 && Math.abs(my - ny) <= 29) {
-          found = n;
-          break;
+      if (isFigure3f) {
+        let found = null;
+        for (const n of FIGURE3F_3TIER_NODES) {
+          const nx = n.x + offsetX;
+          const ny = n.y;
+          if (Math.hypot(mx - nx, my - ny) <= 22) {
+            found = n;
+            break;
+          }
         }
+        figure3fHoveredVirtualNode = found;
+        canvas.style.cursor = found ? "pointer" : "";
+      } else {
+        let found = null;
+        for (let id = 1; id <= 10; id++) {
+          const c = PHYSICAL_LAYOUT_COORDS[id];
+          if (!c) continue;
+          const px = c.x + offsetX;
+          const py = c.y + 10;
+          if (Math.hypot(mx - px, my - py) <= 26) {
+            found = { id, x: px, y: py };
+            break;
+          }
+        }
+        figure3fHoveredVirtualNode = found;
+        canvas.style.cursor = found ? "pointer" : "";
       }
-      figure3fHoveredVirtualNode = found;
-      canvas.style.cursor = found ? "pointer" : "";
     });
 
     canvas.addEventListener("click", (e) => {
-      if (currentStep !== 20 || currentLayout !== "overlay") return;
+      if (currentStep !== 20) return;
       if (figure3fHoveredVirtualNode) {
-        logToTerminal("INFO", `[INSPECTOR] Selected Node ${figure3fHoveredVirtualNode.id} (${figure3fHoveredVirtualNode.role} at Tier ${figure3fHoveredVirtualNode.tier}).`);
+        logToTerminal("INFO", `[INSPECTOR] Selected Node ${figure3fHoveredVirtualNode.id}.`);
         showNodeDetailsModal(figure3fHoveredVirtualNode.id);
       }
     });
@@ -5666,12 +5737,15 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     try {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const isOverlayMode = currentLayout === "overlay";
-      const offsetX = Math.max(0, (canvas.width - 1000) / 2); // Centers Figure 3(f) in viewport
+      const isOverlayMode = currentLayout === "figure3f" || currentLayout === "overlay";
+      const offsetX = Math.max(0, (canvas.width - 1000) / 2); // Centers layout in viewport
+      const elapsed = now - startTime;
+      const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2; // 0..1 smooth pulse
 
       if (isOverlayMode) {
-        const elapsed = now - startTime;
-        const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2; // 0..1 smooth pulse
+        // ====================================================================
+        // FIGURE 3(f) HIERARCHICAL OVERLAY VIEW
+        // ====================================================================
         const tCycle = elapsed % CYCLE_MS;
 
         // 1. Status / Heartbeat Stage Banner at Top
@@ -5685,7 +5759,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
           bannerColor = "#10b981";
         } else if (tCycle < 2800) {
           bannerText = "🌟 FIGURE 3(f) SON: [2/3] ⤢ TIER 2 → TIER 3 INTER-ZONE SUPER-PEER OVERLAYS";
-          bannerColor = "#b91c1c";
+          bannerColor = "#dc2626";
         } else {
           bannerText = "💫 FIGURE 3(f) SON: [3/3] ⬇ TIER 3 → TIER 2 → TIER 1 DOWNSTREAM BROADCAST";
           bannerColor = "#38bdf8";
@@ -5753,16 +5827,13 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
         ctx.restore();
 
         // 4. TIER 1 (Bottom - Base Clients Grouped into 3 Physical Zones Capsules)
-        // Zone 2 capsule (around nodes 1, 2, 3 at bottom-left): soft amber/yellow tint rgba(245, 158, 11, 0.08)
-        // Zone 4 capsule (around nodes 4, 5, 6, 7 at bottom-center): soft green tint rgba(16, 185, 129, 0.08)
-        // Zone 8 capsule (around nodes 8, 9, 10 at bottom-right): soft blue tint rgba(59, 130, 246, 0.08)
         const capsules = [
           {
             zone: 2,
             name: "ZONE 2 (Physical Base Clients)",
-            color: "#f59e0b",
-            fill: "rgba(245, 158, 11, 0.08)",
-            border: "rgba(245, 158, 11, 0.3)",
+            color: "#059669",
+            fill: "rgba(5, 150, 105, 0.08)",
+            border: "rgba(5, 150, 105, 0.3)",
             x: 95 + offsetX,
             y: 405,
             w: 210,
@@ -5772,9 +5843,9 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
           {
             zone: 4,
             name: "ZONE 4 (Physical Base Clients)",
-            color: "#10b981",
-            fill: "rgba(16, 185, 129, 0.08)",
-            border: "rgba(16, 185, 129, 0.3)",
+            color: "#ea580c",
+            fill: "rgba(234, 88, 12, 0.08)",
+            border: "rgba(234, 88, 12, 0.3)",
             x: 360 + offsetX,
             y: 405,
             w: 280,
@@ -5784,9 +5855,9 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
           {
             zone: 8,
             name: "ZONE 8 (Physical Base Clients)",
-            color: "#38bdf8",
-            fill: "rgba(59, 130, 246, 0.08)",
-            border: "rgba(59, 130, 246, 0.3)",
+            color: "#7c3aed",
+            fill: "rgba(124, 58, 237, 0.08)",
+            border: "rgba(124, 58, 237, 0.3)",
             x: 685 + offsetX,
             y: 405,
             w: 210,
@@ -5836,12 +5907,11 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
         });
 
         // 5. Render Dashed Hierarchy Connecting Lines
-        // Draw sleek dashed lines (ctx.setLineDash([5, 5]); lineWidth = 2):
         ctx.save();
         ctx.lineWidth = 2.0;
         ctx.setLineDash([5, 5]);
 
-        // Yellow dashed: Bottom 1 -> Mid 1, Bottom 2 -> Mid 1, Bottom 3 -> Mid 3
+        // Yellow dashed: Zone 2 (Bottom -> Middle)
         ctx.strokeStyle = "#eab308";
         ctx.shadowColor = "rgba(234, 179, 8, 0.35)";
         ctx.shadowBlur = 4;
@@ -5860,7 +5930,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
           }
         });
 
-        // Green dashed: Bottom 4 -> Mid 5, Bottom 5 -> Mid 5, Bottom 6 -> Mid 7, Bottom 7 -> Mid 7
+        // Green dashed: Zone 4 (Bottom -> Middle)
         ctx.strokeStyle = "#10b981";
         ctx.shadowColor = "rgba(16, 185, 129, 0.35)";
         ctx.shadowBlur = 4;
@@ -5880,7 +5950,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
           }
         });
 
-        // Blue dashed: Bottom 8 -> Mid 8, Bottom 9 -> Mid 9, Bottom 10 -> Mid 10
+        // Blue dashed: Zone 8 (Bottom -> Middle)
         ctx.strokeStyle = "#38bdf8";
         ctx.shadowColor = "rgba(56, 189, 248, 0.35)";
         ctx.shadowBlur = 4;
@@ -5899,11 +5969,10 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
           }
         });
 
-        // Middle -> Top: Red/Maroon dashed (#b91c1c, lineWidth = 2.5):
-        // Mid 1 -> Top 1, Mid 9 -> Top 1, Mid 3 -> Top 5, Mid 5 -> Top 5, Mid 8 -> Top 5, Mid 7 -> Top 10, Mid 10 -> Top 10
-        ctx.strokeStyle = "#b91c1c";
+        // Red/Maroon dashed (#dc2626 / #b91c1c, lineWidth = 2.5): Middle -> Top
+        ctx.strokeStyle = "#dc2626";
         ctx.lineWidth = 2.5;
-        ctx.shadowColor = "rgba(185, 28, 28, 0.55)";
+        ctx.shadowColor = "rgba(220, 38, 38, 0.55)";
         ctx.shadowBlur = 8 + pulse * 4;
         [
           ["mid_1", "top_1"],
@@ -5924,14 +5993,13 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
           }
         });
 
-        // Always reset line dash after drawing
         ctx.setLineDash([]);
         ctx.restore();
 
-        // 6. Ping-Pong Heartbeat Loop: Small particles traveling along tiers
+        // 6. Live Ping-Pong Heartbeat Animation
         ctx.save();
         if (tCycle < 1400) {
-          // [Stage 1: Upstream 0..1400ms]: Leaves in Tier 1 -> Exemplars in Tier 2 (following zone colors)
+          // [Stage 1: Upstream 0..1400ms]: Leaves in Tier 1 -> Exemplars in Tier 2
           const t = tCycle / 1400;
           FIGURE3F_3TIER_EDGES.filter(e => e.type === "INTRA_ZONE_CLUSTER").forEach(edge => {
             const pA = nodePosMap[edge.fromKey];
@@ -5954,7 +6022,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
             ctx.stroke();
           });
         } else if (tCycle < 2800) {
-          // [Stage 2: Upstream 1400..2800ms]: Exemplars in Tier 2 -> Super-Peers in Tier 3 (following maroon cross-overlay lines)
+          // [Stage 2: Upstream 1400..2800ms]: Exemplars in Tier 2 -> Super-Peers in Tier 3
           const t = (tCycle - 1400) / 1400;
           FIGURE3F_3TIER_EDGES.filter(e => e.type === "SUPER_PEER_OVERLAY").forEach(edge => {
             const pA = nodePosMap[edge.fromKey];
@@ -5972,7 +6040,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
 
             ctx.beginPath();
             ctx.arc(px, py, 9.0, 0, Math.PI * 2);
-            ctx.strokeStyle = "#b91c1c";
+            ctx.strokeStyle = "#dc2626";
             ctx.lineWidth = 2.2;
             ctx.stroke();
           });
@@ -5982,7 +6050,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
           ["top_1", "top_5", "top_10"].forEach(key => {
             const sp = nodePosMap[key];
             if (!sp) return;
-            const rBeacon = 24 + pProg * 20;
+            const rBeacon = 22 + pProg * 22;
             ctx.beginPath();
             ctx.arc(sp.renderedX, sp.renderedY, rBeacon, 0, Math.PI * 2);
             ctx.strokeStyle = `rgba(245, 158, 11, ${1 - pProg})`;
@@ -5992,7 +6060,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
             ctx.stroke();
           });
         } else {
-          // [Stage 4: Downstream 3300..4000ms]: Particles travel back downward
+          // [Stage 4: Downstream 3300..4000ms]: Flow reverses back down to leaves
           const t = (tCycle - 3300) / 700;
 
           // Overlay line returns: Tier 3 -> Tier 2
@@ -6029,36 +6097,138 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
         }
         ctx.restore();
 
-        // 7. Render All 20 Clean Phone Cards
+        // 7. Render All 20 Circular Nodes with drawNode (radius = 20px)
         FIGURE3F_3TIER_NODES.forEach(n => {
           const isHovered = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
-          drawFigure3fSmartphone(ctx, { ...n, x: n.x + offsetX, y: n.y }, isHovered, pulse);
+          drawNode(ctx, { ...n, x: n.x + offsetX, y: n.y }, isHovered, pulse, 20);
         });
 
       } else {
-        // Physical Topology View
+        // ====================================================================
+        // PHYSICAL TOPOLOGY VIEW (WITH ACTIVE OVERLAY COLLABORATION)
+        // ====================================================================
+
+        // 1. Status Banner at Top
         ctx.save();
         ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-        const bannerText = "PHYSICAL TOPOLOGY VIEW: 10 CLIENTS & 18 AD-HOC MESH LINKS";
+        const bannerText = "PHYSICAL TOPOLOGY: 10 CLIENTS, 18 AD-HOC MESH LINKS & ACTIVE OVERLAYS";
         const bW = ctx.measureText(bannerText).width;
         const bX = canvas.width / 2;
         const bY = 32;
         ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-        ctx.strokeStyle = "#94a3b8";
+        ctx.strokeStyle = "#38bdf8";
         ctx.lineWidth = 1.2;
         drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillStyle = "#94a3b8";
+        ctx.fillStyle = "#38bdf8";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(bannerText, bX, bY);
         ctx.restore();
+
+        // Build position map for the 10 physical nodes
+        const physNodePosMap = {};
+        for (let id = 1; id <= 10; id++) {
+          const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
+          physNodePosMap[id] = {
+            id,
+            x: c.x + offsetX,
+            y: c.y + 10
+          };
+        }
+
+        // 2. Draw 18 Thin Gray Physical Links (lineWidth: 1.5px, strokeStyle: rgba(148, 163, 184, 0.25))
+        ctx.save();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+        PHYSICAL_TOPOLOGY_EDGES.forEach(e => {
+          const p1 = physNodePosMap[e.from];
+          const p2 = physNodePosMap[e.to];
+          if (p1 && p2) {
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+          }
+        });
+        ctx.restore();
+
+        // 3. Draw Active Semantic Overlay Links in Glowing Neon Colors:
+        // - SC-1 (Sky Blue #38bdf8): (9 -> 1), (2 -> 1)
+        // - SC-2 (Amber Gold #f59e0b): (3 -> 5), (8 -> 5), (4 -> 5)
+        // - SC-3 (Neon Violet #c084fc): (6 -> 7), (7 -> 10)
+        ctx.save();
+        PHYSICAL_SEMANTIC_OVERLAY_EDGES.forEach(oe => {
+          const p1 = physNodePosMap[oe.from];
+          const p2 = physNodePosMap[oe.to];
+          if (!p1 || !p2) return;
+
+          // Outer glowing neon path
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.strokeStyle = oe.color;
+          ctx.lineWidth = 2.4;
+          ctx.shadowColor = oe.color;
+          ctx.shadowBlur = 12 + pulse * 6;
+          ctx.stroke();
+
+          // Core subtle dashed line
+          ctx.setLineDash([6, 5]);
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.75)";
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+          ctx.restore();
+        });
+        ctx.restore();
+
+        // 4. Animate Moving Particle Dots along Active Semantic Overlay Paths
+        const tPhys = (elapsed % 2200) / 2200;
+        ctx.save();
+        PHYSICAL_SEMANTIC_OVERLAY_EDGES.forEach((oe, idx) => {
+          const p1 = physNodePosMap[oe.from];
+          const p2 = physNodePosMap[oe.to];
+          if (!p1 || !p2) return;
+
+          // 2 staggered particles per edge
+          [0, 0.5].forEach(offset => {
+            const t = (tPhys + offset) % 1;
+            const px = p1.x + (p2.x - p1.x) * t;
+            const py = p1.y + (p2.y - p1.y) * t;
+
+            ctx.beginPath();
+            ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+            ctx.fillStyle = "#ffffff";
+            ctx.shadowColor = oe.color;
+            ctx.shadowBlur = 14;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(px, py, 7.5, 0, Math.PI * 2);
+            ctx.strokeStyle = oe.color;
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+          });
+        });
+        ctx.restore();
+
+        // 5. Draw the 10 Physical Nodes with drawNode (radius = 24px)
+        for (let id = 1; id <= 10; id++) {
+          const p = physNodePosMap[id];
+          if (!p) continue;
+          const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
+          drawNode(ctx, { id, x: p.x, y: p.y }, isHov, pulse, 24);
+        }
       }
 
     } catch (err) {
-      console.error("[FIGURE 3(f) CANVAS ERROR]", err);
+      console.error("[STEP 20 CANVAS ERROR]", err);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
