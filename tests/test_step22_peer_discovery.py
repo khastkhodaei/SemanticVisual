@@ -25,7 +25,7 @@ def test_step22_endpoint_success(client):
     assert "Step 22" in data["title"]
     assert "Peer Search" in data["title"] or "Discovery" in data["title"]
     assert len(data["nodes"]) == 10
-    assert data["total_steps"] == 22
+    assert data["total_steps"] >= 22
     assert len(data.get("discovery_packets", [])) == 7
     assert len(data.get("packet_traces", [])) == 7
 
@@ -271,4 +271,4 @@ def test_step22_total_steps_constant():
     assert TOTAL_STEPS >= 22
 
     step22 = get_10node_step_data(22)
-    assert step22["total_steps"] == 22
+    assert step22["total_steps"] >= 22

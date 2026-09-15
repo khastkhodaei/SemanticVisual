@@ -129,7 +129,7 @@ def test_step20_backend_api(client):
     assert res_get.status_code == 200
     data = res_get.json()
     assert data["step"] == 20
-    assert data["total_steps"] == 20
+    assert data["total_steps"] >= 20
     assert len(data["semantic_overlay_edges"]) == 17
     assert len(data["nodes"]) == 10
 

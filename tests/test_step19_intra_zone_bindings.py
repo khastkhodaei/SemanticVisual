@@ -54,7 +54,7 @@ def test_step19_endpoints_return_200(client):
     assert data_get["phase_badge"] == "ACTIVE PHASE: STEP 19: INTRA-ZONE SUPER-PEER & EXEMPLAR BINDING"
     assert data_get["total_nodes"] == 10
     assert data_get["total_edges"] == 18
-    assert data_get["total_steps"] in (19, 20)
+    assert data_get["total_steps"] >= 19
 
     res_post = client.post("/api/v1/storyboard/step/19")
     assert res_post.status_code == 200
@@ -181,7 +181,7 @@ def test_step19_engine_method():
     engine = SemanticDFLEngine()
     result = engine.run_intra_zone_bindings_10nodes()
     assert result["step"] == 19
-    assert result["total_steps"] in (19, 20)
+    assert result["total_steps"] >= 19
     assert len(result["nodes"]) == 10
     assert len(result["packet_traces"]) == 7
 

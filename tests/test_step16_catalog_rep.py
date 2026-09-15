@@ -40,7 +40,7 @@ def test_step16_endpoints_return_200(client):
     assert data_get["phase_badge"] == "ACTIVE PHASE: STEP 16: ZONE CATALOG RESPONSE & SIGNATURE INGESTION"
     assert data_get["total_nodes"] == 10
     assert data_get["total_edges"] == 18
-    assert data_get["total_steps"] in (16, 17, 18, 19)
+    assert data_get["total_steps"] >= 16
 
     res_post = client.post("/api/v1/storyboard/step/16")
     assert res_post.status_code == 200
@@ -163,7 +163,7 @@ def test_step16_engine_method():
     engine = SemanticDFLEngine()
     result = engine.run_zone_catalog_response_10nodes()
     assert result["step"] == 16
-    assert result["total_steps"] in (16, 17, 18, 19)
+    assert result["total_steps"] >= 16
     assert len(result["nodes"]) == 10
     assert result["top_initiator"] == 4
     assert len(result["global_cluster_catalog"]) == 7

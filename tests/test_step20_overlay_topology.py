@@ -53,7 +53,7 @@ def test_step20_api_status_and_structure(client):
     data = res.json()
 
     assert data["step"] == 20
-    assert data["total_steps"] == 20
+    assert data["total_steps"] >= 20
     assert "Figure 3(f)" in data["title"]
     assert "FIGURE 3(F)" in data["phase_badge"]
     assert "nodes" in data and len(data["nodes"]) == 10

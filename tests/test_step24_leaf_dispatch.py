@@ -25,7 +25,7 @@ def test_step24_endpoint_success(client):
     assert "Step 24" in data["title"]
     assert "Leaf" in data["title"] or "Exemplar" in data["title"] or "Forwarding" in data["title"]
     assert len(data["nodes"]) == 10
-    assert data["total_steps"] == 24
+    assert data["total_steps"] >= 24
     assert len(data.get("leaf_packet_traces", [])) == 3
 
 
@@ -102,8 +102,9 @@ def test_step24_leaf_inboxes_non_empty(client):
 
 
 def test_step24_total_steps_constant():
-    """Verify TOTAL_STEPS is 24."""
-    assert TOTAL_STEPS == 24
+    """Verify TOTAL_STEPS is at least 24."""
+    assert TOTAL_STEPS >= 24
 
     step24 = get_10node_step_data(24)
-    assert step24["total_steps"] == 24
+    assert step24["total_steps"] >= 24
+

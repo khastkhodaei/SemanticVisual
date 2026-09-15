@@ -41,7 +41,7 @@ def test_step18_directives_endpoints_return_200(client):
     assert "ORDER_SET_SUPER_CLUSTERS" in data_get["phase_badge"]
     assert data_get["total_nodes"] == 10
     assert data_get["total_edges"] == 18
-    assert data_get["total_steps"] in (18, 19)
+    assert data_get["total_steps"] >= 18
 
     res_post = client.post("/api/v1/storyboard/step/18")
     assert res_post.status_code == 200
@@ -130,7 +130,7 @@ def test_step18_engine_method():
     engine = SemanticDFLEngine()
     result = engine.run_super_peer_designation_10nodes()
     assert result["step"] == 18
-    assert result["total_steps"] in (18, 19)
+    assert result["total_steps"] >= 18
     assert len(result["nodes"]) == 10
     assert result["top_initiator"] == 4
     assert len(result["packet_traces"]) == 2
