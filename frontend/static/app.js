@@ -818,6 +818,7 @@ function initCytoscape() {
   cy.on("pan zoom resize", () => {
     syncPacketCanvasSize();
   });
+  window.cy = cy;
 }
 
 // 2. Setup Packet Animation Overlay Canvas
@@ -1136,6 +1137,8 @@ async function loadStep(stepNumber) {
 
     currentStep = stepNumber;
     currentStepData = data;
+    window.currentStep = currentStep;
+    window.currentStepData = currentStepData;
 
     // Manage Dual-Layout Toggle Button visibility: only available from Step 20 onward
     const btnToggleLayout = document.getElementById("btn-toggle-layout");
@@ -11268,11 +11271,120 @@ function renderNodeModal(node, stepData = currentStepData) {
         `;
       }
     }
+  } else if (currentStep === 19) {
+    if (probeSection) probeSection.classList.add("hidden");
+    if (bndSection) bndSection.classList.add("hidden");
+    if (pminSection) pminSection.classList.add("hidden");
+    if (bsSection) bsSection.classList.add("hidden");
+    if (consensusSection) consensusSection.classList.add("hidden");
+    if (orderSection) orderSection.classList.add("hidden");
+    if (sigSection) sigSection.classList.add("hidden");
+    if (clSection) clSection.classList.add("hidden");
+    if (exemplarSection) exemplarSection.classList.add("hidden");
+    if (topZoneSection) topZoneSection.classList.add("hidden");
+    if (catalogReqSection) catalogReqSection.classList.add("hidden");
+    if (globalCatalogSection) globalCatalogSection.classList.add("hidden");
+    if (superClusterSection) superClusterSection.classList.add("hidden");
+    if (overlaySection) overlaySection.classList.add("hidden");
+    if (superPeerSection) superPeerSection.classList.remove("hidden");
+
+    const isSP = [1, 5, 10].includes(idNum) || Boolean(mergedNode?.is_super_peer);
+    const isEx = [3, 7, 8, 9].includes(idNum) || (Boolean(mergedNode?.is_exemplar) && !isSP);
+    const boundSP = mergedNode?.bound_super_peer ?? (idNum === 9 ? 1 : ([3, 8].includes(idNum) ? 5 : ([7, 10].includes(idNum) ? 10 : (isSP ? idNum : null))));
+    const governed = mergedNode?.governed_exemplars || (idNum === 1 ? [1, 9] : (idNum === 5 ? [3, 5, 8] : (idNum === 10 ? [7, 10] : [])));
+    const scId = mergedNode?.super_cluster_id || mergedNode?.assigned_super_cluster || ([1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3"));
+
+    if (isSP) {
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = `🌟 DESIGNATED GLOBAL SUPER-PEER`;
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+      }
+      if (superPeerBadge) {
+        superPeerBadge.textContent = "GLOBAL SUPER-PEER";
+        superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
+      }
+      if (superPeerContent) {
+        const govTags = governed.map(e => `<span class="px-2 py-0.5 bg-amber-50 text-amber-900 rounded border border-amber-300 font-mono font-bold">⭐ Node C${e}</span>`).join(" ");
+        superPeerContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-amber-300 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-amber-400 bg-amber-50/80 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-amber-950 flex items-center gap-1.5">
+                  <span>🌟</span>
+                  <span>DESIGNATED GLOBAL SUPER-PEER</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-bold text-[9px] bg-white border border-amber-300 text-amber-900">${scId}</span>
+              </div>
+              <div class="text-[9.5px] text-amber-900 font-mono">
+                Appointed by Zone Initiator via direct 1-hop <code>ORDER_SET_SUPER_PEER</code> directive. Leads cross-zone model aggregation for <strong>${scId}</strong>.
+              </div>
+            </div>
+            <div class="p-2.5 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono space-y-1.5">
+              <div class="font-bold text-slate-800">Governed Exemplars:</div>
+              <div class="flex flex-wrap gap-1.5">
+                ${govTags}
+              </div>
+              <div class="text-[8.5px] text-slate-500 pt-1">Directly coordinates federation updates from these bound cluster exemplars.</div>
+            </div>
+          </div>
+        `;
+      }
+    } else if (isEx) {
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = `⭐ BOUND EXEMPLAR (SP C${boundSP})`;
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-sky-50 text-sky-900 border-sky-300";
+      }
+      if (superPeerBadge) {
+        superPeerBadge.textContent = `BOUND_TO_SP_${boundSP}`;
+        superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-sky-100 text-sky-900 border border-sky-300";
+      }
+      if (superPeerContent) {
+        superPeerContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-sky-300 bg-sky-50/70 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[10.5px] font-bold text-sky-950">Hierarchical Exemplar Binding:</span>
+                <span class="px-1.5 py-0.2 rounded font-mono font-bold text-[9px] bg-sky-200 text-sky-900 border border-sky-300">${scId}</span>
+              </div>
+              <div class="text-[10.5px] font-mono font-bold text-sky-950">
+                Bound Super-Peer: Node C${boundSP}
+              </div>
+            </div>
+            <div class="text-[9.5px] text-slate-600 font-mono">
+              Notified via direct 1-hop <code>ORDER_BIND_EXEMPLAR</code> from Zone Initiator. Federates local cluster models directly to Super-Peer C${boundSP}.
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      if (cardStatusBadge) {
+        const isInit = [2, 4, 8].includes(idNum);
+        cardStatusBadge.textContent = isInit ? (idNum === 4 ? "👑 TOP SUPER-INITIATOR" : `⭐ ZONE INITIATOR C${idNum}`) : "CLIENT (REGULAR MEMBER)";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-800 border-slate-300";
+      }
+      if (superPeerBadge) {
+        superPeerBadge.textContent = "INTRA_ZONE_ACTIVE";
+        superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-700 border border-slate-300";
+      }
+      if (superPeerContent) {
+        const repExemplar = idNum === 2 ? 1 : (idNum === 4 ? 5 : (idNum === 6 ? 7 : null));
+        superPeerContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2">
+            <div class="text-[10px] font-mono text-slate-800">
+              ${[2, 4, 8].includes(idNum)
+                ? `Initiator C${idNum} successfully issued direct 1-hop notifications to its zone exemplars.`
+                : `Regular client node in Zone 4. Represented in local cluster by Exemplar C${repExemplar}.`
+              }
+            </div>
+          </div>
+        `;
+      }
+    }
   } else {
     if (superPeerSection) superPeerSection.classList.add("hidden");
   }
 
-  // Step 19: Semantic Overlay Network (SON) Connections
+  // Step 20: Semantic Overlay Network (SON) Connections
   const overlaySection = document.getElementById("cardOverlaySection");
   const overlayBadge = document.getElementById("cardOverlayBadge");
   const overlayContent = document.getElementById("cardOverlayContent");
@@ -12072,118 +12184,6 @@ function renderNodeModal(node, stepData = currentStepData) {
     } else {
       if (discoverySection) discoverySection.classList.add("hidden");
     }
-  } else if (currentStep === 19) {
-    if (probeSection) probeSection.classList.add("hidden");
-    if (bndSection) bndSection.classList.add("hidden");
-    if (pminSection) pminSection.classList.add("hidden");
-    if (bsSection) bsSection.classList.add("hidden");
-    if (consensusSection) consensusSection.classList.add("hidden");
-    if (orderSection) orderSection.classList.add("hidden");
-    if (sigSection) sigSection.classList.add("hidden");
-    if (clSection) clSection.classList.add("hidden");
-    if (exemplarSection) exemplarSection.classList.add("hidden");
-    if (topZoneSection) topZoneSection.classList.add("hidden");
-    if (catalogReqSection) catalogReqSection.classList.add("hidden");
-    if (globalCatalogSection) globalCatalogSection.classList.add("hidden");
-    if (superClusterSection) superClusterSection.classList.add("hidden");
-    if (overlaySection) overlaySection.classList.add("hidden");
-    if (superPeerSection) superPeerSection.classList.remove("hidden");
-
-    const isSP = [1, 5, 10].includes(idNum) || Boolean(mergedNode?.is_super_peer);
-    const isEx = [3, 7, 8, 9].includes(idNum) || (Boolean(mergedNode?.is_exemplar) && !isSP);
-    const boundSP = mergedNode?.bound_super_peer ?? (idNum === 9 ? 1 : ([3, 8].includes(idNum) ? 5 : ([7, 10].includes(idNum) ? 10 : (isSP ? idNum : null))));
-    const governed = mergedNode?.governed_exemplars || (idNum === 1 ? [1, 9] : (idNum === 5 ? [3, 5, 8] : (idNum === 10 ? [7, 10] : [])));
-    const scId = mergedNode?.super_cluster_id || mergedNode?.assigned_super_cluster || ([1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3"));
-
-    if (isSP) {
-      if (cardStatusBadge) {
-        cardStatusBadge.textContent = `🌟 DESIGNATED GLOBAL SUPER-PEER`;
-        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
-      }
-      if (superPeerBadge) {
-        superPeerBadge.textContent = "GLOBAL SUPER-PEER";
-        superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300";
-      }
-      if (superPeerContent) {
-        const govTags = governed.map(e => `<span class="px-2 py-0.5 bg-amber-50 text-amber-900 rounded border border-amber-300 font-mono font-bold">⭐ Node C${e}</span>`).join(" ");
-        superPeerContent.innerHTML = `
-          <div class="p-3 bg-white rounded-lg border border-amber-300 shadow-xs space-y-2.5">
-            <div class="p-2.5 rounded-lg border border-amber-400 bg-amber-50/80 space-y-1">
-              <div class="flex items-center justify-between">
-                <span class="text-[11px] font-extrabold text-amber-950 flex items-center gap-1.5">
-                  <span>🌟</span>
-                  <span>DESIGNATED GLOBAL SUPER-PEER</span>
-                </span>
-                <span class="px-2 py-0.5 rounded font-mono font-bold text-[9px] bg-white border border-amber-300 text-amber-900">${scId}</span>
-              </div>
-              <div class="text-[9.5px] text-amber-900 font-mono">
-                Appointed by Zone Initiator via direct 1-hop <code>ORDER_SET_SUPER_PEER</code> directive. Leads cross-zone model aggregation for <strong>${scId}</strong>.
-              </div>
-            </div>
-            <div class="p-2.5 bg-slate-50 rounded border border-slate-200 text-[9.5px] font-mono space-y-1.5">
-              <div class="font-bold text-slate-800">Governed Exemplars:</div>
-              <div class="flex flex-wrap gap-1.5">
-                ${govTags}
-              </div>
-              <div class="text-[8.5px] text-slate-500 pt-1">Directly coordinates federation updates from these bound cluster exemplars.</div>
-            </div>
-          </div>
-        `;
-      }
-    } else if (isEx) {
-      if (cardStatusBadge) {
-        cardStatusBadge.textContent = `⭐ BOUND EXEMPLAR (SP C${boundSP})`;
-        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-sky-50 text-sky-900 border-sky-300";
-      }
-      if (superPeerBadge) {
-        superPeerBadge.textContent = `BOUND_TO_SP_${boundSP}`;
-        superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-sky-100 text-sky-900 border border-sky-300";
-      }
-      if (superPeerContent) {
-        superPeerContent.innerHTML = `
-          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
-            <div class="p-2.5 rounded-lg border border-sky-300 bg-sky-50/70 space-y-1">
-              <div class="flex items-center justify-between">
-                <span class="text-[10.5px] font-bold text-sky-950">Hierarchical Exemplar Binding:</span>
-                <span class="px-1.5 py-0.2 rounded font-mono font-bold text-[9px] bg-sky-200 text-sky-900 border border-sky-300">${scId}</span>
-              </div>
-              <div class="text-[10.5px] font-mono font-bold text-sky-950">
-                Bound Super-Peer: Node C${boundSP}
-              </div>
-            </div>
-            <div class="text-[9.5px] text-slate-600 font-mono">
-              Notified via direct 1-hop <code>ORDER_BIND_EXEMPLAR</code> from Zone Initiator. Federates local cluster models directly to Super-Peer C${boundSP}.
-            </div>
-          </div>
-        `;
-      }
-    } else {
-      if (cardStatusBadge) {
-        const isInit = [2, 4, 8].includes(idNum);
-        cardStatusBadge.textContent = isInit ? (idNum === 4 ? "👑 TOP SUPER-INITIATOR" : `⭐ ZONE INITIATOR C${idNum}`) : "CLIENT (REGULAR MEMBER)";
-        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-800 border-slate-300";
-      }
-      if (superPeerBadge) {
-        superPeerBadge.textContent = "INTRA_ZONE_ACTIVE";
-        superPeerBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-slate-100 text-slate-700 border border-slate-300";
-      }
-      if (superPeerContent) {
-        const repExemplar = idNum === 2 ? 1 : (idNum === 4 ? 5 : (idNum === 6 ? 7 : null));
-        superPeerContent.innerHTML = `
-          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2">
-            <div class="text-[10px] font-mono text-slate-800">
-              ${[2, 4, 8].includes(idNum)
-                ? `Initiator C${idNum} successfully issued direct 1-hop notifications to its zone exemplars.`
-                : `Regular client node in Zone 4. Represented in local cluster by Exemplar C${repExemplar}.`
-              }
-            </div>
-          </div>
-        `;
-      }
-    }
-  } else {
-    if (overlaySection) overlaySection.classList.add("hidden");
-  }
 
     card.classList.remove("hidden");
     card.style.display = "block";
