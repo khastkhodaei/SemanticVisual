@@ -48,7 +48,7 @@
   <script>window.renderMathInElement || document.write('<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>');</script>
 
   <!-- Custom Academic Stylesheet -->
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=24.2">
 </head>
 <body class="h-screen w-screen overflow-hidden text-slate-900 flex flex-col bg-slate-50">
 
@@ -207,13 +207,13 @@
           <span>🔄</span>
           <span>Reset / Step 1</span>
         </button>
-        <button id="btnPrev" disabled class="btn-secondary px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 transition-colors">
+        <button id="btnPrev" disabled class="btn-secondary px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed transition-colors" title="Already at initial Step 1">
           <span>◀️</span>
           <span>Previous Step</span>
         </button>
-        <button id="btnNext" disabled class="btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed transition-colors" title="Step 1 active - Next steps locked">
-          <span>Next Step (Disabled)</span>
-          <span>🔒</span>
+        <button id="btnNext" class="btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm" title="Advance to Step 2">
+          <span>Next Step (Step 2)</span>
+          <span>▶️</span>
         </button>
       </div>
 
@@ -745,6 +745,6 @@
   </main>
 
   <!-- Application JS Logic -->
-  <script src="/static/app.js?v=20.0"></script>
+  <script src="/static/app.js?v=24.2"></script>
 </body>
 </html>

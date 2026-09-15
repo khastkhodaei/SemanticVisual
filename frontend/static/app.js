@@ -1160,15 +1160,40 @@ async function loadStep(stepNumber) {
     }
 
     if (stepNumber === 1) {
-      renderStep1(data);
+      try {
+        renderStep1(data);
+      } catch (renderErr) {
+        console.error("Step 1 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 1 Render Error: ${renderErr.message}`);
+      }
     } else if (stepNumber === 2) {
-      renderStep2(data);
+      try {
+        renderStep2(data);
+      } catch (renderErr) {
+        console.error("Step 2 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 2 Render Error: ${renderErr.message}`);
+      }
     } else if (stepNumber === 3) {
-      renderStep3(data);
+      try {
+        renderStep3(data);
+      } catch (renderErr) {
+        console.error("Step 3 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 3 Render Error: ${renderErr.message}`);
+      }
     } else if (stepNumber === 4) {
-      renderStep4(data);
+      try {
+        renderStep4(data);
+      } catch (renderErr) {
+        console.error("Step 4 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 4 Render Error: ${renderErr.message}`);
+      }
     } else if (stepNumber === 5) {
-      renderStep5(data);
+      try {
+        renderStep5(data);
+      } catch (renderErr) {
+        console.error("Step 5 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 5 Render Error: ${renderErr.message}`);
+      }
     } else if (stepNumber === 6) {
       try {
         renderStep6(data);
@@ -1325,7 +1350,9 @@ async function loadStep(stepNumber) {
     console.error(`Step ${stepNumber} Error:`, err);
     logToTerminal("ERROR", `Failed loading step ${stepNumber}: ${err.message}`);
   } finally {
+    updateNavButtons(currentStep);
     setNavButtonsDisabled(false);
+    updateStepper(currentStep);
   }
 }
 
@@ -12726,6 +12753,10 @@ function bindActionButtons() {
       }
     });
   }
+
+  // Initialize navigation button state and stepper immediately on bind
+  updateNavButtons(currentStep || 1);
+  updateStepper(currentStep || 1);
 }
 
 // 13. Terminal Console Logger
