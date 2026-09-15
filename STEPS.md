@@ -995,8 +995,3 @@ Routing paths strictly adhere to valid Step 1 physical ad-hoc edges:
 ### 5. Dual-View Visualizations
 - **Figure 3(f) View**: Packets move downward from the Tier 2 Rose Oval Hub (Mid layer nodes: mid_1 -> bot_2, mid_5 -> bot_4, mid_7 -> bot_6) to the bottom Zone Capsules (Tier 1 Leaves) with tag `LEAF_DISPATCH`.
 - **Physical View**: Packets traverse strictly along $[1, 2]$, $[5, 4]$, and $[7, 4, 6]$ with tag `LEAF_DISPATCH`.
-
-
-
-
-

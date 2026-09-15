@@ -1103,9 +1103,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 23)
+// 4. Main Step Loading Function (Steps 1 to 24)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 23) return;
+  if (stepNumber < 1 || stepNumber > 24) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -1524,6 +1524,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 23 / DOWNWARD ROUTING";
     if (stepTitle) stepTitle.textContent = "Step 23: Super-Peer Semantic Query Routing to Cluster Exemplars";
     if (stepDesc) stepDesc.textContent = "Super-Peers route matching client queries down to Tier-2 Cluster Exemplars.";
+  } else if (step === 24) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 24: EXEMPLAR-TO-LEAF QUERY DISPATCH (TIER 2 -> TIER 1)";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 24 / LEAF DISPATCH";
+    if (stepTitle) stepTitle.textContent = "Step 24: Cluster Exemplar Forwarding to Leaf Members (Tier 2 -> Tier 1)";
+    if (stepDesc) stepDesc.textContent = "Cluster Exemplars complete downward query propagation by dispatching queries and authorized cluster partner sets to base Leaf Members.";
   }
 }
 
@@ -5368,6 +5376,10 @@ function toggleLayout() {
       canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
         ? "Super-Peer Downward Forwarding — Hierarchical Overlay (Tier 3 → Tier 2)"
         : "Super-Peer Downward Forwarding — Physical Topology (Multi-Hop Routes to Exemplars)";
+    } else if (currentStep === 24) {
+      canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+        ? "Exemplar-to-Leaf Dispatch — Hierarchical Overlay (Tier 2 → Tier 1)"
+        : "Exemplar-to-Leaf Dispatch — Physical Topology (Paths [1,2], [5,4], [7,4,6])";
     } else {
       canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
         ? "Semantic Overlay Network (SON) — Hierarchical Overlay (Figure 3(f))"
@@ -11238,7 +11250,7 @@ function renderNodeModal(node, stepData = currentStepData) {
   const overlayBadge = document.getElementById("cardOverlayBadge");
   const overlayContent = document.getElementById("cardOverlayContent");
 
-  if (currentStep >= 20) {
+  if (currentStep === 20) {
     if (probeSection) probeSection.classList.add("hidden");
     if (bndSection) bndSection.classList.add("hidden");
     if (pminSection) pminSection.classList.add("hidden");
@@ -11340,18 +11352,21 @@ function renderNodeModal(node, stepData = currentStepData) {
         </div>
       `;
     }
+  } else {
+    if (overlaySection) overlaySection.classList.add("hidden");
+  }
 
-    // Step 21: Sparse Model Compression Card (P=3)
-    const sparseSection = document.getElementById("cardSparseSection");
-    const sparseBadge = document.getElementById("cardSparseBadge");
-    const sparseContent = document.getElementById("cardSparseContent");
+  // Step 21: Sparse Model Compression Card (P=3)
+  const sparseSection = document.getElementById("cardSparseSection");
+  const sparseBadge = document.getElementById("cardSparseBadge");
+  const sparseContent = document.getElementById("cardSparseContent");
 
-    if (currentStep >= 21) {
-      if (sparseSection) sparseSection.classList.remove("hidden");
-      if (cardStatusBadge) {
-        cardStatusBadge.textContent = "📦 LOCAL_SPARSE_MODEL_READY";
-        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
-      }
+  if (currentStep === 21) {
+    if (sparseSection) sparseSection.classList.remove("hidden");
+    if (cardStatusBadge) {
+      cardStatusBadge.textContent = "📦 LOCAL_SPARSE_MODEL_READY";
+      cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
+    }
       if (sparseBadge) {
         sparseBadge.textContent = "15B WIRE (-62.5%)";
         sparseBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
