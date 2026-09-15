@@ -25,7 +25,7 @@ def test_step23_endpoint_success(client):
     assert "Step 23" in data["title"]
     assert "Super-Peer" in data["title"] or "Routing" in data["title"] or "Exemplar" in data["title"]
     assert len(data["nodes"]) == 10
-    assert data["total_steps"] == 23
+    assert data["total_steps"] >= 23
     assert len(data.get("packet_traces", [])) == 4
 
 
@@ -112,8 +112,8 @@ def test_step23_dual_role_nodes(client):
 
 
 def test_step23_total_steps_constant():
-    """Verify TOTAL_STEPS is 23."""
-    assert TOTAL_STEPS == 23
+    """Verify TOTAL_STEPS is at least 23."""
+    assert TOTAL_STEPS >= 23
 
     step23 = get_10node_step_data(23)
-    assert step23["total_steps"] == 23
+    assert step23["total_steps"] >= 23

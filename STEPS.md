@@ -936,6 +936,67 @@ Every Super-Peer identifies the origin client of each query, matches its signatu
 - **Figure 3(f) View**: Query packets travel down from Tier 3 Super-Peers along dashed lines to Tier 2 Exemplars with tag `FWD_QUERY`.
 - **Physical View**: Packets traverse strictly along `[1, 4, 7, 9]`, `[5, 3]`, `[5, 6, 8]`, and `[10, 9, 7]` with tag `FWD_QUERY`.
 
+---
+
+## Step 24 — Cluster Exemplar Forwarding to Leaf Members (Tier 2 -> Tier 1)
+
+Cluster Exemplars complete downward query propagation by dispatching queries and authorized cluster partner sets to base Leaf Members (Tier 2 -> Tier 1).
+
+### 1. Exemplar-to-Leaf Dispatch Traces
+- $C_1 \xrightarrow{\text{path } [1, 2]} C_2$: Delivers peer query of $C_9$ and authorized cluster list $[1, 9]$
+- $C_5 \xrightarrow{\text{path } [5, 4]} C_4$: Delivers peer queries of $C_3, C_8$ and authorized cluster list $[3, 5, 8]$
+- $C_7 \xrightarrow{\text{path } [7, 4, 6]} C_6$: Delivers peer query of $C_{10}$ and authorized cluster list $[7, 10]$
+
+### 2. Multi-Hop Physical Path Traversal
+Routing paths strictly adhere to valid Step 1 physical ad-hoc edges:
+- **Exemplar $C_1 \to$ Leaf $C_2$**: Direct physical link $[1, 2]$ (1 hop)
+- **Exemplar $C_5 \to$ Leaf $C_4$**: Direct physical link $[5, 4]$ (1 hop)
+- **Exemplar $C_7 \to$ Leaf $C_6$**: Physical multi-hop route $[7, 4, 6]$ traversing gateway node $C_4$ via valid edges $(7, 4)$ and $(4, 6)$ (2 hops)
+
+### 3. Trace Packets
+```json
+[
+  {
+    "from": 1, "to": 2, "path": [1, 2],
+    "type": "FWD_QUERY_TO_LEAF",
+    "origin_client": 9,
+    "signature": [1, 2, 3],
+    "sparse_vector": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    "authorized_peers": [1, 9],
+    "label": "LEAF_DISPATCH (C1 -> C2)"
+  },
+  {
+    "from": 5, "to": 4, "path": [5, 4],
+    "type": "FWD_QUERY_TO_LEAF",
+    "origin_client": 3,
+    "signature": [4, 5, 6],
+    "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0],
+    "authorized_peers": [3, 5, 8],
+    "label": "LEAF_DISPATCH (C5 -> C4)"
+  },
+  {
+    "from": 7, "to": 6, "path": [7, 4, 6],
+    "type": "FWD_QUERY_TO_LEAF",
+    "origin_client": 10,
+    "signature": [8, 9, 10],
+    "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 0.33, 0.12],
+    "authorized_peers": [7, 10],
+    "label": "LEAF_DISPATCH (C7 -> C6)"
+  }
+]
+```
+
+### 4. Leaf Aggregation Inboxes & Peer States
+- **Leaf $C_2$**: Ingests queries and sparse vectors of peers $C_1$ and $C_9$. Status: `FEDERATION_CLUSTER_LOCKED`.
+- **Leaf $C_4$**: Ingests queries and sparse vectors of peers $C_3$, $C_5$, and $C_8$. Status: `FEDERATION_CLUSTER_LOCKED`.
+- **Leaf $C_6$**: Ingests queries and sparse vectors of peers $C_7$ and $C_{10}$. Status: `FEDERATION_CLUSTER_LOCKED`.
+- **Exemplars & Super-Peers (1, 3, 5, 7, 8, 9, 10)**: Status: `FEDERATION_CLUSTER_LOCKED`. Ready for reciprocal P2P parameter aggregation in Step 25.
+
+### 5. Dual-View Visualizations
+- **Figure 3(f) View**: Packets move downward from the Tier 2 Rose Oval Hub (Mid layer nodes: mid_1 -> bot_2, mid_5 -> bot_4, mid_7 -> bot_6) to the bottom Zone Capsules (Tier 1 Leaves) with tag `LEAF_DISPATCH`.
+- **Physical View**: Packets traverse strictly along $[1, 2]$, $[5, 4]$, and $[7, 4, 6]$ with tag `LEAF_DISPATCH`.
+
+
 
 
 

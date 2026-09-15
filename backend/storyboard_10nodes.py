@@ -12,7 +12,7 @@ import copy
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 23
+TOTAL_STEPS: int = 24
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -4599,31 +4599,38 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
 
         # Exemplar Inboxes in Step 23 (originating client queries received by each Cluster Exemplar)
         exemplar_inboxes = {
-            1: [
-                {"origin_client": 2, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "Internal Loopback"},
-                {"origin_client": 9, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "[9, 7, 4, 1]"}
-            ],
+            # SC-1 Exemplars
             9: [
+                {"origin_client": 1, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.46, 0.17, 0.37, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "[1, 4, 7, 9]"},
                 {"origin_client": 2, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "[1, 4, 7, 9]"}
             ],
+            1: [
+                {"origin_client": 2, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "Local Loopback"},
+                {"origin_client": 9, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "[9, 7, 4, 1]"}
+            ],
+            # SC-2 Exemplars
             3: [
                 {"origin_client": 4, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": "[5, 3]"},
-                {"origin_client": 8, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "path": "[8, 6, 5]"}
-            ],
-            5: [
-                {"origin_client": 4, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": "Internal Loopback"},
-                {"origin_client": 3, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "path": "[3, 5]"},
-                {"origin_client": 8, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "path": "[8, 6, 5]"}
+                {"origin_client": 5, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0], "path": "[5, 3]"},
+                {"origin_client": 8, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "path": "[5, 3]"}
             ],
             8: [
                 {"origin_client": 3, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "path": "[5, 6, 8]"},
-                {"origin_client": 4, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": "[5, 6, 8]"}
+                {"origin_client": 4, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": "[5, 6, 8]"},
+                {"origin_client": 5, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0], "path": "[5, 6, 8]"}
             ],
+            5: [
+                {"origin_client": 3, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "path": "[3, 5]"},
+                {"origin_client": 4, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": "Local Loopback"},
+                {"origin_client": 8, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "path": "[8, 6, 5]"}
+            ],
+            # SC-3 Exemplars
             7: [
-                {"origin_client": 6, "forwarded_by_sp": 10, "indices": [7, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "path": "[10, 9, 7]"}
+                {"origin_client": 6, "forwarded_by_sp": 10, "indices": [7, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "path": "[10, 9, 7]"},
+                {"origin_client": 10, "forwarded_by_sp": 10, "indices": [8, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 0.33, 0.12], "path": "[10, 9, 7]"}
             ],
             10: [
-                {"origin_client": 6, "forwarded_by_sp": 10, "indices": [7, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "path": "Internal Loopback"},
+                {"origin_client": 6, "forwarded_by_sp": 10, "indices": [7, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "path": "Local Loopback"},
                 {"origin_client": 7, "forwarded_by_sp": 10, "indices": [8, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], "path": "[7, 9, 10]"}
             ]
         }
@@ -4632,19 +4639,19 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
         SP_DISPATCH_RECORDS = {
             1: [
                 {"target_ex": 9, "path": [1, 4, 7, 9], "origin_client": 2, "signature": [1, 2, 3], "classes": "1, 2, 3"},
-                {"target_ex": 1, "path": "Internal Loopback", "origin_client": 2, "signature": [1, 2, 3], "classes": "1, 2, 3"},
+                {"target_ex": 1, "path": "Local Loopback", "origin_client": 2, "signature": [1, 2, 3], "classes": "1, 2, 3"},
                 {"target_ex": 1, "path": "[9, 7, 4, 1]", "origin_client": 9, "signature": [1, 2, 3], "classes": "1, 2, 3"},
             ],
             5: [
                 {"target_ex": 3, "path": [5, 3], "origin_client": 4, "signature": [4, 5, 6], "classes": "4, 5, 6"},
                 {"target_ex": 8, "path": [5, 6, 8], "origin_client": 3, "signature": [4, 5, 6], "classes": "4, 5, 6"},
-                {"target_ex": 5, "path": "Internal Loopback", "origin_client": 4, "signature": [4, 5, 6], "classes": "4, 5, 6"},
+                {"target_ex": 5, "path": "Local Loopback", "origin_client": 4, "signature": [4, 5, 6], "classes": "4, 5, 6"},
                 {"target_ex": 5, "path": "[3, 5]", "origin_client": 3, "signature": [4, 5, 6], "classes": "4, 5, 6"},
                 {"target_ex": 5, "path": "[8, 6, 5]", "origin_client": 8, "signature": [4, 5, 6], "classes": "4, 5, 6"},
             ],
             10: [
                 {"target_ex": 7, "path": [10, 9, 7], "origin_client": 6, "signature": [7, 9, 10], "classes": "7, 9, 10"},
-                {"target_ex": 10, "path": "Internal Loopback", "origin_client": 6, "signature": [7, 9, 10], "classes": "7, 9, 10"},
+                {"target_ex": 10, "path": "Local Loopback", "origin_client": 6, "signature": [7, 9, 10], "classes": "7, 9, 10"},
                 {"target_ex": 10, "path": "[7, 9, 10]", "origin_client": 7, "signature": [8, 9, 10], "classes": "8, 9, 10"},
             ]
         }
@@ -4720,6 +4727,120 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "packet_traces": packet_traces,
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 24:
+        # Step 24: Cluster Exemplar Forwarding to Leaf Members (Tier 2 -> Tier 1)
+        step23_data = _get_10node_step_data_raw(23)
+        step24_nodes = copy.deepcopy(step23_data["nodes"])
+
+        # Packet traces: Exemplars dispatch queries and authorized partner sets down to Tier-1 Leaf nodes
+        leaf_packet_traces = [
+            {
+                "from": 1, "to": 2, "path": [1, 2],
+                "type": "FWD_QUERY_TO_LEAF",
+                "origin_client": 9,
+                "signature": [1, 2, 3],
+                "sparse_vector": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                "authorized_peers": [1, 9],
+                "label": "LEAF_DISPATCH (C1 -> C2)"
+            },
+            {
+                "from": 5, "to": 4, "path": [5, 4],
+                "type": "FWD_QUERY_TO_LEAF",
+                "origin_client": 3,
+                "signature": [4, 5, 6],
+                "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0],
+                "authorized_peers": [3, 5, 8],
+                "label": "LEAF_DISPATCH (C5 -> C4)"
+            },
+            {
+                "from": 7, "to": 6, "path": [7, 4, 6],
+                "type": "FWD_QUERY_TO_LEAF",
+                "origin_client": 10,
+                "signature": [8, 9, 10],
+                "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 0.33, 0.12],
+                "authorized_peers": [7, 10],
+                "label": "LEAF_DISPATCH (C7 -> C6)"
+            }
+        ]
+
+        leaf_inboxes = {
+            2: [
+                {"from_peer": 1, "via_exemplar": 1, "indices": [1, 2, 3], "sparse_vector": [0.46, 0.17, 0.37, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]},
+                {"from_peer": 9, "via_exemplar": 1, "indices": [1, 2, 3], "sparse_vector": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}
+            ],
+            4: [
+                {"from_peer": 3, "via_exemplar": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0]},
+                {"from_peer": 5, "via_exemplar": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0]},
+                {"from_peer": 8, "via_exemplar": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0]}
+            ],
+            6: [
+                {"from_peer": 7, "via_exemplar": 7, "indices": [8, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27]},
+                {"from_peer": 10, "via_exemplar": 7, "indices": [8, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 0.33, 0.12]}
+            ]
+        }
+
+        for n in step24_nodes:
+            nid = n["id"]
+            n["status"] = "FEDERATION_CLUSTER_LOCKED"
+            if nid in [2, 4, 6]:
+                n["is_leaf"] = True
+                n["leaf_inbox"] = leaf_inboxes.get(nid, [])
+                n["received_peer_models"] = leaf_inboxes.get(nid, [])
+                if nid == 2:
+                    n["authorized_peers"] = [1, 9]
+                elif nid == 4:
+                    n["authorized_peers"] = [3, 5, 8]
+                elif nid == 6:
+                    n["authorized_peers"] = [7, 10]
+            elif nid in [1, 3, 5, 7, 8, 9, 10]:
+                n["is_exemplar"] = True
+
+        terminal_logs = [
+            "[LEAF DISPATCH] Exemplars initiate downward query dispatch to Tier-1 base Leaf members.",
+            "[EXEMPLAR C1 -> LEAF C2] Dispatches C9 peer query and authorized set [1, 9] via direct physical link [1, 2].",
+            "[EXEMPLAR C5 -> LEAF C4] Dispatches C3, C8 peer queries and authorized set [3, 5, 8] via direct physical link [5, 4].",
+            "[EXEMPLAR C7 -> LEAF C6] Dispatches C10 peer query and authorized set [7, 10] via verified multi-hop route [7, 4, 6].",
+            "[FEDERATION LOCK] Leaf nodes C2, C4, C6 lock cluster aggregation inboxes.",
+            "[STEP 24 COMPLETE] Cluster Exemplar forwarding complete. Ready for Step 25 Reciprocal P2P Parameter Aggregation.",
+        ]
+
+        return {
+            "step": 24,
+            "title": "Step 24: Cluster Exemplar Forwarding to Leaf Members (Tier 2 -> Tier 1)",
+            "phase_badge": "ACTIVE PHASE: STEP 24: EXEMPLAR-TO-LEAF QUERY DISPATCH (TIER 2 -> TIER 1)",
+            "description": "Cluster Exemplars complete downward query propagation by dispatching queries and authorized cluster partner sets to base Leaf Members (Tier 2 -> Tier 1).",
+            "formula": r"e_k \xrightarrow{\text{Tier 2} \to \text{Tier 1}} \text{Leaf}_i \quad : \quad \mathcal{P}_i = \{j \in \mathcal{SC}_m\}",
+            "formula_desc": "Exemplars deliver validated cluster partner queries down to base Leaf nodes.",
+            "nodes": step24_nodes,
+            "edges": step23_data["edges"],
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step23_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": [1, 5, 10],
+            "exemplars": [1, 3, 5, 7, 8, 9, 10],
+            "leaf_nodes": [2, 4, 6],
+            "leaf_inboxes": leaf_inboxes,
+            "leaf_packet_traces": leaf_packet_traces,
+            "packets": leaf_packet_traces,
+            "discovery_packets": leaf_packet_traces,
+            "packet_traces": leaf_packet_traces,
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -4741,8 +4862,10 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
 def get_10node_step_data(step_number: int) -> Dict[str, Any]:
     """Retrieve storyboard step data for 10-node simulation with guaranteed total_steps."""
     data = _get_10node_step_data_raw(step_number)
-    if step_number >= 23:
-        data["total_steps"] = 23
+    if step_number >= 24:
+        data["total_steps"] = 24
+    elif step_number == 23:
+        data["total_steps"] = 24
     elif step_number == 22:
         data["total_steps"] = 22
     elif step_number == 21:

@@ -1295,6 +1295,13 @@ async function loadStep(stepNumber) {
         console.error("Step 23 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 23 Render Error: ${renderErr.message}`);
       }
+    } else if (stepNumber === 24) {
+      try {
+        renderStep24(data);
+      } catch (renderErr) {
+        console.error("Step 24 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 24 Render Error: ${renderErr.message}`);
+      }
     }
 
 
@@ -5746,6 +5753,72 @@ function renderStep23(data) {
   animateStep23ExemplarRouting(packetTraces, data.nodes);
 }
 
+function renderStep24(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 24: EXEMPLAR-TO-LEAF QUERY DISPATCH (TIER 2 -> TIER 1)";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-400";
+  });
+
+  renderSidebarFormula(
+    "Step 24: Cluster Exemplar Forwarding to Leaf Members (Tier 2 -> Tier 1)",
+    "e_k \\xrightarrow{\\text{Tier 2} \\to \\text{Tier 1}} \\text{Leaf}_i \\quad : \\quad \\mathcal{P}_i = \\{j \\in \\mathcal{SC}_m\\}",
+    "Exemplars deliver validated cluster partner queries down to base Leaf nodes.",
+    "Step 24: Leaf Dispatch",
+    false,
+    "emerald"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      ? "Exemplar-to-Leaf Dispatch — Hierarchical Overlay (Tier 2 → Tier 1)"
+      : "Exemplar-to-Leaf Dispatch — Physical Topology (Paths [1,2], [5,4], [7,4,6])";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Leaf Dispatch: <span class="text-emerald-600 font-bold font-mono">3 Leaf Inboxes</span> | Locked: <span class="text-emerald-700 font-bold font-mono">C2, C4, C6</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  // Position nodes according to physical layout on Cytoscape
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = PHYSICAL_LAYOUT_COORDS[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("INFO", "[STEP 24] Cluster Exemplars initiating downward dispatch to Tier-1 base Leaf members.");
+  logToTerminal("SUCCESS", "[DISPATCH C1 -> C2] Direct physical link [1, 2] delivering C9 query & authorized set [1, 9].");
+  logToTerminal("SUCCESS", "[DISPATCH C5 -> C4] Direct physical link [5, 4] delivering C3, C8 queries & authorized set [3, 5, 8].");
+  logToTerminal("SUCCESS", "[DISPATCH C7 -> C6] Multi-hop physical route [7, 4, 6] delivering C10 query & authorized set [7, 10].");
+  logToTerminal("ZONE", "[FEDERATION_LOCKED] Base leaf nodes lock aggregation inboxes. Ready for Step 25 P2P aggregation.");
+
+  const packetTraces = data.leaf_packet_traces || data.packet_traces || data.discovery_packets || data.packets || [];
+  animateStep24LeafDispatch(packetTraces, data.nodes);
+}
+
 // Global reference to hover virtual node in Figure 3(f) / Physical
 let figure3fHoveredVirtualNode = null;
 let figure3fCanvasListenersBound = false;
@@ -7352,6 +7425,399 @@ function animateStep23ExemplarRouting(packetTraces, allNodes) {
   activeAnimationId = requestAnimationFrame(runFrame);
 }
 
+// Step 24: Cluster Exemplar Forwarding to Leaf Members Animation
+function animateStep24LeafDispatch(packetTraces, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const startTime = performance.now();
+  const CYCLE_MS = 3800;
+
+  const traces = (packetTraces && packetTraces.length > 0) ? packetTraces : [
+    { from: 1, to: 2, path: [1, 2], fromKey: "mid_1", toKey: "bot_2", type: "FWD_QUERY_TO_LEAF", origin_client: 9, signature: [1, 2, 3], label: "LEAF_DISPATCH (C1 -> C2)" },
+    { from: 5, to: 4, path: [5, 4], fromKey: "mid_5", toKey: "bot_4", type: "FWD_QUERY_TO_LEAF", origin_client: 3, signature: [4, 5, 6], label: "LEAF_DISPATCH (C5 -> C4)" },
+    { from: 7, to: 6, path: [7, 4, 6], fromKey: "mid_7", toKey: "bot_6", type: "FWD_QUERY_TO_LEAF", origin_client: 10, signature: [8, 9, 10], label: "LEAF_DISPATCH (C7 -> C6)" }
+  ];
+
+  traces.forEach(t => {
+    if (!t.fromKey) t.fromKey = `mid_${t.from}`;
+    if (!t.toKey) t.toKey = `bot_${t.to}`;
+  });
+
+  function getPointAlongPath(path, prog, posMap) {
+    if (!path || path.length === 0) return null;
+    if (path.length === 1) return posMap[path[0]];
+    const numSegs = path.length - 1;
+    const clampedProg = Math.max(0, Math.min(0.9999, prog));
+    const segIdx = Math.floor(clampedProg * numSegs);
+    const segProg = (clampedProg * numSegs) - segIdx;
+    const pA = posMap[path[segIdx]];
+    const pB = posMap[path[segIdx + 1]];
+    if (!pA || !pB) return null;
+    return {
+      x: pA.x + (pB.x - pA.x) * segProg,
+      y: pA.y + (pB.y - pA.y) * segProg
+    };
+  }
+
+  function drawFloatingTag(ctx, text, x, y, borderColor, bgColor, textColor) {
+    ctx.save();
+    ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+    const textW = ctx.measureText(text).width;
+    const boxH = 14;
+    const boxW = textW + 12;
+    const boxX = x - boxW / 2;
+    const boxY = y - boxH / 2;
+
+    ctx.fillStyle = bgColor || "rgba(15, 23, 42, 0.92)";
+    ctx.strokeStyle = borderColor || "#10b981";
+    ctx.lineWidth = 1;
+    ctx.shadowColor = borderColor || "#10b981";
+    ctx.shadowBlur = 6;
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = textColor || "#d1fae5";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function renderPhysicalLeafDispatch(now) {
+    if (cy) {
+      cy.elements().style("opacity", 0);
+    }
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    // 1. Top Status Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "PHYSICAL TOPOLOGY: CLUSTER EXEMPLAR DISPATCH TO BASE LEAF MEMBERS [LEAF_DISPATCH]";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#34d399";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Node position map
+    const physNodePosMap = {};
+    for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          physNodePosMap[id] = { id, x: rp.x, y: rp.y };
+          continue;
+        }
+      }
+      const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
+      physNodePosMap[id] = { id, x: c.x, y: c.y };
+    }
+
+    // 2. Physical Mesh Links
+    ctx.save();
+    PHYSICAL_TOPOLOGY_EDGES.forEach(edge => {
+      const p1 = physNodePosMap[edge.from];
+      const p2 = physNodePosMap[edge.to];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // 3. Highlighted Dispatch Routes [1,2], [5,4], [7,4,6]
+    ctx.save();
+    traces.forEach(pkt => {
+      const path = pkt.path;
+      for (let i = 0; i < path.length - 1; i++) {
+        const pA = physNodePosMap[path[i]];
+        const pB = physNodePosMap[path[i + 1]];
+        if (!pA || !pB) continue;
+        ctx.beginPath();
+        ctx.moveTo(pA.x, pA.y);
+        ctx.lineTo(pB.x, pB.y);
+        ctx.strokeStyle = "rgba(16, 185, 129, 0.55)";
+        ctx.lineWidth = 2.4;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+      }
+    });
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 4. Moving Dispatch Pulses & Floating Tags
+    ctx.save();
+    traces.forEach((pkt, idx) => {
+      const phaseOffset = (idx * 0.22) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      if (tPkt < 0.80) {
+        const travelProg = tPkt / 0.80;
+        const pt = getPointAlongPath(pkt.path, travelProg, physNodePosMap);
+        if (pt) {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 6.0, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = "#10b981";
+          ctx.shadowBlur = 16;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 9.0, 0, Math.PI * 2);
+          ctx.strokeStyle = "#059669";
+          ctx.lineWidth = 2.0;
+          ctx.stroke();
+
+          drawFloatingTag(ctx, pkt.label || "LEAF_DISPATCH", pt.x, pt.y - 16, "#10b981", "rgba(15, 23, 42, 0.92)", "#d1fae5");
+        }
+      } else {
+        const arrProg = (tPkt - 0.80) / 0.20;
+        const destId = pkt.to || (pkt.path ? pkt.path[pkt.path.length - 1] : null);
+        const destPos = physNodePosMap[destId];
+        if (destPos) {
+          const rBeacon = NODE_RADIUS + arrProg * 26;
+          ctx.beginPath();
+          ctx.arc(destPos.x, destPos.y, rBeacon, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(16, 185, 129, ${1 - arrProg})`;
+          ctx.lineWidth = 2.4;
+          ctx.shadowColor = "#10b981";
+          ctx.shadowBlur = 14;
+          ctx.stroke();
+
+          drawFloatingTag(ctx, "LEAF_INBOX_LOCKED", destPos.x, destPos.y - NODE_RADIUS - 16, "#10b981", "rgba(6, 78, 59, 0.92)", "#6ee7b7");
+        }
+      }
+    });
+    ctx.restore();
+
+    // 5. Draw Canonical 10 Nodes
+    for (let id = 1; id <= 10; id++) {
+      const pos = physNodePosMap[id];
+      if (!pos) continue;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
+      const nodeObj = {
+        id,
+        node_id: `C${id}`,
+        x: pos.x,
+        y: pos.y,
+        zone: id <= 3 ? 2 : (id <= 7 ? 4 : 8),
+        tier: [1, 5, 10].includes(id) ? 3 : ([3, 7, 8, 9].includes(id) ? 2 : 1)
+      };
+      drawNode(ctx, nodeObj, isHov, pulse, NODE_RADIUS);
+    }
+
+    ctx.restore();
+  }
+
+  function renderFigure3fLeafDispatch(now) {
+    if (cy) {
+      cy.elements().style("opacity", 0);
+    }
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    // 1. Bottom Stage Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = tCycle < 0.75
+      ? "DOWNWARD DISPATCH: EXEMPLARS DELIVER PEER QUERIES & PARTNER LISTS TO LEAF MEMBERS (TIER 2 → TIER 1)"
+      : "FEDERATION LOCK: LEAF NODES (C2, C4, C6) POPULATE AGGREGATION INBOXES (READY FOR STEP 25)";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = canvas.height - 24;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#34d399";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // 2. Device Silhouettes
+    ctx.save();
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isTop = n.tier === 3;
+      const isMid = n.tier === 2;
+      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
+      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
+      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
+      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Hull & Capsules
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillStyle = "#e11d48";
+    ctx.textAlign = "center";
+    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
+    ctx.restore();
+
+    capsules.forEach(cap => {
+      ctx.save();
+      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
+      ctx.fillStyle = cap.fill;
+      ctx.fill();
+      ctx.strokeStyle = cap.border;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillStyle = cap.color;
+      ctx.textAlign = "center";
+      ctx.fillText(cap.name, cap.centerX, cap.y + 6);
+      ctx.restore();
+    });
+
+    // 3. Hierarchy Links
+    ctx.save();
+    FIGURE3F_3TIER_EDGES.forEach(edge => {
+      const p1 = nodePosMap[edge.fromKey];
+      const p2 = nodePosMap[edge.toKey];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.renderedX, p1.renderedY);
+      ctx.lineTo(p2.renderedX, p2.renderedY);
+      ctx.strokeStyle = edge.type === "SUPER_PEER_OVERLAY" ? "#b91c1c" : edge.color;
+      ctx.lineWidth = edge.type === "SUPER_PEER_OVERLAY" ? 2.2 : 1.8;
+      ctx.setLineDash([5, 5]);
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // 4. Downward Moving Match Packets (Tier 2 Rose Oval Hub -> Tier 1 Bottom Zone Capsules)
+    ctx.save();
+    traces.forEach((pkt, idx) => {
+      const pA = nodePosMap[pkt.fromKey]; // Tier 2 Exemplar
+      const pB = nodePosMap[pkt.toKey];   // Tier 1 Leaf
+      if (!pA || !pB) return;
+
+      const phaseOffset = (idx * 0.18) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      if (tPkt < 0.75) {
+        const t = tPkt / 0.75;
+        const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
+        const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
+
+        ctx.beginPath();
+        ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = "#10b981";
+        ctx.shadowBlur = 16;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(px, py, 9.0, 0, Math.PI * 2);
+        ctx.strokeStyle = "#059669";
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, pkt.label || "LEAF_DISPATCH", px, py - 16, "#10b981", "rgba(15, 23, 42, 0.92)", "#d1fae5");
+      } else {
+        const arrProg = (tPkt - 0.75) / 0.25;
+        const rBeacon = 28 + arrProg * 22;
+        ctx.beginPath();
+        ctx.arc(pB.renderedX, pB.renderedY, rBeacon, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(16, 185, 129, ${1 - arrProg})`;
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#10b981";
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, "INBOX_LOCKED", pB.renderedX, pB.renderedY - 32, "#10b981", "rgba(6, 78, 59, 0.92)", "#6ee7b7");
+      }
+    });
+    ctx.restore();
+
+    // 5. Draw Nodes
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
+      drawNode(ctx, {
+        id: n.id,
+        node_id: n.label,
+        x: p.renderedX,
+        y: p.renderedY,
+        tier: n.tier,
+        zone: n.zone
+      }, isHov, pulse, rad);
+    });
+
+    ctx.restore();
+  }
+
+  function runFrame(now) {
+    if (currentStep !== 24) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentLayout === "figure3f" || currentLayout === "overlay") {
+      renderFigure3fLeafDispatch(now);
+    } else {
+      renderPhysicalLeafDispatch(now);
+    }
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
 // Animate PROBE packet flooding in Step 4 across 3 waves with dynamic color morphing
 function animateProbeFloodingWaves(waves, allNodes) {
   stopCurrentPacketAnimation();
@@ -8036,9 +8502,9 @@ function renderNodeModal(node, stepData = currentStepData) {
 
     const card = document.getElementById("nodeInfoCard");
     if (!card) return;
-    if (currentStep === 22 || currentStep === 23) {
+    if (currentStep === 22 || currentStep === 23 || currentStep === 24) {
       card.classList.remove("w-84");
-      card.classList.add("w-96", "sm:w-[440px]");
+      card.classList.add("w-96", "sm:w-[480px]");
     } else {
       card.classList.remove("w-96", "sm:w-[440px]");
       card.classList.add("w-84");
@@ -11309,179 +11775,90 @@ function renderNodeModal(node, stepData = currentStepData) {
       }
 
       if (discoveryContent) {
-        const partners = mergedNode?.authorized_partners || ([1, 2, 9].includes(idNum) ? [1, 2, 9] : ([3, 4, 5, 8].includes(idNum) ? [3, 4, 5, 8] : [6, 7, 10]));
         const scId = [1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3");
         const spId = [1, 2, 9].includes(idNum) ? 1 : ([3, 4, 5, 8].includes(idNum) ? 5 : 10);
         const sigClasses = [1, 2, 9].includes(idNum) ? [1, 2, 3] : ([3, 4, 5, 8].includes(idNum) ? [4, 5, 6] : [8, 9, 10]);
 
-        const partnerBadges = partners.map(p => {
-          const isSelf = p === idNum;
-          return `<span class="px-2 py-0.5 rounded font-mono font-bold text-[10px] ${isSelf ? 'bg-purple-600 text-white shadow-xs ring-1 ring-purple-400' : 'bg-white text-purple-900 border border-purple-300'}">C${p}${isSelf ? ' (You)' : ''}</span>`;
-        }).join(" ");
-
-        // Fallback inboxes matching backend deterministic dictionary
-        const FALLBACK_INBOXES = {
-          1: [
-            { origin_client: 2, forwarded_by_sp: 1, indices: [1, 2, 3], sparse_vector: [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], path: "Internal Loopback" },
-            { origin_client: 9, forwarded_by_sp: 1, indices: [1, 2, 3], sparse_vector: [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], path: "[9, 7, 4, 1]" }
-          ],
+        const FALLBACK_INBOXES_23 = {
           9: [
-            { origin_client: 2, forwarded_by_sp: 1, indices: [1, 2, 3], sparse_vector: [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], path: "[1, 4, 7, 9]" }
+            {"origin_client": 1, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.46, 0.17, 0.37, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "[1, 4, 7, 9]"},
+            {"origin_client": 2, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "[1, 4, 7, 9]"}
+          ],
+          1: [
+            {"origin_client": 2, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "Local Loopback"},
+            {"origin_client": 9, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "[9, 7, 4, 1]"}
           ],
           3: [
-            { origin_client: 4, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], path: "[5, 3]" },
-            { origin_client: 8, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], path: "[8, 6, 5]" }
-          ],
-          5: [
-            { origin_client: 4, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], path: "Internal Loopback" },
-            { origin_client: 3, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], path: "[3, 5]" },
-            { origin_client: 8, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], path: "[8, 6, 5]" }
+            {"origin_client": 4, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": "[5, 3]"},
+            {"origin_client": 5, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0], "path": "[5, 3]"},
+            {"origin_client": 8, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "path": "[5, 3]"}
           ],
           8: [
-            { origin_client: 3, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], path: "[5, 6, 8]" },
-            { origin_client: 4, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], path: "[5, 6, 8]" }
+            {"origin_client": 3, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "path": "[5, 6, 8]"},
+            {"origin_client": 4, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": "[5, 6, 8]"},
+            {"origin_client": 5, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0], "path": "[5, 6, 8]"}
+          ],
+          5: [
+            {"origin_client": 3, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "path": "[3, 5]"},
+            {"origin_client": 4, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": "Local Loopback"},
+            {"origin_client": 8, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "path": "[8, 6, 5]"}
           ],
           7: [
-            { origin_client: 6, forwarded_by_sp: 10, indices: [7, 9, 10], sparse_vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], path: "[10, 9, 7]" }
+            {"origin_client": 6, "forwarded_by_sp": 10, "indices": [7, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "path": "[10, 9, 7]"},
+            {"origin_client": 10, "forwarded_by_sp": 10, "indices": [8, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 0.33, 0.12], "path": "[10, 9, 7]"}
           ],
           10: [
-            { origin_client: 6, forwarded_by_sp: 10, indices: [7, 9, 10], sparse_vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], path: "Internal Loopback" },
-            { origin_client: 7, forwarded_by_sp: 10, indices: [8, 9, 10], sparse_vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], path: "[7, 9, 10]" }
+            {"origin_client": 6, "forwarded_by_sp": 10, "indices": [7, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "path": "Local Loopback"},
+            {"origin_client": 7, "forwarded_by_sp": 10, "indices": [8, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], "path": "[7, 9, 10]"}
           ]
         };
 
-        const rawInbox = mergedNode?.exemplar_inbox || (stepData?.exemplar_inboxes && (stepData.exemplar_inboxes[idNum] || stepData.exemplar_inboxes[String(idNum)])) || FALLBACK_INBOXES[idNum] || [];
+        const rawInbox23 = mergedNode?.exemplar_inbox || (stepData?.exemplar_inboxes && (stepData.exemplar_inboxes[idNum] || stepData.exemplar_inboxes[String(idNum)])) || FALLBACK_INBOXES_23[idNum] || [];
 
         let exemplarInboxHTML = "";
-        if (isEx && rawInbox.length > 0) {
-          const queryCardsHTML = rawInbox.map((item, qIdx) => {
-            const clientNum = item.origin_client;
-            const spNum = item.forwarded_by_sp;
-            const indices = item.indices || [];
-            const vector = item.sparse_vector || [0,0,0,0,0,0,0,0,0,0];
-            const pathRaw = item.path;
-            const pathStr = Array.isArray(pathRaw) ? pathRaw.map(n => `C${n}`).join(" &rarr; ") : (typeof pathRaw === "string" && pathRaw.startsWith("[") ? JSON.parse(pathRaw.replace(/'/g, '"')).map(n => `C${n}`).join(" &rarr; ") : pathRaw);
-
-            const vectorGridSlots = vector.map((val, dimIdx) => {
-              const dimNum = dimIdx + 1;
+        if (rawInbox23 && rawInbox23.length > 0) {
+          const rowsHTML = rawInbox23.map(q => {
+            const vecBadges = (q.sparse_vector || []).map((val, idx) => {
               const numVal = Number(val);
-              const isActive = indices.includes(dimNum) || numVal > 0;
-              if (isActive) {
-                return `
-                  <div class="flex flex-col items-center justify-center p-1 rounded bg-slate-900 border border-emerald-500/80 text-emerald-300 shadow-xs">
-                    <span class="text-[7.5px] font-mono text-cyan-400 font-bold">d${dimNum}</span>
-                    <span class="text-[9.5px] font-mono font-extrabold tracking-tight text-emerald-300">${numVal.toFixed(2)}</span>
-                  </div>
-                `;
-              } else {
-                return `
-                  <div class="flex flex-col items-center justify-center p-1 rounded bg-slate-900/50 border border-slate-800 text-slate-500 opacity-60">
-                    <span class="text-[7.5px] font-mono text-slate-500">d${dimNum}</span>
-                    <span class="text-[9.5px] font-mono font-medium text-slate-500">0.00</span>
-                  </div>
-                `;
-              }
+              const isActive = (q.indices || []).includes(idx + 1) || numVal > 0;
+              return `<span style="display: inline-block; padding: 1px 3px; margin: 1px; font-size: 9px; font-family: monospace; border-radius: 3px; ${isActive ? 'background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: bold; border: 1px solid #10b981;' : 'background: rgba(51, 65, 85, 0.4); color: #64748b;'}">${numVal.toFixed(2)}</span>`;
             }).join("");
 
+            const pathStr = Array.isArray(q.path) ? `[${q.path.join(", ")}]` : q.path;
+            const topPStr = (q.indices || []).join(", ");
+
             return `
-              <div class="p-2.5 rounded bg-slate-950/80 border border-slate-800 space-y-2">
-                <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
-                  <div class="flex items-center gap-1.5">
-                    <span class="px-1.5 py-0.5 rounded font-mono font-bold text-[9.5px] bg-blue-950 text-blue-300 border border-blue-700/70">
-                      Query from Client C${clientNum}
-                    </span>
-                    <span class="text-[8.5px] font-mono text-slate-400">via <span class="font-bold text-amber-300">SP C${spNum}</span></span>
-                  </div>
-                  <span class="text-[8px] font-mono px-1.5 py-0.2 rounded bg-purple-950 text-purple-300 border border-purple-700/60 font-bold">
-                    Signature: [${indices.join(", ")}]
-                  </span>
-                </div>
-
-                <div class="text-[8.5px] font-mono flex items-center justify-between text-slate-400">
-                  <span>Incoming Physical Route:</span>
-                  <span class="font-bold text-purple-300 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">${pathStr}</span>
-                </div>
-
-                <div class="space-y-1">
-                  <div class="flex items-center justify-between text-[8px] text-slate-400">
-                    <span class="font-bold text-slate-300">10D Sparse Vector Payload (w&#770;):</span>
-                    <span class="text-emerald-400 font-bold">P = 3 Dimensions</span>
-                  </div>
-                  <div class="grid grid-cols-5 sm:grid-cols-10 gap-1 pt-0.5">
-                    ${vectorGridSlots}
-                  </div>
-                </div>
-              </div>
+              <tr style="border-bottom: 1px solid rgba(51, 65, 85, 0.5);">
+                <td style="padding: 6px; font-weight: bold; color: #38bdf8;">Client C${q.origin_client}</td>
+                <td style="padding: 6px; color: #f59e0b; font-weight: bold;">SP C${q.forwarded_by_sp || spId}</td>
+                <td style="padding: 6px; font-family: monospace; color: #c084fc;">[${topPStr}]</td>
+                <td style="padding: 6px; font-family: monospace; color: #94a3b8; font-size: 11px;">${pathStr}</td>
+                <td style="padding: 6px; max-width: 220px; line-height: 1.4;">${vecBadges}</td>
+              </tr>
             `;
           }).join("");
 
           exemplarInboxHTML = `
-            <div class="p-3 bg-slate-900/95 text-slate-100 rounded-lg border border-purple-500/60 shadow-md space-y-2.5 backdrop-blur-sm">
-              <div class="flex items-center justify-between border-b border-slate-700/70 pb-1.5">
-                <span class="text-[10.5px] font-mono font-extrabold text-purple-300 flex items-center gap-1.5">
-                  <span class="inline-block w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-                  Tier-2 Exemplar Ingested Queries
-                </span>
-                <span class="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-purple-950/90 text-purple-300 border border-purple-700/80 font-bold">${rawInbox.length} Ingested</span>
-              </div>
-              <div class="space-y-2">
-                ${queryCardsHTML}
-              </div>
-            </div>
-          `;
-        }
-
-        // Super-Peer Decision & Dispatch Engine (for SP nodes 1, 5, 10)
-        let spHTML = "";
-        if (isSP) {
-          const spDispatches = {
-            1: [
-              { target_ex: 9, path: [1, 4, 7, 9], origin_client: 2, signature: [1, 2, 3], classes: "1, 2, 3" },
-              { target_ex: 1, path: "Local Loopback", origin_client: 2, signature: [1, 2, 3], classes: "1, 2, 3" },
-              { target_ex: 1, path: "[9, 7, 4, 1]", origin_client: 9, signature: [1, 2, 3], classes: "1, 2, 3" }
-            ],
-            5: [
-              { target_ex: 3, path: [5, 3], origin_client: 4, signature: [4, 5, 6], classes: "4, 5, 6" },
-              { target_ex: 8, path: [5, 6, 8], origin_client: 3, signature: [4, 5, 6], classes: "4, 5, 6" },
-              { target_ex: 5, path: "Local Loopback", origin_client: 4, signature: [4, 5, 6], classes: "4, 5, 6" },
-              { target_ex: 5, path: "[3, 5]", origin_client: 3, signature: [4, 5, 6], classes: "4, 5, 6" },
-              { target_ex: 5, path: "[8, 6, 5]", origin_client: 8, signature: [4, 5, 6], classes: "4, 5, 6" }
-            ],
-            10: [
-              { target_ex: 7, path: [10, 9, 7], origin_client: 6, signature: [7, 9, 10], classes: "7, 9, 10" },
-              { target_ex: 10, path: "Local Loopback", origin_client: 6, signature: [7, 9, 10], classes: "7, 9, 10" },
-              { target_ex: 10, path: "[7, 9, 10]", origin_client: 7, signature: [8, 9, 10], classes: "8, 9, 10" }
-            ]
-          }[idNum] || [];
-
-          spHTML = `
-            <div class="p-3 bg-white rounded-lg border border-amber-300 shadow-xs space-y-2">
-              <div class="flex items-center justify-between border-b border-amber-200 pb-1.5">
-                <span class="text-[10.5px] font-mono font-extrabold text-amber-950 flex items-center gap-1.5">
-                  <span>🚀</span>
-                  <span>Super-Peer Decision &amp; Dispatch Engine</span>
-                </span>
-                <span class="px-2 py-0.5 rounded text-[8.5px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                  DISPATCH COMPLETE
-                </span>
-              </div>
-              <div class="text-[9px] font-mono text-slate-700">
-                Evaluation: <span class="text-emerald-700 font-bold">Sim(S_i, S_k) = 1.0</span> across Super-Cluster registry.
-              </div>
-              <div class="space-y-1.5 pt-0.5">
-                ${spDispatches.map(d => {
-                  const pStr = Array.isArray(d.path) ? d.path.map(n => `C${n}`).join(" &rarr; ") : d.path;
-                  return `
-                    <div class="p-2 bg-amber-50/70 rounded border border-amber-200 text-[9px] font-mono space-y-0.5">
-                      <div class="flex justify-between items-center text-amber-950 font-bold">
-                        <span>Forwarded Client C${d.origin_client} Query &rarr; Exemplar C${d.target_ex}</span>
-                        <span class="text-[8px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-900 border border-purple-300 font-bold">FWD_QUERY</span>
-                      </div>
-                      <div class="text-slate-600 text-[8.5px]">Path: <span class="font-bold text-slate-800">${pStr}</span></div>
-                      <div class="text-emerald-800 font-bold text-[8.5px]">Target Classes: [${d.classes}]</div>
-                    </div>
-                  `;
-                }).join("")}
+            <div class="modal-section" style="margin-top: 15px; background: rgba(15, 23, 42, 0.8); border: 1px solid #38bdf8; border-radius: 8px; padding: 12px;">
+              <h4 style="color: #38bdf8; margin-top: 0; display: flex; align-items: center; gap: 6px;">
+                <span>📥</span> Tier-2 Exemplar Ingested Queries (From Super-Peer)
+              </h4>
+              <p style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">Forwarded queries authorized by Super-Peer for intra-cluster peer discovery:</p>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; font-size: 12px; color: #e2e8f0; border-collapse: collapse;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid #334155; text-align: left;">
+                      <th style="padding: 6px;">Client</th>
+                      <th style="padding: 6px;">Super-Peer</th>
+                      <th style="padding: 6px;">Top-P Classes</th>
+                      <th style="padding: 6px;">Physical Path</th>
+                      <th style="padding: 6px;">10D Sparse Vector</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsHTML}
+                  </tbody>
+                </table>
               </div>
             </div>
           `;
@@ -11491,7 +11868,7 @@ function renderNodeModal(node, stepData = currentStepData) {
         if (isLeaf) {
           const exemplarTarget = idNum === 2 ? 1 : (idNum === 4 ? 5 : 7);
           leafHTML = `
-            <div class="p-3 bg-white rounded-lg border border-slate-300 shadow-xs space-y-2">
+            <div class="p-3 bg-white rounded-lg border border-slate-300 shadow-xs space-y-2 mt-2">
               <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
                 <span class="text-[10.5px] font-mono font-extrabold text-slate-800 flex items-center gap-1.5">
                   <span>⏳</span>
@@ -11505,7 +11882,7 @@ function renderNodeModal(node, stepData = currentStepData) {
                 Assigned Exemplar: <span class="font-bold text-amber-700">⭐ Node C${exemplarTarget}</span>
               </div>
               <div class="p-2 rounded bg-slate-50 border border-slate-200 text-[8.5px] font-mono text-slate-600">
-                Outbound discovery query dispatched to Super-Peer has been routed to Tier-2 Cluster Exemplars. Primed for federated model partner aggregation in Step 24.
+                Outbound discovery query dispatched to Super-Peer has been routed to Tier-2 Cluster Exemplars. Primed for exemplar-to-leaf query dispatch in Step 24.
               </div>
             </div>
           `;
@@ -11513,7 +11890,6 @@ function renderNodeModal(node, stepData = currentStepData) {
 
         discoveryContent.innerHTML = `
           <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
-            <!-- Super-Cluster Header -->
             <div class="p-2.5 rounded-lg border border-purple-200 bg-purple-50/70 space-y-1">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-extrabold text-purple-950 flex items-center gap-1">
@@ -11525,15 +11901,129 @@ function renderNodeModal(node, stepData = currentStepData) {
                 Super-Peer Coordinator: <span class="font-bold text-amber-700">⭐ C${spId}</span> | Classes: <span class="font-bold text-purple-900">[${sigClasses.join(", ")}]</span>
               </div>
             </div>
-
-            <!-- Super-Peer Decision & Dispatch Engine (if Super-Peer: 1, 5, 10) -->
-            ${spHTML}
-
-            <!-- Tier-2 Exemplar Received Queries (if Exemplar: 1, 3, 5, 7, 8, 9, 10) -->
             ${exemplarInboxHTML}
-
-            <!-- Leaf Member Status (if Leaf: 2, 4, 6) -->
             ${leafHTML}
+          </div>
+        `;
+      }
+    } else if (currentStep === 24) {
+      if (discoverySection) discoverySection.classList.remove("hidden");
+      const isLeaf = [2, 4, 6].includes(idNum);
+      const isEx = [1, 3, 5, 7, 8, 9, 10].includes(idNum);
+
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "🔒 FEDERATION_CLUSTER_LOCKED";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-emerald-100 text-emerald-900 border-emerald-400";
+      }
+
+      if (discoveryBadge) {
+        discoveryBadge.textContent = "STEP 24: LEAF DISPATCH";
+        discoveryBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
+      }
+
+      if (discoveryContent) {
+        const scId = [1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3");
+        const spExemplar = idNum === 2 ? 1 : (idNum === 4 ? 5 : 7);
+
+        const FALLBACK_LEAF_INBOXES_24 = {
+          2: [
+            {"from_peer": 1, "via_exemplar": 1, "indices": [1, 2, 3], "sparse_vector": [0.46, 0.17, 0.37, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]},
+            {"from_peer": 9, "via_exemplar": 1, "indices": [1, 2, 3], "sparse_vector": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]}
+          ],
+          4: [
+            {"from_peer": 3, "via_exemplar": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0]},
+            {"from_peer": 5, "via_exemplar": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0]},
+            {"from_peer": 8, "via_exemplar": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0]}
+          ],
+          6: [
+            {"from_peer": 7, "via_exemplar": 7, "indices": [8, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27]},
+            {"from_peer": 10, "via_exemplar": 7, "indices": [8, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 0.33, 0.12]}
+          ]
+        };
+
+        const leafInbox = mergedNode?.leaf_inbox || (stepData?.leaf_inboxes && (stepData.leaf_inboxes[idNum] || stepData.leaf_inboxes[String(idNum)])) || FALLBACK_LEAF_INBOXES_24[idNum] || [];
+
+        let leafInboxHTML = "";
+        if (leafInbox && leafInbox.length > 0) {
+          const rowsHTML = leafInbox.map(rec => {
+            const vecBadges = (rec.sparse_vector || []).map((val, idx) => {
+              const numVal = Number(val);
+              const isActive = (rec.indices || []).includes(idx + 1) || numVal > 0;
+              return `<span style="display: inline-block; padding: 1px 3px; margin: 1px; font-size: 9px; font-family: monospace; border-radius: 3px; ${isActive ? 'background: rgba(16, 185, 129, 0.25); color: #34d399; font-weight: bold; border: 1px solid #10b981;' : 'background: rgba(51, 65, 85, 0.4); color: #64748b;'}">${numVal.toFixed(2)}</span>`;
+            }).join("");
+
+            return `
+              <tr style="border-bottom: 1px solid rgba(51, 65, 85, 0.5);">
+                <td style="padding: 6px; font-weight: bold; color: #34d399;">Peer C${rec.from_peer}</td>
+                <td style="padding: 6px; color: #fbbf24; font-weight: bold;">Exemplar C${rec.via_exemplar || spExemplar}</td>
+                <td style="padding: 6px; font-family: monospace; color: #38bdf8;">[${(rec.indices || []).join(", ")}]</td>
+                <td style="padding: 6px; max-width: 220px; line-height: 1.4;">${vecBadges}</td>
+              </tr>
+            `;
+          }).join("");
+
+          leafInboxHTML = `
+            <div class="modal-section" style="margin-top: 15px; background: rgba(15, 23, 42, 0.8); border: 1px solid #10b981; border-radius: 8px; padding: 12px;">
+              <h4 style="color: #10b981; margin-top: 0; display: flex; align-items: center; gap: 6px;">
+                <span>📬</span> Leaf Node Aggregation Inbox (From Exemplar)
+              </h4>
+              <p style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">Peer queries and 10D sparse weight models delivered to this leaf:</p>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; font-size: 12px; color: #e2e8f0; border-collapse: collapse;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid #334155; text-align: left;">
+                      <th style="padding: 6px;">Peer</th>
+                      <th style="padding: 6px;">Via Exemplar</th>
+                      <th style="padding: 6px;">Active Indices</th>
+                      <th style="padding: 6px;">10D Sparse Vector</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsHTML}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+
+        let exStatusHTML = "";
+        if (isEx) {
+          const authPeers = idNum === 1 ? "[1, 9]" : (idNum === 5 ? "[3, 5, 8]" : (idNum === 7 ? "[7, 10]" : "Assigned"));
+          const targetLeaf = idNum === 1 ? "C2 via [1, 2]" : (idNum === 5 ? "C4 via [5, 4]" : (idNum === 7 ? "C6 via [7, 4, 6]" : "Intra-Cluster"));
+          exStatusHTML = `
+            <div class="p-3 bg-white rounded-lg border border-amber-300 shadow-xs space-y-2 mt-2">
+              <div class="flex items-center justify-between border-b border-amber-200 pb-1.5">
+                <span class="text-[10.5px] font-mono font-extrabold text-amber-950 flex items-center gap-1.5">
+                  <span>⭐</span>
+                  <span>Exemplar Dispatch Status</span>
+                </span>
+                <span class="px-2 py-0.5 rounded text-[8.5px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                  DISPATCHED TO LEAF
+                </span>
+              </div>
+              <div class="text-[9px] font-mono text-slate-700">
+                Delivered authorized peer queries &amp; cluster list <span class="font-bold text-amber-800">${authPeers}</span> to <span class="font-bold text-emerald-700">${targetLeaf}</span>.
+              </div>
+            </div>
+          `;
+        }
+
+        discoveryContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-emerald-200 bg-emerald-50/70 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-emerald-950 flex items-center gap-1">
+                  <span>🌐</span><span>Cluster Federation Status:</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold text-[10px] bg-emerald-200 text-emerald-900 border border-emerald-300">${scId}</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-emerald-800 font-semibold">
+                Status: <span class="font-bold text-emerald-900">FEDERATION_CLUSTER_LOCKED</span> | Ready for Step 25 Aggregation
+              </div>
+            </div>
+            ${leafInboxHTML}
+            ${exStatusHTML}
           </div>
         `;
       }
@@ -12068,7 +12558,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 23; s++) {
+  for (let s = 1; s <= 24; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -12103,6 +12593,8 @@ function updateStepper(step) {
         item.classList.add("step-blue");
       } else if (step === 23) {
         item.classList.add("step-purple");
+      } else if (step === 24) {
+        item.classList.add("step-emerald");
       }
     }
   }
@@ -12132,7 +12624,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 23) {
+    if (step < 24) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -12140,7 +12632,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 23 active (Super-Peer Query Routing & Forwarding complete)";
+      btnNext.title = "Step 24 active (Cluster Exemplar Forwarding to Leaf Members complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -12153,7 +12645,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 23);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 24);
 }
 
 function bindActionButtons() {
@@ -12177,16 +12669,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 23) {
+      if (currentStep < 24) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 23 is active (Super-Peer Query Routing & Forwarding complete).");
+        logToTerminal("INFO", "Step 24 is active (Cluster Exemplar Forwarding to Leaf Members complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 23)
-  for (let s = 1; s <= 23; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 24)
+  for (let s = 1; s <= 24; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {
