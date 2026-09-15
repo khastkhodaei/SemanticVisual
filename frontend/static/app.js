@@ -10226,7 +10226,7 @@ function renderNodeModal(node, stepData = currentStepData) {
 
     const card = document.getElementById("nodeInfoCard");
     if (!card) return;
-    if (currentStep === 22 || currentStep === 23 || currentStep === 24) {
+    if (currentStep >= 22 && currentStep <= 28) {
       card.classList.remove("w-84");
       card.classList.add("w-96", "sm:w-[480px]");
     } else {
@@ -13860,6 +13860,368 @@ function renderNodeModal(node, stepData = currentStepData) {
             </div>
             ${leafInboxHTML}
             ${exStatusHTML}
+          </div>
+        `;
+      }
+    } else if (currentStep === 25) {
+      if (discoverySection) discoverySection.classList.remove("hidden");
+
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "⚡ LOCAL_SIMILARITY_EVALUATED";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-emerald-100 text-emerald-900 border-emerald-400";
+      }
+
+      if (discoveryBadge) {
+        discoveryBadge.textContent = "STEP 25: COSINE SIMILARITY";
+        discoveryBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-900 border border-emerald-300";
+      }
+
+      if (discoveryContent) {
+        const scId = [1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3");
+        const sims = mergedNode?.similarity_evaluations || mergedNode?.cosine_similarities || [];
+
+        let rowsHTML = "";
+        if (sims.length > 0) {
+          rowsHTML = sims.map(item => {
+            const peerId = item.peer || item.query_origin;
+            const overlap = item.binary_overlap != null ? (item.binary_overlap === 1.0 ? "1.0 (3/3)" : `${item.binary_overlap.toFixed(2)} (2/3)`) : "1.0 (3/3)";
+            const simVal = Number(item.cosine_sim || 0);
+            let badgeClass = "bg-amber-100 text-amber-900 border-amber-400";
+            if (simVal >= 0.90) {
+              badgeClass = "bg-emerald-100 text-emerald-900 border-emerald-500 font-extrabold";
+            } else if (simVal >= 0.80) {
+              badgeClass = "bg-sky-100 text-sky-900 border-sky-500 font-bold";
+            }
+            const auraRank = item.aura_rank || (item.rank === 1 ? "#1 Primary" : (item.rank === 2 ? "#2 Secondary" : "#3 Tertiary"));
+
+            return `
+              <tr style="border-bottom: 1px solid rgba(51, 65, 85, 0.5);">
+                <td style="padding: 6px; font-weight: bold; color: #38bdf8;">Query from Node C${peerId}</td>
+                <td style="padding: 6px; font-family: monospace; color: #94a3b8;">${overlap}</td>
+                <td style="padding: 6px;">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-mono border ${badgeClass}">
+                    ${simVal.toFixed(4)}
+                  </span>
+                </td>
+                <td style="padding: 6px; font-weight: 600; color: #e2e8f0;">${auraRank}</td>
+              </tr>
+            `;
+          }).join("");
+        } else {
+          rowsHTML = `<tr><td colspan="4" style="padding: 8px; text-align: center; color: #94a3b8;">No similarity evaluations found.</td></tr>`;
+        }
+
+        discoveryContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-emerald-200 bg-emerald-50/70 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-emerald-950 flex items-center gap-1">
+                  <span>📐</span><span>Pairwise Semantic Similarity:</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold text-[10px] bg-emerald-200 text-emerald-900 border border-emerald-300">${scId}</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-emerald-800 font-semibold">
+                Formula: CosSim = (w_i · w_q) / (||w_i|| · ||w_q||) | Exact Normalized Scores
+              </div>
+            </div>
+
+            <div class="modal-section" style="margin-top: 10px; background: rgba(15, 23, 42, 0.85); border: 1px solid #10b981; border-radius: 8px; padding: 12px;">
+              <h4 style="color: #34d399; margin-top: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold;">
+                <span>🎯</span> Cosine Similarity Evaluation Table
+              </h4>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; font-size: 12px; color: #e2e8f0; border-collapse: collapse;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid #334155; text-align: left; color: #94a3b8;">
+                      <th style="padding: 6px;">Target Query Origin</th>
+                      <th style="padding: 6px;">Binary Overlap</th>
+                      <th style="padding: 6px;">Exact Cosine Similarity</th>
+                      <th style="padding: 6px;">Aura Rank</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsHTML}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    } else if (currentStep === 26) {
+      if (discoverySection) discoverySection.classList.remove("hidden");
+      const isEx = [1, 3, 5, 7, 8, 9, 10].includes(idNum);
+
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = isEx ? "📥 ZONE_SCORES_INGESTED" : "📤 SCORES_REPORTED_TO_EXEMPLAR";
+        cardStatusBadge.className = isEx
+          ? "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-blue-100 text-blue-900 border-blue-400"
+          : "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-800 border-slate-300";
+      }
+
+      if (discoveryBadge) {
+        discoveryBadge.textContent = "STEP 26: SCORE REPORTING";
+        discoveryBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-blue-100 text-blue-900 border border-blue-300";
+      }
+
+      if (discoveryContent) {
+        const scId = [1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3");
+
+        let contentHTML = "";
+        if (isEx) {
+          const scores = mergedNode?.ingested_member_scores || mergedNode?.ingested_scores || [];
+          let rowsHTML = "";
+          if (scores.length > 0) {
+            rowsHTML = scores.map(s => {
+              const simVal = Number(s.sim || s.cosine_sim || 0);
+              return `
+                <tr style="border-bottom: 1px solid rgba(51, 65, 85, 0.5);">
+                  <td style="padding: 6px; font-weight: bold; color: #38bdf8;">Client C${s.reporting_client || s.from || s.peer || 'Member'}</td>
+                  <td style="padding: 6px; font-mono; color: #fbbf24;">Q${s.query || s.query_origin || 'Local'}</td>
+                  <td style="padding: 6px;">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-900/40 text-blue-300 border border-blue-500">
+                      ${simVal.toFixed(4)}
+                    </span>
+                  </td>
+                  <td style="padding: 6px; color: #34d399; font-weight: bold;">INGESTED</td>
+                </tr>
+              `;
+            }).join("");
+          } else {
+            rowsHTML = `<tr><td colspan="4" style="padding: 8px; text-align: center; color: #94a3b8;">Local scores buffered in aggregation registry.</td></tr>`;
+          }
+
+          contentHTML = `
+            <div class="modal-section" style="background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 8px; padding: 12px;">
+              <h4 style="color: #38bdf8; margin-top: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold;">
+                <span>📥</span> Ingested Member Similarity Scores (Tier 1 → Tier 2)
+              </h4>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; font-size: 12px; color: #e2e8f0; border-collapse: collapse;">
+                  <thead>
+                    <tr style="border-bottom: 1px solid #334155; text-align: left; color: #94a3b8;">
+                      <th style="padding: 6px;">Reporting Member</th>
+                      <th style="padding: 6px;">Query ID</th>
+                      <th style="padding: 6px;">Reported CosSim</th>
+                      <th style="padding: 6px;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsHTML}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        } else {
+          // Leaf node dispatch info
+          const targetEx = idNum === 2 ? 1 : (idNum === 4 ? 5 : 7);
+          const reportPath = idNum === 2 ? "[2, 1]" : (idNum === 4 ? "[4, 5]" : "[6, 4, 7]");
+          const reportedScores = idNum === 2 ? "{Q1: 0.8531, Q9: 0.7581}" : (idNum === 4 ? "{Q3: 0.8076, Q5: 0.9453, Q8: 0.8388}" : "{Q7: 0.5365, Q10: 0.5341}");
+
+          contentHTML = `
+            <div class="modal-section" style="background: rgba(15, 23, 42, 0.85); border: 1px solid #38bdf8; border-radius: 8px; padding: 12px;">
+              <h4 style="color: #38bdf8; margin-top: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold;">
+                <span>📤</span> Dispatched Upward Similarity Scores
+              </h4>
+              <div class="space-y-2 text-[12px] text-slate-300">
+                <div>Governing Exemplar: <span class="font-bold text-amber-400">Exemplar C${targetEx}</span></div>
+                <div>Physical Path: <span class="font-mono font-bold text-sky-300">${reportPath}</span></div>
+                <div>Reported Scores: <span class="font-mono font-bold text-emerald-400">${reportedScores}</span></div>
+                <div class="text-xs text-emerald-400 font-semibold">✓ Scores transmitted and ingested by governing exemplar.</div>
+              </div>
+            </div>
+          `;
+        }
+
+        discoveryContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-blue-200 bg-blue-50/70 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-blue-950 flex items-center gap-1">
+                  <span>🌐</span><span>Upward Score Reporting:</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold text-[10px] bg-blue-200 text-blue-900 border border-blue-300">${scId}</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-blue-800 font-semibold">
+                Tier-1 Leaves -> Tier-2 Exemplars | Status: <span class="font-bold text-blue-900">${isEx ? 'ZONE_SCORES_INGESTED' : 'SCORES_REPORTED'}</span>
+              </div>
+            </div>
+            ${contentHTML}
+          </div>
+        `;
+      }
+    } else if (currentStep === 27) {
+      if (discoverySection) discoverySection.classList.remove("hidden");
+      const isSP = [1, 5, 10].includes(idNum);
+      const isEx = [3, 7, 8, 9].includes(idNum);
+
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = isSP ? "📦 EXEMPLAR_RANKINGS_INGESTED" : (isEx ? "🚀 RANKINGS_DISPATCHED_TO_SP" : "INACTIVE_IN_STEP_27");
+        cardStatusBadge.className = isSP
+          ? "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-purple-100 text-purple-900 border-purple-400"
+          : "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-violet-100 text-violet-900 border-violet-300";
+      }
+
+      if (discoveryBadge) {
+        discoveryBadge.textContent = "STEP 27: RANK DISPATCH";
+        discoveryBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-purple-100 text-purple-900 border border-purple-300";
+      }
+
+      if (discoveryContent) {
+        const scId = [1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3");
+
+        let sectionHTML = "";
+        const dispatchedRankings = mergedNode?.dispatched_ranking || mergedNode?.dispatched_rankings || {};
+        const queryKeys = Object.keys(dispatchedRankings);
+
+        if (queryKeys.length > 0) {
+          const listItems = queryKeys.map(qKey => {
+            const rankedNodes = dispatchedRankings[qKey] || [];
+            const nodesHTML = rankedNodes.map((rn, rIdx) => {
+              const nodeNum = rn.node || rn.peer;
+              const simScore = Number(rn.sim || 0);
+              return `<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-900/40 text-purple-200 border border-purple-400 font-bold">#${rIdx + 1}: C${nodeNum} (${simScore.toFixed(4)})</span>`;
+            }).join(" ");
+
+            return `
+              <div class="p-2 rounded bg-slate-900/60 border border-purple-500/30 flex items-center justify-between">
+                <span class="font-mono font-bold text-amber-300 text-xs">${qKey} Candidates:</span>
+                <div class="flex items-center gap-1.5 flex-wrap">${nodesHTML}</div>
+              </div>
+            `;
+          }).join("");
+
+          sectionHTML = `
+            <div class="modal-section" style="background: rgba(15, 23, 42, 0.85); border: 1px solid #c084fc; border-radius: 8px; padding: 12px;">
+              <h4 style="color: #c084fc; margin-top: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold;">
+                <span>📋</span> Dispatched Candidate Ranking Card
+              </h4>
+              <p style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Sorted candidate matches forwarded up to Super-Peer coordinator:</p>
+              <div class="space-y-1.5">${listItems}</div>
+            </div>
+          `;
+        } else if (isSP) {
+          sectionHTML = `
+            <div class="modal-section" style="background: rgba(15, 23, 42, 0.85); border: 1px solid #c084fc; border-radius: 8px; padding: 12px;">
+              <h4 style="color: #c084fc; margin-top: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold;">
+                <span>📥</span> Super-Peer Candidate Registry (Tier 3 Ingestion)
+              </h4>
+              <p style="font-size: 12px; color: #e2e8f0;">Buffered candidate ranking lists from subordinate cluster exemplars. Ready for Step 28 cross-cluster consolidation.</p>
+            </div>
+          `;
+        } else {
+          sectionHTML = `
+            <div class="modal-section" style="background: rgba(15, 23, 42, 0.85); border: 1px solid #64748b; border-radius: 8px; padding: 12px;">
+              <p style="font-size: 12px; color: #94a3b8; margin: 0;">Base leaf member inactive during Tier-2 to Tier-3 exemplar upward dispatch.</p>
+            </div>
+          `;
+        }
+
+        discoveryContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-purple-200 bg-purple-50/70 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-purple-950 flex items-center gap-1">
+                  <span>🌐</span><span>Exemplar Upward Dispatch:</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold text-[10px] bg-purple-200 text-purple-900 border border-purple-300">${scId}</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-purple-800 font-semibold">
+                Tier-2 Exemplars -> Tier-3 Super-Peers | Sort: CosSim Descending
+              </div>
+            </div>
+            ${sectionHTML}
+          </div>
+        `;
+      }
+    } else if (currentStep === 28) {
+      if (discoverySection) discoverySection.classList.remove("hidden");
+      const isSP = [1, 5, 10].includes(idNum);
+
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = isSP ? "🔒 GLOBAL_MATCHMAKING_LOCKED" : "AWAITING_FEDERATION_PAIRING";
+        cardStatusBadge.className = isSP
+          ? "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-950 border-amber-400"
+          : "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-800 border-slate-300";
+      }
+
+      if (discoveryBadge) {
+        discoveryBadge.textContent = "STEP 28: CONSOLIDATION";
+        discoveryBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-950 border border-amber-300";
+      }
+
+      if (discoveryContent) {
+        const scId = [1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3");
+
+        let contentHTML = "";
+        const spRankings = mergedNode?.consolidated_rankings || mergedNode?.super_peer_rankings || {};
+        const qKeys = Object.keys(spRankings);
+
+        if (isSP && qKeys.length > 0) {
+          const qCardsHTML = qKeys.map(qKey => {
+            const matches = spRankings[qKey] || [];
+            const matchRows = matches.map(m => {
+              const rankNum = m.rank;
+              const peerNum = m.peer;
+              const simScore = Number(m.sim || 0);
+              const rankColor = rankNum === 1 ? "bg-amber-400 text-amber-950 font-extrabold" : (rankNum === 2 ? "bg-slate-300 text-slate-900 font-bold" : "bg-amber-800 text-amber-100");
+              return `
+                <div class="flex items-center justify-between p-1.5 rounded bg-slate-900/80 border border-amber-500/20 text-xs">
+                  <span class="flex items-center gap-1.5">
+                    <span class="px-1.5 py-0.2 rounded text-[10px] ${rankColor}">#${rankNum}</span>
+                    <span class="font-bold text-sky-300">Peer Node C${peerNum}</span>
+                  </span>
+                  <span class="font-mono font-extrabold text-amber-300">${simScore.toFixed(4)}</span>
+                </div>
+              `;
+            }).join("");
+
+            return `
+              <div class="p-2 rounded bg-slate-900/50 border border-amber-400/30 space-y-1">
+                <div class="font-mono font-extrabold text-amber-300 text-xs flex items-center justify-between">
+                  <span>Authoritative Match for ${qKey}:</span>
+                  <span class="text-[10px] text-amber-200">Top-${matches.length} Candidates</span>
+                </div>
+                <div class="space-y-1">${matchRows}</div>
+              </div>
+            `;
+          }).join("");
+
+          contentHTML = `
+            <div class="modal-section" style="background: rgba(15, 23, 42, 0.85); border: 1.5px solid #f59e0b; border-radius: 8px; padding: 12px;">
+              <h4 style="color: #fbbf24; margin-top: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold;">
+                <span>🌟</span> Consolidated Global Query Rankings
+              </h4>
+              <p style="font-size: 11px; color: #cbd5e1; margin-bottom: 8px;">Definitive authoritative matchmaking orders established across all intra-cluster branches:</p>
+              <div class="space-y-2">${qCardsHTML}</div>
+            </div>
+          `;
+        } else {
+          contentHTML = `
+            <div class="modal-section" style="background: rgba(15, 23, 42, 0.85); border: 1px solid #f59e0b; border-radius: 8px; padding: 12px;">
+              <h4 style="color: #fbbf24; margin-top: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold;">
+                <span>🔒</span> Authoritative Matchmaking Complete
+              </h4>
+              <p style="font-size: 12px; color: #e2e8f0;">Governing Super-Peer holds locked consolidation ranking tables for all active queries in ${scId}.</p>
+            </div>
+          `;
+        }
+
+        discoveryContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-amber-300 bg-amber-50 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-amber-950 flex items-center gap-1">
+                  <span>🏆</span><span>Super-Peer Consolidation Status:</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold text-[10px] bg-amber-200 text-amber-950 border border-amber-400">${scId}</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-amber-900 font-semibold">
+                Status: <span class="font-bold text-amber-950">GLOBAL_MATCHMAKING_LOCKED</span> | Protocol Ready for P2P Aggregation
+              </div>
+            </div>
+            ${contentHTML}
           </div>
         `;
       }
