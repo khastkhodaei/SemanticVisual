@@ -995,3 +995,110 @@ Routing paths strictly adhere to valid Step 1 physical ad-hoc edges:
 ### 5. Dual-View Visualizations
 - **Figure 3(f) View**: Packets move downward from the Tier 2 Rose Oval Hub (Mid layer nodes: mid_1 -> bot_2, mid_5 -> bot_4, mid_7 -> bot_6) to the bottom Zone Capsules (Tier 1 Leaves) with tag `LEAF_DISPATCH`.
 - **Physical View**: Packets traverse strictly along $[1, 2]$, $[5, 4]$, and $[7, 4, 6]$ with tag `LEAF_DISPATCH`.
+
+---
+
+## Step 25 — Local Semantic Cosine Similarity Evaluation
+
+Following Step 24's query delivery, every client node evaluates the mathematical Cosine Similarity between its local sparse model vector $\mathbf{w}_i^{\text{sparse}}$ and the received peer queries $\mathbf{w}_q^{\text{sparse}}$:
+$$\text{CosSim}(\mathbf{w}_i, \mathbf{w}_q) = \frac{\mathbf{w}_i^{\text{sparse}} \cdot \mathbf{w}_q^{\text{sparse}}}{\Vert{}\mathbf{w}_i^{\text{sparse}}\Vert{}_2 \Vert{}\mathbf{w}_q^{\text{sparse}}\Vert{}_2}$$
+
+All similarity values are explicitly hardcoded from precomputed mathematics.
+
+### 1. Hardcoded Similarity Score Registry
+- **SC-1 Group**:
+  - $\text{CosSim}(C_1, C_2) = 0.8531$
+  - $\text{CosSim}(C_1, C_9) = 0.9429$
+  - $\text{CosSim}(C_2, C_9) = 0.7581$
+- **SC-2 Group**:
+  - $\text{CosSim}(C_3, C_4) = 0.8076$ | $\text{CosSim}(C_3, C_5) = 0.9323$ | $\text{CosSim}(C_3, C_8) = 0.9179$
+  - $\text{CosSim}(C_4, C_5) = 0.9453$ | $\text{CosSim}(C_4, C_8) = 0.8388$
+  - $\text{CosSim}(C_5, C_8) = 0.8536$
+- **SC-3 Group**:
+  - $\text{CosSim}(C_6, C_7) = 0.5365$
+  - $\text{CosSim}(C_6, C_{10}) = 0.5341$
+  - $\text{CosSim}(C_7, C_{10}) = 0.9378$
+
+### 2. Node Pairwise Evaluation Matrix
+| Node | Evaluated Peer Queries | Exact Cosine Similarity | Binary Overlap | Relative Aura Rank |
+| :---: | :---: | :---: | :---: | :---: |
+| **C1** | $C_9$<br>$C_2$ | **0.9429**<br>**0.8531** | 1.0 (3/3)<br>1.0 (3/3) | #1 Primary<br>#2 Secondary |
+| **C2** | $C_1$<br>$C_9$ | **0.8531**<br>**0.7581** | 1.0 (3/3)<br>1.0 (3/3) | #1 Primary<br>#2 Secondary |
+| **C3** | $C_5$<br>$C_8$<br>$C_4$ | **0.9323**<br>**0.9179**<br>**0.8076** | 1.0 (3/3)<br>1.0 (3/3)<br>1.0 (3/3) | #1 Primary<br>#2 Secondary<br>#3 Tertiary |
+| **C4** | $C_5$<br>$C_8$<br>$C_3$ | **0.9453**<br>**0.8388**<br>**0.8076** | 1.0 (3/3)<br>1.0 (3/3)<br>1.0 (3/3) | #1 Primary<br>#2 Secondary<br>#3 Tertiary |
+| **C5** | $C_4$<br>$C_3$<br>$C_8$ | **0.9453**<br>**0.9323**<br>**0.8536** | 1.0 (3/3)<br>1.0 (3/3)<br>1.0 (3/3) | #1 Primary<br>#2 Secondary<br>#3 Tertiary |
+| **C6** | $C_7$<br>$C_{10}$ | **0.5365**<br>**0.5341** | 0.67 (2/3)<br>0.67 (2/3) | #1 Primary<br>#2 Secondary |
+| **C7** | $C_{10}$<br>$C_6$ | **0.9378**<br>**0.5365** | 1.0 (3/3)<br>0.67 (2/3) | #1 Primary<br>#2 Secondary |
+| **C8** | $C_3$<br>$C_5$<br>$C_4$ | **0.9179**<br>**0.8536**<br>**0.8388** | 1.0 (3/3)<br>1.0 (3/3)<br>1.0 (3/3) | #1 Primary<br>#2 Secondary<br>#3 Tertiary |
+| **C9** | $C_1$<br>$C_2$ | **0.9429**<br>**0.7581** | 1.0 (3/3)<br>1.0 (3/3) | #1 Primary<br>#2 Secondary |
+| **C10** | $C_7$<br>$C_6$ | **0.9378**<br>**0.5341** | 1.0 (3/3)<br>0.67 (2/3) | #1 Primary<br>#2 Secondary |
+
+### 3. Node State Transitions
+- All 10 nodes update status to `LOCAL_SIMILARITY_EVALUATED`.
+- High similarity pairs ($\text{CosSim} \ge 0.90$) establish prioritized gradient synchronization channels for Step 26.
+
+---
+
+## Step 26 — Upward Similarity Score Reporting to Cluster Exemplars
+
+Clients transmit their computed Cosine Similarity scores up to their Cluster Exemplars (Tier 1 -> Tier 2).
+
+### 1. Packet Traces (Tier 1 -> Tier 2)
+- $C_2 \xrightarrow{[2, 1]} C_1$: Reports $\text{Scores}(C_2) = \{Q_1: 0.8531, Q_9: 0.7581\}$
+- $C_4 \xrightarrow{[4, 5]} C_5$: Reports $\text{Scores}(C_4) = \{Q_3: 0.8076, Q_5: 0.9453, Q_8: 0.8388\}$
+- $C_6 \xrightarrow{[6, 4, 7]} C_7$: Reports $\text{Scores}(C_6) = \{Q_7: 0.5365, Q_{10}: 0.5341\}$
+
+### 2. Exemplar Score Ingestion Buffer
+- Exemplars 1, 3, 5, 7, 8, 9, 10 register their own local scores into their exemplar aggregation buffer.
+- Governing exemplars merge scores received from reporting members:
+  - Exemplar $C_1$ ingests $C_2$ report alongside its own evaluations.
+  - Exemplar $C_5$ ingests $C_4$ report alongside its own evaluations.
+  - Exemplar $C_7$ ingests $C_6$ report alongside its own evaluations.
+
+### 3. Node State Transitions
+- All governing cluster exemplars update status to `ZONE_SCORES_INGESTED`.
+
+---
+
+## Step 27 — Exemplar Similarity Ranking & Upward Dispatch to Super-Peers
+
+Exemplars rank candidate nodes per query by descending Cosine Similarity and forward the sorted lists up to Super-Peers (Tier 2 -> Tier 3).
+
+### 1. Exemplar-to-Super-Peer Traces
+- $C_9 \xrightarrow{[9, 7, 4, 1]} C_1$: Transmits ranked peer matches for $Q_1, Q_2$
+- $C_3 \xrightarrow{[3, 5]} C_5$: Transmits ranked peer matches for $Q_4, Q_5, Q_8$
+- $C_8 \xrightarrow{[8, 6, 5]} C_5$: Transmits ranked peer matches for $Q_3, Q_4, Q_5$
+- $C_7 \xrightarrow{[7, 9, 10]} C_{10}$: Transmits ranked peer matches for $Q_6, Q_{10}$
+
+### 2. Super-Peer Ingestion
+- Super-Peers $C_1, C_5, C_{10}$ register their internal sorted lists directly into their Super-Peer registry.
+- Ingested rankings from subordinate exemplars are buffered for cluster-wide consolidation.
+
+### 3. Node State Transitions
+- Super-Peers transition to status: `EXEMPLAR_RANKINGS_INGESTED`.
+
+---
+
+## Step 28 — Global Super-Peer Cross-Cluster Similarity Consolidation
+
+Super-Peers consolidate candidate scores across all intra-cluster branches, establishing authoritative descending similarity orders for every query.
+
+$$\mathcal{R}(q_i) = \text{SortDescending}(\{(j, \text{CosSim}(\mathbf{w}_i, \mathbf{w}_j)) \mid j \in \mathcal{SC}_m\})$$
+
+### 1. Definitive Consolidation Tables
+- **Super-Peer 1 Consolidation (SC-1)**:
+  - $Q_1$: 1st: $C_9$ (0.9429), 2nd: $C_2$ (0.8531)
+  - $Q_2$: 1st: $C_1$ (0.8531), 2nd: $C_9$ (0.7581)
+  - $Q_9$: 1st: $C_1$ (0.9429), 2nd: $C_2$ (0.7581)
+- **Super-Peer 5 Consolidation (SC-2)**:
+  - $Q_3$: 1st: $C_5$ (0.9323), 2nd: $C_8$ (0.9179), 3rd: $C_4$ (0.8076)
+  - $Q_4$: 1st: $C_5$ (0.9453), 2nd: $C_8$ (0.8388), 3rd: $C_3$ (0.8076)
+  - $Q_5$: 1st: $C_4$ (0.9453), 2nd: $C_3$ (0.9323), 3rd: $C_8$ (0.8536)
+  - $Q_8$: 1st: $C_3$ (0.9179), 2nd: $C_5$ (0.8536), 3rd: $C_4$ (0.8388)
+- **Super-Peer 10 Consolidation (SC-3)**:
+  - $Q_6$: 1st: $C_7$ (0.5365), 2nd: $C_{10}$ (0.5341)
+  - $Q_7$: 1st: $C_{10}$ (0.9378), 2nd: $C_6$ (0.5365)
+  - $Q_{10}$: 1st: $C_7$ (0.9378), 2nd: $C_6$ (0.5341)
+
+### 2. Node State Transitions
+- Super-Peers transition to status: `GLOBAL_MATCHMAKING_LOCKED`.

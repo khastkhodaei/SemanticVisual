@@ -26,7 +26,7 @@ from backend.storyboard_10nodes import (
     TOTAL_STEPS,
 )
 
-TOTAL_STEPS: int = 24
+TOTAL_STEPS: int = 28
 
 
 
@@ -375,12 +375,60 @@ def post_storyboard_step_24():
     return get_10node_step_data(24)
 
 
+@app.get("/api/v1/storyboard/step/25", tags=["Storyboard"])
+def get_storyboard_step_25():
+    """Returns deterministic data for Storyboard Step 25 (Local Semantic Cosine Similarity Evaluation)."""
+    return get_10node_step_data(25)
+
+
+@app.post("/api/v1/storyboard/step/25", tags=["Storyboard"])
+def post_storyboard_step_25():
+    """Execute / return deterministic data for Storyboard Step 25."""
+    return get_10node_step_data(25)
+
+
+@app.get("/api/v1/storyboard/step/26", tags=["Storyboard"])
+def get_storyboard_step_26():
+    """Returns deterministic data for Storyboard Step 26 (Upward Similarity Score Reporting to Cluster Exemplars)."""
+    return get_10node_step_data(26)
+
+
+@app.post("/api/v1/storyboard/step/26", tags=["Storyboard"])
+def post_storyboard_step_26():
+    """Execute / return deterministic data for Storyboard Step 26."""
+    return get_10node_step_data(26)
+
+
+@app.get("/api/v1/storyboard/step/27", tags=["Storyboard"])
+def get_storyboard_step_27():
+    """Returns deterministic data for Storyboard Step 27 (Exemplar Similarity Ranking & Upward Dispatch to Super-Peers)."""
+    return get_10node_step_data(27)
+
+
+@app.post("/api/v1/storyboard/step/27", tags=["Storyboard"])
+def post_storyboard_step_27():
+    """Execute / return deterministic data for Storyboard Step 27."""
+    return get_10node_step_data(27)
+
+
+@app.get("/api/v1/storyboard/step/28", tags=["Storyboard"])
+def get_storyboard_step_28():
+    """Returns deterministic data for Storyboard Step 28 (Global Super-Peer Cross-Cluster Similarity Consolidation)."""
+    return get_10node_step_data(28)
+
+
+@app.post("/api/v1/storyboard/step/28", tags=["Storyboard"])
+def post_storyboard_step_28():
+    """Execute / return deterministic data for Storyboard Step 28."""
+    return get_10node_step_data(28)
+
+
 @app.get("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
 def get_storyboard_step(step_number: int):
-    """Returns deterministic data for Storyboard Step (1 to 24) for 10-node simulation."""
+    """Returns deterministic data for Storyboard Step (1 to 28) for 10-node simulation."""
     if step_number == 1:
         return load_step1_data()
-    max_steps = max(TOTAL_STEPS, 24)
+    max_steps = max(TOTAL_STEPS, 28)
     if step_number not in list(range(1, max_steps + 1)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -391,16 +439,17 @@ def get_storyboard_step(step_number: int):
 
 @app.post("/api/v1/storyboard/step/{step_number}", tags=["Storyboard"])
 def post_storyboard_step(step_number: int):
-    """Execute / return deterministic data for Storyboard Step (1 to 24) for 10-node simulation."""
+    """Execute / return deterministic data for Storyboard Step (1 to 28) for 10-node simulation."""
     if step_number == 1:
         return load_step1_data()
-    max_steps = max(TOTAL_STEPS, 24)
+    max_steps = max(TOTAL_STEPS, 28)
     if step_number not in list(range(1, max_steps + 1)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid step number {step_number}. Must be between 1 and {max_steps}.",
         )
     return get_10node_step_data(step_number)
+
 
 
 

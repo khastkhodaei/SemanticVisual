@@ -31,9 +31,17 @@ from backend.storyboard_10nodes import (
     STEP22_SP_INBOXES,
     node_search_queries,
     sp_inbox_payloads,
+    node_similarity_evaluations,
+    STEP25_SIMILARITY_EVALUATIONS,
+    score_reporting_packets,
+    STEP26_SCORE_REPORTING_PACKETS,
+    exemplar_ranked_packets,
+    STEP27_EXEMPLAR_RANKED_PACKETS,
+    super_peer_consolidated_rankings,
+    STEP28_SUPER_PEER_CONSOLIDATED_RANKINGS,
 )
 
-TOTAL_STEPS: int = 24
+TOTAL_STEPS: int = 28
 
 
 

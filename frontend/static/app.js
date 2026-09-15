@@ -1104,9 +1104,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 24)
+// 4. Main Step Loading Function (Steps 1 to 28)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 24) return;
+  if (stepNumber < 1 || stepNumber > 28) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -1330,7 +1330,36 @@ async function loadStep(stepNumber) {
         console.error("Step 24 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 24 Render Error: ${renderErr.message}`);
       }
+    } else if (stepNumber === 25) {
+      try {
+        renderStep25(data);
+      } catch (renderErr) {
+        console.error("Step 25 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 25 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 26) {
+      try {
+        renderStep26(data);
+      } catch (renderErr) {
+        console.error("Step 26 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 26 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 27) {
+      try {
+        renderStep27(data);
+      } catch (renderErr) {
+        console.error("Step 27 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 27 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 28) {
+      try {
+        renderStep28(data);
+      } catch (renderErr) {
+        console.error("Step 28 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 28 Render Error: ${renderErr.message}`);
+      }
     }
+
 
 
     // Stream initial terminal logs
@@ -1562,8 +1591,41 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 24 / LEAF DISPATCH";
     if (stepTitle) stepTitle.textContent = "Step 24: Cluster Exemplar Forwarding to Leaf Members (Tier 2 -> Tier 1)";
     if (stepDesc) stepDesc.textContent = "Cluster Exemplars complete downward query propagation by dispatching queries and authorized cluster partner sets to base Leaf Members.";
+  } else if (step === 25) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 25: LOCAL SEMANTIC COSINE SIMILARITY EVALUATION";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 25 / SIMILARITY EVAL";
+    if (stepTitle) stepTitle.textContent = "Step 25: Local Semantic Cosine Similarity Evaluation";
+    if (stepDesc) stepDesc.textContent = "Every client node computes the mathematical Cosine Similarity between its local sparse vector and received peer queries.";
+  } else if (step === 26) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 26: UPWARD SIMILARITY SCORE REPORTING";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-900 border border-blue-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 26 / SCORE REPORTING";
+    if (stepTitle) stepTitle.textContent = "Step 26: Upward Similarity Score Reporting to Cluster Exemplars";
+    if (stepDesc) stepDesc.textContent = "Clients transmit their computed Cosine Similarity scores up to governing Cluster Exemplars along physical topology paths.";
+  } else if (step === 27) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 27: EXEMPLAR SIMILARITY RANKING & UPWARD DISPATCH";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 27 / RANK DISPATCH";
+    if (stepTitle) stepTitle.textContent = "Step 27: Exemplar Similarity Ranking & Upward Dispatch to Super-Peers";
+    if (stepDesc) stepDesc.textContent = "Exemplars rank candidate nodes per query by descending Cosine Similarity and forward the sorted lists up to Super-Peers (Tier 2 -> Tier 3).";
+  } else if (step === 28) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 28: SUPER-PEER CROSS-CLUSTER CONSOLIDATION";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-950 border border-amber-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 28 / CONSOLIDATION";
+    if (stepTitle) stepTitle.textContent = "Step 28: Global Super-Peer Cross-Cluster Similarity Consolidation";
+    if (stepDesc) stepDesc.textContent = "Super-Peers consolidate candidate scores across all intra-cluster branches, establishing authoritative descending similarity orders for every query.";
   }
 }
+
 
 // 5. STEP 1: Base Physical Topology & Non-IID Data Distribution
 function renderStep1(data) {
@@ -5861,6 +5923,271 @@ function renderStep24(data) {
   animateStep24LeafDispatch(packetTraces, data.nodes);
 }
 
+// Step 25: Local Semantic Cosine Similarity Evaluation
+function renderStep25(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 25: LOCAL SEMANTIC COSINE SIMILARITY EVALUATION";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-400";
+  });
+
+  renderSidebarFormula(
+    "Step 25: Local Semantic Cosine Similarity Evaluation",
+    "\\text{CosSim}(\\mathbf{w}_i, \\mathbf{w}_q) = \\frac{\\mathbf{w}_i^{\\text{sparse}} \\cdot \\mathbf{w}_q^{\\text{sparse}}}{\\Vert{}\\mathbf{w}_i^{\\text{sparse}}\\Vert{}_2 \\Vert{}\\mathbf{w}_q^{\\text{sparse}}\\Vert{}_2}",
+    "Every client node computes the mathematical Cosine Similarity between its local sparse vector and received peer queries. Precomputed exact scores are bound to all node inboxes.",
+    "Step 25: Cosine Sim",
+    false,
+    "emerald"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      ? "Local Cosine Similarity Evaluation — Hierarchical Overlay (Pairwise Verification)"
+      : "Local Cosine Similarity Evaluation — Intra-Cluster Pairwise Alignment";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Cosine Sim Evaluated: <span class="text-emerald-600 font-bold font-mono">10 Nodes Complete</span> | Top Pair: <span class="text-emerald-700 font-bold font-mono">C4 ↔ C5 (0.9453)</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = PHYSICAL_LAYOUT_COORDS[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("INFO", "[STEP 25] Evaluating local semantic cosine similarity across all 10 nodes for intra-cluster queries.");
+  logToTerminal("SUCCESS", "[SC-1 SIM] C1 ↔ C9: 0.9429 | C1 ↔ C2: 0.8531 | C2 ↔ C9: 0.7581");
+  logToTerminal("SUCCESS", "[SC-2 SIM] C4 ↔ C5: 0.9453 | C3 ↔ C5: 0.9323 | C3 ↔ C8: 0.9179 | C5 ↔ C8: 0.8536");
+  logToTerminal("SUCCESS", "[SC-3 SIM] C7 ↔ C10: 0.9378 | C6 ↔ C7: 0.5365 | C6 ↔ C10: 0.5341");
+  logToTerminal("ZONE", "[LOCAL_EVAL_COMPLETE] All client nodes transition to LOCAL_SIMILARITY_EVALUATED.");
+
+  const evals = data.node_similarity_evaluations || data.similarity_evaluations || {};
+  animateStep25SimilarityEval(evals, data.nodes);
+}
+
+// Step 26: Upward Similarity Score Reporting to Cluster Exemplars
+function renderStep26(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 26: UPWARD SIMILARITY SCORE REPORTING";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 text-blue-900 border border-blue-400";
+  });
+
+  renderSidebarFormula(
+    "Step 26: Upward Similarity Score Reporting to Cluster Exemplars",
+    "C_i \\xrightarrow{\\text{Tier 1} \\to \\text{Tier 2}} e_k \\quad : \\quad \\text{Scores}(C_i) = \\{(Q_j, \\text{CosSim}(\\mathbf{w}_i, \\mathbf{w}_j))\\}",
+    "Clients transmit computed Cosine Similarity scores up to governing Cluster Exemplars along physical topology paths.",
+    "Step 26: Score Reporting",
+    false,
+    "blue"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      ? "Upward Score Reporting — Hierarchical Overlay (Tier 1 → Tier 2)"
+      : "Upward Score Reporting — Physical Paths ([2,1], [4,5], [6,4,7])";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Upward Reports: <span class="text-blue-600 font-bold font-mono">3 Packets</span> | Exemplars Ingested: <span class="text-blue-700 font-bold font-mono">C1, C5, C7</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = PHYSICAL_LAYOUT_COORDS[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("INFO", "[STEP 26] Base Leaf members dispatching calculated similarity scores up to Tier-2 Cluster Exemplars.");
+  logToTerminal("SUCCESS", "[REPORT C2 -> C1] Path [2, 1] reporting Scores(C2) = {Q1: 0.8531, Q9: 0.7581}.");
+  logToTerminal("SUCCESS", "[REPORT C4 -> C5] Path [4, 5] reporting Scores(C4) = {Q3: 0.8076, Q5: 0.9453, Q8: 0.8388}.");
+  logToTerminal("SUCCESS", "[REPORT C6 -> C7] Path [6, 4, 7] reporting Scores(C6) = {Q7: 0.5365, Q10: 0.5341}.");
+  logToTerminal("ZONE", "[ZONE_SCORES_INGESTED] Governing exemplars ingest reports and update status.");
+
+  const packets = data.score_reporting_packets || data.packets || [];
+  animateStep26ScoreReporting(packets, data.nodes);
+}
+
+// Step 27: Exemplar Similarity Ranking & Upward Dispatch to Super-Peers
+function renderStep27(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 27: EXEMPLAR SIMILARITY RANKING & UPWARD DISPATCH";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-400";
+  });
+
+  renderSidebarFormula(
+    "Step 27: Exemplar Similarity Ranking & Upward Dispatch to Super-Peers",
+    "e_k \\xrightarrow{\\text{Tier 2} \\to \\text{Tier 3}} \\text{SP}_m \\quad : \\quad \\mathcal{R}_k(Q_j) = \\text{SortDescending}(\\text{Scores})",
+    "Exemplars rank candidate nodes per query by descending Cosine Similarity and forward sorted lists up to Super-Peers.",
+    "Step 27: Rank Dispatch",
+    false,
+    "purple"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      ? "Exemplar-to-Super-Peer Dispatch — Hierarchical Overlay (Tier 2 → Tier 3)"
+      : "Exemplar-to-Super-Peer Dispatch — Physical Routes ([9,7,4,1], [3,5], [8,6,5], [7,9,10])";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Rank Dispatches: <span class="text-purple-600 font-bold font-mono">4 Exemplar Streams</span> | Super-Peers: <span class="text-purple-700 font-bold font-mono">C1, C5, C10</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = PHYSICAL_LAYOUT_COORDS[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("INFO", "[STEP 27] Exemplars sorting similarity rankings and dispatching upward to Tier-3 Super-Peers.");
+  logToTerminal("SUCCESS", "[RANK C9 -> C1] Route [9, 7, 4, 1] delivering ranked peer matches for Q1, Q2.");
+  logToTerminal("SUCCESS", "[RANK C3 -> C5] Route [3, 5] delivering ranked peer matches for Q4, Q5, Q8.");
+  logToTerminal("SUCCESS", "[RANK C8 -> C5] Route [8, 6, 5] delivering ranked peer matches for Q3, Q4, Q5.");
+  logToTerminal("SUCCESS", "[RANK C7 -> C10] Route [7, 9, 10] delivering ranked peer matches for Q6, Q10.");
+  logToTerminal("ZONE", "[EXEMPLAR_RANKINGS_INGESTED] Super-Peers buffer multi-branch candidate rankings.");
+
+  const packets = data.exemplar_ranked_packets || data.packets || [];
+  animateStep27ExemplarRanking(packets, data.nodes);
+}
+
+// Step 28: Global Super-Peer Cross-Cluster Similarity Consolidation
+function renderStep28(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 28: SUPER-PEER CROSS-CLUSTER CONSOLIDATION";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-950 border border-amber-400";
+  });
+
+  renderSidebarFormula(
+    "Step 28: Global Super-Peer Cross-Cluster Similarity Consolidation",
+    "\\mathcal{R}(q_i) = \\text{SortDescending}(\\{(j, \\text{CosSim}(\\mathbf{w}_i, \\mathbf{w}_j)) \\mid j \\in \\mathcal{SC}_m\\})",
+    "Super-Peers consolidate candidate scores across all intra-cluster branches, establishing authoritative descending similarity orders for every query.",
+    "Step 28: Consolidation",
+    false,
+    "amber"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      ? "Global Cross-Cluster Consolidation — Hierarchical Overlay (Super-Peer Tier 3)"
+      : "Global Cross-Cluster Consolidation — Authoritative Matchmaking Locked";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Cross-Cluster Consolidation: <span class="text-amber-600 font-bold font-mono">3 Super-Clusters Locked</span> | Matchmaking: <span class="text-amber-700 font-bold font-mono">Authoritative</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = PHYSICAL_LAYOUT_COORDS[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("INFO", "[STEP 28] Super-Peers consolidating cross-cluster evaluations into definitive similarity orders.");
+  logToTerminal("SUCCESS", "[SC-1 SP-1 LOCK] Q1 Top-1: C9 (0.9429) | Q2 Top-1: C1 (0.8531) | Q9 Top-1: C1 (0.9429)");
+  logToTerminal("SUCCESS", "[SC-2 SP-5 LOCK] Q3 Top-1: C5 (0.9323) | Q4 Top-1: C5 (0.9453) | Q5 Top-1: C4 (0.9453) | Q8 Top-1: C3 (0.9179)");
+  logToTerminal("SUCCESS", "[SC-3 SP-10 LOCK] Q6 Top-1: C7 (0.5365) | Q7 Top-1: C10 (0.9378) | Q10 Top-1: C7 (0.9378)");
+  logToTerminal("SUCCESS", "[GLOBAL_MATCHMAKING_LOCKED] Definitive P2P federation topology locked for personalized gradient aggregation.");
+
+  const rankings = data.super_peer_consolidated_rankings || data.consolidated_rankings || {};
+  animateStep28Consolidation(rankings, data.nodes);
+}
+
 // Global reference to hover virtual node in Figure 3(f) / Physical
 let figure3fHoveredVirtualNode = null;
 let figure3fCanvasListenersBound = false;
@@ -7852,6 +8179,1361 @@ function animateStep24LeafDispatch(packetTraces, allNodes) {
       renderFigure3fLeafDispatch(now);
     } else {
       renderPhysicalLeafDispatch(now);
+    }
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+// -------------------------------------------------------------
+// Step 25 Animation: Local Semantic Cosine Similarity Evaluation
+// -------------------------------------------------------------
+function animateStep25SimilarityEval(evaluations, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const startTime = performance.now();
+  const CYCLE_MS = 4000;
+
+  const EVAL_PAIRS = [
+    { n1: 1, n2: 9, sim: 0.9429, tier: "high", color: "#10b981", sc: "SC-1" },
+    { n1: 1, n2: 2, sim: 0.8531, tier: "mid", color: "#38bdf8", sc: "SC-1" },
+    { n1: 4, n2: 5, sim: 0.9453, tier: "high", color: "#10b981", sc: "SC-2" },
+    { n1: 3, n2: 5, sim: 0.9323, tier: "high", color: "#10b981", sc: "SC-2" },
+    { n1: 3, n2: 8, sim: 0.9179, tier: "high", color: "#10b981", sc: "SC-2" },
+    { n1: 5, n2: 8, sim: 0.8536, tier: "mid", color: "#f59e0b", sc: "SC-2" },
+    { n1: 4, n2: 8, sim: 0.8388, tier: "mid", color: "#f59e0b", sc: "SC-2" },
+    { n1: 3, n2: 4, sim: 0.8076, tier: "mid", color: "#f59e0b", sc: "SC-2" },
+    { n1: 7, n2: 10, sim: 0.9378, tier: "high", color: "#10b981", sc: "SC-3" },
+    { n1: 6, n2: 7, sim: 0.5365, tier: "low", color: "#c084fc", sc: "SC-3" },
+    { n1: 6, n2: 10, sim: 0.5341, tier: "low", color: "#c084fc", sc: "SC-3" }
+  ];
+
+  function drawFloatingTag(ctx, text, x, y, borderColor, bgColor, textColor) {
+    ctx.save();
+    ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+    const textW = ctx.measureText(text).width;
+    const boxH = 14;
+    const boxW = textW + 12;
+    const boxX = x - boxW / 2;
+    const boxY = y - boxH / 2;
+
+    ctx.fillStyle = bgColor || "rgba(15, 23, 42, 0.92)";
+    ctx.strokeStyle = borderColor || "#10b981";
+    ctx.lineWidth = 1;
+    ctx.shadowColor = borderColor || "#10b981";
+    ctx.shadowBlur = 6;
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = textColor || "#d1fae5";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function renderPhysicalSimilarityEval(now) {
+    if (cy) cy.elements().style("opacity", 1);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+
+    // Top Status Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "PHYSICAL TOPOLOGY: INTRA-CLUSTER LOCAL COSINE SIMILARITY EVALUATION [10 CLIENTS]";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#34d399";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Node position map
+    const physNodePosMap = {};
+    for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          physNodePosMap[id] = { id, x: rp.x, y: rp.y };
+          continue;
+        }
+      }
+      const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
+      physNodePosMap[id] = { id, x: c.x, y: c.y };
+    }
+
+    // Physical Mesh Links
+    ctx.save();
+    PHYSICAL_TOPOLOGY_EDGES.forEach(edge => {
+      const p1 = physNodePosMap[edge.from];
+      const p2 = physNodePosMap[edge.to];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.20)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Highlighted Evaluated Pairs
+    ctx.save();
+    EVAL_PAIRS.forEach(pair => {
+      const p1 = physNodePosMap[pair.n1];
+      const p2 = physNodePosMap[pair.n2];
+      if (!p1 || !p2) return;
+
+      const alpha = pair.tier === "high" ? 0.85 : 0.45;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = pair.color;
+      ctx.lineWidth = pair.tier === "high" ? 2.5 : 1.5;
+      ctx.globalAlpha = alpha;
+      ctx.shadowColor = pair.color;
+      ctx.shadowBlur = pair.tier === "high" ? 8 : 2;
+      ctx.stroke();
+      ctx.globalAlpha = 1.0;
+      ctx.shadowBlur = 0;
+
+      // Midpoint similarity tag for top matches
+      if (pair.tier === "high") {
+        const midX = (p1.x + p2.x) / 2;
+        const midY = (p1.y + p2.y) / 2;
+        drawFloatingTag(ctx, `${pair.sim.toFixed(4)}`, midX, midY - 6, pair.color, "rgba(15, 23, 42, 0.90)", "#ecfdf5");
+      }
+    });
+    ctx.restore();
+
+    // Draw Nodes with status halos
+    for (let id = 1; id <= 10; id++) {
+      const pos = physNodePosMap[id];
+      if (!pos) continue;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
+
+      // Status Halo
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, NODE_RADIUS + 6 + pulse * 4, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.5)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      const nodeObj = {
+        id,
+        node_id: `C${id}`,
+        x: pos.x,
+        y: pos.y,
+        zone: id <= 3 ? 2 : (id <= 7 ? 4 : 8),
+        tier: [1, 5, 10].includes(id) ? 3 : ([3, 7, 8, 9].includes(id) ? 2 : 1)
+      };
+      drawNode(ctx, nodeObj, isHov, pulse, NODE_RADIUS);
+
+      drawFloatingTag(ctx, "SIM_EVALUATED", pos.x, pos.y - NODE_RADIUS - 14, "#10b981", "rgba(6, 78, 59, 0.90)", "#6ee7b7");
+    }
+
+    ctx.restore();
+  }
+
+  function renderFigure3fSimilarityEval(now) {
+    if (cy) cy.elements().style("opacity", 0);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+
+    // Bottom Stage Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "STEP 25: LOCAL COSINE SIMILARITY EVALUATION — PAIRWISE INTRA-CLUSTER ALIGNMENT";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = canvas.height - 24;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#34d399";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Device Silhouettes
+    ctx.save();
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isTop = n.tier === 3;
+      const isMid = n.tier === 2;
+      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
+      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
+      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
+      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Hull & Capsules
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillStyle = "#e11d48";
+    ctx.textAlign = "center";
+    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
+    ctx.restore();
+
+    capsules.forEach(cap => {
+      ctx.save();
+      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
+      ctx.fillStyle = cap.fill;
+      ctx.fill();
+      ctx.strokeStyle = cap.border;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillStyle = cap.textColor;
+      ctx.textAlign = "center";
+      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
+      ctx.restore();
+    });
+
+    // Draw Nodes
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
+      drawNode(ctx, {
+        id: n.id,
+        node_id: n.label,
+        x: p.renderedX,
+        y: p.renderedY,
+        tier: n.tier,
+        zone: n.zone
+      }, isHov, pulse, rad);
+
+      // Similarity Evaluation Badge
+      drawFloatingTag(ctx, "SIM_EVALUATED", p.renderedX, p.renderedY - rad - 8, "#10b981", "rgba(6, 78, 59, 0.90)", "#6ee7b7");
+    });
+
+    ctx.restore();
+  }
+
+  function runFrame(now) {
+    if (currentStep !== 25) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentLayout === "figure3f" || currentLayout === "overlay") {
+      renderFigure3fSimilarityEval(now);
+    } else {
+      renderPhysicalSimilarityEval(now);
+    }
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+// -------------------------------------------------------------
+// Step 26 Animation: Upward Similarity Score Reporting (Tier 1 -> Tier 2)
+// -------------------------------------------------------------
+function animateStep26ScoreReporting(packetTraces, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const startTime = performance.now();
+  const CYCLE_MS = 3800;
+
+  const traces = (packetTraces && packetTraces.length > 0) ? packetTraces : [
+    { from: 2, to: 1, path: [2, 1], fromKey: "bot_2", toKey: "mid_1", label: "SCORE_REP (Q1, Q9)" },
+    { from: 4, to: 5, path: [4, 5], fromKey: "bot_4", toKey: "mid_5", label: "SCORE_REP (Q3, Q5, Q8)" },
+    { from: 6, to: 7, path: [6, 4, 7], fromKey: "bot_6", toKey: "mid_7", label: "SCORE_REP (Q7, Q10)" }
+  ];
+
+  traces.forEach(t => {
+    if (!t.fromKey) t.fromKey = `bot_${t.from}`;
+    if (!t.toKey) t.toKey = `mid_${t.to}`;
+  });
+
+  function getPointAlongPath(path, prog, posMap) {
+    if (!path || path.length === 0) return null;
+    if (path.length === 1) return posMap[path[0]];
+    const numSegs = path.length - 1;
+    const clampedProg = Math.max(0, Math.min(0.9999, prog));
+    const segIdx = Math.floor(clampedProg * numSegs);
+    const segProg = (clampedProg * numSegs) - segIdx;
+    const pA = posMap[path[segIdx]];
+    const pB = posMap[path[segIdx + 1]];
+    if (!pA || !pB) return null;
+    return {
+      x: pA.x + (pB.x - pA.x) * segProg,
+      y: pA.y + (pB.y - pA.y) * segProg
+    };
+  }
+
+  function drawFloatingTag(ctx, text, x, y, borderColor, bgColor, textColor) {
+    ctx.save();
+    ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+    const textW = ctx.measureText(text).width;
+    const boxH = 14;
+    const boxW = textW + 12;
+    const boxX = x - boxW / 2;
+    const boxY = y - boxH / 2;
+
+    ctx.fillStyle = bgColor || "rgba(15, 23, 42, 0.92)";
+    ctx.strokeStyle = borderColor || "#38bdf8";
+    ctx.lineWidth = 1;
+    ctx.shadowColor = borderColor || "#38bdf8";
+    ctx.shadowBlur = 6;
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = textColor || "#e0f2fe";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function renderPhysicalScoreReporting(now) {
+    if (cy) cy.elements().style("opacity", 1);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    // Top Status Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "PHYSICAL TOPOLOGY: UPWARD SIMILARITY SCORE REPORTING TO CLUSTER EXEMPLARS [TIER 1 -> TIER 2]";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#7dd3fc";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Node position map
+    const physNodePosMap = {};
+    for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          physNodePosMap[id] = { id, x: rp.x, y: rp.y };
+          continue;
+        }
+      }
+      const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
+      physNodePosMap[id] = { id, x: c.x, y: c.y };
+    }
+
+    // Physical Mesh Links
+    ctx.save();
+    PHYSICAL_TOPOLOGY_EDGES.forEach(edge => {
+      const p1 = physNodePosMap[edge.from];
+      const p2 = physNodePosMap[edge.to];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Highlighted Report Routes [2,1], [4,5], [6,4,7]
+    ctx.save();
+    traces.forEach(pkt => {
+      if (!pkt.path || pkt.path.length < 2) return;
+      for (let i = 0; i < pkt.path.length - 1; i++) {
+        const pA = physNodePosMap[pkt.path[i]];
+        const pB = physNodePosMap[pkt.path[i + 1]];
+        if (!pA || !pB) continue;
+        ctx.beginPath();
+        ctx.moveTo(pA.x, pA.y);
+        ctx.lineTo(pB.x, pB.y);
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 3.0;
+        ctx.shadowColor = "#38bdf8";
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+      }
+    });
+    ctx.restore();
+
+    // Animated Packets
+    ctx.save();
+    traces.forEach((pkt, idx) => {
+      const phaseOffset = (idx * 0.22) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      if (tPkt < 0.80) {
+        const travelProg = tPkt / 0.80;
+        const pt = getPointAlongPath(pkt.path, travelProg, physNodePosMap);
+        if (pt) {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 6.0, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = "#38bdf8";
+          ctx.shadowBlur = 16;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 9.0, 0, Math.PI * 2);
+          ctx.strokeStyle = "#0284c7";
+          ctx.lineWidth = 2.0;
+          ctx.stroke();
+
+          drawFloatingTag(ctx, pkt.label || "SCORE_REP", pt.x, pt.y - 16, "#38bdf8", "rgba(15, 23, 42, 0.92)", "#e0f2fe");
+        }
+      } else {
+        const arrProg = (tPkt - 0.80) / 0.20;
+        const destId = pkt.to || (pkt.path ? pkt.path[pkt.path.length - 1] : null);
+        const destPos = physNodePosMap[destId];
+        if (destPos) {
+          const rBeacon = NODE_RADIUS + arrProg * 26;
+          ctx.beginPath();
+          ctx.arc(destPos.x, destPos.y, rBeacon, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(56, 189, 248, ${1 - arrProg})`;
+          ctx.lineWidth = 2.4;
+          ctx.shadowColor = "#38bdf8";
+          ctx.shadowBlur = 14;
+          ctx.stroke();
+
+          drawFloatingTag(ctx, "SCORES_INGESTED", destPos.x, destPos.y - NODE_RADIUS - 16, "#38bdf8", "rgba(7, 89, 133, 0.92)", "#bae6fd");
+        }
+      }
+    });
+    ctx.restore();
+
+    // Draw Canonical 10 Nodes
+    for (let id = 1; id <= 10; id++) {
+      const pos = physNodePosMap[id];
+      if (!pos) continue;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
+      const nodeObj = {
+        id,
+        node_id: `C${id}`,
+        x: pos.x,
+        y: pos.y,
+        zone: id <= 3 ? 2 : (id <= 7 ? 4 : 8),
+        tier: [1, 5, 10].includes(id) ? 3 : ([3, 7, 8, 9].includes(id) ? 2 : 1)
+      };
+      drawNode(ctx, nodeObj, isHov, pulse, NODE_RADIUS);
+    }
+
+    ctx.restore();
+  }
+
+  function renderFigure3fScoreReporting(now) {
+    if (cy) cy.elements().style("opacity", 0);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    // Bottom Stage Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = tCycle < 0.75
+      ? "UPWARD REPORTING: CLIENTS TRANSMIT COMPUTED SIMILARITY SCORES TO EXEMPLARS (TIER 1 → TIER 2)"
+      : "EXEMPLAR INGESTION: CLUSTER EXEMPLARS (C1, C5, C7) BUFFER MEMBER EVALUATIONS (ZONE_SCORES_INGESTED)";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = canvas.height - 24;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#7dd3fc";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Device Silhouettes
+    ctx.save();
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isTop = n.tier === 3;
+      const isMid = n.tier === 2;
+      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
+      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
+      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
+      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Hull & Capsules
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillStyle = "#e11d48";
+    ctx.textAlign = "center";
+    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
+    ctx.restore();
+
+    capsules.forEach(cap => {
+      ctx.save();
+      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
+      ctx.fillStyle = cap.fill;
+      ctx.fill();
+      ctx.strokeStyle = cap.border;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillStyle = cap.textColor;
+      ctx.textAlign = "center";
+      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
+      ctx.restore();
+    });
+
+    // Upward Packets from Leaves to Exemplars
+    ctx.save();
+    traces.forEach((pkt, idx) => {
+      const pA = nodePosMap[pkt.fromKey];
+      const pB = nodePosMap[pkt.toKey];
+      if (!pA || !pB) return;
+
+      const phaseOffset = (idx * 0.22) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      if (tPkt < 0.75) {
+        const t = tPkt / 0.75;
+        const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
+        const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
+
+        ctx.beginPath();
+        ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = "#38bdf8";
+        ctx.shadowBlur = 16;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(px, py, 9.0, 0, Math.PI * 2);
+        ctx.strokeStyle = "#0284c7";
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, pkt.label || "SCORE_REP", px, py - 16, "#38bdf8", "rgba(15, 23, 42, 0.92)", "#e0f2fe");
+      } else {
+        const arrProg = (tPkt - 0.75) / 0.25;
+        const rBeacon = 28 + arrProg * 22;
+        ctx.beginPath();
+        ctx.arc(pB.renderedX, pB.renderedY, rBeacon, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(56, 189, 248, ${1 - arrProg})`;
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#38bdf8";
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, "SCORES_INGESTED", pB.renderedX, pB.renderedY - 32, "#38bdf8", "rgba(7, 89, 133, 0.92)", "#bae6fd");
+      }
+    });
+    ctx.restore();
+
+    // Draw Nodes
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
+      drawNode(ctx, {
+        id: n.id,
+        node_id: n.label,
+        x: p.renderedX,
+        y: p.renderedY,
+        tier: n.tier,
+        zone: n.zone
+      }, isHov, pulse, rad);
+    });
+
+    ctx.restore();
+  }
+
+  function runFrame(now) {
+    if (currentStep !== 26) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentLayout === "figure3f" || currentLayout === "overlay") {
+      renderFigure3fScoreReporting(now);
+    } else {
+      renderPhysicalScoreReporting(now);
+    }
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+// -------------------------------------------------------------
+// Step 27 Animation: Exemplar Similarity Ranking & Upward Dispatch (Tier 2 -> Tier 3)
+// -------------------------------------------------------------
+function animateStep27ExemplarRanking(packetTraces, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const startTime = performance.now();
+  const CYCLE_MS = 3800;
+
+  const traces = (packetTraces && packetTraces.length > 0) ? packetTraces : [
+    { from: 9, to: 1, path: [9, 7, 4, 1], fromKey: "mid_9", toKey: "top_1", label: "RANK_REP (Q1, Q2)" },
+    { from: 3, to: 5, path: [3, 5], fromKey: "mid_3", toKey: "top_5", label: "RANK_REP (Q4, Q5, Q8)" },
+    { from: 8, to: 5, path: [8, 6, 5], fromKey: "mid_8", toKey: "top_5", label: "RANK_REP (Q3, Q4, Q5)" },
+    { from: 7, to: 10, path: [7, 9, 10], fromKey: "mid_7", toKey: "top_10", label: "RANK_REP (Q6, Q10)" }
+  ];
+
+  traces.forEach(t => {
+    if (!t.fromKey) t.fromKey = `mid_${t.from}`;
+    if (!t.toKey) t.toKey = `top_${t.to}`;
+  });
+
+  function getPointAlongPath(path, prog, posMap) {
+    if (!path || path.length === 0) return null;
+    if (path.length === 1) return posMap[path[0]];
+    const numSegs = path.length - 1;
+    const clampedProg = Math.max(0, Math.min(0.9999, prog));
+    const segIdx = Math.floor(clampedProg * numSegs);
+    const segProg = (clampedProg * numSegs) - segIdx;
+    const pA = posMap[path[segIdx]];
+    const pB = posMap[path[segIdx + 1]];
+    if (!pA || !pB) return null;
+    return {
+      x: pA.x + (pB.x - pA.x) * segProg,
+      y: pA.y + (pB.y - pA.y) * segProg
+    };
+  }
+
+  function drawFloatingTag(ctx, text, x, y, borderColor, bgColor, textColor) {
+    ctx.save();
+    ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+    const textW = ctx.measureText(text).width;
+    const boxH = 14;
+    const boxW = textW + 12;
+    const boxX = x - boxW / 2;
+    const boxY = y - boxH / 2;
+
+    ctx.fillStyle = bgColor || "rgba(15, 23, 42, 0.92)";
+    ctx.strokeStyle = borderColor || "#c084fc";
+    ctx.lineWidth = 1;
+    ctx.shadowColor = borderColor || "#c084fc";
+    ctx.shadowBlur = 6;
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = textColor || "#f3e8ff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function renderPhysicalExemplarRanking(now) {
+    if (cy) cy.elements().style("opacity", 1);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    // Top Status Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "PHYSICAL TOPOLOGY: EXEMPLAR SIMILARITY RANKING DISPATCH TO SUPER-PEERS [TIER 2 -> TIER 3]";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#c084fc";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#e9d5ff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Node position map
+    const physNodePosMap = {};
+    for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          physNodePosMap[id] = { id, x: rp.x, y: rp.y };
+          continue;
+        }
+      }
+      const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
+      physNodePosMap[id] = { id, x: c.x, y: c.y };
+    }
+
+    // Physical Mesh Links
+    ctx.save();
+    PHYSICAL_TOPOLOGY_EDGES.forEach(edge => {
+      const p1 = physNodePosMap[edge.from];
+      const p2 = physNodePosMap[edge.to];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Highlighted Ranking Routes [9,7,4,1], [3,5], [8,6,5], [7,9,10]
+    ctx.save();
+    traces.forEach(pkt => {
+      if (!pkt.path || pkt.path.length < 2) return;
+      for (let i = 0; i < pkt.path.length - 1; i++) {
+        const pA = physNodePosMap[pkt.path[i]];
+        const pB = physNodePosMap[pkt.path[i + 1]];
+        if (!pA || !pB) continue;
+        ctx.beginPath();
+        ctx.moveTo(pA.x, pA.y);
+        ctx.lineTo(pB.x, pB.y);
+        ctx.strokeStyle = "#c084fc";
+        ctx.lineWidth = 3.0;
+        ctx.shadowColor = "#c084fc";
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+      }
+    });
+    ctx.restore();
+
+    // Animated Packets
+    ctx.save();
+    traces.forEach((pkt, idx) => {
+      const phaseOffset = (idx * 0.22) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      if (tPkt < 0.80) {
+        const travelProg = tPkt / 0.80;
+        const pt = getPointAlongPath(pkt.path, travelProg, physNodePosMap);
+        if (pt) {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 6.0, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = "#c084fc";
+          ctx.shadowBlur = 16;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 9.0, 0, Math.PI * 2);
+          ctx.strokeStyle = "#9333ea";
+          ctx.lineWidth = 2.0;
+          ctx.stroke();
+
+          drawFloatingTag(ctx, pkt.label || "RANK_REP", pt.x, pt.y - 16, "#c084fc", "rgba(15, 23, 42, 0.92)", "#f3e8ff");
+        }
+      } else {
+        const arrProg = (tPkt - 0.80) / 0.20;
+        const destId = pkt.to || (pkt.path ? pkt.path[pkt.path.length - 1] : null);
+        const destPos = physNodePosMap[destId];
+        if (destPos) {
+          const rBeacon = NODE_RADIUS + arrProg * 26;
+          ctx.beginPath();
+          ctx.arc(destPos.x, destPos.y, rBeacon, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(192, 132, 252, ${1 - arrProg})`;
+          ctx.lineWidth = 2.4;
+          ctx.shadowColor = "#c084fc";
+          ctx.shadowBlur = 14;
+          ctx.stroke();
+
+          drawFloatingTag(ctx, "RANKINGS_INGESTED", destPos.x, destPos.y - NODE_RADIUS - 16, "#c084fc", "rgba(88, 28, 135, 0.92)", "#e9d5ff");
+        }
+      }
+    });
+    ctx.restore();
+
+    // Draw Canonical 10 Nodes
+    for (let id = 1; id <= 10; id++) {
+      const pos = physNodePosMap[id];
+      if (!pos) continue;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
+      const nodeObj = {
+        id,
+        node_id: `C${id}`,
+        x: pos.x,
+        y: pos.y,
+        zone: id <= 3 ? 2 : (id <= 7 ? 4 : 8),
+        tier: [1, 5, 10].includes(id) ? 3 : ([3, 7, 8, 9].includes(id) ? 2 : 1)
+      };
+      drawNode(ctx, nodeObj, isHov, pulse, NODE_RADIUS);
+    }
+
+    ctx.restore();
+  }
+
+  function renderFigure3fExemplarRanking(now) {
+    if (cy) cy.elements().style("opacity", 0);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    // Bottom Stage Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = tCycle < 0.75
+      ? "UPWARD RANKING DISPATCH: EXEMPLARS DELIVER SORTED CANDIDATE MATCHES TO SUPER-PEERS (TIER 2 → TIER 3)"
+      : "SUPER-PEER INGESTION: SUPER-PEERS (C1, C5, C10) BUFFER MULTI-BRANCH RANKINGS (EXEMPLAR_RANKINGS_INGESTED)";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = canvas.height - 24;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#c084fc";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#e9d5ff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Device Silhouettes
+    ctx.save();
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isTop = n.tier === 3;
+      const isMid = n.tier === 2;
+      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
+      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
+      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
+      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Hull & Capsules
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillStyle = "#e11d48";
+    ctx.textAlign = "center";
+    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
+    ctx.restore();
+
+    capsules.forEach(cap => {
+      ctx.save();
+      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
+      ctx.fillStyle = cap.fill;
+      ctx.fill();
+      ctx.strokeStyle = cap.border;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillStyle = cap.textColor;
+      ctx.textAlign = "center";
+      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
+      ctx.restore();
+    });
+
+    // Upward Packets from Exemplars to Super-Peers
+    ctx.save();
+    traces.forEach((pkt, idx) => {
+      const pA = nodePosMap[pkt.fromKey];
+      const pB = nodePosMap[pkt.toKey];
+      if (!pA || !pB) return;
+
+      const phaseOffset = (idx * 0.22) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      if (tPkt < 0.75) {
+        const t = tPkt / 0.75;
+        const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
+        const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
+
+        ctx.beginPath();
+        ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = "#c084fc";
+        ctx.shadowBlur = 16;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(px, py, 9.0, 0, Math.PI * 2);
+        ctx.strokeStyle = "#9333ea";
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, pkt.label || "RANK_REP", px, py - 16, "#c084fc", "rgba(15, 23, 42, 0.92)", "#f3e8ff");
+      } else {
+        const arrProg = (tPkt - 0.75) / 0.25;
+        const rBeacon = 28 + arrProg * 22;
+        ctx.beginPath();
+        ctx.arc(pB.renderedX, pB.renderedY, rBeacon, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(192, 132, 252, ${1 - arrProg})`;
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#c084fc";
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, "RANKINGS_INGESTED", pB.renderedX, pB.renderedY - 32, "#c084fc", "rgba(88, 28, 135, 0.92)", "#e9d5ff");
+      }
+    });
+    ctx.restore();
+
+    // Draw Nodes
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
+      drawNode(ctx, {
+        id: n.id,
+        node_id: n.label,
+        x: p.renderedX,
+        y: p.renderedY,
+        tier: n.tier,
+        zone: n.zone
+      }, isHov, pulse, rad);
+    });
+
+    ctx.restore();
+  }
+
+  function runFrame(now) {
+    if (currentStep !== 27) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentLayout === "figure3f" || currentLayout === "overlay") {
+      renderFigure3fExemplarRanking(now);
+    } else {
+      renderPhysicalExemplarRanking(now);
+    }
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+// -------------------------------------------------------------
+// Step 28 Animation: Global Super-Peer Cross-Cluster Consolidation
+// -------------------------------------------------------------
+function animateStep28Consolidation(consolidatedRankings, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const startTime = performance.now();
+  const CYCLE_MS = 4000;
+
+  const SP_LEADERS = [
+    { id: 1, key: "top_1", tag: "SP-1 Consolidation", primary: "Q1: C9 (0.94) | Q2: C1 (0.85) | Q9: C1 (0.94)", sc: "SC-1" },
+    { id: 5, key: "top_5", tag: "SP-5 Consolidation", primary: "Q3: C5 (0.93) | Q4: C5 (0.95) | Q5: C4 (0.95)", sc: "SC-2" },
+    { id: 10, key: "top_10", tag: "SP-10 Consolidation", primary: "Q6: C7 (0.54) | Q7: C10 (0.94) | Q10: C7 (0.94)", sc: "SC-3" }
+  ];
+
+  function drawFloatingTag(ctx, text, x, y, borderColor, bgColor, textColor) {
+    ctx.save();
+    ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+    const textW = ctx.measureText(text).width;
+    const boxH = 14;
+    const boxW = textW + 12;
+    const boxX = x - boxW / 2;
+    const boxY = y - boxH / 2;
+
+    ctx.fillStyle = bgColor || "rgba(15, 23, 42, 0.92)";
+    ctx.strokeStyle = borderColor || "#f59e0b";
+    ctx.lineWidth = 1;
+    ctx.shadowColor = borderColor || "#f59e0b";
+    ctx.shadowBlur = 6;
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = textColor || "#fef3c7";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function renderPhysicalConsolidation(now) {
+    if (cy) cy.elements().style("opacity", 1);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+
+    // Top Status Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "PHYSICAL TOPOLOGY: GLOBAL SUPER-PEER CROSS-CLUSTER SIMILARITY CONSOLIDATION [MATCHMAKING LOCKED]";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#fbbf24";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Node position map
+    const physNodePosMap = {};
+    for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          physNodePosMap[id] = { id, x: rp.x, y: rp.y };
+          continue;
+        }
+      }
+      const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
+      physNodePosMap[id] = { id, x: c.x, y: c.y };
+    }
+
+    // Physical Mesh Links
+    ctx.save();
+    PHYSICAL_TOPOLOGY_EDGES.forEach(edge => {
+      const p1 = physNodePosMap[edge.from];
+      const p2 = physNodePosMap[edge.to];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Highlight Backbone Edges between Super-Peers (1-5, 5-10)
+    ctx.save();
+    [[1, 5], [5, 10]].forEach(bb => {
+      const p1 = physNodePosMap[bb[0]];
+      const p2 = physNodePosMap[bb[1]];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = "#fbbf24";
+      ctx.lineWidth = 3.5;
+      ctx.shadowColor = "#f59e0b";
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Draw Nodes with Gold Aura on Super-Peers
+    for (let id = 1; id <= 10; id++) {
+      const pos = physNodePosMap[id];
+      if (!pos) continue;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
+      const isSP = [1, 5, 10].includes(id);
+
+      if (isSP) {
+        // Gold radiating beacon
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, NODE_RADIUS + 10 + pulse * 6, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(245, 158, 11, 0.6)";
+        ctx.lineWidth = 2.0;
+        ctx.shadowColor = "#f59e0b";
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+
+      const nodeObj = {
+        id,
+        node_id: `C${id}`,
+        x: pos.x,
+        y: pos.y,
+        zone: id <= 3 ? 2 : (id <= 7 ? 4 : 8),
+        tier: isSP ? 3 : ([3, 7, 8, 9].includes(id) ? 2 : 1)
+      };
+      drawNode(ctx, nodeObj, isHov, pulse, NODE_RADIUS);
+
+      if (isSP) {
+        const spLeader = SP_LEADERS.find(s => s.id === id);
+        drawFloatingTag(ctx, "MATCHMAKING_LOCKED", pos.x, pos.y - NODE_RADIUS - 16, "#f59e0b", "rgba(120, 53, 15, 0.94)", "#fef3c7");
+        if (spLeader) {
+          drawFloatingTag(ctx, spLeader.primary, pos.x, pos.y + NODE_RADIUS + 14, "#f59e0b", "rgba(15, 23, 42, 0.94)", "#fde68a");
+        }
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function renderFigure3fConsolidation(now) {
+    if (cy) cy.elements().style("opacity", 0);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
+
+    // Bottom Stage Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "STEP 28: CROSS-CLUSTER CONSOLIDATION COMPLETE — AUTHORITATIVE FEDERATION MATCHMAKING LOCKED";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = canvas.height - 24;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#fbbf24";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Device Silhouettes
+    ctx.save();
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isTop = n.tier === 3;
+      const isMid = n.tier === 2;
+      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
+      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
+      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
+      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Super-Peer Tier 3 Backbone Links
+    ctx.save();
+    const p1 = nodePosMap["top_1"];
+    const p5 = nodePosMap["top_5"];
+    const p10 = nodePosMap["top_10"];
+    if (p1 && p5 && p10) {
+      ctx.beginPath();
+      ctx.moveTo(p1.renderedX, p1.renderedY);
+      ctx.lineTo(p5.renderedX, p5.renderedY);
+      ctx.lineTo(p10.renderedX, p10.renderedY);
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 4;
+      ctx.shadowColor = "#f59e0b";
+      ctx.shadowBlur = 14;
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Hull & Capsules
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillStyle = "#e11d48";
+    ctx.textAlign = "center";
+    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
+    ctx.restore();
+
+    capsules.forEach(cap => {
+      ctx.save();
+      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
+      ctx.fillStyle = cap.fill;
+      ctx.fill();
+      ctx.strokeStyle = cap.border;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillStyle = cap.textColor;
+      ctx.textAlign = "center";
+      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
+      ctx.restore();
+    });
+
+    // Draw Nodes
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+      const isSP = n.tier === 3;
+      const rad = isSP ? 28 : (n.tier === 2 ? 26 : 24);
+
+      if (isSP) {
+        ctx.beginPath();
+        ctx.arc(p.renderedX, p.renderedY, rad + 8 + pulse * 6, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(245, 158, 11, 0.65)";
+        ctx.lineWidth = 2.2;
+        ctx.shadowColor = "#f59e0b";
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+
+      drawNode(ctx, {
+        id: n.id,
+        node_id: n.label,
+        x: p.renderedX,
+        y: p.renderedY,
+        tier: n.tier,
+        zone: n.zone
+      }, isHov, pulse, rad);
+
+      if (isSP) {
+        const spLeader = SP_LEADERS.find(s => s.id === n.id);
+        drawFloatingTag(ctx, "MATCHMAKING_LOCKED", p.renderedX, p.renderedY - rad - 12, "#f59e0b", "rgba(120, 53, 15, 0.94)", "#fef3c7");
+        if (spLeader) {
+          drawFloatingTag(ctx, spLeader.primary, p.renderedX, p.renderedY + rad + 14, "#f59e0b", "rgba(15, 23, 42, 0.94)", "#fde68a");
+        }
+      }
+    });
+
+    ctx.restore();
+  }
+
+  function runFrame(now) {
+    if (currentStep !== 28) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentLayout === "figure3f" || currentLayout === "overlay") {
+      renderFigure3fConsolidation(now);
+    } else {
+      renderPhysicalConsolidation(now);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
@@ -12600,7 +14282,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 24; s++) {
+  for (let s = 1; s <= 28; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -12635,8 +14317,14 @@ function updateStepper(step) {
         item.classList.add("step-blue");
       } else if (step === 23) {
         item.classList.add("step-purple");
-      } else if (step === 24) {
+      } else if (step === 24 || step === 25) {
         item.classList.add("step-emerald");
+      } else if (step === 26) {
+        item.classList.add("step-blue");
+      } else if (step === 27) {
+        item.classList.add("step-purple");
+      } else if (step === 28) {
+        item.classList.add("step-gold");
       }
     }
   }
@@ -12666,7 +14354,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 24) {
+    if (step < 28) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -12674,7 +14362,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 24 active (Cluster Exemplar Forwarding to Leaf Members complete)";
+      btnNext.title = "Step 28 active (Global Super-Peer Cross-Cluster Similarity Consolidation complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -12687,7 +14375,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 24);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 28);
 }
 
 function bindActionButtons() {
@@ -12711,16 +14399,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 24) {
+      if (currentStep < 28) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 24 is active (Cluster Exemplar Forwarding to Leaf Members complete).");
+        logToTerminal("INFO", "Step 28 is active (Global Super-Peer Cross-Cluster Similarity Consolidation complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 24)
-  for (let s = 1; s <= 24; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 28)
+  for (let s = 1; s <= 28; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {
@@ -12728,6 +14416,7 @@ function bindActionButtons() {
       });
     }
   }
+
 
   // Dual-Layout Switcher Button
   const btnToggleLayout = document.getElementById("btn-toggle-layout");

@@ -12,7 +12,7 @@ import copy
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 24
+TOTAL_STEPS: int = 28
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -4841,6 +4841,414 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "boundary_nodes": [1, 6],
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 25:
+        # Step 25: Local Semantic Cosine Similarity Evaluation
+        step24_data = _get_10node_step_data_raw(24)
+        step25_nodes = copy.deepcopy(step24_data["nodes"])
+
+        node_similarity_evaluations = {
+            1: [
+                {"peer": 2, "query_origin": 2, "cosine_sim": 0.8531, "binary_overlap": 1.0, "rank": 2, "aura_rank": "#2 Secondary"},
+                {"peer": 9, "query_origin": 9, "cosine_sim": 0.9429, "binary_overlap": 1.0, "rank": 1, "aura_rank": "#1 Primary"}
+            ],
+            2: [
+                {"peer": 1, "query_origin": 1, "cosine_sim": 0.8531, "binary_overlap": 1.0, "rank": 1, "aura_rank": "#1 Primary"},
+                {"peer": 9, "query_origin": 9, "cosine_sim": 0.7581, "binary_overlap": 1.0, "rank": 2, "aura_rank": "#2 Secondary"}
+            ],
+            3: [
+                {"peer": 4, "query_origin": 4, "cosine_sim": 0.8076, "binary_overlap": 1.0, "rank": 3, "aura_rank": "#3 Tertiary"},
+                {"peer": 5, "query_origin": 5, "cosine_sim": 0.9323, "binary_overlap": 1.0, "rank": 1, "aura_rank": "#1 Primary"},
+                {"peer": 8, "query_origin": 8, "cosine_sim": 0.9179, "binary_overlap": 1.0, "rank": 2, "aura_rank": "#2 Secondary"}
+            ],
+            4: [
+                {"peer": 3, "query_origin": 3, "cosine_sim": 0.8076, "binary_overlap": 1.0, "rank": 3, "aura_rank": "#3 Tertiary"},
+                {"peer": 5, "query_origin": 5, "cosine_sim": 0.9453, "binary_overlap": 1.0, "rank": 1, "aura_rank": "#1 Primary"},
+                {"peer": 8, "query_origin": 8, "cosine_sim": 0.8388, "binary_overlap": 1.0, "rank": 2, "aura_rank": "#2 Secondary"}
+            ],
+            5: [
+                {"peer": 3, "query_origin": 3, "cosine_sim": 0.9323, "binary_overlap": 1.0, "rank": 2, "aura_rank": "#2 Secondary"},
+                {"peer": 4, "query_origin": 4, "cosine_sim": 0.9453, "binary_overlap": 1.0, "rank": 1, "aura_rank": "#1 Primary"},
+                {"peer": 8, "query_origin": 8, "cosine_sim": 0.8536, "binary_overlap": 1.0, "rank": 3, "aura_rank": "#3 Tertiary"}
+            ],
+            6: [
+                {"peer": 7, "query_origin": 7, "cosine_sim": 0.5365, "binary_overlap": 0.67, "rank": 1, "aura_rank": "#1 Primary"},
+                {"peer": 10, "query_origin": 10, "cosine_sim": 0.5341, "binary_overlap": 0.67, "rank": 2, "aura_rank": "#2 Secondary"}
+            ],
+            7: [
+                {"peer": 6, "query_origin": 6, "cosine_sim": 0.5365, "binary_overlap": 0.67, "rank": 2, "aura_rank": "#2 Secondary"},
+                {"peer": 10, "query_origin": 10, "cosine_sim": 0.9378, "binary_overlap": 1.0, "rank": 1, "aura_rank": "#1 Primary"}
+            ],
+            8: [
+                {"peer": 3, "query_origin": 3, "cosine_sim": 0.9179, "binary_overlap": 1.0, "rank": 1, "aura_rank": "#1 Primary"},
+                {"peer": 4, "query_origin": 4, "cosine_sim": 0.8388, "binary_overlap": 1.0, "rank": 3, "aura_rank": "#3 Tertiary"},
+                {"peer": 5, "query_origin": 5, "cosine_sim": 0.8536, "binary_overlap": 1.0, "rank": 2, "aura_rank": "#2 Secondary"}
+            ],
+            9: [
+                {"peer": 1, "query_origin": 1, "cosine_sim": 0.9429, "binary_overlap": 1.0, "rank": 1, "aura_rank": "#1 Primary"},
+                {"peer": 2, "query_origin": 2, "cosine_sim": 0.7581, "binary_overlap": 1.0, "rank": 2, "aura_rank": "#2 Secondary"}
+            ],
+            10: [
+                {"peer": 6, "query_origin": 6, "cosine_sim": 0.5341, "binary_overlap": 0.67, "rank": 2, "aura_rank": "#2 Secondary"},
+                {"peer": 7, "query_origin": 7, "cosine_sim": 0.9378, "binary_overlap": 1.0, "rank": 1, "aura_rank": "#1 Primary"}
+            ]
+        }
+
+        for n in step25_nodes:
+            nid = n["id"]
+            n["status"] = "LOCAL_SIMILARITY_EVALUATED"
+            n["similarity_evaluations"] = node_similarity_evaluations.get(nid, [])
+            n["cosine_similarities"] = node_similarity_evaluations.get(nid, [])
+            n["evaluated_peers_count"] = len(node_similarity_evaluations.get(nid, []))
+
+        terminal_logs = [
+            "[STEP 25] Local Semantic Cosine Similarity Evaluation initiated across all 10 edge nodes.",
+            "[SC-1 EVALUATION] Node C1 evaluates Node C9 (CosSim: 0.9429, Rank #1 Primary) and Node C2 (CosSim: 0.8531, Rank #2 Secondary).",
+            "[SC-1 EVALUATION] Node C2 evaluates Node C1 (CosSim: 0.8531, Rank #1 Primary) and Node C9 (CosSim: 0.7581, Rank #2 Secondary).",
+            "[SC-2 EVALUATION] Node C4 evaluates Node C5 (CosSim: 0.9453, Rank #1 Primary), Node C8 (CosSim: 0.8388, Rank #2), Node C3 (CosSim: 0.8076, Rank #3).",
+            "[SC-2 EVALUATION] Node C5 evaluates Node C4 (CosSim: 0.9453, Rank #1 Primary), Node C3 (CosSim: 0.9323, Rank #2), Node C8 (CosSim: 0.8536, Rank #3).",
+            "[SC-3 EVALUATION] Node C7 evaluates Node C10 (CosSim: 0.9378, Rank #1 Primary, Overlap: 1.0) and Node C6 (CosSim: 0.5365, Rank #2, Overlap: 0.67).",
+            "[SC-3 EVALUATION] Node C10 evaluates Node C7 (CosSim: 0.9378, Rank #1 Primary, Overlap: 1.0) and Node C6 (CosSim: 0.5341, Rank #2, Overlap: 0.67).",
+            "[STATUS: LOCAL_SIMILARITY_EVALUATED] All 10 client nodes finalized mathematical cosine similarity weights for collaborative aggregation.",
+        ]
+
+        return {
+            "step": 25,
+            "total_steps": 25,
+            "title": "Step 25: Local Semantic Cosine Similarity Evaluation",
+            "phase_badge": "ACTIVE PHASE: STEP 25: LOCAL SEMANTIC COSINE SIMILARITY EVALUATION",
+            "description": "Each node evaluates the mathematical Cosine Similarity between its local sparse model vector and received peer queries to establish semantic aggregation weights.",
+            "formula": r"\text{CosSim}(\mathbf{w}_i, \mathbf{w}_q) = \frac{\mathbf{w}_i^{\text{sparse}} \cdot \mathbf{w}_q^{\text{sparse}}}{\Vert{}\mathbf{w}_i^{\text{sparse}}\Vert{}_2 \Vert{}\mathbf{w}_q^{\text{sparse}}\Vert{}_2}",
+            "formula_desc": "Each client matches its local model against received cluster queries using Cosine Similarity on sparse weight vectors.",
+            "nodes": step25_nodes,
+            "edges": step24_data["edges"],
+            "node_similarity_evaluations": node_similarity_evaluations,
+            "similarity_evaluations": node_similarity_evaluations,
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step24_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": [1, 5, 10],
+            "exemplars": [1, 3, 5, 7, 8, 9, 10],
+            "leaf_nodes": [2, 4, 6],
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
+    elif step_number == 26:
+        # Step 26: Upward Similarity Score Reporting to Cluster Exemplars
+        step25_data = _get_10node_step_data_raw(25)
+        step26_nodes = copy.deepcopy(step25_data["nodes"])
+
+        score_reporting_packets = [
+            {"from": 2, "to": 1, "path": [2, 1], "type": "REP_SIM_SCORE", "scores": [{"query": 1, "sim": 0.8531}, {"query": 9, "sim": 0.7581}], "label": "SCORE_REPORT (C2 -> C1)"},
+            {"from": 4, "to": 5, "path": [4, 5], "type": "REP_SIM_SCORE", "scores": [{"query": 3, "sim": 0.8076}, {"query": 5, "sim": 0.9453}, {"query": 8, "sim": 0.8388}], "label": "SCORE_REPORT (C4 -> C5)"},
+            {"from": 6, "to": 7, "path": [6, 4, 7], "type": "REP_SIM_SCORE", "scores": [{"query": 7, "sim": 0.5365}, {"query": 10, "sim": 0.5341}], "label": "SCORE_REPORT (C6 -> C7)"}
+        ]
+
+        exemplar_ingested_scores = {
+            1: [
+                {"member": 1, "source_node": 1, "reporting_node": 1, "query": 2, "query_origin": 2, "sim": 0.8531, "cosine_sim": 0.8531, "source": "LOCAL_SELF", "status": "REGISTERED"},
+                {"member": 1, "source_node": 1, "reporting_node": 1, "query": 9, "query_origin": 9, "sim": 0.9429, "cosine_sim": 0.9429, "source": "LOCAL_SELF", "status": "REGISTERED"},
+                {"member": 2, "source_node": 2, "reporting_node": 2, "query": 1, "query_origin": 1, "sim": 0.8531, "cosine_sim": 0.8531, "source": "REPORTED_LEAF", "path": [2, 1], "status": "INGESTED"},
+                {"member": 2, "source_node": 2, "reporting_node": 2, "query": 9, "query_origin": 9, "sim": 0.7581, "cosine_sim": 0.7581, "source": "REPORTED_LEAF", "path": [2, 1], "status": "INGESTED"},
+            ],
+            3: [
+                {"member": 3, "source_node": 3, "reporting_node": 3, "query": 4, "query_origin": 4, "sim": 0.8076, "cosine_sim": 0.8076, "source": "LOCAL_SELF", "status": "REGISTERED"},
+                {"member": 3, "source_node": 3, "reporting_node": 3, "query": 5, "query_origin": 5, "sim": 0.9323, "cosine_sim": 0.9323, "source": "LOCAL_SELF", "status": "REGISTERED"},
+                {"member": 3, "source_node": 3, "reporting_node": 3, "query": 8, "query_origin": 8, "sim": 0.9179, "cosine_sim": 0.9179, "source": "LOCAL_SELF", "status": "REGISTERED"},
+            ],
+            5: [
+                {"member": 5, "source_node": 5, "reporting_node": 5, "query": 3, "query_origin": 3, "sim": 0.9323, "cosine_sim": 0.9323, "source": "LOCAL_SELF", "status": "REGISTERED"},
+                {"member": 5, "source_node": 5, "reporting_node": 5, "query": 4, "query_origin": 4, "sim": 0.9453, "cosine_sim": 0.9453, "source": "LOCAL_SELF", "status": "REGISTERED"},
+                {"member": 5, "source_node": 5, "reporting_node": 5, "query": 8, "query_origin": 8, "sim": 0.8536, "cosine_sim": 0.8536, "source": "LOCAL_SELF", "status": "REGISTERED"},
+                {"member": 4, "source_node": 4, "reporting_node": 4, "query": 3, "query_origin": 3, "sim": 0.8076, "cosine_sim": 0.8076, "source": "REPORTED_LEAF", "path": [4, 5], "status": "INGESTED"},
+                {"member": 4, "source_node": 4, "reporting_node": 4, "query": 5, "query_origin": 5, "sim": 0.9453, "cosine_sim": 0.9453, "source": "REPORTED_LEAF", "path": [4, 5], "status": "INGESTED"},
+                {"member": 4, "source_node": 4, "reporting_node": 4, "query": 8, "query_origin": 8, "sim": 0.8388, "cosine_sim": 0.8388, "source": "REPORTED_LEAF", "path": [4, 5], "status": "INGESTED"},
+            ],
+            7: [
+                {"member": 7, "source_node": 7, "reporting_node": 7, "query": 6, "query_origin": 6, "sim": 0.5365, "cosine_sim": 0.5365, "source": "LOCAL_SELF", "status": "REGISTERED"},
+                {"member": 7, "source_node": 7, "reporting_node": 7, "query": 10, "query_origin": 10, "sim": 0.9378, "cosine_sim": 0.9378, "source": "LOCAL_SELF", "status": "REGISTERED"},
+                {"member": 6, "source_node": 6, "reporting_node": 6, "query": 7, "query_origin": 7, "sim": 0.5365, "cosine_sim": 0.5365, "source": "REPORTED_LEAF", "path": [6, 4, 7], "status": "INGESTED"},
+                {"member": 6, "source_node": 6, "reporting_node": 6, "query": 10, "query_origin": 10, "sim": 0.5341, "cosine_sim": 0.5341, "source": "REPORTED_LEAF", "path": [6, 4, 7], "status": "INGESTED"},
+            ],
+            8: [
+                {"member": 8, "source_node": 8, "reporting_node": 8, "query": 3, "query_origin": 3, "sim": 0.9179, "cosine_sim": 0.9179, "source": "LOCAL_SELF", "status": "REGISTERED"},
+                {"member": 8, "source_node": 8, "reporting_node": 8, "query": 4, "query_origin": 4, "sim": 0.8388, "cosine_sim": 0.8388, "source": "LOCAL_SELF", "status": "REGISTERED"},
+                {"member": 8, "source_node": 8, "reporting_node": 8, "query": 5, "query_origin": 5, "sim": 0.8536, "cosine_sim": 0.8536, "source": "LOCAL_SELF", "status": "REGISTERED"},
+            ],
+            9: [
+                {"member": 9, "source_node": 9, "reporting_node": 9, "query": 1, "query_origin": 1, "sim": 0.9429, "cosine_sim": 0.9429, "source": "LOCAL_SELF", "status": "REGISTERED"},
+                {"member": 9, "source_node": 9, "reporting_node": 9, "query": 2, "query_origin": 2, "sim": 0.7581, "cosine_sim": 0.7581, "source": "LOCAL_SELF", "status": "REGISTERED"},
+            ],
+            10: [
+                {"member": 10, "source_node": 10, "reporting_node": 10, "query": 6, "query_origin": 6, "sim": 0.5341, "cosine_sim": 0.5341, "source": "LOCAL_SELF", "status": "REGISTERED"},
+                {"member": 10, "source_node": 10, "reporting_node": 10, "query": 7, "query_origin": 7, "sim": 0.9378, "cosine_sim": 0.9378, "source": "LOCAL_SELF", "status": "REGISTERED"},
+            ],
+        }
+
+        exemplar_ids = [1, 3, 5, 7, 8, 9, 10]
+        for n in step26_nodes:
+            nid = n["id"]
+            if nid in exemplar_ids:
+                n["status"] = "ZONE_SCORES_INGESTED"
+                n["ingested_member_scores"] = exemplar_ingested_scores.get(nid, [])
+                n["ingested_scores"] = exemplar_ingested_scores.get(nid, [])
+                n["ingested_count"] = len(exemplar_ingested_scores.get(nid, []))
+            else:
+                n["status"] = "SCORES_REPORTED_TO_EXEMPLAR"
+                n["reported_scores_packet"] = next((p for p in score_reporting_packets if p["from"] == nid), None)
+
+        terminal_logs = [
+            "[STEP 26] Upward Similarity Score Reporting to Cluster Exemplars initiated (Tier 1 -> Tier 2).",
+            "[SCORE REPORT C2 -> C1] Leaf Node C2 dispatches CosSim scores {Q1: 0.8531, Q9: 0.7581} along direct path [2, 1] to Exemplar C1.",
+            "[SCORE REPORT C4 -> C5] Leaf Node C4 dispatches CosSim scores {Q3: 0.8076, Q5: 0.9453, Q8: 0.8388} along direct path [4, 5] to Exemplar C5.",
+            "[SCORE REPORT C6 -> C7] Leaf Node C6 dispatches CosSim scores {Q7: 0.5365, Q10: 0.5341} along multi-hop path [6, 4, 7] to Exemplar C7.",
+            "[EXEMPLAR INGESTION] Exemplars C1, C3, C5, C7, C8, C9, C10 registered member and local similarity scores into their aggregation buffers.",
+            "[STATUS: ZONE_SCORES_INGESTED] All cluster exemplars transitioned to ZONE_SCORES_INGESTED.",
+        ]
+
+        return {
+            "step": 26,
+            "total_steps": 26,
+            "title": "Step 26: Upward Similarity Score Reporting to Cluster Exemplars",
+            "phase_badge": "ACTIVE PHASE: STEP 26: UPWARD SIMILARITY SCORE REPORTING",
+            "description": "Clients transmit their computed Cosine Similarity scores up to governing Cluster Exemplars along physical topology paths.",
+            "formula": r"\mathcal{B}_{\text{exemplar}} = \left\{ \text{CosSim}(\mathbf{w}_k, \mathbf{w}_q) \mid k \in \mathcal{C}_{\text{zone}} \right\}",
+            "formula_desc": "Tier-2 Cluster Exemplars buffer member similarity evaluations for cluster-wide gradient weighting.",
+            "nodes": step26_nodes,
+            "edges": step25_data["edges"],
+            "score_reporting_packets": score_reporting_packets,
+            "packets": score_reporting_packets,
+            "exemplar_ingested_scores": exemplar_ingested_scores,
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step25_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": [1, 5, 10],
+            "exemplars": [1, 3, 5, 7, 8, 9, 10],
+            "leaf_nodes": [2, 4, 6],
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
+    elif step_number == 27:
+        # Step 27: Exemplar Similarity Ranking & Upward Dispatch to Super-Peers
+        step26_data = _get_10node_step_data_raw(26)
+        step27_nodes = copy.deepcopy(step26_data["nodes"])
+
+        exemplar_ranked_packets = [
+            {
+                "from": 9, "to": 1, "path": [9, 7, 4, 1],
+                "type": "REP_RANKED_CANDIDATES",
+                "ranked_lists": {
+                    "Q1": [{"node": 9, "sim": 0.9429}],
+                    "Q2": [{"node": 9, "sim": 0.7581}]
+                },
+                "label": "RANKED_LIST (C9 -> SP1)"
+            },
+            {
+                "from": 3, "to": 5, "path": [3, 5],
+                "type": "REP_RANKED_CANDIDATES",
+                "ranked_lists": {
+                    "Q4": [{"node": 3, "sim": 0.8076}],
+                    "Q5": [{"node": 3, "sim": 0.9323}],
+                    "Q8": [{"node": 3, "sim": 0.9179}]
+                },
+                "label": "RANKED_LIST (C3 -> SP5)"
+            },
+            {
+                "from": 8, "to": 5, "path": [8, 6, 5],
+                "type": "REP_RANKED_CANDIDATES",
+                "ranked_lists": {
+                    "Q3": [{"node": 8, "sim": 0.9179}],
+                    "Q4": [{"node": 8, "sim": 0.8388}],
+                    "Q5": [{"node": 8, "sim": 0.8536}]
+                },
+                "label": "RANKED_LIST (C8 -> SP5)"
+            },
+            {
+                "from": 7, "to": 10, "path": [7, 9, 10],
+                "type": "REP_RANKED_CANDIDATES",
+                "ranked_lists": {
+                    "Q6": [{"node": 7, "sim": 0.5365}],
+                    "Q10": [{"node": 7, "sim": 0.9378}]
+                },
+                "label": "RANKED_LIST (C7 -> SP10)"
+            }
+        ]
+
+        exemplar_dispatched_rankings = {
+            3: {"Q4": [{"node": 3, "sim": 0.8076}], "Q5": [{"node": 3, "sim": 0.9323}], "Q8": [{"node": 3, "sim": 0.9179}]},
+            7: {"Q6": [{"node": 7, "sim": 0.5365}], "Q10": [{"node": 7, "sim": 0.9378}]},
+            8: {"Q3": [{"node": 8, "sim": 0.9179}], "Q4": [{"node": 8, "sim": 0.8388}], "Q5": [{"node": 8, "sim": 0.8536}]},
+            9: {"Q1": [{"node": 9, "sim": 0.9429}], "Q2": [{"node": 9, "sim": 0.7581}]},
+            1: {"Q1": [{"node": 1, "sim": 0.8531}, {"node": 9, "sim": 0.9429}], "Q2": [{"node": 1, "sim": 0.8531}, {"node": 9, "sim": 0.7581}], "Q9": [{"node": 1, "sim": 0.9429}, {"node": 2, "sim": 0.7581}]},
+            5: {"Q3": [{"node": 5, "sim": 0.9323}], "Q4": [{"node": 4, "sim": 0.9453}, {"node": 5, "sim": 0.9453}], "Q5": [{"node": 4, "sim": 0.9453}], "Q8": [{"node": 5, "sim": 0.8536}]},
+            10: {"Q6": [{"node": 7, "sim": 0.5365}], "Q7": [{"node": 10, "sim": 0.9378}], "Q10": [{"node": 7, "sim": 0.9378}]}
+        }
+
+        sp_ids = [1, 5, 10]
+        dispatched_exemplar_ids = [3, 7, 8, 9]
+
+        for n in step27_nodes:
+            nid = n["id"]
+            if nid in sp_ids:
+                n["status"] = "EXEMPLAR_RANKINGS_INGESTED"
+                n["ingested_rankings"] = [p for p in exemplar_ranked_packets if p["to"] == nid]
+            elif nid in dispatched_exemplar_ids:
+                n["status"] = "RANKINGS_DISPATCHED_TO_SP"
+                n["dispatched_ranking"] = exemplar_dispatched_rankings.get(nid, {})
+            n["dispatched_rankings"] = exemplar_dispatched_rankings.get(nid, {})
+
+        terminal_logs = [
+            "[STEP 27] Exemplar Similarity Ranking & Upward Dispatch initiated (Tier 2 -> Tier 3).",
+            "[RANKED DISPATCH C9 -> SP1] Exemplar C9 dispatches ranked list {Q1: [C9: 0.9429], Q2: [C9: 0.7581]} along path [9, 7, 4, 1] to Super-Peer C1.",
+            "[RANKED DISPATCH C3 -> SP5] Exemplar C3 dispatches ranked list {Q4: [C3: 0.8076], Q5: [C3: 0.9323], Q8: [C3: 0.9179]} along path [3, 5] to Super-Peer C5.",
+            "[RANKED DISPATCH C8 -> SP5] Exemplar C8 dispatches ranked list {Q3: [C8: 0.9179], Q4: [C8: 0.8388], Q5: [C8: 0.8536]} along path [8, 6, 5] to Super-Peer C5.",
+            "[RANKED DISPATCH C7 -> SP10] Exemplar C7 dispatches ranked list {Q6: [C7: 0.5365], Q10: [C7: 0.9378]} along path [7, 9, 10] to Super-Peer C10.",
+            "[SP REGISTRY] Super-Peers C1, C5, C10 registered internal and forwarded exemplar rankings into Super-Peer consolidation registries.",
+            "[STATUS: EXEMPLAR_RANKINGS_INGESTED] Governing Super-Peers transitioned to status EXEMPLAR_RANKINGS_INGESTED.",
+        ]
+
+        return {
+            "step": 27,
+            "total_steps": 28,
+            "title": "Step 27: Exemplar Similarity Ranking & Upward Dispatch to Super-Peers",
+            "phase_badge": "ACTIVE PHASE: STEP 27: EXEMPLAR SIMILARITY RANKING & UPWARD DISPATCH",
+            "description": "Exemplars rank candidate nodes per query by descending Cosine Similarity and forward the sorted lists up to Super-Peers (Tier 2 -> Tier 3).",
+            "formula": r"\text{Rank}_{\downarrow}(\mathbf{w}_q) = \text{Sort}\left(\left\{(k, \text{CosSim}(\mathbf{w}_k, \mathbf{w}_q))\right\}\right)",
+            "formula_desc": "Exemplars sort matching candidate models in descending order of evaluated semantic similarity.",
+            "nodes": step27_nodes,
+            "edges": step26_data["edges"],
+            "exemplar_ranked_packets": exemplar_ranked_packets,
+            "packets": exemplar_ranked_packets,
+            "exemplar_dispatched_rankings": exemplar_dispatched_rankings,
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step26_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": [1, 5, 10],
+            "exemplars": [1, 3, 5, 7, 8, 9, 10],
+            "leaf_nodes": [2, 4, 6],
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
+    elif step_number == 28:
+        # Step 28: Global Super-Peer Cross-Cluster Similarity Consolidation
+        step27_data = _get_10node_step_data_raw(27)
+        step28_nodes = copy.deepcopy(step27_data["nodes"])
+
+        super_peer_consolidated_rankings = {
+            1: {
+                "Q1": [{"rank": 1, "peer": 9, "sim": 0.9429}, {"rank": 2, "peer": 2, "sim": 0.8531}],
+                "Q2": [{"rank": 1, "peer": 1, "sim": 0.8531}, {"rank": 2, "peer": 9, "sim": 0.7581}],
+                "Q9": [{"rank": 1, "peer": 1, "sim": 0.9429}, {"rank": 2, "peer": 2, "sim": 0.7581}]
+            },
+            5: {
+                "Q3": [{"rank": 1, "peer": 5, "sim": 0.9323}, {"rank": 2, "peer": 8, "sim": 0.9179}, {"rank": 3, "peer": 4, "sim": 0.8076}],
+                "Q4": [{"rank": 1, "peer": 5, "sim": 0.9453}, {"rank": 2, "peer": 8, "sim": 0.8388}, {"rank": 3, "peer": 3, "sim": 0.8076}],
+                "Q5": [{"rank": 1, "peer": 4, "sim": 0.9453}, {"rank": 2, "peer": 3, "sim": 0.9323}, {"rank": 3, "peer": 8, "sim": 0.8536}],
+                "Q8": [{"rank": 1, "peer": 3, "sim": 0.9179}, {"rank": 2, "peer": 5, "sim": 0.8536}, {"rank": 3, "peer": 4, "sim": 0.8388}]
+            },
+            10: {
+                "Q6": [{"rank": 1, "peer": 7, "sim": 0.5365}, {"rank": 2, "peer": 10, "sim": 0.5341}],
+                "Q7": [{"rank": 1, "peer": 10, "sim": 0.9378}, {"rank": 2, "peer": 6, "sim": 0.5365}],
+                "Q10": [{"rank": 1, "peer": 7, "sim": 0.9378}, {"rank": 2, "peer": 6, "sim": 0.5341}]
+            }
+        }
+
+        sp_ids = [1, 5, 10]
+        for n in step28_nodes:
+            nid = n["id"]
+            if nid in sp_ids:
+                n["status"] = "GLOBAL_MATCHMAKING_LOCKED"
+                n["consolidated_rankings"] = super_peer_consolidated_rankings.get(nid, {})
+                n["super_peer_rankings"] = super_peer_consolidated_rankings.get(nid, {})
+                n["is_matchmaking_locked"] = True
+            else:
+                n["is_matchmaking_locked"] = False
+
+        terminal_logs = [
+            "[STEP 28] Global Super-Peer Cross-Cluster Similarity Consolidation finalized.",
+            "[SP1 CONSOLIDATION] Q1 -> [1st: C9 (0.9429), 2nd: C2 (0.8531)] | Q2 -> [1st: C1 (0.8531), 2nd: C9 (0.7581)] | Q9 -> [1st: C1 (0.9429), 2nd: C2 (0.7581)].",
+            "[SP5 CONSOLIDATION] Q3 -> [1st: C5 (0.9323), 2nd: C8 (0.9179), 3rd: C4 (0.8076)] | Q4 -> [1st: C5 (0.9453), 2nd: C8 (0.8388), 3rd: C3 (0.8076)].",
+            "[SP5 CONSOLIDATION] Q5 -> [1st: C4 (0.9453), 2nd: C3 (0.9323), 3rd: C8 (0.8536)] | Q8 -> [1st: C3 (0.9179), 2nd: C5 (0.8536), 3rd: C4 (0.8388)].",
+            "[SP10 CONSOLIDATION] Q6 -> [1st: C7 (0.5365), 2nd: C10 (0.5341)] | Q7 -> [1st: C10 (0.9378), 2nd: C6 (0.5365)] | Q10 -> [1st: C7 (0.9378), 2nd: C6 (0.5341)].",
+            "[STATUS: GLOBAL_MATCHMAKING_LOCKED] All Super-Peers locked authoritative semantic aggregation partner rankings for training synchronizations.",
+        ]
+
+        return {
+            "step": 28,
+            "total_steps": 28,
+            "title": "Step 28: Global Super-Peer Cross-Cluster Similarity Consolidation",
+            "phase_badge": "ACTIVE PHASE: STEP 28: SUPER-PEER CROSS-CLUSTER CONSOLIDATION",
+            "description": "Super-Peers consolidate candidate scores across all intra-cluster branches, establishing authoritative descending similarity orders for every query.",
+            "formula": r"\mathcal{R}(q_i) = \text{SortDescending}\left(\left\{(j, \text{CosSim}(\mathbf{w}_i, \mathbf{w}_j)) \mid j \in \mathcal{SC}_m\right\}\right)",
+            "formula_desc": "Super-Peers merge subordinate exemplar reports with local evaluations to lock global matchmaking orders.",
+            "nodes": step28_nodes,
+            "edges": step27_data["edges"],
+            "super_peer_consolidated_rankings": super_peer_consolidated_rankings,
+            "consolidated_rankings": super_peer_consolidated_rankings,
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step27_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": [1, 5, 10],
+            "exemplars": [1, 3, 5, 7, 8, 9, 10],
+            "leaf_nodes": [2, 4, 6],
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -4862,18 +5270,8 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
 def get_10node_step_data(step_number: int) -> Dict[str, Any]:
     """Retrieve storyboard step data for 10-node simulation with guaranteed total_steps."""
     data = _get_10node_step_data_raw(step_number)
-    if step_number >= 24:
-        data["total_steps"] = 24
-    elif step_number == 23:
-        data["total_steps"] = 24
-    elif step_number == 22:
-        data["total_steps"] = 22
-    elif step_number == 21:
-        data["total_steps"] = 21
-    elif step_number == 20:
-        data["total_steps"] = 20
-    else:
-        data["total_steps"] = 19
+    data["total_steps"] = TOTAL_STEPS
+
 
     # Ensure all base & step-specific fields are explicitly present on every node
     for n in data.get("nodes", []):
@@ -4946,7 +5344,85 @@ STEP22_SP_INBOXES = {
 }
 sp_inbox_payloads = STEP22_SP_INBOXES
 
+STEP25_SIMILARITY_EVALUATIONS = {
+    1: [{"peer": 2, "query_origin": 2, "cosine_sim": 0.8531, "binary_overlap": 1.0}, {"peer": 9, "query_origin": 9, "cosine_sim": 0.9429, "binary_overlap": 1.0}],
+    2: [{"peer": 1, "query_origin": 1, "cosine_sim": 0.8531, "binary_overlap": 1.0}, {"peer": 9, "query_origin": 9, "cosine_sim": 0.7581, "binary_overlap": 1.0}],
+    3: [{"peer": 4, "query_origin": 4, "cosine_sim": 0.8076, "binary_overlap": 1.0}, {"peer": 5, "query_origin": 5, "cosine_sim": 0.9323, "binary_overlap": 1.0}, {"peer": 8, "query_origin": 8, "cosine_sim": 0.9179, "binary_overlap": 1.0}],
+    4: [{"peer": 3, "query_origin": 3, "cosine_sim": 0.8076, "binary_overlap": 1.0}, {"peer": 5, "query_origin": 5, "cosine_sim": 0.9453, "binary_overlap": 1.0}, {"peer": 8, "query_origin": 8, "cosine_sim": 0.8388, "binary_overlap": 1.0}],
+    5: [{"peer": 3, "query_origin": 3, "cosine_sim": 0.9323, "binary_overlap": 1.0}, {"peer": 4, "query_origin": 4, "cosine_sim": 0.9453, "binary_overlap": 1.0}, {"peer": 8, "query_origin": 8, "cosine_sim": 0.8536, "binary_overlap": 1.0}],
+    6: [{"peer": 7, "query_origin": 7, "cosine_sim": 0.5365, "binary_overlap": 0.67}, {"peer": 10, "query_origin": 10, "cosine_sim": 0.5341, "binary_overlap": 0.67}],
+    7: [{"peer": 6, "query_origin": 6, "cosine_sim": 0.5365, "binary_overlap": 0.67}, {"peer": 10, "query_origin": 10, "cosine_sim": 0.9378, "binary_overlap": 1.0}],
+    8: [{"peer": 3, "query_origin": 3, "cosine_sim": 0.9179, "binary_overlap": 1.0}, {"peer": 4, "query_origin": 4, "cosine_sim": 0.8388, "binary_overlap": 1.0}, {"peer": 5, "query_origin": 5, "cosine_sim": 0.8536, "binary_overlap": 1.0}],
+    9: [{"peer": 1, "query_origin": 1, "cosine_sim": 0.9429, "binary_overlap": 1.0}, {"peer": 2, "query_origin": 2, "cosine_sim": 0.7581, "binary_overlap": 1.0}],
+    10: [{"peer": 6, "query_origin": 6, "cosine_sim": 0.5341, "binary_overlap": 0.67}, {"peer": 7, "query_origin": 7, "cosine_sim": 0.9378, "binary_overlap": 1.0}]
+}
+node_similarity_evaluations = STEP25_SIMILARITY_EVALUATIONS
 
+STEP26_SCORE_REPORTING_PACKETS = [
+    {"from": 2, "to": 1, "path": [2, 1], "type": "REP_SIM_SCORE", "scores": [{"query": 1, "sim": 0.8531}, {"query": 9, "sim": 0.7581}], "label": "SCORE_REPORT (C2 -> C1)"},
+    {"from": 4, "to": 5, "path": [4, 5], "type": "REP_SIM_SCORE", "scores": [{"query": 3, "sim": 0.8076}, {"query": 5, "sim": 0.9453}, {"query": 8, "sim": 0.8388}], "label": "SCORE_REPORT (C4 -> C5)"},
+    {"from": 6, "to": 7, "path": [6, 4, 7], "type": "REP_SIM_SCORE", "scores": [{"query": 7, "sim": 0.5365}, {"query": 10, "sim": 0.5341}], "label": "SCORE_REPORT (C6 -> C7)"}
+]
+score_reporting_packets = STEP26_SCORE_REPORTING_PACKETS
 
+STEP27_EXEMPLAR_RANKED_PACKETS = [
+    {
+        "from": 9, "to": 1, "path": [9, 7, 4, 1],
+        "type": "REP_RANKED_CANDIDATES",
+        "ranked_lists": {
+            "Q1": [{"node": 9, "sim": 0.9429}],
+            "Q2": [{"node": 9, "sim": 0.7581}]
+        },
+        "label": "RANKED_LIST (C9 -> SP1)"
+    },
+    {
+        "from": 3, "to": 5, "path": [3, 5],
+        "type": "REP_RANKED_CANDIDATES",
+        "ranked_lists": {
+            "Q4": [{"node": 3, "sim": 0.8076}],
+            "Q5": [{"node": 3, "sim": 0.9323}],
+            "Q8": [{"node": 3, "sim": 0.9179}]
+        },
+        "label": "RANKED_LIST (C3 -> SP5)"
+    },
+    {
+        "from": 8, "to": 5, "path": [8, 6, 5],
+        "type": "REP_RANKED_CANDIDATES",
+        "ranked_lists": {
+            "Q3": [{"node": 8, "sim": 0.9179}],
+            "Q4": [{"node": 8, "sim": 0.8388}],
+            "Q5": [{"node": 8, "sim": 0.8536}]
+        },
+        "label": "RANKED_LIST (C8 -> SP5)"
+    },
+    {
+        "from": 7, "to": 10, "path": [7, 9, 10],
+        "type": "REP_RANKED_CANDIDATES",
+        "ranked_lists": {
+            "Q6": [{"node": 7, "sim": 0.5365}],
+            "Q10": [{"node": 7, "sim": 0.9378}]
+        },
+        "label": "RANKED_LIST (C7 -> SP10)"
+    }
+]
+exemplar_ranked_packets = STEP27_EXEMPLAR_RANKED_PACKETS
 
-
+STEP28_SUPER_PEER_CONSOLIDATED_RANKINGS = {
+    1: {
+        "Q1": [{"rank": 1, "peer": 9, "sim": 0.9429}, {"rank": 2, "peer": 2, "sim": 0.8531}],
+        "Q2": [{"rank": 1, "peer": 1, "sim": 0.8531}, {"rank": 2, "peer": 9, "sim": 0.7581}],
+        "Q9": [{"rank": 1, "peer": 1, "sim": 0.9429}, {"rank": 2, "peer": 2, "sim": 0.7581}]
+    },
+    5: {
+        "Q3": [{"rank": 1, "peer": 5, "sim": 0.9323}, {"rank": 2, "peer": 8, "sim": 0.9179}, {"rank": 3, "peer": 4, "sim": 0.8076}],
+        "Q4": [{"rank": 1, "peer": 5, "sim": 0.9453}, {"rank": 2, "peer": 8, "sim": 0.8388}, {"rank": 3, "peer": 3, "sim": 0.8076}],
+        "Q5": [{"rank": 1, "peer": 4, "sim": 0.9453}, {"rank": 2, "peer": 3, "sim": 0.9323}, {"rank": 3, "peer": 8, "sim": 0.8536}],
+        "Q8": [{"rank": 1, "peer": 3, "sim": 0.9179}, {"rank": 2, "peer": 5, "sim": 0.8536}, {"rank": 3, "peer": 4, "sim": 0.8388}]
+    },
+    10: {
+        "Q6": [{"rank": 1, "peer": 7, "sim": 0.5365}, {"rank": 2, "peer": 10, "sim": 0.5341}],
+        "Q7": [{"rank": 1, "peer": 10, "sim": 0.9378}, {"rank": 2, "peer": 6, "sim": 0.5365}],
+        "Q10": [{"rank": 1, "peer": 7, "sim": 0.9378}, {"rank": 2, "peer": 6, "sim": 0.5341}]
+    }
+}
+super_peer_consolidated_rankings = STEP28_SUPER_PEER_CONSOLIDATED_RANKINGS
