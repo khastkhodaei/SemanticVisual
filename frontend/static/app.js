@@ -1511,12 +1511,12 @@ function updateUIHeaders(data) {
     if (stepDesc) stepDesc.textContent = "Clients dispatch REQ_PEER_DISCOVERY up the SON hierarchy. Exemplars forward queries over underlay routes to Super-Peers (C1, C5, C10), which resolve authorized Model Exchange Partner Sets per Super-Cluster.";
   } else if (step === 23) {
     activeBadges.forEach(badge => {
-      badge.textContent = "ACTIVE PHASE: STEP 23: SUPER-PEER QUERY MATCHING & DOWNWARD ROUTING";
+      badge.textContent = "ACTIVE PHASE: STEP 23: SUPER-PEER QUERY ROUTING TO CLUSTER EXEMPLARS";
       badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-400";
     });
     if (stepTag) stepTag.textContent = "STEP 23 / DOWNWARD ROUTING";
-    if (stepTitle) stepTitle.textContent = "Step 23: Super-Peer Query Routing & Forwarding to Target Exemplars";
-    if (stepDesc) stepDesc.textContent = "Super-Peers evaluate ingested discovery queries against cluster registries and route authorized discovery match responses downward to Cluster Exemplars (Tier 3 -> Tier 2).";
+    if (stepTitle) stepTitle.textContent = "Step 23: Super-Peer Semantic Query Routing to Cluster Exemplars";
+    if (stepDesc) stepDesc.textContent = "Super-Peers route matching client queries down to Tier-2 Cluster Exemplars.";
   }
 }
 
@@ -5689,14 +5689,14 @@ function renderStep23(data) {
     document.getElementById("activeStepBadge")
   ].filter(Boolean);
   activeBadges.forEach(badge => {
-    badge.textContent = "ACTIVE PHASE: STEP 23: SUPER-PEER QUERY MATCHING & DOWNWARD ROUTING";
+    badge.textContent = "ACTIVE PHASE: STEP 23: SUPER-PEER QUERY ROUTING TO CLUSTER EXEMPLARS";
     badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-400";
   });
 
   renderSidebarFormula(
-    "Step 23: Super-Peer Query Matching & Downward Routing",
-    "SP_m \\xrightarrow{\\text{Sim}(S_i, S_k) = 1.0} e_k \\quad : \\quad \\text{FWD\\_DISCOVERY\\_MATCH}(\\mathcal{P}_{\\text{authorized}})",
-    "Super-Peers route verified match authorizations downward to Tier-2 Cluster Exemplars.",
+    "Step 23: Super-Peer Semantic Query Routing to Cluster Exemplars",
+    "SP_m \\xrightarrow{\\text{route}} e_k \\quad : \\quad q_i = \\langle id_i, S_i, \\mathbf{w}_i^{\\text{sparse}} \\rangle",
+    "Super-Peers route matching client queries down to Tier-2 Cluster Exemplars.",
     "Step 23: Downward Routing",
     false,
     "purple"
@@ -5705,13 +5705,13 @@ function renderStep23(data) {
   const canvasLabel = document.getElementById("canvasViewLabel");
   if (canvasLabel) {
     canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
-      ? "Super-Peer Downward Forwarding — Hierarchical Overlay (Tier 3 → Tier 2)"
-      : "Super-Peer Downward Forwarding — Physical Topology (Multi-Hop Routes to Exemplars)";
+      ? "Super-Peer Query Routing — Hierarchical Overlay (Tier 3 → Tier 2)"
+      : "Super-Peer Query Routing — Physical Topology (Multi-Hop Routes to Exemplars)";
   }
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
-    statLeaders.innerHTML = '<span>Downward Routing: <span class="text-purple-600 font-bold font-mono">4 Exemplars Authorized</span> | Super-Peers: <span class="text-amber-600 font-bold font-mono">C1, C5, C10</span></span>';
+    statLeaders.innerHTML = '<span>Query Routing: <span class="text-purple-600 font-bold font-mono">7 Exemplar Inboxes</span> | Super-Peers: <span class="text-amber-600 font-bold font-mono">C1, C5, C10</span></span>';
     statLeaders.className = "text-xs font-bold text-slate-800";
   }
 
@@ -5739,7 +5739,7 @@ function renderStep23(data) {
 
   logToTerminal("INFO", "[STEP 23] Super-Peers evaluating ingested queries against cluster registries.");
   logToTerminal("SUCCESS", "[MATCH] Sim(S_i, S_k) = 1.0 confirmed for SC-1, SC-2, SC-3.");
-  logToTerminal("ZONE", "[DOWNWARD] Super-Peers routing FWD_DISCOVERY_MATCH downward to Exemplars C9, C3, C8, C7.");
+  logToTerminal("ZONE", "[DOWNWARD] Super-Peers routing client queries downward to Cluster Exemplars.");
   logToTerminal("TOPOLOGY", "[ROUTING] Tracing physical paths [1, 4, 7, 9], [5, 3], [5, 6, 8], [10, 9, 7].");
 
   const packetTraces = data.packet_traces || data.discovery_packets || data.packets || [];
@@ -6970,10 +6970,10 @@ function animateStep23ExemplarRouting(packetTraces, allNodes) {
   const CYCLE_MS = 3800;
 
   const traces = (packetTraces && packetTraces.length > 0) ? packetTraces : [
-    { from: 1, to: 9, path: [1, 4, 7, 9], fromKey: "top_1", toKey: "mid_9", type: "FWD_DISCOVERY_MATCH", matched_cluster: "8-B", matched_peers: [1, 2], signature: [1, 2, 3], label: "FWD_MATCH (C9)" },
-    { from: 5, to: 3, path: [5, 3], fromKey: "top_5", toKey: "mid_3", type: "FWD_DISCOVERY_MATCH", matched_cluster: "2-B", matched_peers: [4, 5, 8], signature: [4, 5, 6], label: "FWD_MATCH (C3)" },
-    { from: 5, to: 8, path: [5, 6, 8], fromKey: "top_5", toKey: "mid_8", type: "FWD_DISCOVERY_MATCH", matched_cluster: "8-A", matched_peers: [3, 4, 5], signature: [4, 5, 6], label: "FWD_MATCH (C8)" },
-    { from: 10, to: 7, path: [10, 9, 7], fromKey: "top_10", toKey: "mid_7", type: "FWD_DISCOVERY_MATCH", matched_cluster: "4-B", matched_peers: [6, 10], signature: [8, 9, 10], label: "FWD_MATCH (C7)" }
+    { from: 1, to: 9, path: [1, 4, 7, 9], fromKey: "top_1", toKey: "mid_9", type: "FWD_QUERY_TO_EXEMPLAR", origin_client: 2, signature: [1, 2, 3], label: "FWD_QUERY (C2 -> C9)" },
+    { from: 5, to: 3, path: [5, 3], fromKey: "top_5", toKey: "mid_3", type: "FWD_QUERY_TO_EXEMPLAR", origin_client: 4, signature: [4, 5, 6], label: "FWD_QUERY (C4 -> C3)" },
+    { from: 5, to: 8, path: [5, 6, 8], fromKey: "top_5", toKey: "mid_8", type: "FWD_QUERY_TO_EXEMPLAR", origin_client: 3, signature: [4, 5, 6], label: "FWD_QUERY (C3 -> C8)" },
+    { from: 10, to: 7, path: [10, 9, 7], fromKey: "top_10", toKey: "mid_7", type: "FWD_QUERY_TO_EXEMPLAR", origin_client: 6, signature: [7, 9, 10], label: "FWD_QUERY (C6 -> C7)" }
   ];
 
   traces.forEach(t => {
@@ -7037,7 +7037,7 @@ function animateStep23ExemplarRouting(packetTraces, allNodes) {
     // 1. Top Status Banner
     ctx.save();
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: SUPER-PEERS DOWNWARD ROUTING TO EXEMPLARS [FWD_MATCH]";
+    const bannerText = "PHYSICAL TOPOLOGY: SUPER-PEERS DOWNWARD ROUTING TO EXEMPLARS [FWD_QUERY]";
     const bW = ctx.measureText(bannerText).width;
     const bX = canvas.width / 2;
     const bY = 32;
@@ -7127,7 +7127,7 @@ function animateStep23ExemplarRouting(packetTraces, allNodes) {
           ctx.lineWidth = 2.0;
           ctx.stroke();
 
-          drawFloatingTag(ctx, pkt.label || "FWD_MATCH", pt.x, pt.y - 16, "#a855f7", "rgba(15, 23, 42, 0.92)", "#f3e8ff");
+          drawFloatingTag(ctx, pkt.label || "FWD_QUERY", pt.x, pt.y - 16, "#a855f7", "rgba(15, 23, 42, 0.92)", "#f3e8ff");
         }
       } else {
         const arrProg = (tPkt - 0.80) / 0.20;
@@ -7143,7 +7143,7 @@ function animateStep23ExemplarRouting(packetTraces, allNodes) {
           ctx.shadowBlur = 14;
           ctx.stroke();
 
-          drawFloatingTag(ctx, "MATCH_RECEIVED", destPos.x, destPos.y - NODE_RADIUS - 16, "#10b981", "rgba(6, 78, 59, 0.92)", "#6ee7b7");
+          drawFloatingTag(ctx, "QUERY_RECEIVED", destPos.x, destPos.y - NODE_RADIUS - 16, "#10b981", "rgba(6, 78, 59, 0.92)", "#6ee7b7");
         }
       }
     });
@@ -7185,8 +7185,8 @@ function animateStep23ExemplarRouting(packetTraces, allNodes) {
     ctx.save();
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
     const bannerText = tCycle < 0.75
-      ? "DOWNWARD ROUTING: SUPER-PEERS FORWARD AUTHORIZED MATCHES TO TIER-2 EXEMPLARS (TIER 3 → TIER 2)"
-      : "MATCH INGESTION: EXEMPLARS AUTHENTICATE PARTNER SETS (READY FOR LEAF FORWARDING IN STEP 24)";
+      ? "DOWNWARD ROUTING: SUPER-PEERS FORWARD CLIENT QUERIES TO TIER-2 EXEMPLARS (TIER 3 → TIER 2)"
+      : "QUERY INGESTION: CLUSTER EXEMPLARS POPULATE RECEIVED QUERY INBOXES";
     const bW = ctx.measureText(bannerText).width;
     const bX = canvas.width / 2;
     const bY = canvas.height - 24;
@@ -7299,7 +7299,7 @@ function animateStep23ExemplarRouting(packetTraces, allNodes) {
         ctx.lineWidth = 2.0;
         ctx.stroke();
 
-        drawFloatingTag(ctx, pkt.label || "FWD_MATCH", px, py - 16, "#c084fc", "rgba(15, 23, 42, 0.92)", "#f3e8ff");
+        drawFloatingTag(ctx, pkt.label || "FWD_QUERY", px, py - 16, "#c084fc", "rgba(15, 23, 42, 0.92)", "#f3e8ff");
       } else {
         const arrProg = (tPkt - 0.75) / 0.25;
         const rBeacon = 28 + arrProg * 22;
@@ -7311,7 +7311,7 @@ function animateStep23ExemplarRouting(packetTraces, allNodes) {
         ctx.shadowBlur = 14;
         ctx.stroke();
 
-        drawFloatingTag(ctx, "MATCH_INGESTED", pB.renderedX, pB.renderedY - 32, "#10b981", "rgba(6, 78, 59, 0.92)", "#6ee7b7");
+        drawFloatingTag(ctx, "QUERY_INGESTED", pB.renderedX, pB.renderedY - 32, "#10b981", "rgba(6, 78, 59, 0.92)", "#6ee7b7");
       }
     });
     ctx.restore();
@@ -11286,7 +11286,8 @@ function renderNodeModal(node, stepData = currentStepData) {
     } else if (currentStep === 23) {
       if (discoverySection) discoverySection.classList.remove("hidden");
       const isSP = [1, 5, 10].includes(idNum);
-      const isEx = [3, 7, 8, 9].includes(idNum);
+      const isEx = [1, 3, 5, 7, 8, 9, 10].includes(idNum);
+      const isLeaf = !isSP && !isEx;
 
       if (cardStatusBadge) {
         if (isSP) {
@@ -11294,16 +11295,16 @@ function renderNodeModal(node, stepData = currentStepData) {
           cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-900 border-amber-400";
         } else if (isEx) {
           const spId = idNum === 9 ? 1 : (idNum === 7 ? 10 : 5);
-          cardStatusBadge.textContent = `📥 MATCH_RECEIVED_FROM_SP${spId}`;
+          cardStatusBadge.textContent = `📥 QUERIES_RECEIVED_FROM_SP${spId}`;
           cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-purple-100 text-purple-900 border-purple-400";
         } else {
-          cardStatusBadge.textContent = "⏳ AWAITING_LEAF_FORWARDING";
+          cardStatusBadge.textContent = "⏳ QUERY_FORWARDED_AWAITING_MATCH";
           cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-slate-100 text-slate-700 border-slate-300";
         }
       }
 
       if (discoveryBadge) {
-        discoveryBadge.textContent = "STEP 23: DOWNWARD ROUTING";
+        discoveryBadge.textContent = "STEP 23: QUERY ROUTING";
         discoveryBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-purple-100 text-purple-900 border border-purple-300";
       }
 
@@ -11318,76 +11319,139 @@ function renderNodeModal(node, stepData = currentStepData) {
           return `<span class="px-2 py-0.5 rounded font-mono font-bold text-[10px] ${isSelf ? 'bg-purple-600 text-white shadow-xs ring-1 ring-purple-400' : 'bg-white text-purple-900 border border-purple-300'}">C${p}${isSelf ? ' (You)' : ''}</span>`;
         }).join(" ");
 
-        let exemplarInboxHTML = "";
-        if (isEx) {
-          const authInbox = mergedNode?.sp_authorization_inbox || ({
-            9: { authorizing_sp: 1, matched_cluster: "8-B", matched_peers: [1, 2], authorized_partners: [1, 2, 9], signature: [1, 2, 3], path: [1, 4, 7, 9], status: "MATCH_RECEIVED_FROM_SP1", resolution_status: "Ready to forward downward to leaf members in Step 24." },
-            3: { authorizing_sp: 5, matched_cluster: "2-B", matched_peers: [4, 5, 8], authorized_partners: [3, 4, 5, 8], signature: [4, 5, 6], path: [5, 3], status: "MATCH_RECEIVED_FROM_SP5", resolution_status: "Ready to forward downward to leaf members in Step 24." },
-            8: { authorizing_sp: 5, matched_cluster: "8-A", matched_peers: [3, 4, 5], authorized_partners: [3, 4, 5, 8], signature: [4, 5, 6], path: [5, 6, 8], status: "MATCH_RECEIVED_FROM_SP5", resolution_status: "Ready to forward downward to leaf members in Step 24." },
-            7: { authorizing_sp: 10, matched_cluster: "4-B", matched_peers: [6, 10], authorized_partners: [6, 7, 10], signature: [8, 9, 10], path: [10, 9, 7], status: "MATCH_RECEIVED_FROM_SP10", resolution_status: "Ready to forward downward to leaf members in Step 24." }
-          }[idNum]);
+        // Fallback inboxes matching backend deterministic dictionary
+        const FALLBACK_INBOXES = {
+          1: [
+            { origin_client: 2, forwarded_by_sp: 1, indices: [1, 2, 3], sparse_vector: [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], path: "Local Loopback" },
+            { origin_client: 9, forwarded_by_sp: 1, indices: [1, 2, 3], sparse_vector: [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], path: "[9, 7, 4, 1]" }
+          ],
+          9: [
+            { origin_client: 2, forwarded_by_sp: 1, indices: [1, 2, 3], sparse_vector: [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], path: "[1, 4, 7, 9]" }
+          ],
+          3: [
+            { origin_client: 4, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], path: "[5, 3]" },
+            { origin_client: 8, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], path: "[8, 6, 5]" }
+          ],
+          5: [
+            { origin_client: 4, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], path: "Local Loopback" },
+            { origin_client: 3, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], path: "[3, 5]" },
+            { origin_client: 8, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], path: "[8, 6, 5]" }
+          ],
+          8: [
+            { origin_client: 3, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], path: "[5, 6, 8]" },
+            { origin_client: 4, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], path: "[5, 6, 8]" }
+          ],
+          7: [
+            { origin_client: 6, forwarded_by_sp: 10, indices: [7, 9, 10], sparse_vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], path: "[10, 9, 7]" }
+          ],
+          10: [
+            { origin_client: 6, forwarded_by_sp: 10, indices: [7, 9, 10], sparse_vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], path: "Local Loopback" },
+            { origin_client: 7, forwarded_by_sp: 10, indices: [8, 9, 10], sparse_vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], path: "[7, 9, 10]" }
+          ]
+        };
 
-          const authSp = authInbox.authorizing_sp;
-          const authPath = authInbox.path || [];
-          const authStatus = authInbox.resolution_status || "Ready to forward downward to leaf members in Step 24.";
+        const rawInbox = mergedNode?.exemplar_inbox || (stepData?.exemplar_inboxes && (stepData.exemplar_inboxes[idNum] || stepData.exemplar_inboxes[String(idNum)])) || FALLBACK_INBOXES[idNum] || [];
+
+        let exemplarInboxHTML = "";
+        if (isEx && rawInbox.length > 0) {
+          const queryCardsHTML = rawInbox.map((item, qIdx) => {
+            const clientNum = item.origin_client;
+            const spNum = item.forwarded_by_sp;
+            const indices = item.indices || [];
+            const vector = item.sparse_vector || [0,0,0,0,0,0,0,0,0,0];
+            const pathRaw = item.path;
+            const pathStr = Array.isArray(pathRaw) ? pathRaw.map(n => `C${n}`).join(" &rarr; ") : (typeof pathRaw === "string" && pathRaw.startsWith("[") ? JSON.parse(pathRaw.replace(/'/g, '"')).map(n => `C${n}`).join(" &rarr; ") : pathRaw);
+
+            const vectorGridSlots = vector.map((val, dimIdx) => {
+              const dimNum = dimIdx + 1;
+              const numVal = Number(val);
+              const isActive = indices.includes(dimNum) || numVal > 0;
+              if (isActive) {
+                return `
+                  <div class="flex flex-col items-center justify-center p-1 rounded bg-slate-900 border border-emerald-500/80 text-emerald-300 shadow-xs">
+                    <span class="text-[7.5px] font-mono text-cyan-400 font-bold">d${dimNum}</span>
+                    <span class="text-[9.5px] font-mono font-extrabold tracking-tight text-emerald-300">${numVal.toFixed(2)}</span>
+                  </div>
+                `;
+              } else {
+                return `
+                  <div class="flex flex-col items-center justify-center p-1 rounded bg-slate-900/50 border border-slate-800 text-slate-500 opacity-60">
+                    <span class="text-[7.5px] font-mono text-slate-500">d${dimNum}</span>
+                    <span class="text-[9.5px] font-mono font-medium text-slate-500">0.00</span>
+                  </div>
+                `;
+              }
+            }).join("");
+
+            return `
+              <div class="p-2.5 rounded bg-slate-950/80 border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                  <div class="flex items-center gap-1.5">
+                    <span class="px-1.5 py-0.5 rounded font-mono font-bold text-[9.5px] bg-blue-950 text-blue-300 border border-blue-700/70">
+                      Query from Client C${clientNum}
+                    </span>
+                    <span class="text-[8.5px] font-mono text-slate-400">via <span class="font-bold text-amber-300">SP C${spNum}</span></span>
+                  </div>
+                  <span class="text-[8px] font-mono px-1.5 py-0.2 rounded bg-purple-950 text-purple-300 border border-purple-700/60 font-bold">
+                    Signature: [${indices.join(", ")}]
+                  </span>
+                </div>
+
+                <div class="text-[8.5px] font-mono flex items-center justify-between text-slate-400">
+                  <span>Incoming Physical Route:</span>
+                  <span class="font-bold text-purple-300 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">${pathStr}</span>
+                </div>
+
+                <div class="space-y-1">
+                  <div class="flex items-center justify-between text-[8px] text-slate-400">
+                    <span class="font-bold text-slate-300">10D Sparse Vector Payload (w&#770;):</span>
+                    <span class="text-emerald-400 font-bold">P = 3 Dimensions</span>
+                  </div>
+                  <div class="grid grid-cols-5 sm:grid-cols-10 gap-1 pt-0.5">
+                    ${vectorGridSlots}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join("");
 
           exemplarInboxHTML = `
             <div class="p-3 bg-slate-900/95 text-slate-100 rounded-lg border border-purple-500/60 shadow-md space-y-2.5 backdrop-blur-sm">
               <div class="flex items-center justify-between border-b border-slate-700/70 pb-1.5">
                 <span class="text-[10.5px] font-mono font-extrabold text-purple-300 flex items-center gap-1.5">
                   <span class="inline-block w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-                  Super-Peer Authorization Inbox
+                  Tier-2 Exemplar Received Queries
                 </span>
-                <span class="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-purple-950/90 text-purple-300 border border-purple-700/80 font-bold">FWD_DISCOVERY_MATCH</span>
+                <span class="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-purple-950/90 text-purple-300 border border-purple-700/80 font-bold">${rawInbox.length} Ingested</span>
               </div>
-              <div class="grid grid-cols-1 gap-1.5 text-[9.5px] font-mono">
-                <div class="flex justify-between items-center text-slate-300">
-                  <span class="text-slate-400">Authorizing Super-Peer:</span>
-                  <span class="font-bold text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-700/60">🌟 Super-Peer C${authSp}</span>
-                </div>
-                <div class="flex justify-between items-center text-slate-300">
-                  <span class="text-slate-400">Matched Affinity Cluster:</span>
-                  <span class="font-bold text-purple-300">${authInbox.matched_cluster || 'N/A'}</span>
-                </div>
-                <div class="flex justify-between items-center text-slate-300">
-                  <span class="text-slate-400">Verified Semantic Classes:</span>
-                  <span class="font-bold text-cyan-300">[${(authInbox.signature || sigClasses).join(", ")}] (Sim = 1.0)</span>
-                </div>
-                <div class="pt-1 border-t border-slate-800">
-                  <div class="text-slate-400 text-[8.5px] mb-1">Multi-Hop Inbound Path from SP:</div>
-                  <div class="bg-slate-950/90 p-1.5 rounded border border-slate-800 text-purple-300 font-bold break-words">
-                    ${authPath.map(n => `C${n}`).join(" &rarr; ")}
-                  </div>
-                </div>
-                <div class="pt-1.5 border-t border-slate-800 space-y-1">
-                  <div class="flex items-center justify-between text-[8.5px] text-slate-400">
-                    <span class="font-bold text-slate-300">Received Matched Partner Set:</span>
-                    <span class="text-emerald-400 font-bold">${partners.length} Authorized Peers</span>
-                  </div>
-                  <div class="flex flex-wrap gap-1.5 pt-0.5">
-                    ${partnerBadges}
-                  </div>
-                </div>
-                <div class="mt-1 p-2 rounded bg-emerald-950/70 border border-emerald-500/50 text-emerald-300 text-[8.5px] flex items-center justify-between font-bold">
-                  <span class="flex items-center gap-1">
-                    <span>✅</span>
-                    <span>Status: ${authStatus}</span>
-                  </span>
-                </div>
+              <div class="space-y-2">
+                ${queryCardsHTML}
               </div>
             </div>
           `;
         }
 
+        // Super-Peer Decision & Dispatch Engine (for SP nodes 1, 5, 10)
         let spHTML = "";
         if (isSP) {
           const spDispatches = {
-            1: [{ target_ex: 9, path: [1, 4, 7, 9], peers: [1, 2], classes: [1, 2, 3] }],
-            5: [
-              { target_ex: 3, path: [5, 3], peers: [4, 5, 8], classes: [4, 5, 6] },
-              { target_ex: 8, path: [5, 6, 8], peers: [3, 4, 5], classes: [4, 5, 6] }
+            1: [
+              { target_ex: 9, path: [1, 4, 7, 9], origin_client: 2, signature: [1, 2, 3], classes: "1, 2, 3" },
+              { target_ex: 1, path: "Local Loopback", origin_client: 2, signature: [1, 2, 3], classes: "1, 2, 3" },
+              { target_ex: 1, path: "[9, 7, 4, 1]", origin_client: 9, signature: [1, 2, 3], classes: "1, 2, 3" }
             ],
-            10: [{ target_ex: 7, path: [10, 9, 7], peers: [6, 10], classes: [8, 9, 10] }]
+            5: [
+              { target_ex: 3, path: [5, 3], origin_client: 4, signature: [4, 5, 6], classes: "4, 5, 6" },
+              { target_ex: 8, path: [5, 6, 8], origin_client: 3, signature: [4, 5, 6], classes: "4, 5, 6" },
+              { target_ex: 5, path: "Local Loopback", origin_client: 4, signature: [4, 5, 6], classes: "4, 5, 6" },
+              { target_ex: 5, path: "[3, 5]", origin_client: 3, signature: [4, 5, 6], classes: "4, 5, 6" },
+              { target_ex: 5, path: "[8, 6, 5]", origin_client: 8, signature: [4, 5, 6], classes: "4, 5, 6" }
+            ],
+            10: [
+              { target_ex: 7, path: [10, 9, 7], origin_client: 6, signature: [7, 9, 10], classes: "7, 9, 10" },
+              { target_ex: 10, path: "Local Loopback", origin_client: 6, signature: [7, 9, 10], classes: "7, 9, 10" },
+              { target_ex: 10, path: "[7, 9, 10]", origin_client: 7, signature: [8, 9, 10], classes: "8, 9, 10" }
+            ]
           }[idNum] || [];
 
           spHTML = `
@@ -11395,33 +11459,36 @@ function renderNodeModal(node, stepData = currentStepData) {
               <div class="flex items-center justify-between border-b border-amber-200 pb-1.5">
                 <span class="text-[10.5px] font-mono font-extrabold text-amber-950 flex items-center gap-1.5">
                   <span>🚀</span>
-                  <span>Super-Peer Matchmaking & Downward Dispatch</span>
+                  <span>Super-Peer Decision &amp; Dispatch Engine</span>
                 </span>
                 <span class="px-2 py-0.5 rounded text-[8.5px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300">
                   DISPATCH COMPLETE
                 </span>
               </div>
               <div class="text-[9px] font-mono text-slate-700">
-                Evaluation: <span class="text-emerald-700 font-bold">Sim(S_i, S_k) = 1.0</span> on Classes [${sigClasses.join(", ")}].
+                Evaluation: <span class="text-emerald-700 font-bold">Sim(S_i, S_k) = 1.0</span> across Super-Cluster registry.
               </div>
               <div class="space-y-1.5 pt-0.5">
-                ${spDispatches.map(d => `
-                  <div class="p-2 bg-amber-50/70 rounded border border-amber-200 text-[9px] font-mono space-y-0.5">
-                    <div class="flex justify-between items-center text-amber-950 font-bold">
-                      <span>Forwarded Match &rarr; Exemplar C${d.target_ex}</span>
-                      <span class="text-[8px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-900 border border-purple-300">FWD_MATCH</span>
+                ${spDispatches.map(d => {
+                  const pStr = Array.isArray(d.path) ? d.path.map(n => `C${n}`).join(" &rarr; ") : d.path;
+                  return `
+                    <div class="p-2 bg-amber-50/70 rounded border border-amber-200 text-[9px] font-mono space-y-0.5">
+                      <div class="flex justify-between items-center text-amber-950 font-bold">
+                        <span>Forwarded Client C${d.origin_client} Query &rarr; Exemplar C${d.target_ex}</span>
+                        <span class="text-[8px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-900 border border-purple-300 font-bold">FWD_QUERY</span>
+                      </div>
+                      <div class="text-slate-600 text-[8.5px]">Path: <span class="font-bold text-slate-800">${pStr}</span></div>
+                      <div class="text-emerald-800 font-bold text-[8.5px]">Target Classes: [${d.classes}]</div>
                     </div>
-                    <div class="text-slate-600 text-[8.5px]">Path: ${d.path.map(n => `C${n}`).join(" &rarr; ")}</div>
-                    <div class="text-emerald-800 font-bold text-[8.5px]">Matched Peers: [${d.peers.map(p => `C${p}`).join(", ")}]</div>
-                  </div>
-                `).join("")}
+                  `;
+                }).join("")}
               </div>
             </div>
           `;
         }
 
         let leafHTML = "";
-        if (!isSP && !isEx) {
+        if (isLeaf) {
           const exemplarTarget = idNum === 2 ? 1 : (idNum === 4 ? 5 : 7);
           leafHTML = `
             <div class="p-3 bg-white rounded-lg border border-slate-300 shadow-xs space-y-2">
@@ -11431,14 +11498,14 @@ function renderNodeModal(node, stepData = currentStepData) {
                   <span>Leaf Member State</span>
                 </span>
                 <span class="px-2 py-0.5 rounded text-[8.5px] font-mono font-bold bg-slate-100 text-slate-800 border border-slate-300">
-                  AWAITING_LEAF_FORWARDING
+                  QUERY_FORWARDED_AWAITING_MATCH
                 </span>
               </div>
               <div class="text-[9.5px] font-mono text-slate-700">
                 Assigned Exemplar: <span class="font-bold text-amber-700">⭐ Node C${exemplarTarget}</span>
               </div>
               <div class="p-2 rounded bg-slate-50 border border-slate-200 text-[8.5px] font-mono text-slate-600">
-                Super-Peer match responses have reached Tier-2 Exemplars. Exemplar C${exemplarTarget} will forward the authorized partner set downward to this leaf node in Step 24.
+                Outbound discovery query dispatched to Super-Peer has been routed to Tier-2 Cluster Exemplars. Primed for federated model partner aggregation in Step 24.
               </div>
             </div>
           `;
@@ -11446,7 +11513,7 @@ function renderNodeModal(node, stepData = currentStepData) {
 
         discoveryContent.innerHTML = `
           <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
-            <!-- Super-Cluster Match Header -->
+            <!-- Super-Cluster Header -->
             <div class="p-2.5 rounded-lg border border-purple-200 bg-purple-50/70 space-y-1">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-extrabold text-purple-950 flex items-center gap-1">
@@ -11459,13 +11526,13 @@ function renderNodeModal(node, stepData = currentStepData) {
               </div>
             </div>
 
-            <!-- Exemplar Super-Peer Authorization Inbox (if Exemplar) -->
-            ${exemplarInboxHTML}
-
-            <!-- Super-Peer Matchmaking & Dispatch Details (if Super-Peer) -->
+            <!-- Super-Peer Decision & Dispatch Engine (if Super-Peer: 1, 5, 10) -->
             ${spHTML}
 
-            <!-- Leaf Member Status (if Leaf) -->
+            <!-- Tier-2 Exemplar Received Queries (if Exemplar: 1, 3, 5, 7, 8, 9, 10) -->
+            ${exemplarInboxHTML}
+
+            <!-- Leaf Member Status (if Leaf: 2, 4, 6) -->
             ${leafHTML}
           </div>
         `;

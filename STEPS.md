@@ -851,38 +851,89 @@ Trace Packets:
 
 ---
 
-## Step 23 — Super-Peer Query Routing & Forwarding to Target Exemplars
+## Step 23 — Super-Peer Semantic Query Routing to Cluster Exemplars
 
-Super-Peers evaluate the ingested discovery queries against their local cluster registries and route authorized discovery match responses downward to Cluster Exemplars (Tier 3 -> Tier 2).
+Super-Peers evaluate queries ingested during Step 22 and route the underlying query payloads down to Cluster Exemplars (Tier 3 -> Tier 2) over verified physical routes.
 
-### 1. Semantic Match Verification
-$$\text{Sim}(S_i, S_{e_k}) = \frac{\vert{}S_i \cap S_{e_k}\vert{}}{P} = 1.0$$
-- Super-Peer 1: Authorizes SC-1 exchange with Exemplar C9.
-- Super-Peer 5: Authorizes SC-2 exchange with Exemplars C3 and C8.
-- Super-Peer 10: Authorizes SC-3 exchange with Exemplar C7.
+### 1. Forwarded Packet Traces
+- $C_1 \xrightarrow{\text{path } [1, 4, 7, 9]} C_9$: Forwards query of client $C_2$ (Signature $[1, 2, 3]$)
+- $C_5 \xrightarrow{\text{path } [5, 3]} C_3$: Forwards queries of clients $C_4, C_8$ (Signature $[4, 5, 6]$)
+- $C_5 \xrightarrow{\text{path } [5, 6, 8]} C_8$: Forwards queries of clients $C_3, C_4$ (Signature $[4, 5, 6]$)
+- $C_{10} \xrightarrow{\text{path } [10, 9, 7]} C_7$: Forwards query of client $C_6$ (Signature $[8, 9, 10]$)
+- Local Exemplar Loopbacks: $C_1, C_5, C_{10}$ route matching queries internally into their own Tier-2 Exemplar Inboxes.
 
-### 2. Multi-Hop Forwarding Routes
-- $C_1 \to C_9$: Path $[1, 4, 7, 9]$ (3 hops)
-- $C_5 \to C_3$: Path $[5, 3]$ (1 hop)
-- $C_5 \to C_8$: Path $[5, 6, 8]$ (2 hops)
-- $C_{10} \to C_7$: Path $[10, 9, 7]$ (2 hops)
+### 2. Multi-Hop Forwarding Routes & Query Routing Matrix
+Every Super-Peer identifies the origin client of each query, matches its signature against cluster registries, and dispatches the payload to the responsible Cluster Exemplars:
+
+- **Super-Peer 1 (Classes 1, 2, 3 - Aviation & Vehicles)**:
+  - Ingested incoming queries:
+    - Node $C_2$: Signature $[1, 2, 3]$, sparse vector $[0.19, 0.24, 0.57, 0, \dots]$
+    - Node $C_9$: Signature $[1, 2, 3]$, sparse vector $[0.45, 0.32, 0.23, 0, \dots]$
+  - Destination Exemplars:
+    - **Local Exemplar 1**: Direct local loopback registers queries of $C_2$ and $C_9$.
+    - **Exemplar 9**: SP 1 relays query of $C_2$ over physical multi-hop path $[1, 4, 7, 9]$.
+
+- **Super-Peer 5 (Classes 4, 5, 6 - Animals)**:
+  - Ingested incoming queries:
+    - Nodes $C_3, C_4, C_8$ with Signature $[4, 5, 6]$
+  - Destination Exemplars:
+    - **Local Exemplar 5**: Direct local loopback registers queries of $C_4, C_3, C_8$.
+    - **Exemplar 3**: SP 5 sends queries of $C_4, C_8$ via direct underlay path $[5, 3]$.
+    - **Exemplar 8**: SP 5 sends queries of $C_3, C_4$ via 2-hop path $[5, 6, 8]$.
+
+- **Super-Peer 10 (Classes 8, 9, 10 - Heavy Transport & Amphibians)**:
+  - Ingested incoming queries:
+    - Nodes $C_6$ (Signature $[7, 9, 10]$) and $C_7$ (Signature $[8, 9, 10]$)
+  - Destination Exemplars:
+    - **Local Exemplar 10**: Direct local loopback registers queries of $C_6$ and $C_7$.
+    - **Exemplar 7**: SP 10 relays query of $C_6$ over physical route $[10, 9, 7]$.
 
 ### 3. Trace Packets
-- `{"from": 1, "to": 9, "path": [1, 4, 7, 9], "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "8-B", "matched_peers": [1, 2], "signature": [1, 2, 3], "label": "FWD_MATCH (C9)"}`
-- `{"from": 5, "to": 3, "path": [5, 3], "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "2-B", "matched_peers": [4, 5, 8], "signature": [4, 5, 6], "label": "FWD_MATCH (C3)"}`
-- `{"from": 5, "to": 8, "path": [5, 6, 8], "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "8-A", "matched_peers": [3, 4, 5], "signature": [4, 5, 6], "label": "FWD_MATCH (C8)"}`
-- `{"from": 10, "to": 7, "path": [10, 9, 7], "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "4-B", "matched_peers": [6, 10], "signature": [8, 9, 10], "label": "FWD_MATCH (C7)"}`
+```json
+[
+  {
+    "from": 1, "to": 9, "path": [1, 4, 7, 9],
+    "type": "FWD_QUERY_TO_EXEMPLAR",
+    "origin_client": 2,
+    "signature": [1, 2, 3],
+    "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    "label": "FWD_QUERY (C2 -> C9)"
+  },
+  {
+    "from": 5, "to": 3, "path": [5, 3],
+    "type": "FWD_QUERY_TO_EXEMPLAR",
+    "origin_client": 4,
+    "signature": [4, 5, 6],
+    "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0],
+    "label": "FWD_QUERY (C4 -> C3)"
+  },
+  {
+    "from": 5, "to": 8, "path": [5, 6, 8],
+    "type": "FWD_QUERY_TO_EXEMPLAR",
+    "origin_client": 3,
+    "signature": [4, 5, 6],
+    "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0],
+    "label": "FWD_QUERY (C3 -> C8)"
+  },
+  {
+    "from": 10, "to": 7, "path": [10, 9, 7],
+    "type": "FWD_QUERY_TO_EXEMPLAR",
+    "origin_client": 6,
+    "signature": [7, 9, 10],
+    "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24],
+    "label": "FWD_QUERY (C6 -> C7)"
+  }
+]
+```
 
-### 4. Peer States & Authorization Inboxes
-- **Exemplar C9**: `status: "MATCH_RECEIVED_FROM_SP1"`, `authorized_partners: [1, 2, 9]`
-- **Exemplar C3**: `status: "MATCH_RECEIVED_FROM_SP5"`, `authorized_partners: [3, 4, 5, 8]`
-- **Exemplar C8**: `status: "MATCH_RECEIVED_FROM_SP5"`, `authorized_partners: [3, 4, 5, 8]`
-- **Exemplar C7**: `status: "MATCH_RECEIVED_FROM_SP10"`, `authorized_partners: [6, 7, 10]`
-- **Super-Peers (C1, C5, C10)**: `status: "SUPER_PEER_DISPATCH_COMPLETE"`
+### 4. Dual-Role Nodes & Exemplar Inboxes
+- **Dual-Role Nodes (1, 5, 10)**: Operate simultaneously as Tier-3 Super-Peers (coordinating query matchmaking and dispatch) and Tier-2 Cluster Exemplars (storing loopback ingested client queries in their exemplar inbox).
+- **Cluster Exemplars (1, 3, 5, 7, 8, 9, 10)**: Ingest forwarded queries into `exemplar_inboxes` containing origin client ID, forwarding Super-Peer, requested signature, 10D sparse weight vectors, and arrival paths.
 
 ### 5. Dual-View Visualizations
-- **Figure 3(f) View**: Match packets travel from Tier 3 Super-Peers down the dashed lines to Tier 2 Exemplars.
-- **Physical View**: Packets traverse strictly along `[1, 4, 7, 9]`, `[5, 3]`, `[5, 6, 8]`, and `[10, 9, 7]` with label `"FWD_MATCH"`.
+- **Figure 3(f) View**: Query packets travel down from Tier 3 Super-Peers along dashed lines to Tier 2 Exemplars with tag `FWD_QUERY`.
+- **Physical View**: Packets traverse strictly along `[1, 4, 7, 9]`, `[5, 3]`, `[5, 6, 8]`, and `[10, 9, 7]` with tag `FWD_QUERY`.
+
 
 
 

@@ -4557,115 +4557,141 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "sparse_payload_bytes": 15,
         }
     elif step_number == 23:
-        # Step 23: Super-Peer Query Routing & Forwarding to Target Exemplars
+        # Step 23: Super-Peer Semantic Query Routing to Cluster Exemplars
         step22_data = _get_10node_step_data_raw(22)
         step23_nodes = copy.deepcopy(step22_data["nodes"])
 
-        # Packet traces: Super-Peers forward authorized matches downward to Tier-2 Exemplars
+        # Packet traces: Super-Peers forward client query payloads downward to Tier-2 Exemplars
         packet_traces = [
             {
                 "from": 1, "to": 9, "path": [1, 4, 7, 9],
-                "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "8-B",
-                "matched_peers": [1, 2], "signature": [1, 2, 3], "label": "FWD_MATCH (C9)"
+                "type": "FWD_QUERY_TO_EXEMPLAR",
+                "origin_client": 2,
+                "signature": [1, 2, 3],
+                "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                "label": "FWD_QUERY (C2 -> C9)"
             },
             {
                 "from": 5, "to": 3, "path": [5, 3],
-                "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "2-B",
-                "matched_peers": [4, 5, 8], "signature": [4, 5, 6], "label": "FWD_MATCH (C3)"
+                "type": "FWD_QUERY_TO_EXEMPLAR",
+                "origin_client": 4,
+                "signature": [4, 5, 6],
+                "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0],
+                "label": "FWD_QUERY (C4 -> C3)"
             },
             {
                 "from": 5, "to": 8, "path": [5, 6, 8],
-                "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "8-A",
-                "matched_peers": [3, 4, 5], "signature": [4, 5, 6], "label": "FWD_MATCH (C8)"
+                "type": "FWD_QUERY_TO_EXEMPLAR",
+                "origin_client": 3,
+                "signature": [4, 5, 6],
+                "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0],
+                "label": "FWD_QUERY (C3 -> C8)"
             },
             {
                 "from": 10, "to": 7, "path": [10, 9, 7],
-                "type": "FWD_DISCOVERY_MATCH", "matched_cluster": "4-B",
-                "matched_peers": [6, 10], "signature": [8, 9, 10], "label": "FWD_MATCH (C7)"
+                "type": "FWD_QUERY_TO_EXEMPLAR",
+                "origin_client": 6,
+                "signature": [7, 9, 10],
+                "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24],
+                "label": "FWD_QUERY (C6 -> C7)"
             }
         ]
 
-        EXEMPLAR_AUTH_INBOXES = {
-            9: {
-                "sp_id": 1,
-                "authorizing_sp": 1,
-                "matched_cluster": "8-B",
-                "matched_peers": [1, 2],
-                "authorized_partners": [1, 2, 9],
-                "signature": [1, 2, 3],
-                "path": [1, 4, 7, 9],
-                "status": "MATCH_RECEIVED_FROM_SP1",
-                "resolution_status": "Ready to forward downward to leaf members in Step 24.",
-            },
-            3: {
-                "sp_id": 5,
-                "authorizing_sp": 5,
-                "matched_cluster": "2-B",
-                "matched_peers": [4, 5, 8],
-                "authorized_partners": [3, 4, 5, 8],
-                "signature": [4, 5, 6],
-                "path": [5, 3],
-                "status": "MATCH_RECEIVED_FROM_SP5",
-                "resolution_status": "Ready to forward downward to leaf members in Step 24.",
-            },
-            8: {
-                "sp_id": 5,
-                "authorizing_sp": 5,
-                "matched_cluster": "8-A",
-                "matched_peers": [3, 4, 5],
-                "authorized_partners": [3, 4, 5, 8],
-                "signature": [4, 5, 6],
-                "path": [5, 6, 8],
-                "status": "MATCH_RECEIVED_FROM_SP5",
-                "resolution_status": "Ready to forward downward to leaf members in Step 24.",
-            },
-            7: {
-                "sp_id": 10,
-                "authorizing_sp": 10,
-                "matched_cluster": "4-B",
-                "matched_peers": [6, 10],
-                "authorized_partners": [6, 7, 10],
-                "signature": [8, 9, 10],
-                "path": [10, 9, 7],
-                "status": "MATCH_RECEIVED_FROM_SP10",
-                "resolution_status": "Ready to forward downward to leaf members in Step 24.",
-            },
+        # Exemplar Inboxes in Step 23 (originating client queries received by each Cluster Exemplar)
+        exemplar_inboxes = {
+            1: [
+                {"origin_client": 2, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "Local Loopback"},
+                {"origin_client": 9, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "[9, 7, 4, 1]"}
+            ],
+            9: [
+                {"origin_client": 2, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "[1, 4, 7, 9]"}
+            ],
+            3: [
+                {"origin_client": 4, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": "[5, 3]"},
+                {"origin_client": 8, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "path": "[8, 6, 5]"}
+            ],
+            5: [
+                {"origin_client": 4, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": "Local Loopback"},
+                {"origin_client": 3, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "path": "[3, 5]"},
+                {"origin_client": 8, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "path": "[8, 6, 5]"}
+            ],
+            8: [
+                {"origin_client": 3, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "path": "[5, 6, 8]"},
+                {"origin_client": 4, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": "[5, 6, 8]"}
+            ],
+            7: [
+                {"origin_client": 6, "forwarded_by_sp": 10, "indices": [7, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "path": "[10, 9, 7]"}
+            ],
+            10: [
+                {"origin_client": 6, "forwarded_by_sp": 10, "indices": [7, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "path": "Local Loopback"},
+                {"origin_client": 7, "forwarded_by_sp": 10, "indices": [8, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], "path": "[7, 9, 10]"}
+            ]
+        }
+
+        # Dispatch engine details per Super-Peer
+        SP_DISPATCH_RECORDS = {
+            1: [
+                {"target_ex": 9, "path": [1, 4, 7, 9], "origin_client": 2, "signature": [1, 2, 3], "classes": "1, 2, 3"},
+                {"target_ex": 1, "path": "Local Loopback", "origin_client": 2, "signature": [1, 2, 3], "classes": "1, 2, 3"},
+                {"target_ex": 1, "path": "[9, 7, 4, 1]", "origin_client": 9, "signature": [1, 2, 3], "classes": "1, 2, 3"},
+            ],
+            5: [
+                {"target_ex": 3, "path": [5, 3], "origin_client": 4, "signature": [4, 5, 6], "classes": "4, 5, 6"},
+                {"target_ex": 8, "path": [5, 6, 8], "origin_client": 3, "signature": [4, 5, 6], "classes": "4, 5, 6"},
+                {"target_ex": 5, "path": "Local Loopback", "origin_client": 4, "signature": [4, 5, 6], "classes": "4, 5, 6"},
+                {"target_ex": 5, "path": "[3, 5]", "origin_client": 3, "signature": [4, 5, 6], "classes": "4, 5, 6"},
+                {"target_ex": 5, "path": "[8, 6, 5]", "origin_client": 8, "signature": [4, 5, 6], "classes": "4, 5, 6"},
+            ],
+            10: [
+                {"target_ex": 7, "path": [10, 9, 7], "origin_client": 6, "signature": [7, 9, 10], "classes": "7, 9, 10"},
+                {"target_ex": 10, "path": "Local Loopback", "origin_client": 6, "signature": [7, 9, 10], "classes": "7, 9, 10"},
+                {"target_ex": 10, "path": "[7, 9, 10]", "origin_client": 7, "signature": [8, 9, 10], "classes": "8, 9, 10"},
+            ]
         }
 
         for n in step23_nodes:
             nid = n["id"]
             if nid in [1, 5, 10]:
+                # Dual-role: Both Super-Peer AND Cluster Exemplar
                 n["status"] = "SUPER_PEER_DISPATCH_COMPLETE"
                 n["sp_dispatch_status"] = "SUPER_PEER_DISPATCH_COMPLETE"
                 n["is_super_peer"] = True
+                n["is_exemplar"] = True
+                n["exemplar_inbox"] = exemplar_inboxes.get(nid, [])
+                n["exemplar_received_queries"] = exemplar_inboxes.get(nid, [])
+                n["sp_dispatches"] = SP_DISPATCH_RECORDS.get(nid, [])
                 n["authorized_partners"] = n.get("federation_partners", [])
             elif nid in [3, 7, 8, 9]:
-                auth_info = EXEMPLAR_AUTH_INBOXES[nid]
-                n["status"] = auth_info["status"]
-                n["authorized_partners"] = auth_info["authorized_partners"]
-                n["sp_authorization_inbox"] = auth_info
-                n["sp_authorization"] = auth_info
+                sp_source = 1 if nid == 9 else (10 if nid == 7 else 5)
+                n["status"] = f"QUERIES_RECEIVED_FROM_SP{sp_source}"
+                n["is_super_peer"] = False
                 n["is_exemplar"] = True
+                n["exemplar_inbox"] = exemplar_inboxes.get(nid, [])
+                n["exemplar_received_queries"] = exemplar_inboxes.get(nid, [])
+                n["authorized_partners"] = n.get("federation_partners", [])
             else:
-                n["status"] = "AWAITING_LEAF_FORWARDING"
+                n["status"] = "QUERY_FORWARDED_AWAITING_MATCH"
+                n["is_leaf"] = True
+                n["is_super_peer"] = False
+                n["is_exemplar"] = False
                 n["authorized_partners"] = n.get("federation_partners", [])
 
         terminal_logs = [
-            "[SUPER-PEER EVALUATION] Super-Peers (C1, C5, C10) evaluate Sim(S_i, S_k) = 1.0 against semantic registries.",
-            "[DOWNWARD ROUTING] SP C1 dispatches FWD_DISCOVERY_MATCH for SC-1 to Exemplar C9 along path [1, 4, 7, 9].",
-            "[DOWNWARD ROUTING] SP C5 dispatches FWD_DISCOVERY_MATCH for SC-2 to Exemplar C3 [5, 3] and Exemplar C8 [5, 6, 8].",
-            "[DOWNWARD ROUTING] SP C10 dispatches FWD_DISCOVERY_MATCH for SC-3 to Exemplar C7 along path [10, 9, 7].",
-            "[EXEMPLAR INGESTION] Exemplars (C3, C7, C8, C9) authenticate received partner sets into local authorization inboxes.",
-            "[DISPATCH STATUS] Tier-3 Super-Peers completed matchmaking dispatch; Exemplars primed to propagate down to leaf peers in Step 24.",
+            "[SUPER-PEER MATCHMAKING] Super-Peers (C1, C5, C10) evaluate Sim(S_i, S_k) = 1.0 on client queries.",
+            "[SUPER-PEER 1] Routes C2 query to Exemplar C9 via [1, 4, 7, 9]; self-registers C2 & C9 in local Tier-2 inbox.",
+            "[SUPER-PEER 5] Routes C4 query to Exemplar C3 [5, 3] and C3 query to Exemplar C8 [5, 6, 8]; self-registers C3, C4, C8.",
+            "[SUPER-PEER 10] Routes C6 query to Exemplar C7 via [10, 9, 7]; self-registers C6 & C7 in local Tier-2 inbox.",
+            "[EXEMPLAR INGESTION] Cluster Exemplars (C1, C3, C5, C7, C8, C9, C10) populate Tier-2 received query inboxes.",
+            "[STEP 23 COMPLETE] Semantic client queries authoritatively routed to all designated Cluster Exemplars.",
         ]
 
         return {
             "step": 23,
-            "title": "Step 23: Super-Peer Query Routing & Forwarding to Target Exemplars",
-            "phase_badge": "ACTIVE PHASE: STEP 23: SUPER-PEER QUERY MATCHING & DOWNWARD ROUTING",
-            "description": "Super-Peers evaluate ingested discovery queries against cluster registries and route authorized discovery match responses downward to Cluster Exemplars (Tier 3 -> Tier 2).",
-            "formula": r"SP_m \xrightarrow{\text{Sim}(S_i, S_k) = 1.0} e_k \quad : \quad \text{FWD\_DISCOVERY\_MATCH}(\mathcal{P}_{\text{authorized}})",
-            "formula_desc": "Super-Peers route verified match authorizations downward to Tier-2 Cluster Exemplars.",
+            "title": "Step 23: Super-Peer Semantic Query Routing to Cluster Exemplars",
+            "phase_badge": "ACTIVE PHASE: STEP 23: SUPER-PEER QUERY ROUTING TO CLUSTER EXEMPLARS",
+            "description": "Super-Peers evaluate queries ingested during Step 22 and route the underlying query payloads down to Cluster Exemplars (Tier 3 -> Tier 2) over verified physical routes.",
+            "formula": r"SP_m \xrightarrow{\text{route}} e_k \quad : \quad q_i = \langle id_i, S_i, \mathbf{w}_i^{\text{sparse}} \rangle",
+            "formula_desc": "Super-Peers route matching client queries down to Tier-2 Cluster Exemplars.",
             "nodes": step23_nodes,
             "edges": step22_data["edges"],
             "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
@@ -4679,8 +4705,8 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "unique_edges": len(step22_data["edges"]),
             "active_leaders": [1, 5, 10],
             "super_peers": [1, 5, 10],
-            "exemplars": [3, 7, 8, 9],
-            "exemplar_auth_inboxes": EXEMPLAR_AUTH_INBOXES,
+            "exemplars": [1, 3, 5, 7, 8, 9, 10],
+            "exemplar_inboxes": exemplar_inboxes,
             "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
             "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
             "zones": {
