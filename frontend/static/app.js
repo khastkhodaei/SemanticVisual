@@ -1511,7 +1511,7 @@ function updateUIHeaders(data) {
     if (stepDesc) stepDesc.textContent = "Clients dispatch REQ_PEER_DISCOVERY up the SON hierarchy. Exemplars forward queries over underlay routes to Super-Peers (C1, C5, C10), which resolve authorized Model Exchange Partner Sets per Super-Cluster.";
   } else if (step === 23) {
     activeBadges.forEach(badge => {
-      badge.textContent = "ACTIVE PHASE: STEP 23: SUPER-PEER QUERY ROUTING TO CLUSTER EXEMPLARS";
+      badge.textContent = "ACTIVE PHASE: STEP 23: SUPER-PEER SEMANTIC QUERY ROUTING TO EXEMPLARS";
       badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-400";
     });
     if (stepTag) stepTag.textContent = "STEP 23 / DOWNWARD ROUTING";
@@ -5689,7 +5689,7 @@ function renderStep23(data) {
     document.getElementById("activeStepBadge")
   ].filter(Boolean);
   activeBadges.forEach(badge => {
-    badge.textContent = "ACTIVE PHASE: STEP 23: SUPER-PEER QUERY ROUTING TO CLUSTER EXEMPLARS";
+    badge.textContent = "ACTIVE PHASE: STEP 23: SUPER-PEER SEMANTIC QUERY ROUTING TO EXEMPLARS";
     badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-purple-50 text-purple-900 border border-purple-400";
   });
 
@@ -11322,7 +11322,7 @@ function renderNodeModal(node, stepData = currentStepData) {
         // Fallback inboxes matching backend deterministic dictionary
         const FALLBACK_INBOXES = {
           1: [
-            { origin_client: 2, forwarded_by_sp: 1, indices: [1, 2, 3], sparse_vector: [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], path: "Local Loopback" },
+            { origin_client: 2, forwarded_by_sp: 1, indices: [1, 2, 3], sparse_vector: [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], path: "Internal Loopback" },
             { origin_client: 9, forwarded_by_sp: 1, indices: [1, 2, 3], sparse_vector: [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], path: "[9, 7, 4, 1]" }
           ],
           9: [
@@ -11333,7 +11333,7 @@ function renderNodeModal(node, stepData = currentStepData) {
             { origin_client: 8, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], path: "[8, 6, 5]" }
           ],
           5: [
-            { origin_client: 4, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], path: "Local Loopback" },
+            { origin_client: 4, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], path: "Internal Loopback" },
             { origin_client: 3, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], path: "[3, 5]" },
             { origin_client: 8, forwarded_by_sp: 5, indices: [4, 5, 6], sparse_vector: [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], path: "[8, 6, 5]" }
           ],
@@ -11345,7 +11345,7 @@ function renderNodeModal(node, stepData = currentStepData) {
             { origin_client: 6, forwarded_by_sp: 10, indices: [7, 9, 10], sparse_vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], path: "[10, 9, 7]" }
           ],
           10: [
-            { origin_client: 6, forwarded_by_sp: 10, indices: [7, 9, 10], sparse_vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], path: "Local Loopback" },
+            { origin_client: 6, forwarded_by_sp: 10, indices: [7, 9, 10], sparse_vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], path: "Internal Loopback" },
             { origin_client: 7, forwarded_by_sp: 10, indices: [8, 9, 10], sparse_vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], path: "[7, 9, 10]" }
           ]
         };
@@ -11420,7 +11420,7 @@ function renderNodeModal(node, stepData = currentStepData) {
               <div class="flex items-center justify-between border-b border-slate-700/70 pb-1.5">
                 <span class="text-[10.5px] font-mono font-extrabold text-purple-300 flex items-center gap-1.5">
                   <span class="inline-block w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-                  Tier-2 Exemplar Received Queries
+                  Tier-2 Exemplar Ingested Queries
                 </span>
                 <span class="text-[8.5px] font-mono px-1.5 py-0.5 rounded bg-purple-950/90 text-purple-300 border border-purple-700/80 font-bold">${rawInbox.length} Ingested</span>
               </div>

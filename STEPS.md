@@ -853,14 +853,16 @@ Trace Packets:
 
 ## Step 23 — Super-Peer Semantic Query Routing to Cluster Exemplars
 
-Super-Peers evaluate queries ingested during Step 22 and route the underlying query payloads down to Cluster Exemplars (Tier 3 -> Tier 2) over verified physical routes.
+Super-Peers inspect ingested discovery queries from Step 22, evaluate similarity against cluster signatures ($\text{Sim} = 1.0$), and route client queries down to Tier-2 Cluster Exemplars.
 
-### 1. Forwarded Packet Traces
-- $C_1 \xrightarrow{\text{path } [1, 4, 7, 9]} C_9$: Forwards query of client $C_2$ (Signature $[1, 2, 3]$)
-- $C_5 \xrightarrow{\text{path } [5, 3]} C_3$: Forwards queries of clients $C_4, C_8$ (Signature $[4, 5, 6]$)
-- $C_5 \xrightarrow{\text{path } [5, 6, 8]} C_8$: Forwards queries of clients $C_3, C_4$ (Signature $[4, 5, 6]$)
-- $C_{10} \xrightarrow{\text{path } [10, 9, 7]} C_7$: Forwards query of client $C_6$ (Signature $[8, 9, 10]$)
-- Local Exemplar Loopbacks: $C_1, C_5, C_{10}$ route matching queries internally into their own Tier-2 Exemplar Inboxes.
+### 1. Downward Forwarding Traces
+- $C_1 \xrightarrow{\text{path } [1, 4, 7, 9]} C_9$: Forward query of client $C_2$ (Signature $[1, 2, 3]$)
+- $C_1 \xrightarrow{\text{internal}} C_1$: Ingest queries of $C_2$ and $C_9$ locally
+- $C_5 \xrightarrow{\text{path } [5, 3]} C_3$: Forward queries of clients $C_4, C_8$ (Signature $[4, 5, 6]$)
+- $C_5 \xrightarrow{\text{path } [5, 6, 8]} C_8$: Forward queries of clients $C_3, C_4$ (Signature $[4, 5, 6]$)
+- $C_5 \xrightarrow{\text{internal}} C_5$: Ingest queries of $C_3, C_4, C_8$ locally
+- $C_{10} \xrightarrow{\text{path } [10, 9, 7]} C_7$: Forward query of client $C_6$ (Signature $[8, 9, 10]$)
+- $C_{10} \xrightarrow{\text{internal}} C_{10}$: Ingest queries of $C_6$ and $C_7$ locally
 
 ### 2. Multi-Hop Forwarding Routes & Query Routing Matrix
 Every Super-Peer identifies the origin client of each query, matches its signature against cluster registries, and dispatches the payload to the responsible Cluster Exemplars:

@@ -4600,7 +4600,7 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
         # Exemplar Inboxes in Step 23 (originating client queries received by each Cluster Exemplar)
         exemplar_inboxes = {
             1: [
-                {"origin_client": 2, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "Local Loopback"},
+                {"origin_client": 2, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "Internal Loopback"},
                 {"origin_client": 9, "forwarded_by_sp": 1, "indices": [1, 2, 3], "sparse_vector": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "path": "[9, 7, 4, 1]"}
             ],
             9: [
@@ -4611,7 +4611,7 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 {"origin_client": 8, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "path": "[8, 6, 5]"}
             ],
             5: [
-                {"origin_client": 4, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": "Local Loopback"},
+                {"origin_client": 4, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "path": "Internal Loopback"},
                 {"origin_client": 3, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "path": "[3, 5]"},
                 {"origin_client": 8, "forwarded_by_sp": 5, "indices": [4, 5, 6], "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "path": "[8, 6, 5]"}
             ],
@@ -4623,7 +4623,7 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
                 {"origin_client": 6, "forwarded_by_sp": 10, "indices": [7, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "path": "[10, 9, 7]"}
             ],
             10: [
-                {"origin_client": 6, "forwarded_by_sp": 10, "indices": [7, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "path": "Local Loopback"},
+                {"origin_client": 6, "forwarded_by_sp": 10, "indices": [7, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "path": "Internal Loopback"},
                 {"origin_client": 7, "forwarded_by_sp": 10, "indices": [8, 9, 10], "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], "path": "[7, 9, 10]"}
             ]
         }
@@ -4632,19 +4632,19 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
         SP_DISPATCH_RECORDS = {
             1: [
                 {"target_ex": 9, "path": [1, 4, 7, 9], "origin_client": 2, "signature": [1, 2, 3], "classes": "1, 2, 3"},
-                {"target_ex": 1, "path": "Local Loopback", "origin_client": 2, "signature": [1, 2, 3], "classes": "1, 2, 3"},
+                {"target_ex": 1, "path": "Internal Loopback", "origin_client": 2, "signature": [1, 2, 3], "classes": "1, 2, 3"},
                 {"target_ex": 1, "path": "[9, 7, 4, 1]", "origin_client": 9, "signature": [1, 2, 3], "classes": "1, 2, 3"},
             ],
             5: [
                 {"target_ex": 3, "path": [5, 3], "origin_client": 4, "signature": [4, 5, 6], "classes": "4, 5, 6"},
                 {"target_ex": 8, "path": [5, 6, 8], "origin_client": 3, "signature": [4, 5, 6], "classes": "4, 5, 6"},
-                {"target_ex": 5, "path": "Local Loopback", "origin_client": 4, "signature": [4, 5, 6], "classes": "4, 5, 6"},
+                {"target_ex": 5, "path": "Internal Loopback", "origin_client": 4, "signature": [4, 5, 6], "classes": "4, 5, 6"},
                 {"target_ex": 5, "path": "[3, 5]", "origin_client": 3, "signature": [4, 5, 6], "classes": "4, 5, 6"},
                 {"target_ex": 5, "path": "[8, 6, 5]", "origin_client": 8, "signature": [4, 5, 6], "classes": "4, 5, 6"},
             ],
             10: [
                 {"target_ex": 7, "path": [10, 9, 7], "origin_client": 6, "signature": [7, 9, 10], "classes": "7, 9, 10"},
-                {"target_ex": 10, "path": "Local Loopback", "origin_client": 6, "signature": [7, 9, 10], "classes": "7, 9, 10"},
+                {"target_ex": 10, "path": "Internal Loopback", "origin_client": 6, "signature": [7, 9, 10], "classes": "7, 9, 10"},
                 {"target_ex": 10, "path": "[7, 9, 10]", "origin_client": 7, "signature": [8, 9, 10], "classes": "8, 9, 10"},
             ]
         }
