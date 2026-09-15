@@ -4688,7 +4688,7 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
         return {
             "step": 23,
             "title": "Step 23: Super-Peer Semantic Query Routing to Cluster Exemplars",
-            "phase_badge": "ACTIVE PHASE: STEP 23: SUPER-PEER QUERY ROUTING TO CLUSTER EXEMPLARS",
+            "phase_badge": "ACTIVE PHASE: STEP 23: SUPER-PEER SEMANTIC QUERY ROUTING TO EXEMPLARS",
             "description": "Super-Peers evaluate queries ingested during Step 22 and route the underlying query payloads down to Cluster Exemplars (Tier 3 -> Tier 2) over verified physical routes.",
             "formula": r"SP_m \xrightarrow{\text{route}} e_k \quad : \quad q_i = \langle id_i, S_i, \mathbf{w}_i^{\text{sparse}} \rangle",
             "formula_desc": "Super-Peers route matching client queries down to Tier-2 Cluster Exemplars.",
