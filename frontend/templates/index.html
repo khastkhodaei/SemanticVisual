@@ -74,177 +74,36 @@
       </div>
     </div>
 
-    <!-- Stepper Indicator -->
-    <nav aria-label="Step progress" class="hidden md:flex items-center space-x-4 text-xs font-medium">
-      <div id="stepNav1" class="step-item active cursor-pointer" title="Jump to Step 1">
-        <span class="step-bubble">1</span>
-        <span>Physical Mesh</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav2" class="step-item cursor-pointer" title="Jump to Step 2">
-        <span class="step-bubble">2</span>
-        <span>Local Vectors</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav3" class="step-item cursor-pointer" title="Jump to Step 3">
-        <span class="step-bubble">3</span>
-        <span>Local VRF</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav4" class="step-item cursor-pointer" title="Jump to Step 4">
-        <span class="step-bubble">4</span>
-        <span>Initiator Election</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav5" class="step-item cursor-pointer" title="Jump to Step 5">
-        <span class="step-bubble">5</span>
-        <span>Zone Creation</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav6" class="step-item cursor-pointer" title="Jump to Step 6">
-        <span class="step-bubble">6</span>
-        <span>Boundary Discovery</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav7" class="step-item cursor-pointer" title="Jump to Step 7">
-        <span class="step-bubble">7</span>
-        <span>P_min Query</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav8" class="step-item cursor-pointer" title="Jump to Step 8">
-        <span class="step-bubble">8</span>
-        <span>Binary Search</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav9" class="step-item cursor-pointer" title="Jump to Step 9">
-        <span class="step-bubble">9</span>
-        <span>Consensus Exchange</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav10" class="step-item cursor-pointer" title="Jump to Step 10">
-        <span class="step-bubble">10</span>
-        <span>Order Extract</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav11" class="step-item cursor-pointer" title="Jump to Step 11">
-        <span class="step-bubble">11</span>
-        <span>Signatures</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav12" class="step-item cursor-pointer" title="Jump to Step 12">
-        <span class="step-bubble">12</span>
-        <span>Clustering</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav13" class="step-item cursor-pointer" title="Jump to Step 13">
-        <span class="step-bubble">13</span>
-        <span>Exemplars</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav14" class="step-item cursor-pointer" title="Jump to Step 14">
-        <span class="step-bubble">14</span>
-        <span>Super-Zone</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav15" class="step-item cursor-pointer" title="Jump to Step 15">
-        <span class="step-bubble">15</span>
-        <span>Catalog Query</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav16" class="step-item cursor-pointer" title="Jump to Step 16">
-        <span class="step-bubble">16</span>
-        <span>Global Catalog</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav17" class="step-item cursor-pointer" title="Jump to Step 17">
-        <span class="step-bubble">17</span>
-        <span>Super-Clusters</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav18" class="step-item cursor-pointer" title="Jump to Step 18: Super-Zone Directives Dispatch">
-        <span class="step-bubble">18</span>
-        <span>Super-Zone Directives</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav19" class="step-item cursor-pointer" title="Jump to Step 19: Intra-Zone Super-Peer Designation & Exemplar Hierarchical Binding">
-        <span class="step-bubble">19</span>
-        <span>Intra-Zone Bindings</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav20" class="step-item cursor-pointer" title="Jump to Step 20: Semantic Overlay Network (SON) Logical Topology Formation">
-        <span class="step-bubble">20</span>
-        <span>Semantic Overlay</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav21" class="step-item cursor-pointer" title="Jump to Step 21: Local Model Parameter Pruning & Sparse Weight Extraction (P = 3)">
-        <span class="step-bubble">21</span>
-        <span>Sparse Pruning</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav22" class="step-item cursor-pointer" title="Jump to Step 22: Hierarchical Semantic Peer Search & Discovery Query">
-        <span class="step-bubble">22</span>
-        <span>Peer Discovery</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav23" class="step-item cursor-pointer" title="Jump to Step 23: Super-Peer Semantic Query Routing to Cluster Exemplars">
-        <span class="step-bubble">23</span>
-        <span>Downward Routing</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav24" class="step-item cursor-pointer" title="Jump to Step 24: Cluster Exemplar Forwarding to Leaf Members (Tier 2 -> Tier 1)">
-        <span class="step-bubble">24</span>
-        <span>Leaf Dispatch</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav25" class="step-item cursor-pointer" title="Jump to Step 25: Local Semantic Cosine Similarity Evaluation">
-        <span class="step-bubble">25</span>
-        <span>Cosine Sim</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav26" class="step-item cursor-pointer" title="Jump to Step 26: Upward Similarity Score Reporting to Cluster Exemplars">
-        <span class="step-bubble">26</span>
-        <span>Score Reporting</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav27" class="step-item cursor-pointer" title="Jump to Step 27: Exemplar Similarity Ranking & Upward Dispatch to Super-Peers">
-        <span class="step-bubble">27</span>
-        <span>Rank Dispatch</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav28" class="step-item cursor-pointer" title="Jump to Step 28: Global Super-Peer Cross-Cluster Similarity Consolidation">
-        <span class="step-bubble">28</span>
-        <span>Consolidation</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav29" class="step-item cursor-pointer" title="Jump to Step 29: Top-K Partner Match Delivery to Requesting Clients (K = 2)">
-        <span class="step-bubble">29</span>
-        <span>Top-K Delivery</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav30" class="step-item cursor-pointer" title="Jump to Step 30: Pull-Based P2P Model Request Dispatch (REQ_MODEL_WEIGHTS)">
-        <span class="step-bubble">30</span>
-        <span>Model Request</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav31" class="step-item cursor-pointer" title="Jump to Step 31: Sparse Parameter Delivery & Local Buffer Ingestion (REP_MODEL_WEIGHTS)">
-        <span class="step-bubble">31</span>
-        <span>Buffer Ingest</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav32" class="step-item cursor-pointer" title="Jump to Step 32: Reference Model Construction & Similarity Weight Alignment">
-        <span class="step-bubble">32</span>
-        <span>Ref Model</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav33" class="step-item cursor-pointer" title="Jump to Step 33: Local Model Aggregation (FedAvg) & Convergence Commitment">
-        <span class="step-bubble">33</span>
-        <span>FedAvg</span>
-      </div>
-      <span class="text-slate-300">→</span>
-      <div id="stepNav34" class="step-item cursor-pointer" title="Jump to Step 34: Round 1 Finalization, System Benchmarks & Next-Epoch Transition">
-        <span class="step-bubble">34</span>
-        <span>Audit / Final</span>
-      </div>
+    <!-- Top-Level Protocol Phases (7 Phases) -->
+    <nav id="phaseNav" aria-label="Protocol phases" class="hidden md:flex items-center space-x-1.5 text-xs font-medium">
+      <button id="phaseTab1" class="phase-tab active" data-phase="1" title="Phase 1: Network Initialization (Steps 1–2)">
+        <span class="phase-label">1. Network Init</span>
+        <span class="phase-badge-pill">1–2</span>
+      </button>
+      <button id="phaseTab2" class="phase-tab" data-phase="2" title="Phase 2: Initiator Selection (Steps 3–4)">
+        <span class="phase-label">2. Initiators</span>
+        <span class="phase-badge-pill">3–4</span>
+      </button>
+      <button id="phaseTab3" class="phase-tab" data-phase="3" title="Phase 3: Zone Formation & Parameter Consensus (Steps 5–10)">
+        <span class="phase-label">3. Zones & Consensus</span>
+        <span class="phase-badge-pill">5–10</span>
+      </button>
+      <button id="phaseTab4" class="phase-tab" data-phase="4" title="Phase 4: Intra-Zone Clustering (Steps 11–13)">
+        <span class="phase-label">4. Intra-Clustering</span>
+        <span class="phase-badge-pill">11–13</span>
+      </button>
+      <button id="phaseTab5" class="phase-tab" data-phase="5" title="Phase 5: Super-Zone Formation (Steps 14–20)">
+        <span class="phase-label">5. Super-Zone</span>
+        <span class="phase-badge-pill">14–20</span>
+      </button>
+      <button id="phaseTab6" class="phase-tab" data-phase="6" title="Phase 6: Search & Discovery in SON (Steps 21–29)">
+        <span class="phase-label">6. SON Discovery</span>
+        <span class="phase-badge-pill">21–29</span>
+      </button>
+      <button id="phaseTab7" class="phase-tab" data-phase="7" title="Phase 7: P2P Model Exchange & Federated Aggregation (Steps 30–34)">
+        <span class="phase-label">7. P2P & FedAvg</span>
+        <span class="phase-badge-pill">30–34</span>
+      </button>
     </nav>
 
     <!-- Session Badge -->
@@ -279,6 +138,86 @@
           <select id="stepJumpSelect" class="step-jump-dropdown text-xs font-mono font-semibold bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs cursor-pointer" title="Directly jump to any step">
             <!-- Dynamically populated from Step 1 to TOTAL_STEPS -->
           </select>
+        </div>
+      </div>
+
+      <!-- Sub-Step Scrubber nested under active Phase -->
+      <div id="subStepScrubber" class="substep-scrubber hidden lg:flex items-center gap-2 border-l border-slate-200 pl-3">
+        <span class="text-[11px] font-sans text-slate-400 font-medium">Sub-steps:</span>
+        <div id="phaseSubSteps1" class="phase-substeps flex items-center gap-1.5">
+          <div id="stepNav1" class="step-item active cursor-pointer" title="Jump to Step 1: Network Creation"><span class="step-bubble">1</span><span>Physical Mesh</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav2" class="step-item cursor-pointer" title="Jump to Step 2: Local Vectors"><span class="step-bubble">2</span><span>Local Vectors</span></div>
+        </div>
+        <div id="phaseSubSteps2" class="phase-substeps hidden items-center gap-1.5">
+          <div id="stepNav3" class="step-item cursor-pointer" title="Jump to Step 3: Local VRF"><span class="step-bubble">3</span><span>Local VRF</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav4" class="step-item cursor-pointer" title="Jump to Step 4: Initiator Election"><span class="step-bubble">4</span><span>Initiator Election</span></div>
+        </div>
+        <div id="phaseSubSteps3" class="phase-substeps hidden items-center gap-1.5">
+          <div id="stepNav5" class="step-item cursor-pointer" title="Jump to Step 5: Zone Creation"><span class="step-bubble">5</span><span>Zone PROBE</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav6" class="step-item cursor-pointer" title="Jump to Step 6: Boundary Discovery"><span class="step-bubble">6</span><span>Boundary Discovery</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav7" class="step-item cursor-pointer" title="Jump to Step 7: P_min Query"><span class="step-bubble">7</span><span>P_min Query</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav8" class="step-item cursor-pointer" title="Jump to Step 8: Binary Search"><span class="step-bubble">8</span><span>Binary Search</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav9" class="step-item cursor-pointer" title="Jump to Step 9: Quantile Consensus"><span class="step-bubble">9</span><span>Consensus</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav10" class="step-item cursor-pointer" title="Jump to Step 10: ORDER_EXTRACT"><span class="step-bubble">10</span><span>Extract (P=3)</span></div>
+        </div>
+        <div id="phaseSubSteps4" class="phase-substeps hidden items-center gap-1.5">
+          <div id="stepNav11" class="step-item cursor-pointer" title="Jump to Step 11: Top-P Signatures"><span class="step-bubble">11</span><span>Signatures</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav12" class="step-item cursor-pointer" title="Jump to Step 12: AP Clustering"><span class="step-bubble">12</span><span>AP Clustering</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav13" class="step-item cursor-pointer" title="Jump to Step 13: Exemplar Assignment"><span class="step-bubble">13</span><span>Exemplars</span></div>
+        </div>
+        <div id="phaseSubSteps5" class="phase-substeps hidden items-center gap-1.5">
+          <div id="stepNav14" class="step-item cursor-pointer" title="Jump to Step 14: Top-Level Initiator Election"><span class="step-bubble">14</span><span>Super-Zone</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav15" class="step-item cursor-pointer" title="Jump to Step 15: Catalog Query Dispatch"><span class="step-bubble">15</span><span>Catalog Query</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav16" class="step-item cursor-pointer" title="Jump to Step 16: Zone Catalog Response"><span class="step-bubble">16</span><span>Catalog Response</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav17" class="step-item cursor-pointer" title="Jump to Step 17: Super-Cluster Formation"><span class="step-bubble">17</span><span>Super-Clusters</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav18" class="step-item cursor-pointer" title="Jump to Step 18: Super-Zone Directives"><span class="step-bubble">18</span><span>Directives</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav19" class="step-item cursor-pointer" title="Jump to Step 19: Super-Peer Binding"><span class="step-bubble">19</span><span>Super-Peer</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav20" class="step-item cursor-pointer" title="Jump to Step 20: SON Dual-View"><span class="step-bubble">20</span><span>SON Dual-View</span></div>
+        </div>
+        <div id="phaseSubSteps6" class="phase-substeps hidden items-center gap-1.5">
+          <div id="stepNav21" class="step-item cursor-pointer" title="Jump to Step 21: Sparsification"><span class="step-bubble">21</span><span>Sparsify</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav22" class="step-item cursor-pointer" title="Jump to Step 22: Hierarchical Query"><span class="step-bubble">22</span><span>Query Prop</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav23" class="step-item cursor-pointer" title="Jump to Step 23: Super-Peer Routing"><span class="step-bubble">23</span><span>Routing</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav24" class="step-item cursor-pointer" title="Jump to Step 24: Exemplar Forwarding"><span class="step-bubble">24</span><span>Leaf Forward</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav25" class="step-item cursor-pointer" title="Jump to Step 25: Cosine Similarity"><span class="step-bubble">25</span><span>Cosine Sim</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav26" class="step-item cursor-pointer" title="Jump to Step 26: Upward Similarity Score Reporting"><span class="step-bubble">26</span><span>Score Report</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav27" class="step-item cursor-pointer" title="Jump to Step 27: Exemplar Ranking"><span class="step-bubble">27</span><span>Candidate Rank</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav28" class="step-item cursor-pointer" title="Jump to Step 28: Global Super-Peer Cross-Cluster Similarity Consolidation"><span class="step-bubble">28</span><span>Consolidation</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav29" class="step-item cursor-pointer" title="Jump to Step 29: Top-K Partner Match Delivery"><span class="step-bubble">29</span><span>Match Delivery</span></div>
+        </div>
+        <div id="phaseSubSteps7" class="phase-substeps hidden items-center gap-1.5">
+          <div id="stepNav30" class="step-item cursor-pointer" title="Jump to Step 30: Model Request Dispatch"><span class="step-bubble">30</span><span>Model Req</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav31" class="step-item cursor-pointer" title="Jump to Step 31: Sparse Parameter Ingestion"><span class="step-bubble">31</span><span>Sparse Buffer</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav32" class="step-item cursor-pointer" title="Jump to Step 32: Reference Model Construction"><span class="step-bubble">32</span><span>Ref Model</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav33" class="step-item cursor-pointer" title="Jump to Step 33: FedAvg Convergence Commitment"><span class="step-bubble">33</span><span>FedAvg</span></div>
+          <span class="text-slate-300">→</span>
+          <div id="stepNav34" class="step-item cursor-pointer" title="Jump to Step 34: Round 1 Finalization & Benchmarks"><span class="step-bubble">34</span><span>Benchmarks</span></div>
         </div>
       </div>
 

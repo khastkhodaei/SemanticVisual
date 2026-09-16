@@ -18047,8 +18047,50 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
   }
 }
 
+function getPhaseForStep(step) {
+  if (step >= 1 && step <= 2) return 1;
+  if (step >= 3 && step <= 4) return 2;
+  if (step >= 5 && step <= 10) return 3;
+  if (step >= 11 && step <= 13) return 4;
+  if (step >= 14 && step <= 20) return 5;
+  if (step >= 21 && step <= 29) return 6;
+  if (step >= 30 && step <= 34) return 7;
+  return 1;
+}
+
+function updatePhaseNavigation(step) {
+  const activePhase = getPhaseForStep(step);
+
+  // Update Phase tabs (1 to 7)
+  for (let p = 1; p <= 7; p++) {
+    const tab = document.getElementById(`phaseTab${p}`);
+    if (tab) {
+      if (p === activePhase) {
+        tab.classList.add("active");
+        tab.setAttribute("aria-selected", "true");
+      } else {
+        tab.classList.remove("active");
+        tab.setAttribute("aria-selected", "false");
+      }
+    }
+
+    // Toggle corresponding sub-steps container visibility
+    const subContainer = document.getElementById(`phaseSubSteps${p}`);
+    if (subContainer) {
+      if (p === activePhase) {
+        subContainer.classList.remove("hidden");
+        subContainer.style.display = "flex";
+      } else {
+        subContainer.classList.add("hidden");
+        subContainer.style.display = "none";
+      }
+    }
+  }
+}
+
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
+  updatePhaseNavigation(step);
   for (let s = 1; s <= TOTAL_STEPS; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
@@ -18213,6 +18255,31 @@ function bindActionButtons() {
     }
   }
 
+
+  // Phase Tab Click Listeners (Jumps directly to the initial step of the selected phase)
+  const PHASE_FIRST_STEPS = { 1: 1, 2: 3, 3: 5, 4: 11, 5: 14, 6: 21, 7: 30 };
+  for (let p = 1; p <= 7; p++) {
+    const tab = document.getElementById(`phaseTab${p}`);
+    if (tab) {
+      tab.addEventListener("click", () => {
+        loadStep(PHASE_FIRST_STEPS[p]);
+      });
+    }
+  }
+
+  // Keyboard navigation shortcuts: Left / Right Arrow keys
+  document.addEventListener("keydown", (e) => {
+    if (["INPUT", "SELECT", "TEXTAREA"].includes(document.activeElement?.tagName)) return;
+    if (e.key === "ArrowRight") {
+      if (currentStep < TOTAL_STEPS) {
+        loadStep(currentStep + 1);
+      }
+    } else if (e.key === "ArrowLeft") {
+      if (currentStep > 1) {
+        loadStep(currentStep - 1);
+      }
+    }
+  });
 
   // Dual-Layout Switcher Button
   const btnToggleLayout = document.getElementById("btn-toggle-layout");
