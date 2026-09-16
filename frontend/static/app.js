@@ -1372,6 +1372,13 @@ async function loadStep(stepNumber) {
         console.error("Step 30 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 30 Render Error: ${renderErr.message}`);
       }
+    } else if (stepNumber === 31) {
+      try {
+        renderStep31(data);
+      } catch (renderErr) {
+        console.error("Step 31 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 31 Render Error: ${renderErr.message}`);
+      }
     }
 
 
@@ -1653,6 +1660,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 30 / MODEL REQUEST";
     if (stepTitle) stepTitle.textContent = "Step 30: Pull-Based P2P Model Request Dispatch (REQ_MODEL_WEIGHTS)";
     if (stepDesc) stepDesc.textContent = "Clients dispatch pull requests across physical routes to request model weights from their Top-2 partners.";
+  } else if (step === 31) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 31: SPARSE PARAMETER INGESTION";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-950 border border-emerald-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 31 / BUFFER INGESTION";
+    if (stepTitle) stepTitle.textContent = "Step 31: Sparse Parameter Delivery & Local Buffer Ingestion (REP_MODEL_WEIGHTS)";
+    if (stepDesc) stepDesc.textContent = "Clients ingest 15-byte parameter payloads from their Top-2 partners into local memory buffers.";
   }
 }
 
@@ -6350,6 +6365,71 @@ function renderStep30(data) {
   animateStep30ModelRequests(packets, data.nodes);
 }
 
+function renderStep31(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 31: SPARSE PARAMETER INGESTION";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-950 border border-emerald-400";
+  });
+
+  renderSidebarFormula(
+    "Step 31: Sparse Parameter Delivery & Local Buffer Ingestion (REP_MODEL_WEIGHTS)",
+    "\\mathcal{B}_i = \\{\\mathbf{w}_i^{\\text{sparse}}\\} \\cup \\{\\mathbf{w}_j^{\\text{sparse}} \\mid j \\in \\mathcal{P}_i^*, \\; K=2\\}",
+    "Clients ingest 15-byte parameter payloads from their Top-2 partners into local memory buffers.",
+    "Step 31: Buffer Ingest",
+    true,
+    "emerald"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      ? "Sparse Weight Delivery & Local Buffer Ingestion — Collaborative Dialogue"
+      : "Sparse Weight Delivery (REP_MODEL_WEIGHTS) — 15B Payloads Across Physical Mesh";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>P2P Weight Responses: <span class="text-emerald-600 font-bold font-mono">20 Delivered (15B each)</span> | Buffer Status: <span class="text-emerald-700 font-bold font-mono">BUFFER_READY_FOR_ALIGNMENT</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = PHYSICAL_LAYOUT_COORDS[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("INFO", "[STEP 31] Sparse parameter delivery (REP_MODEL_WEIGHTS, 15 Bytes each) across physical reverse paths.");
+  logToTerminal("SUCCESS", "[SC-1 INGEST] C1, C2, C9 received and stored partner sparse weight vectors into local RAM buffers.");
+  logToTerminal("SUCCESS", "[SC-2 INGEST] C3, C4, C5, C8 received and stored partner sparse weight vectors into local RAM buffers.");
+  logToTerminal("SUCCESS", "[SC-3 INGEST] C6, C7, C10 received and stored partner sparse weight vectors into local RAM buffers.");
+  logToTerminal("SUCCESS", "[LOCAL_BUFFER_INGESTED] All 10 client memory buffers loaded (Self + Top-2 Partners). Status: BUFFER_READY_FOR_ALIGNMENT.");
+
+  const packets = data.model_response_packets || data.p2p_model_responses || data.packets || [];
+  animateStep31BufferIngestion(packets, data.nodes);
+}
+
 // Global reference to hover virtual node in Figure 3(f) / Physical
 let figure3fHoveredVirtualNode = null;
 let figure3fCanvasListenersBound = false;
@@ -10501,6 +10581,432 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
       renderFigure3fModelRequests(now);
     } else {
       renderPhysicalModelRequests(now);
+    }
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+function animateStep31BufferIngestion(packetTraces, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const startTime = performance.now();
+  const CYCLE_MS = 3800;
+
+  const traces = (packetTraces && packetTraces.length > 0) ? packetTraces : [
+    { from: 9, to: 1, path: [9, 7, 4, 1], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 2, to: 1, path: [2, 1], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 9, to: 2, path: [9, 7, 4, 1, 2], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 1, to: 2, path: [1, 2], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 5, to: 3, path: [5, 3], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 8, to: 3, path: [8, 6, 3], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 5, to: 4, path: [5, 4], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 8, to: 4, path: [8, 6, 4], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 4, to: 5, path: [4, 5], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 3, to: 5, path: [3, 5], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 7, to: 6, path: [7, 4, 6], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 10, to: 6, path: [10, 8, 6], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 10, to: 7, path: [10, 9, 7], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 6, to: 7, path: [6, 4, 7], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 3, to: 8, path: [3, 6, 8], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 5, to: 8, path: [5, 6, 8], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 1, to: 9, path: [1, 4, 7, 9], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 2, to: 9, path: [2, 1, 4, 7, 9], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 7, to: 10, path: [7, 9, 10], bytes: 15, label: "WEIGHTS_RESP (15B)" },
+    { from: 6, to: 10, path: [6, 8, 10], bytes: 15, label: "WEIGHTS_RESP (15B)" }
+  ];
+
+  traces.forEach(t => {
+    if (!t.fromKey) t.fromKey = `bot_${t.from}`;
+    if (!t.toKey) t.toKey = `bot_${t.to}`;
+  });
+
+  function getPointAlongPath(path, prog, posMap) {
+    if (!path || path.length === 0) return null;
+    if (path.length === 1) return posMap[path[0]];
+    const numSegs = path.length - 1;
+    const clampedProg = Math.max(0, Math.min(0.9999, prog));
+    const segIdx = Math.floor(clampedProg * numSegs);
+    const segProg = (clampedProg * numSegs) - segIdx;
+    const pA = posMap[path[segIdx]];
+    const pB = posMap[path[segIdx + 1]];
+    if (!pA || !pB) return null;
+    return {
+      x: pA.x + (pB.x - pA.x) * segProg,
+      y: pA.y + (pB.y - pA.y) * segProg
+    };
+  }
+
+  function drawFloatingTag(ctx, text, x, y, borderColor, bgColor, textColor) {
+    ctx.save();
+    ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+    const textW = ctx.measureText(text).width;
+    const boxH = 14;
+    const boxW = textW + 12;
+    const boxX = x - boxW / 2;
+    const boxY = y - boxH / 2;
+
+    ctx.fillStyle = bgColor || "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = borderColor || "#10b981";
+    ctx.lineWidth = 1;
+    ctx.shadowColor = borderColor || "#10b981";
+    ctx.shadowBlur = 6;
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = textColor || "#a7f3d0";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function renderPhysicalWeightDelivery(now) {
+    if (cy) cy.elements().style("opacity", 1);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    // Top Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "PHYSICAL TOPOLOGY: SPARSE WEIGHT PARAMETER DELIVERY [15B PAYLOADS -> REVERSE PHYSICAL PATHS]";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#a7f3d0";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Node position map
+    const physNodePosMap = {};
+    for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          physNodePosMap[id] = { id, x: rp.x, y: rp.y };
+          continue;
+        }
+      }
+      const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
+      physNodePosMap[id] = { id, x: c.x, y: c.y };
+    }
+
+    // Physical Mesh Links
+    ctx.save();
+    PHYSICAL_TOPOLOGY_EDGES.forEach(edge => {
+      const p1 = physNodePosMap[edge.from];
+      const p2 = physNodePosMap[edge.to];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Multi-hop physical paths with flowing particle streams
+    ctx.save();
+    traces.forEach((pkt) => {
+      const path = pkt.path;
+      if (!path || path.length < 2) return;
+      ctx.beginPath();
+      const pStart = physNodePosMap[path[0]];
+      if (!pStart) return;
+      ctx.moveTo(pStart.x, pStart.y);
+      for (let i = 1; i < path.length; i++) {
+        const pNext = physNodePosMap[path[i]];
+        if (pNext) ctx.lineTo(pNext.x, pNext.y);
+      }
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.32)";
+      ctx.lineWidth = 2.0;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Flowing particle streams for each of the 20 response packets
+    traces.forEach((pkt, idx) => {
+      const path = pkt.path;
+      if (!path || path.length < 2) return;
+
+      const phaseOffset = (idx * 0.05) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      // Active in-flight packet
+      if (tPkt < 0.82) {
+        const prog = tPkt / 0.82;
+
+        // Flowing particle stream: trail particles behind head
+        const streamOffsets = [0, 0.03, 0.06, 0.09];
+        const streamColors = ["#34d399", "#10b981", "#06b6d4", "#0284c7"];
+        const streamRadii = [4.5, 3.2, 2.2, 1.4];
+
+        for (let s = streamOffsets.length - 1; s >= 0; s--) {
+          const sProg = Math.max(0, prog - streamOffsets[s]);
+          const pt = getPointAlongPath(path, sProg, physNodePosMap);
+          if (!pt) continue;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, streamRadii[s], 0, Math.PI * 2);
+          ctx.fillStyle = streamColors[s];
+          if (s === 0) {
+            ctx.shadowColor = "#34d399";
+            ctx.shadowBlur = 12;
+          }
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Head position
+        const headPt = getPointAlongPath(path, prog, physNodePosMap);
+        if (headPt) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(headPt.x, headPt.y, 6.5, 0, Math.PI * 2);
+          ctx.strokeStyle = "#047857";
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
+          ctx.restore();
+
+          // Floating tag on packet
+          const tagLabel = "WEIGHTS_RESP (15B)";
+          drawFloatingTag(ctx, tagLabel, headPt.x, headPt.y - 12, "#10b981", "rgba(15, 23, 42, 0.94)", "#a7f3d0");
+        }
+      } else {
+        // Arrival / Ingestion ring at target client node
+        const destId = pkt.to;
+        const pDest = physNodePosMap[destId];
+        if (pDest) {
+          const arrivalProg = (tPkt - 0.82) / 0.18;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(pDest.x, pDest.y, 22 + arrivalProg * 14, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(16, 185, 129, ${1.0 - arrivalProg})`;
+          ctx.lineWidth = 2.2;
+          ctx.shadowColor = "#10b981";
+          ctx.shadowBlur = 10;
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    });
+
+    // Node status badges on physical layout
+    for (let id = 1; id <= 10; id++) {
+      const p = physNodePosMap[id];
+      if (p) {
+        drawFloatingTag(ctx, "BUFFER_INGESTED (15B x 2)", p.x, p.y + 26, "#10b981", "rgba(6, 78, 59, 0.94)", "#d1fae5");
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function renderFigure3fWeightDelivery(now) {
+    if (cy) cy.elements().style("opacity", 0);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    const layout = getFigure3fLayoutParameters(canvas.width, canvas.height);
+    const nodePosMap = {};
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      nodePosMap[n.key] = computeFigure3fNodePosition(n, layout);
+    });
+
+    // Top Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "FIGURE 3(f) 3-TIER: COLLABORATIVE DIALOGUE & LOCAL BUFFER INGESTION (REP_MODEL_WEIGHTS)";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 28;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#a7f3d0";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    const hull = computeFigure3fHull(layout);
+    const capsules = computeFigure3fCapsules(layout);
+
+    // Node backplates
+    ctx.save();
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isTop = n.tier === 3;
+      const isMid = n.tier === 2;
+      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
+      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
+      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
+      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Hull & Capsules
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillStyle = "#e11d48";
+    ctx.textAlign = "center";
+    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
+    ctx.restore();
+
+    capsules.forEach(cap => {
+      ctx.save();
+      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
+      ctx.fillStyle = cap.fill;
+      ctx.fill();
+      ctx.strokeStyle = cap.border;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillStyle = cap.textColor;
+      ctx.textAlign = "center";
+      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
+      ctx.restore();
+    });
+
+    // Collaborative dialogue streaming arcs between Tier 1 base clients
+    ctx.save();
+    traces.forEach((pkt, idx) => {
+      const pA = nodePosMap[pkt.fromKey];
+      const pB = nodePosMap[pkt.toKey];
+      if (!pA || !pB) return;
+
+      const midX = (pA.renderedX + pB.renderedX) / 2;
+      const arcLift = -Math.min(60, Math.abs(pB.renderedX - pA.renderedX) * 0.15);
+      const midY = (pA.renderedY + pB.renderedY) / 2 + arcLift;
+
+      ctx.beginPath();
+      ctx.moveTo(pA.renderedX, pA.renderedY);
+      ctx.quadraticCurveTo(midX, midY, pB.renderedX, pB.renderedY);
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.35)";
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const phaseOffset = (idx * 0.05) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      if (tPkt < 0.80) {
+        const t = tPkt / 0.80;
+        // Quadratic bezier interpolation
+        const qx = (1 - t) * (1 - t) * pA.renderedX + 2 * (1 - t) * t * midX + t * t * pB.renderedX;
+        const qy = (1 - t) * (1 - t) * pA.renderedY + 2 * (1 - t) * t * midY + t * t * pB.renderedY;
+
+        // Streaming trail
+        const trailOffsets = [0, 0.04, 0.08];
+        const trailColors = ["#ffffff", "#34d399", "#06b6d4"];
+        const trailRadii = [5.0, 3.5, 2.2];
+
+        for (let tr = trailOffsets.length - 1; tr >= 0; tr--) {
+          const tTr = Math.max(0, t - trailOffsets[tr]);
+          const tx = (1 - tTr) * (1 - tTr) * pA.renderedX + 2 * (1 - tTr) * tTr * midX + tTr * tTr * pB.renderedX;
+          const ty = (1 - tTr) * (1 - tTr) * pA.renderedY + 2 * (1 - tTr) * tTr * midY + tTr * tTr * pB.renderedY;
+
+          ctx.beginPath();
+          ctx.arc(tx, ty, trailRadii[tr], 0, Math.PI * 2);
+          ctx.fillStyle = trailColors[tr];
+          if (tr === 0) {
+            ctx.shadowColor = "#34d399";
+            ctx.shadowBlur = 14;
+          }
+          ctx.fill();
+        }
+
+        ctx.beginPath();
+        ctx.arc(qx, qy, 7.5, 0, Math.PI * 2);
+        ctx.strokeStyle = "#047857";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, "WEIGHTS_RESP (15B)", qx, qy - 12, "#10b981", "rgba(15, 23, 42, 0.94)", "#a7f3d0");
+      }
+    });
+    ctx.restore();
+
+    // Draw Nodes
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
+      drawNode(ctx, {
+        id: n.id,
+        node_id: n.label,
+        x: p.renderedX,
+        y: p.renderedY,
+        tier: n.tier,
+        zone: n.zone
+      }, isHov, pulse, rad);
+
+      if (n.tier === 1) {
+        drawFloatingTag(ctx, "BUFFER_READY", p.renderedX, p.renderedY + rad + 12, "#10b981", "rgba(6, 78, 59, 0.94)", "#d1fae5");
+      }
+    });
+
+    ctx.restore();
+  }
+
+  function runFrame(now) {
+    if (currentStep !== 31) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentLayout === "figure3f" || currentLayout === "overlay") {
+      renderFigure3fWeightDelivery(now);
+    } else {
+      renderPhysicalWeightDelivery(now);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
@@ -15390,6 +15896,158 @@ function renderNodeModal(node, stepData = currentStepData) {
           </div>
         `;
       }
+    } else if (currentStep === 31) {
+      if (discoverySection) discoverySection.classList.remove("hidden");
+
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "🟢 LOCAL_BUFFER_INGESTED";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-emerald-100 text-emerald-950 border-emerald-400";
+      }
+
+      if (discoveryBadge) {
+        discoveryBadge.textContent = "STEP 31: BUFFER INGESTION";
+        discoveryBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-950 border border-emerald-300";
+      }
+
+      if (discoveryContent) {
+        const scId = [1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3");
+
+        const defaultBuffers = {
+          1: {
+            self: { label: "Local Model (Self - C1)", vector: [0.46, 0.17, 0.37, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-indigo-900 text-indigo-200 border-indigo-500" },
+            p1: { label: "Partner 1 Model (C9)", vector: [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-emerald-900 text-emerald-200 border-emerald-500" },
+            p2: { label: "Partner 2 Model (C2)", vector: [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-cyan-900 text-cyan-200 border-cyan-500" }
+          },
+          2: {
+            self: { label: "Local Model (Self - C2)", vector: [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-indigo-900 text-indigo-200 border-indigo-500" },
+            p1: { label: "Partner 1 Model (C9)", vector: [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-emerald-900 text-emerald-200 border-emerald-500" },
+            p2: { label: "Partner 2 Model (C1)", vector: [0.46, 0.17, 0.37, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-cyan-900 text-cyan-200 border-cyan-500" }
+          },
+          3: {
+            self: { label: "Local Model (Self - C3)", vector: [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-indigo-900 text-indigo-200 border-indigo-500" },
+            p1: { label: "Partner 1 Model (C5)", vector: [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-emerald-900 text-emerald-200 border-emerald-500" },
+            p2: { label: "Partner 2 Model (C8)", vector: [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-cyan-900 text-cyan-200 border-cyan-500" }
+          },
+          4: {
+            self: { label: "Local Model (Self - C4)", vector: [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-indigo-900 text-indigo-200 border-indigo-500" },
+            p1: { label: "Partner 1 Model (C5)", vector: [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-emerald-900 text-emerald-200 border-emerald-500" },
+            p2: { label: "Partner 2 Model (C8)", vector: [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-cyan-900 text-cyan-200 border-cyan-500" }
+          },
+          5: {
+            self: { label: "Local Model (Self - C5)", vector: [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-indigo-900 text-indigo-200 border-indigo-500" },
+            p1: { label: "Partner 1 Model (C4)", vector: [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-emerald-900 text-emerald-200 border-emerald-500" },
+            p2: { label: "Partner 2 Model (C3)", vector: [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-cyan-900 text-cyan-200 border-cyan-500" }
+          },
+          6: {
+            self: { label: "Local Model (Self - C6)", vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], roleBadge: "bg-indigo-900 text-indigo-200 border-indigo-500" },
+            p1: { label: "Partner 1 Model (C7)", vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], roleBadge: "bg-emerald-900 text-emerald-200 border-emerald-500" },
+            p2: { label: "Partner 2 Model (C10)", vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 0.33, 0.12], roleBadge: "bg-cyan-900 text-cyan-200 border-cyan-500" }
+          },
+          7: {
+            self: { label: "Local Model (Self - C7)", vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], roleBadge: "bg-indigo-900 text-indigo-200 border-indigo-500" },
+            p1: { label: "Partner 1 Model (C10)", vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 0.33, 0.12], roleBadge: "bg-emerald-900 text-emerald-200 border-emerald-500" },
+            p2: { label: "Partner 2 Model (C6)", vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], roleBadge: "bg-cyan-900 text-cyan-200 border-cyan-500" }
+          },
+          8: {
+            self: { label: "Local Model (Self - C8)", vector: [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-indigo-900 text-indigo-200 border-indigo-500" },
+            p1: { label: "Partner 1 Model (C3)", vector: [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-emerald-900 text-emerald-200 border-emerald-500" },
+            p2: { label: "Partner 2 Model (C5)", vector: [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-cyan-900 text-cyan-200 border-cyan-500" }
+          },
+          9: {
+            self: { label: "Local Model (Self - C9)", vector: [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-indigo-900 text-indigo-200 border-indigo-500" },
+            p1: { label: "Partner 1 Model (C1)", vector: [0.46, 0.17, 0.37, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-emerald-900 text-emerald-200 border-emerald-500" },
+            p2: { label: "Partner 2 Model (C2)", vector: [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], roleBadge: "bg-cyan-900 text-cyan-200 border-cyan-500" }
+          },
+          10: {
+            self: { label: "Local Model (Self - C10)", vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 0.33, 0.12], roleBadge: "bg-indigo-900 text-indigo-200 border-indigo-500" },
+            p1: { label: "Partner 1 Model (C7)", vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], roleBadge: "bg-emerald-900 text-emerald-200 border-emerald-500" },
+            p2: { label: "Partner 2 Model (C6)", vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], roleBadge: "bg-cyan-900 text-cyan-200 border-cyan-500" }
+          }
+        };
+
+        const nodeBuf = (mergedNode?.memory_buffer) || (currentStepData?.node_buffers && currentStepData.node_buffers[idNum]) || defaultBuffers[idNum];
+        const rows = [
+          {
+            title: nodeBuf.self_model?.label || `Local Model (Self - C${idNum})`,
+            vector: nodeBuf.self_model?.sparse_vector || (nodeBuf.self && nodeBuf.self.vector) || [],
+            badge: "bg-indigo-950 text-indigo-200 border-indigo-500",
+            tag: "Self Model"
+          },
+          {
+            title: nodeBuf.partner_1_model?.label || `Partner 1 Model (C${(nodeBuf.p1 && nodeBuf.p1.id) || '?'})`,
+            vector: nodeBuf.partner_1_model?.sparse_vector || (nodeBuf.p1 && nodeBuf.p1.vector) || [],
+            badge: "bg-emerald-950 text-emerald-200 border-emerald-500",
+            tag: "Partner 1"
+          },
+          {
+            title: nodeBuf.partner_2_model?.label || `Partner 2 Model (C${(nodeBuf.p2 && nodeBuf.p2.id) || '?'})`,
+            vector: nodeBuf.partner_2_model?.sparse_vector || (nodeBuf.p2 && nodeBuf.p2.vector) || [],
+            badge: "bg-cyan-950 text-cyan-200 border-cyan-500",
+            tag: "Partner 2"
+          }
+        ];
+
+        const renderGridRow = (row) => {
+          const cells = (row.vector || []).map((val, dIdx) => {
+            const isNonZero = Math.abs(val) > 0.001;
+            const bgClass = isNonZero ? "background: rgba(16, 185, 129, 0.25); color: #34d399; font-weight: bold; border: 1px solid rgba(16, 185, 129, 0.5);" : "background: rgba(30, 41, 59, 0.5); color: #475569; border: 1px solid rgba(51, 65, 85, 0.4);";
+            return `
+              <div style="flex: 1; min-width: 0; text-align: center; padding: 3px 1px; border-radius: 4px; ${bgClass}">
+                <div style="font-size: 7.5px; opacity: 0.7; font-family: ui-monospace, SFMono-Regular, monospace;">d${dIdx}</div>
+                <div style="font-size: 9px; font-family: ui-monospace, SFMono-Regular, monospace;">${val.toFixed(2)}</div>
+              </div>
+            `;
+          }).join("");
+
+          return `
+            <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 6px; padding: 7px; margin-bottom: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <span style="font-weight: bold; color: #f8fafc; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; display: flex; align-items: center; gap: 6px;">
+                  <span class="px-1.5 py-0.2 rounded text-[9px] font-mono border ${row.badge}">${row.tag}</span>
+                  <span>${row.title}</span>
+                </span>
+                <span style="font-size: 9px; font-family: ui-monospace, SFMono-Regular, monospace; background: rgba(16, 185, 129, 0.2); color: #a7f3d0; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 4px; padding: 1px 5px;">
+                  15 Bytes (Top-3 Sparse)
+                </span>
+              </div>
+              <div style="display: flex; gap: 3px;">
+                ${cells}
+              </div>
+            </div>
+          `;
+        };
+
+        const gridHtml = rows.map(renderGridRow).join("");
+
+        discoveryContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-emerald-300 bg-emerald-50 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-emerald-950 flex items-center gap-1">
+                  <span>📥</span><span>Local Aggregation Memory Buffer (K = 2)</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold text-[10px] bg-emerald-200 text-emerald-950 border border-emerald-400">🟢 BUFFER_READY_FOR_ALIGNMENT</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-emerald-900 font-semibold">
+                Super-Cluster: <span class="font-bold text-emerald-950">${scId}</span> | Client Node C${idNum} | Status: <span class="font-bold">LOCAL_BUFFER_INGESTED</span>
+              </div>
+            </div>
+
+            <div class="modal-section" style="background: rgba(15, 23, 42, 0.96); border: 1.5px solid #10b981; border-radius: 8px; padding: 10px;">
+              <h4 style="color: #34d399; margin-top: 0; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: bold;">
+                <span>🗄️ Ingested Partner Models Buffer (&Bscr;<sub>i</sub>)</span>
+                <span style="font-size: 10px; color: #a7f3d0; font-family: ui-monospace, SFMono-Regular, monospace;">3 Models Primed (15B each)</span>
+              </h4>
+              <div>
+                ${gridHtml}
+              </div>
+              <div style="margin-top: 8px; font-size: 10px; color: #d1fae5; background: rgba(6, 78, 59, 0.5); border: 1px dashed #10b981; border-radius: 4px; padding: 6px; text-align: center;">
+                ⚡ All 3 models verified in RAM. Primed for Step 32 Reference Model Construction (w<sub>i</sub><sup>ref</sup> = &frac13; &sum; w).
+              </div>
+            </div>
+          </div>
+        `;
+      }
     } else {
       if (discoverySection) discoverySection.classList.add("hidden");
     }
@@ -15809,7 +16467,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 30; s++) {
+  for (let s = 1; s <= 31; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -15856,6 +16514,8 @@ function updateStepper(step) {
         item.classList.add("step-emerald");
       } else if (step === 30) {
         item.classList.add("step-amber");
+      } else if (step === 31) {
+        item.classList.add("step-emerald");
       }
     }
   }
@@ -15885,7 +16545,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 30) {
+    if (step < 31) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -15893,7 +16553,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 30 active (P2P Model Weight Request Dispatch complete)";
+      btnNext.title = "Step 31 active (Sparse Parameter Delivery & Local Buffer Ingestion complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -15906,7 +16566,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 30);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 31);
 }
 
 function bindActionButtons() {
@@ -15930,16 +16590,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 30) {
+      if (currentStep < 31) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 30 is active (P2P Model Weight Request Dispatch complete).");
+        logToTerminal("INFO", "Step 31 is active (Sparse Parameter Delivery & Local Buffer Ingestion complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 30)
-  for (let s = 1; s <= 30; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 31)
+  for (let s = 1; s <= 31; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

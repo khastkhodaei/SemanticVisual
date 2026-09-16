@@ -47,9 +47,14 @@ from backend.storyboard_10nodes import (
     STEP30_P2P_MODEL_REQUESTS,
     node_outbound_requests,
     STEP30_NODE_OUTBOUND_REQUESTS,
+    model_response_packets,
+    STEP31_MODEL_RESPONSE_PACKETS,
+    node_memory_buffers,
+    STEP31_NODE_BUFFERS,
+    STEP31_SPARSE_VECTORS,
 )
 
-TOTAL_STEPS: int = 30
+TOTAL_STEPS: int = 31
 
 
 

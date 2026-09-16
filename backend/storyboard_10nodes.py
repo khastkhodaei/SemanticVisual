@@ -12,7 +12,7 @@ import copy
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 30
+TOTAL_STEPS: int = 31
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -5377,6 +5377,76 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "boundary_nodes": [1, 6],
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 31:
+        # Step 31: Sparse Parameter Delivery & Local Buffer Ingestion (REP_MODEL_WEIGHTS)
+        step30_data = _get_10node_step_data_raw(30)
+        step31_nodes = copy.deepcopy(step30_data["nodes"])
+
+        for n in step31_nodes:
+            nid = n["id"]
+            n["status"] = "LOCAL_BUFFER_INGESTED"
+            n["buffer_status"] = "BUFFER_READY_FOR_ALIGNMENT"
+            n["memory_buffer"] = STEP31_NODE_BUFFERS[nid]
+            n["ingested_buffer"] = STEP31_NODE_BUFFERS[nid]
+            n["partner_vectors"] = STEP31_NODE_BUFFERS[nid]["partner_vectors"]
+            n["partner_models"] = STEP31_NODE_BUFFERS[nid]["partner_vectors"]
+            n["all_buffer_models"] = STEP31_NODE_BUFFERS[nid]["all_buffer_models"]
+            n["is_buffer_ready"] = True
+
+        terminal_logs = [
+            "[STEP 31] Sparse Parameter Delivery & Local Buffer Ingestion (REP_MODEL_WEIGHTS) complete.",
+            "[MODEL DELIVERY] 20 response packets (15 bytes each) delivered to requesting peers across physical mesh.",
+            "[INGESTION C1] Stored Local C1 + Partners {C9, C2} into local memory buffer (status: BUFFER_READY_FOR_ALIGNMENT).",
+            "[INGESTION C2] Stored Local C2 + Partners {C9, C1} into local memory buffer (status: BUFFER_READY_FOR_ALIGNMENT).",
+            "[INGESTION C3] Stored Local C3 + Partners {C5, C8} into local memory buffer (status: BUFFER_READY_FOR_ALIGNMENT).",
+            "[INGESTION C4] Stored Local C4 + Partners {C5, C8} into local memory buffer (status: BUFFER_READY_FOR_ALIGNMENT).",
+            "[INGESTION C5] Stored Local C5 + Partners {C4, C3} into local memory buffer (status: BUFFER_READY_FOR_ALIGNMENT).",
+            "[INGESTION C6] Stored Local C6 + Partners {C7, C10} into local memory buffer (status: BUFFER_READY_FOR_ALIGNMENT).",
+            "[INGESTION C7] Stored Local C7 + Partners {C10, C6} into local memory buffer (status: BUFFER_READY_FOR_ALIGNMENT).",
+            "[INGESTION C8] Stored Local C8 + Partners {C3, C5} into local memory buffer (status: BUFFER_READY_FOR_ALIGNMENT).",
+            "[INGESTION C9] Stored Local C9 + Partners {C1, C2} into local memory buffer (status: BUFFER_READY_FOR_ALIGNMENT).",
+            "[INGESTION C10] Stored Local C10 + Partners {C7, C6} into local memory buffer (status: BUFFER_READY_FOR_ALIGNMENT).",
+            "[STATUS: LOCAL_BUFFER_INGESTED] All 10 client buffers loaded with 3 models (Self + 2 Partners). Ready for Step 32 alignment.",
+        ]
+
+        return {
+            "step": 31,
+            "total_steps": 31,
+            "title": "Step 31: Sparse Parameter Delivery & Local Buffer Ingestion (REP_MODEL_WEIGHTS)",
+            "phase_badge": "ACTIVE PHASE: STEP 31: SPARSE PARAMETER INGESTION",
+            "description": "Requested peers reply with their Top-P sparsified model parameters (15-byte payload). Every client collects its partners' vectors into a dedicated local aggregation buffer.",
+            "formula": r"\mathcal{B}_i = \{\mathbf{w}_i^{\text{sparse}}\} \cup \{\mathbf{w}_j^{\text{sparse}} \mid j \in \mathcal{P}_i^*, \; K=2\}",
+            "formula_desc": "Clients ingest 15-byte parameter payloads from their Top-2 partners into local memory buffers.",
+            "nodes": step31_nodes,
+            "edges": step30_data["edges"],
+            "model_response_packets": STEP31_MODEL_RESPONSE_PACKETS,
+            "p2p_model_responses": STEP31_MODEL_RESPONSE_PACKETS,
+            "packets": STEP31_MODEL_RESPONSE_PACKETS,
+            "node_buffers": STEP31_NODE_BUFFERS,
+            "sparse_vectors": STEP31_SPARSE_VECTORS,
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step30_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": [1, 5, 10],
+            "exemplars": [1, 3, 5, 7, 8, 9, 10],
+            "leaf_nodes": [2, 4, 6],
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -5647,5 +5717,129 @@ STEP30_NODE_OUTBOUND_REQUESTS = {
     for nid in range(1, 11)
 }
 node_outbound_requests = STEP30_NODE_OUTBOUND_REQUESTS
+
+# Step 31: Sparse Parameter Delivery & Local Buffer Ingestion
+STEP31_SPARSE_VECTORS = {
+    1: [0.46, 0.17, 0.37, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    2: [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    3: [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0],
+    4: [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0],
+    5: [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0],
+    6: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24],
+    7: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27],
+    8: [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0],
+    9: [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    10: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 0.33, 0.12],
+}
+
+STEP31_MODEL_RESPONSE_PACKETS = [
+    # Responses to C1
+    {"from": 9, "to": 1, "path": [9, 7, 4, 1], "bytes": 15, "sparse_vector": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C9 -> C1)", "type": "REP_MODEL_WEIGHTS"},
+    {"from": 2, "to": 1, "path": [2, 1], "bytes": 15, "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C2 -> C1)", "type": "REP_MODEL_WEIGHTS"},
+    # Responses to C2
+    {"from": 9, "to": 2, "path": [9, 7, 4, 1, 2], "bytes": 15, "sparse_vector": [0.45, 0.32, 0.23, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C9 -> C2)", "type": "REP_MODEL_WEIGHTS"},
+    {"from": 1, "to": 2, "path": [1, 2], "bytes": 15, "sparse_vector": [0.46, 0.17, 0.37, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C1 -> C2)", "type": "REP_MODEL_WEIGHTS"},
+    # Responses to C3
+    {"from": 5, "to": 3, "path": [5, 3], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C5 -> C3)", "type": "REP_MODEL_WEIGHTS"},
+    {"from": 8, "to": 3, "path": [8, 6, 3], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C8 -> C3)", "type": "REP_MODEL_WEIGHTS"},
+    # Responses to C4
+    {"from": 5, "to": 4, "path": [5, 4], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C5 -> C4)", "type": "REP_MODEL_WEIGHTS"},
+    {"from": 8, "to": 4, "path": [8, 6, 4], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.32, 0.38, 0.30, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C8 -> C4)", "type": "REP_MODEL_WEIGHTS"},
+    # Responses to C5
+    {"from": 4, "to": 5, "path": [4, 5], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.62, 0.21, 0.17, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C4 -> C5)", "type": "REP_MODEL_WEIGHTS"},
+    {"from": 3, "to": 5, "path": [3, 5], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C3 -> C5)", "type": "REP_MODEL_WEIGHTS"},
+    # Responses to C6
+    {"from": 7, "to": 6, "path": [7, 4, 6], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], "label": "WEIGHTS_RESP (C7 -> C6)", "type": "REP_MODEL_WEIGHTS"},
+    {"from": 10, "to": 6, "path": [10, 8, 6], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 0.33, 0.12], "label": "WEIGHTS_RESP (C10 -> C6)", "type": "REP_MODEL_WEIGHTS"},
+    # Responses to C7
+    {"from": 10, "to": 7, "path": [10, 9, 7], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43, 0.33, 0.12], "label": "WEIGHTS_RESP (C10 -> C7)", "type": "REP_MODEL_WEIGHTS"},
+    {"from": 6, "to": 7, "path": [6, 4, 7], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "label": "WEIGHTS_RESP (C6 -> C7)", "type": "REP_MODEL_WEIGHTS"},
+    # Responses to C8
+    {"from": 3, "to": 8, "path": [3, 6, 8], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.34, 0.20, 0.46, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C3 -> C8)", "type": "REP_MODEL_WEIGHTS"},
+    {"from": 5, "to": 8, "path": [5, 6, 8], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.53, 0.12, 0.35, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C5 -> C8)", "type": "REP_MODEL_WEIGHTS"},
+    # Responses to C9
+    {"from": 1, "to": 9, "path": [1, 4, 7, 9], "bytes": 15, "sparse_vector": [0.46, 0.17, 0.37, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C1 -> C9)", "type": "REP_MODEL_WEIGHTS"},
+    {"from": 2, "to": 9, "path": [2, 1, 4, 7, 9], "bytes": 15, "sparse_vector": [0.19, 0.24, 0.57, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "label": "WEIGHTS_RESP (C2 -> C9)", "type": "REP_MODEL_WEIGHTS"},
+    # Responses to C10
+    {"from": 7, "to": 10, "path": [7, 9, 10], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.41, 0.21, 0.27], "label": "WEIGHTS_RESP (C7 -> C10)", "type": "REP_MODEL_WEIGHTS"},
+    {"from": 6, "to": 10, "path": [6, 8, 10], "bytes": 15, "sparse_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.23, 0.0, 0.34, 0.24], "label": "WEIGHTS_RESP (C6 -> C10)", "type": "REP_MODEL_WEIGHTS"}
+]
+model_response_packets = STEP31_MODEL_RESPONSE_PACKETS
+
+STEP31_NODE_BUFFERS = {}
+for nid in range(1, 11):
+    in_resps = [p for p in STEP31_MODEL_RESPONSE_PACKETS if p["to"] == nid]
+    p1 = in_resps[0]
+    p2 = in_resps[1]
+    STEP31_NODE_BUFFERS[nid] = {
+        "node_id": nid,
+        "status": "BUFFER_READY_FOR_ALIGNMENT",
+        "self_model": {
+            "node_id": nid,
+            "label": f"Local Model (C{nid})",
+            "sparse_vector": STEP31_SPARSE_VECTORS[nid],
+            "bytes": 15,
+            "role": "Self",
+        },
+        "partner_1_model": {
+            "node_id": p1["from"],
+            "label": f"Partner 1 (C{p1['from']})",
+            "sparse_vector": p1["sparse_vector"],
+            "bytes": p1["bytes"],
+            "path": p1["path"],
+            "role": "Partner 1",
+        },
+        "partner_2_model": {
+            "node_id": p2["from"],
+            "label": f"Partner 2 (C{p2['from']})",
+            "sparse_vector": p2["sparse_vector"],
+            "bytes": p2["bytes"],
+            "path": p2["path"],
+            "role": "Partner 2",
+        },
+        "partner_vectors": [
+            {
+                "node_id": p1["from"],
+                "label": f"Partner 1 (C{p1['from']})",
+                "sparse_vector": p1["sparse_vector"],
+                "bytes": p1["bytes"],
+                "path": p1["path"],
+            },
+            {
+                "node_id": p2["from"],
+                "label": f"Partner 2 (C{p2['from']})",
+                "sparse_vector": p2["sparse_vector"],
+                "bytes": p2["bytes"],
+                "path": p2["path"],
+            }
+        ],
+        "all_buffer_models": [
+            {
+                "type": "Local Model (Self)",
+                "node_id": nid,
+                "label": f"Local Model (C{nid})",
+                "vector": STEP31_SPARSE_VECTORS[nid],
+                "sparse_vector": STEP31_SPARSE_VECTORS[nid],
+                "bytes": 15,
+            },
+            {
+                "type": f"Partner 1 (C{p1['from']})",
+                "node_id": p1["from"],
+                "label": f"Partner 1 (C{p1['from']})",
+                "vector": p1["sparse_vector"],
+                "sparse_vector": p1["sparse_vector"],
+                "bytes": 15,
+            },
+            {
+                "type": f"Partner 2 (C{p2['from']})",
+                "node_id": p2["from"],
+                "label": f"Partner 2 (C{p2['from']})",
+                "vector": p2["sparse_vector"],
+                "sparse_vector": p2["sparse_vector"],
+                "bytes": 15,
+            }
+        ]
+    }
+node_memory_buffers = STEP31_NODE_BUFFERS
 
 

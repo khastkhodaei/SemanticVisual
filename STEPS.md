@@ -1155,3 +1155,26 @@ Each client initiates decentralized model exchange by dispatching `REQ_MODEL_WEI
 
 ### 2. Node State Transitions
 - All 10 nodes transition to status: `DISPATCHED_MODEL_REQUESTS`.
+
+---
+
+## Step 31 — Sparse Parameter Delivery & Local Buffer Ingestion (REP_MODEL_WEIGHTS)
+
+Requested peers reply with their Top-P sparsified model parameters (15-byte payload). Every client collects its partners' vectors into a dedicated local aggregation buffer.
+
+### 1. Model Response Delivery Ledger
+- $C_9 \to C_1$ via $[9, 7, 4, 1]$ & $C_2 \to C_1$ via $[2, 1]$
+- $C_9 \to C_2$ via $[9, 7, 4, 1, 2]$ & $C_1 \to C_2$ via $[1, 2]$
+- $C_5 \to C_3$ via $[5, 3]$ & $C_8 \to C_3$ via $[8, 6, 3]$
+- $C_5 \to C_4$ via $[5, 4]$ & $C_8 \to C_4$ via $[8, 6, 4]$
+- $C_4 \to C_5$ via $[4, 5]$ & $C_3 \to C_5$ via $[3, 5]$
+- $C_7 \to C_6$ via $[7, 4, 6]$ & $C_{10} \to C_6$ via $[10, 8, 6]$
+- $C_{10} \to C_7$ via $[10, 9, 7]$ & $C_6 \to C_7$ via $[6, 4, 7]$
+- $C_3 \to C_8$ via $[3, 6, 8]$ & $C_5 \to C_8$ via $[5, 6, 8]$
+- $C_1 \to C_9$ via $[1, 4, 7, 9]$ & $C_2 \to C_9$ via $[2, 1, 4, 7, 9]$
+- $C_7 \to C_{10}$ via $[7, 9, 10]$ & $C_6 \to C_{10}$ via $[6, 8, 10]$
+
+### 2. Local Memory Buffer State
+- Each node $C_i$ stores its own local sparse vector $\mathbf{w}_i^{\text{sparse}}$ and the two incoming partner vectors $\mathbf{w}_{p_1}^{\text{sparse}}, \mathbf{w}_{p_2}^{\text{sparse}}$ in its dedicated local buffer $\mathcal{B}_i$.
+- Payload size per packet: 15 Bytes (3 non-zero floats + dimension indices).
+- All 10 nodes transition to status: `LOCAL_BUFFER_INGESTED` with buffer state `BUFFER_READY_FOR_ALIGNMENT`.
