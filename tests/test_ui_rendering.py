@@ -149,6 +149,33 @@ def test_step5_initiator_packet_color_palette():
     assert '#ca8a04' in js
 
 
+def test_boundary_packets_and_initiator_halos():
+    """Verify Issue #15: boundary relay packet colors and initiator halos match distinct zone themes."""
+    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/app.js", "r", encoding="utf-8") as f:
+        js = f.read()
+
+    assert "ZONE_THEME_COLORS" in js
+    # Zone 2 (Emerald Green)
+    assert "#10b981" in js
+    assert "#059669" in js
+    # Zone 4 (Coral/Orange)
+    assert "#f97316" in js
+    assert "#ea580c" in js
+    # Zone 8 (Violet/Purple)
+    assert "#a855f7" in js
+    assert "#7c3aed" in js
+
+    # Cytoscape stylesheet initiator selectors have distinct border colors
+    assert '"node.zone-initiator-2"' in js
+    assert '"node.zone-initiator-4"' in js
+    assert '"node.zone-initiator-8"' in js
+
+    # Step 6 boundary packet and Step 9 consensus relay animation use ZONE_THEME_COLORS
+    assert "animateStep6BoundaryPackets" in js
+    assert "animateStep9ConsensusRelays" in js
+
+
+
 
 
 

@@ -295,6 +295,13 @@ const ZONE_COLOR_MAP = {
   10: "#84cc16",  // C10: Lime
 };
 
+// Distinct Zone Identity Theming for Boundary Packets and Initiator Halos
+const ZONE_THEME_COLORS = {
+  2: { dot: "#10b981", border: "#059669", text: "#047857", bg: "rgba(16, 185, 129, 0.15)" },
+  4: { dot: "#f97316", border: "#ea580c", text: "#c2410c", bg: "rgba(249, 115, 22, 0.15)" },
+  8: { dot: "#a855f7", border: "#7c3aed", text: "#6d28d9", bg: "rgba(168, 85, 247, 0.15)" }
+};
+
 function getZoneColor(zone) {
   if (zone === null || zone === undefined) return "#2563eb";
   if (typeof zone === "number") {
@@ -626,7 +633,7 @@ function initCytoscape() {
         selector: "node.zone-initiator-2",
         style: {
           "background-color": "#059669",
-          "border-color": "#f59e0b",
+          "border-color": "#059669",
           "shadow-color": "#059669",
           "border-width": 4.5,
           "color": "#ffffff"
@@ -636,7 +643,7 @@ function initCytoscape() {
         selector: "node.zone-initiator-4",
         style: {
           "background-color": "#ea580c",
-          "border-color": "#f59e0b",
+          "border-color": "#ea580c",
           "shadow-color": "#ea580c",
           "border-width": 4.5,
           "color": "#ffffff"
@@ -646,7 +653,7 @@ function initCytoscape() {
         selector: "node.zone-initiator-8",
         style: {
           "background-color": "#7c3aed",
-          "border-color": "#f59e0b",
+          "border-color": "#7c3aed",
           "shadow-color": "#7c3aed",
           "border-width": 4.5,
           "color": "#ffffff"
@@ -1925,7 +1932,8 @@ function applyNodeZoneColor(nodeElOrId, nodeData) {
   const zoneColor = getZoneColor(data.assigned_zone || data.zone_id || data.winner_initiator_id);
   const isInit = !!data.is_initiator;
   const isBnd = !!data.is_boundary;
-  const borderColor = isInit ? '#d97706' : (isBnd ? '#f87171' : '#ffffff');
+  const zoneId = data.assigned_zone || data.zone_id || data.winner_initiator_id || (isInit ? data.id : null);
+  const borderColor = isInit ? (ZONE_THEME_COLORS[zoneId]?.border || '#d97706') : (isBnd ? '#f87171' : '#ffffff');
   const borderWidth = isInit ? 4 : (isBnd ? 2.5 : 1.5);
 
   // Update Cytoscape element data attributes
@@ -2387,7 +2395,14 @@ function animateStep6BoundaryPackets(packets, allNodes) {
       const curX = p1.x + (p2.x - p1.x) * ease;
       const curY = p1.y + (p2.y - p1.y) * ease;
 
-      const pktColor = pkt.color || "#8b5cf6";
+      const targetZoneId = pkt.target_num || (pkt.introduced_neighbor === "C2" ? 2 : (pkt.introduced_neighbor === "C4" ? 4 : (pkt.introduced_neighbor === "C8" ? 8 : null)));
+      const zoneTheme = ZONE_THEME_COLORS[targetZoneId] || ZONE_THEME_COLORS[pkt.target_num] || {
+        dot: pkt.color || "#10b981",
+        border: "#059669",
+        text: "#047857",
+        bg: "rgba(16, 185, 129, 0.15)"
+      };
+      const pktColor = zoneTheme.dot || pkt.color || "#10b981";
 
       // Animated traveling packet particle
       ctx.save();
@@ -2410,8 +2425,8 @@ function animateStep6BoundaryPackets(packets, allNodes) {
         const introNbr = pkt.introduced_neighbor || (pkt.label ? pkt.label.replace(/[^0-9C]/g, "") : "");
         const badgeLabel = `NEIGHBOR (${introNbr})`;
         const badgeBg = `rgba(15, 23, 42, ${0.88 * badgeAlpha})`;
-        const textColor = "#fbbf24"; // Amber/gold for high contrast
-        const borderColor = `rgba(245, 158, 11, ${0.75 * badgeAlpha})`;
+        const textColor = zoneTheme.dot; // #10b981 (C2), #f97316 (C4), #a855f7 (C8)
+        const borderColor = zoneTheme.border; // #059669 (C2), #ea580c (C4), #7c3aed (C8)
 
         ctx.save();
         ctx.globalAlpha = badgeAlpha;
@@ -2428,7 +2443,7 @@ function animateStep6BoundaryPackets(packets, allNodes) {
       }
     });
 
-    // When packets arrive (progress near 1.0), briefly pulse target initiator nodes in golden yellow
+    // When packets arrive (progress near 1.0), pulse target initiator nodes in their distinct zone halos
     if (progress >= 0.92) {
       const pulseProg = (progress - 0.92) / 0.08;
       const pulseAlpha = Math.sin(pulseProg * Math.PI) * 0.85;
@@ -2439,11 +2454,13 @@ function animateStep6BoundaryPackets(packets, allNodes) {
         const nodeEl = getNodeElement(id);
         if (nodeEl) {
           const pos = nodeEl.renderedPosition();
+          const haloColor = ZONE_THEME_COLORS[id]?.border || "#f59e0b";
           ctx.beginPath();
           ctx.arc(pos.x, pos.y, 26 + pulseProg * 10, 0, Math.PI * 2);
-          ctx.strokeStyle = `rgba(245, 158, 11, ${pulseAlpha})`;
+          ctx.strokeStyle = haloColor;
+          ctx.globalAlpha = pulseAlpha;
           ctx.lineWidth = 3.5;
-          ctx.shadowColor = "#f59e0b";
+          ctx.shadowColor = haloColor;
           ctx.shadowBlur = 12;
           ctx.stroke();
         }
@@ -2803,11 +2820,13 @@ function animateStep8ReportPackets(packets, allNodes) {
         const nodeEl = getNodeElement(id);
         if (nodeEl) {
           const pos = nodeEl.renderedPosition();
+          const haloColor = ZONE_THEME_COLORS[id]?.border || "#f59e0b";
           ctx.beginPath();
           ctx.arc(pos.x, pos.y, 25 + pulseProg * 10, 0, Math.PI * 2);
-          ctx.strokeStyle = `rgba(245, 158, 11, ${pulseAlpha})`;
+          ctx.strokeStyle = haloColor;
+          ctx.globalAlpha = pulseAlpha;
           ctx.lineWidth = 3.5;
-          ctx.shadowColor = "#f59e0b";
+          ctx.shadowColor = haloColor;
           ctx.shadowBlur = 12;
           ctx.stroke();
         }
@@ -2946,12 +2965,14 @@ function animateStep9ConsensusRelays(packets, allNodes) {
         const initEl = getNodeElement(initId);
         if (initEl) {
           const pos = initEl.renderedPosition();
+          const haloColor = ZONE_THEME_COLORS[initId]?.border || "#6366f1";
           ctx.save();
           ctx.beginPath();
           ctx.arc(pos.x, pos.y, 26 + arrProg * 10, 0, Math.PI * 2);
-          ctx.strokeStyle = `rgba(99, 102, 241, ${arrAlpha})`;
+          ctx.strokeStyle = haloColor;
+          ctx.globalAlpha = arrAlpha;
           ctx.lineWidth = 3.5;
-          ctx.shadowColor = "#6366f1";
+          ctx.shadowColor = haloColor;
           ctx.shadowBlur = 12;
           ctx.stroke();
           ctx.restore();
@@ -2995,7 +3016,13 @@ function animateStep9ConsensusRelays(packets, allNodes) {
         curY = p1.y + (p2.y - p1.y) * subEase;
       }
 
-      const pktColor = pkt.color || "#4f46e5";
+      const zoneTheme = ZONE_THEME_COLORS[pkt.zone_id || pkt.source_num] || {
+        dot: pkt.color || "#4f46e5",
+        border: "#6366f1",
+        text: "#818cf8",
+        bg: "rgba(99, 102, 241, 0.15)"
+      };
+      const pktColor = zoneTheme.dot || pkt.color || "#4f46e5";
 
       // Animated traveling packet particle
       ctx.save();
@@ -3017,8 +3044,8 @@ function animateStep9ConsensusRelays(packets, allNodes) {
       if (badgeAlpha > 0.05) {
         const badgeLabel = pkt.label || `P=${pkt.p_val || 3}`;
         const badgeBg = `rgba(15, 23, 42, ${0.90 * badgeAlpha})`;
-        const textColor = pkt.p_val === 2 ? "#34d399" : "#fdba74";
-        const borderColor = pkt.p_val === 2 ? `rgba(52, 211, 153, ${0.8 * badgeAlpha})` : `rgba(251, 146, 60, ${0.8 * badgeAlpha})`;
+        const textColor = zoneTheme.dot;
+        const borderColor = zoneTheme.border;
 
         ctx.save();
         ctx.globalAlpha = badgeAlpha;
@@ -12577,13 +12604,13 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
           nodeClasses += `initiator-node zone-initiator-${zid} `;
           if (zid === 2) {
             bgColor = "#059669";
-            borderColor = isExemplar ? "#f59e0b" : "#f59e0b";
+            borderColor = isExemplar ? "#f59e0b" : "#059669";
           } else if (zid === 4) {
             bgColor = "#ea580c";
-            borderColor = isExemplar ? "#f59e0b" : "#f59e0b";
+            borderColor = isExemplar ? "#f59e0b" : "#ea580c";
           } else if (zid === 8) {
             bgColor = "#7c3aed";
-            borderColor = isExemplar ? "#f59e0b" : "#f59e0b";
+            borderColor = isExemplar ? "#f59e0b" : "#7c3aed";
           }
         }
       } else {
@@ -12603,13 +12630,13 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
       const zid = n.assigned_zone || n.zone_id;
       if (zid === 2) {
         bgColor = "#059669";
-        borderColor = isInit ? "#047857" : (n.is_boundary ? "#ea580c" : "#047857");
+        borderColor = isInit ? "#059669" : (n.is_boundary ? "#ea580c" : "#047857");
       } else if (zid === 4) {
         bgColor = "#ea580c";
-        borderColor = isInit ? "#c2410c" : (n.is_boundary ? "#7c3aed" : "#c2410c");
+        borderColor = isInit ? "#ea580c" : (n.is_boundary ? "#7c3aed" : "#c2410c");
       } else if (zid === 8) {
         bgColor = "#7c3aed";
-        borderColor = isInit ? "#6d28d9" : "#6d28d9";
+        borderColor = isInit ? "#7c3aed" : "#6d28d9";
       }
 
       if (n.is_boundary) {
@@ -13055,7 +13082,13 @@ function renderNodeModal(node, stepData = currentStepData) {
 
   // Local Data Distribution: Clean percentage table showing ONLY classes this client actually holds
   const distSection = document.getElementById("cardDataDistributionSection");
-  if (distSection) distSection.classList.remove("hidden");
+  if (distSection) {
+    if (currentStep === 2) {
+      distSection.classList.add("hidden");
+    } else {
+      distSection.classList.remove("hidden");
+    }
+  }
   if (distTableBody) {
     distTableBody.innerHTML = "";
     const dist = nodeData.data_distribution || nodeData.distribution || STORYBOARD_10_DISTRIBUTION[idNum] || {};
