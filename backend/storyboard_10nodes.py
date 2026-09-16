@@ -12,7 +12,7 @@ import copy
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 32
+TOTAL_STEPS: int = 33
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -5512,6 +5512,72 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "boundary_nodes": [1, 6],
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 33:
+        # Step 33: Local Model Aggregation (FedAvg) & Convergence Commitment
+        step32_data = _get_10node_step_data_raw(32)
+        step33_nodes = copy.deepcopy(step32_data["nodes"])
+
+        for n in step33_nodes:
+            nid = n["id"]
+            agg_info = STEP33_AGGREGATED_MODELS[nid]
+            n["status"] = agg_info["status"]
+            n["round"] = agg_info["round"]
+            n["weights"] = agg_info["weights"]
+            n["aggregated_weights"] = agg_info["weights"]
+            n["accuracy_gain"] = agg_info["accuracy_gain"]
+            n["model_state"] = "FEDERATED_MODEL_CONVERGED"
+            n["is_converged"] = True
+
+        terminal_logs = [
+            "[STEP 33] Local Model Aggregation (FedAvg) & Convergence Commitment initiated.",
+            "[FEDAVG C1] Local aggregation committed: weights=[0.3742, 0.2419, 0.3838, ...] (Gain: +4.8%).",
+            "[FEDAVG C2] Local aggregation committed: weights=[0.3600, 0.2456, 0.3944, ...] (Gain: +6.2%).",
+            "[FEDAVG C3] Local aggregation committed: weights=[0.3957, 0.2319, 0.3725, ...] (Gain: +5.1%).",
+            "[FEDAVG C4] Local aggregation committed: weights=[0.4990, 0.2306, 0.2703, ...] (Gain: +3.9%).",
+            "[FEDAVG C5] Local aggregation committed: weights=[0.4981, 0.1755, 0.3264, ...] (Gain: +4.4%).",
+            "[FEDAVG C6] Local aggregation committed: weights=[0.1111, 0.2171, 0.3037, ...] (Gain: +5.7%).",
+            "[FEDAVG C7] Local aggregation committed: weights=[0.0499, 0.3287, 0.2837, ...] (Gain: +4.1%).",
+            "[FEDAVG C8] Local aggregation committed: weights=[0.3913, 0.2403, 0.3684, ...] (Gain: +5.3%).",
+            "[FEDAVG C9] Local aggregation committed: weights=[0.3805, 0.2452, 0.3743, ...] (Gain: +4.6%).",
+            "[FEDAVG C10] Local aggregation committed: weights=[0.0497, 0.3295, 0.2867, ...] (Gain: +4.9%).",
+            "[STATUS: AGGREGATION_COMMITTED] Round 1 federated aggregation complete across all 10 nodes with zero raw data leakage.",
+        ]
+
+        return {
+            "step": 33,
+            "total_steps": 33,
+            "title": "Step 33: Local Model Aggregation (FedAvg) & Convergence Commitment",
+            "phase_badge": "ACTIVE PHASE: STEP 33: FEDERATED AGGREGATION & MODEL CONVERGENCE",
+            "description": "Round 1 federated aggregation complete across all 10 nodes with zero raw data leakage.",
+            "formula": r"\mathbf{w}_i^{t+1} \leftarrow \mathbf{w}_i^{\text{ref}} = \sum_{j \in \mathcal{P}_i^* \cup \{i\}} \alpha_{i, j} \mathbf{w}_j",
+            "formula_desc": "Every node applies Federated Averaging, committing similarity-weighted parameters as updated Round 1 local model.",
+            "nodes": step33_nodes,
+            "edges": step32_data["edges"],
+            "aggregated_models": STEP33_AGGREGATED_MODELS,
+            "packets": [],
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step32_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": [1, 5, 10],
+            "exemplars": [1, 3, 5, 7, 8, 9, 10],
+            "leaf_nodes": [2, 4, 6],
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -5921,5 +5987,21 @@ STEP32_REFERENCE_MODELS = {
     10: {"alpha_self": 0.4045, "partner_weights": {7: 0.3794, 6: 0.2161}, "ref_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0497, 0.3295, 0.2867, 0.2028]}
 }
 reference_models = STEP32_REFERENCE_MODELS
+
+# Step 33: Local Model Aggregation (FedAvg) & Convergence Commitment
+STEP33_AGGREGATED_MODELS = {
+    1: {"round": 1, "status": "AGGREGATION_COMMITTED", "weights": [0.3742, 0.2419, 0.3838, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "accuracy_gain": "+4.8%"},
+    2: {"round": 1, "status": "AGGREGATION_COMMITTED", "weights": [0.3600, 0.2456, 0.3944, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "accuracy_gain": "+6.2%"},
+    3: {"round": 1, "status": "AGGREGATION_COMMITTED", "weights": [0.0, 0.0, 0.0, 0.3957, 0.2319, 0.3725, 0.0, 0.0, 0.0, 0.0], "accuracy_gain": "+5.1%"},
+    4: {"round": 1, "status": "AGGREGATION_COMMITTED", "weights": [0.0, 0.0, 0.0, 0.4990, 0.2306, 0.2703, 0.0, 0.0, 0.0, 0.0], "accuracy_gain": "+3.9%"},
+    5: {"round": 1, "status": "AGGREGATION_COMMITTED", "weights": [0.0, 0.0, 0.0, 0.4981, 0.1755, 0.3264, 0.0, 0.0, 0.0, 0.0], "accuracy_gain": "+4.4%"},
+    6: {"round": 1, "status": "AGGREGATION_COMMITTED", "weights": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1111, 0.2171, 0.3037, 0.2169], "accuracy_gain": "+5.7%"},
+    7: {"round": 1, "status": "AGGREGATION_COMMITTED", "weights": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0499, 0.3287, 0.2837, 0.2066], "accuracy_gain": "+4.1%"},
+    8: {"round": 1, "status": "AGGREGATION_COMMITTED", "weights": [0.0, 0.0, 0.0, 0.3913, 0.2403, 0.3684, 0.0, 0.0, 0.0, 0.0], "accuracy_gain": "+5.3%"},
+    9: {"round": 1, "status": "AGGREGATION_COMMITTED", "weights": [0.3805, 0.2452, 0.3743, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "accuracy_gain": "+4.6%"},
+    10: {"round": 1, "status": "AGGREGATION_COMMITTED", "weights": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0497, 0.3295, 0.2867, 0.2028], "accuracy_gain": "+4.9%"}
+}
+aggregated_models = STEP33_AGGREGATED_MODELS
+
 
 
