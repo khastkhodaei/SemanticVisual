@@ -109,4 +109,28 @@ def test_node_inspector_modal_structure_and_node_payloads(client):
             ), f"Step {step_num} node {n['id']} missing distribution/vector"
 
 
+def test_sidebar_stabilization_structure_and_styles():
+    """Verify sidebar layout stabilization classes and formula container exist."""
+    for path in [
+        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/index.html",
+        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/templates/index.html",
+    ]:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert "sidebar-column" in content, f"Missing sidebar-column in {path}"
+            assert "sidebar-card-top" in content, f"Missing sidebar-card-top in {path}"
+            assert "sidebar-card-bottom" in content, f"Missing sidebar-card-bottom in {path}"
+            assert "dataset-classes-card" in content, f"Missing dataset-classes-card in {path}"
+            assert "formula-container" in content, f"Missing formula-container in {path}"
+
+    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/style.css", "r", encoding="utf-8") as f:
+        css = f.read()
+        assert ".sidebar-column" in css
+        assert ".sidebar-card-top" in css
+        assert ".sidebar-card-bottom" in css
+        assert ".dataset-classes-card" in css
+        assert ".formula-container" in css
+
+
+
 

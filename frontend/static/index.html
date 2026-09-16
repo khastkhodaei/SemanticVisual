@@ -275,10 +275,10 @@
   <main class="flex-1 grid grid-cols-12 gap-4 px-6 pb-2 min-h-0 overflow-hidden">
 
     <!-- Left Sidebar: Step Formula Card at Top + Dataset Classes (3 cols) -->
-    <aside class="col-span-12 lg:col-span-3 flex flex-col min-h-0 space-y-2 overflow-hidden">
+    <aside class="col-span-12 lg:col-span-3 sidebar-column flex flex-col min-h-0 space-y-2 overflow-hidden">
       
       <!-- Prominent Step Formula Card (Positioned at the TOP of the sidebar) -->
-      <div id="sidebarFormulaCard" class="formula-card flex-shrink-0 space-y-1">
+      <div id="sidebarFormulaCard" class="formula-card sidebar-card-top flex-shrink-0 space-y-1">
         <div class="flex items-center justify-between border-b border-slate-200 pb-1">
           <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1">
             <span>📐</span>
@@ -288,7 +288,7 @@
         </div>
 
         <!-- KaTeX Math Container -->
-        <div id="sidebarFormula" class="text-xs text-slate-900 py-1 text-center overflow-x-auto min-h-[32px] flex items-center justify-center font-mono">
+        <div id="sidebarFormula" class="formula-container text-xs text-slate-900 py-1 text-center overflow-x-auto min-h-[36px] flex items-center justify-center font-mono">
           <!-- Rendered dynamically via KaTeX -->
         </div>
 
@@ -298,7 +298,7 @@
       </div>
 
       <!-- Dataset Classes Card (Scrollable inside, takes remaining flexible height) -->
-      <div id="classListCard" class="paper-card p-3 flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div id="classListCard" class="paper-card dataset-classes-card sidebar-card-bottom p-3 flex-1 min-h-0 flex flex-col overflow-hidden">
         <div class="flex items-center justify-between border-b border-slate-100 pb-1.5 flex-shrink-0">
           <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
             <span class="mr-1.5">🏷️</span> Dataset Classes (10)
@@ -311,7 +311,7 @@
         </p>
 
         <!-- Class List Chips -->
-        <div id="classList" class="space-y-1 text-xs font-mono overflow-y-auto min-h-0 flex-1 pr-1">
+        <div id="classList" class="class-list space-y-1 text-xs font-mono overflow-y-auto min-h-0 flex-1 pr-1">
           <!-- Populated dynamically by JavaScript -->
         </div>
 

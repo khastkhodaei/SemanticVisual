@@ -121,8 +121,24 @@ body {
   border-radius: 0.5rem;
 }
 
+/* Sidebar Container Layout Stabilization */
+.sidebar-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
 /* Formula Card at Top of Sidebar */
-.formula-card {
+.formula-card,
+.sidebar-card-top {
+  flex: 0 0 auto;
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid var(--border-strong);
   border-left: 4px solid var(--brand-blue);
@@ -130,6 +146,41 @@ body {
   padding: 0.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+/* Bottom Card: Dataset Classes & Telemetry */
+.sidebar-card-bottom,
+.dataset-classes-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.dataset-classes-card .class-list,
+#classList {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow-y: auto;
+}
+
+/* Ensure raw LaTeX equations render cleanly without overflow */
+.formula-container,
+#sidebarFormula {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 4px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  line-height: 1.35;
 }
 
 .formula-card.formula-amber {
