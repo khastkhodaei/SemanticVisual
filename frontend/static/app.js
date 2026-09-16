@@ -302,6 +302,98 @@ const ZONE_THEME_COLORS = {
   8: { dot: "#a855f7", border: "#7c3aed", text: "#6d28d9", bg: "rgba(168, 85, 247, 0.15)" }
 };
 
+// Super-Cluster Palette Contracts for Phases 4-7
+const SC_THEME_COLORS = {
+  "SC-1": { dot: "#38bdf8", border: "#0284c7", text: "#0369a1", bg: "rgba(56, 189, 248, 0.15)" },
+  "SC-2": { dot: "#fbbf24", border: "#d97706", text: "#b45309", bg: "rgba(251, 191, 36, 0.15)" },
+  "SC-3": { dot: "#c084fc", border: "#9333ea", text: "#7e22ce", bg: "rgba(192, 132, 252, 0.15)" }
+};
+
+// Centralized Unified Packet Color Resolver (Issue #16)
+function resolvePacketTheme(packet, stepData) {
+  if (!packet) {
+    return { dot: "#94a3b8", border: "#64748b", text: "#475569", bg: "rgba(148, 163, 184, 0.15)" };
+  }
+
+  const data = stepData || currentStepData || {};
+  const nodes = data.nodes || [];
+  const getNode = (id) => {
+    if (id === null || id === undefined) return null;
+    const cleanId = typeof id === "string" ? parseInt(id.replace(/[^0-9]/g, ""), 10) : id;
+    if (Array.isArray(nodes)) {
+      return nodes.find(n => n.id === cleanId) || null;
+    }
+    return nodes[cleanId] || null;
+  };
+
+  const fromId = packet.from ?? packet.source_num ?? packet.source ?? packet.src;
+  const toId = packet.to ?? packet.target_num ?? packet.target ?? packet.tgt;
+  const fromNode = getNode(fromId);
+  const toNode = getNode(toId);
+
+  // 1. Check if packet explicitly belongs to a Super-Cluster or is in Super-Cluster phases (Steps 17-34)
+  const scId = packet.super_cluster || packet.sc_id || packet.cluster_id ||
+               fromNode?.assigned_super_cluster || toNode?.assigned_super_cluster ||
+               ([1, 2, 9].includes(fromId) ? "SC-1" : ([3, 4, 5, 8].includes(fromId) ? "SC-2" : ([6, 7, 10].includes(fromId) ? "SC-3" : null)));
+
+  if (scId && SC_THEME_COLORS[scId]) {
+    if (packet.super_cluster || (window.currentStep && window.currentStep >= 17)) {
+      return SC_THEME_COLORS[scId];
+    }
+  }
+
+  // 2. Check if packet belongs to an Initiator / Zone (Steps 4-16)
+  const zoneId = packet.zone || packet.zone_id || packet.target_zone ||
+                 fromNode?.assigned_zone || fromNode?.zone_id ||
+                 toNode?.assigned_zone || toNode?.zone_id ||
+                 ([1, 2, 3].includes(fromId) ? 2 : ([4, 5, 6, 7].includes(fromId) ? 4 : ([8, 9, 10].includes(fromId) ? 8 : null)));
+
+  if (ZONE_THEME_COLORS[zoneId]) {
+    return ZONE_THEME_COLORS[zoneId];
+  }
+
+  // 3. Fallback to Super-Cluster if available
+  if (scId && SC_THEME_COLORS[scId]) {
+    return SC_THEME_COLORS[scId];
+  }
+
+  // 4. Fallback neutral theme
+  return { dot: "#94a3b8", border: "#64748b", text: "#475569", bg: "rgba(148, 163, 184, 0.15)" };
+}
+
+// Unified Canvas Transit Packet Drawing Pipeline
+function drawTransitPackets(ctx, packet, x, y, label, options = {}) {
+  const theme = resolvePacketTheme(packet, options.stepData);
+  const alpha = options.alpha !== undefined ? options.alpha : 1.0;
+  const radius = options.radius || 5.5;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = theme.dot;
+  ctx.shadowColor = theme.dot;
+  ctx.shadowBlur = 10;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius * 0.45, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowBlur = 0;
+  ctx.fill();
+
+  if (label) {
+    const badgeBg = options.badgeBg || `rgba(15, 23, 42, ${0.90 * alpha})`;
+    const textColor = theme.dot;
+    const borderColor = theme.border;
+    drawCanvasFloatingBadge(ctx, label, x, y - (options.badgeOffsetY || 16), badgeBg, textColor, borderColor);
+  }
+
+  ctx.restore();
+  return theme;
+}
+
 function getZoneColor(zone) {
   if (zone === null || zone === undefined) return "#2563eb";
   if (typeof zone === "number") {
@@ -4332,13 +4424,14 @@ function drawTopProbePacket(ctx, x, y, label) {
 }
 
 // Helper: Draw REQ_CLUSTER_CATALOG cyan/golden traveling particle
-function drawCatalogQueryPacket(ctx, x, y, label) {
+function drawCatalogQueryPacket(ctx, x, y, label, packet = null) {
+  const theme = resolvePacketTheme(packet || { zone: 4, from: 4 }, currentStepData);
   ctx.save();
   ctx.beginPath();
   ctx.arc(x, y, 7.5, 0, Math.PI * 2);
-  ctx.fillStyle = "#06b6d4";
+  ctx.fillStyle = theme.dot || "#06b6d4";
   ctx.shadowBlur = 18;
-  ctx.shadowColor = "#06b6d4";
+  ctx.shadowColor = theme.dot || "#06b6d4";
   ctx.fill();
 
   ctx.beginPath();
@@ -4348,15 +4441,49 @@ function drawCatalogQueryPacket(ctx, x, y, label) {
 
   ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
   const lW = ctx.measureText(label).width;
-  ctx.fillStyle = "rgba(8, 51, 68, 0.95)";
-  ctx.strokeStyle = "#22d3ee";
+  ctx.fillStyle = theme.bg || "rgba(8, 51, 68, 0.95)";
+  ctx.strokeStyle = theme.border || "#22d3ee";
   ctx.lineWidth = 1.2;
   ctx.beginPath();
   ctx.roundRect(x + 9, y - 13, lW + 10, 16, 4);
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = "#cffafe";
+  ctx.fillStyle = theme.dot || "#cffafe";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x + 14, y - 5);
+  ctx.restore();
+}
+
+// Helper: Draw REP_CLUSTER_CATALOG emerald/golden traveling particle
+function drawCatalogResponsePacket(ctx, x, y, label, color = null, packet = null) {
+  const theme = resolvePacketTheme(packet || (color ? { color } : { zone: 2, from: 2 }), currentStepData);
+  const pktColor = color || theme.dot || "#10b981";
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, 7.5, 0, Math.PI * 2);
+  ctx.fillStyle = pktColor;
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = pktColor;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+  const lW = ctx.measureText(label).width;
+  ctx.fillStyle = theme.bg || "rgba(6, 78, 59, 0.95)";
+  ctx.strokeStyle = theme.border || "#34d399";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.roundRect(x + 9, y - 13, lW + 10, 16, 4);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = theme.dot || "#d1fae5";
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText(label, x + 14, y - 5);
@@ -4624,38 +4751,6 @@ function animateStep15CatalogQuery(packets, allNodes) {
     activeAnimationId = requestAnimationFrame(runFrame);
   }
 
-}
-
-// Helper: Draw REP_CLUSTER_CATALOG emerald/golden traveling particle
-function drawCatalogResponsePacket(ctx, x, y, label, color = "#10b981") {
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(x, y, 7.5, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.shadowBlur = 18;
-  ctx.shadowColor = color;
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-  ctx.fillStyle = "#ffffff";
-  ctx.fill();
-
-  ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-  const lW = ctx.measureText(label).width;
-  ctx.fillStyle = "rgba(6, 78, 59, 0.95)";
-  ctx.strokeStyle = "#34d399";
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  ctx.roundRect(x + 9, y - 13, lW + 10, 16, 4);
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.fillStyle = "#d1fae5";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.fillText(label, x + 14, y - 5);
-  ctx.restore();
 }
 
 // 5.16 STEP 16: Zone Catalog Response & Signature Ingestion at C4
@@ -7757,20 +7852,21 @@ function animateStep22PeerDiscovery(discoveryPackets, allNodes) {
         const travelProg = tPkt / 0.80;
         const pt = getPointAlongPath(pkt.path, travelProg, physNodePosMap);
         if (pt) {
+          const theme = resolvePacketTheme(pkt, currentStepData);
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, 5.5, 0, Math.PI * 2);
           ctx.fillStyle = "#ffffff";
-          ctx.shadowColor = "#38bdf8";
+          ctx.shadowColor = theme.dot;
           ctx.shadowBlur = 14;
           ctx.fill();
 
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, 8.5, 0, Math.PI * 2);
-          ctx.strokeStyle = "#0284c7";
+          ctx.strokeStyle = theme.border;
           ctx.lineWidth = 1.8;
           ctx.stroke();
 
-          drawFloatingTag(ctx, pkt.label || "DISCOVERY_QUERY", pt.x, pt.y - 15, "#38bdf8", "rgba(15, 23, 42, 0.90)", "#38bdf8");
+          drawFloatingTag(ctx, pkt.label || "DISCOVERY_QUERY", pt.x, pt.y - 15, theme.border, theme.bg, theme.dot);
         }
       } else {
         const arrProg = (tPkt - 0.80) / 0.20;
@@ -8181,20 +8277,21 @@ function animateStep23ExemplarRouting(packetTraces, allNodes) {
         const travelProg = tPkt / 0.80;
         const pt = getPointAlongPath(pkt.path, travelProg, physNodePosMap);
         if (pt) {
+          const theme = resolvePacketTheme(pkt, currentStepData);
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, 6.0, 0, Math.PI * 2);
           ctx.fillStyle = "#ffffff";
-          ctx.shadowColor = "#a855f7";
+          ctx.shadowColor = theme.dot;
           ctx.shadowBlur = 16;
           ctx.fill();
 
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, 9.0, 0, Math.PI * 2);
-          ctx.strokeStyle = "#7c3aed";
+          ctx.strokeStyle = theme.border;
           ctx.lineWidth = 2.0;
           ctx.stroke();
 
-          drawFloatingTag(ctx, pkt.label || "FWD_QUERY", pt.x, pt.y - 16, "#a855f7", "rgba(15, 23, 42, 0.92)", "#f3e8ff");
+          drawFloatingTag(ctx, pkt.label || "FWD_QUERY", pt.x, pt.y - 16, theme.border, theme.bg, theme.dot);
         }
       } else {
         const arrProg = (tPkt - 0.80) / 0.20;
@@ -10752,20 +10849,21 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
         const travelProg = tPkt / 0.80;
         const pt = getPointAlongPath(pkt.path, travelProg, physNodePosMap);
         if (pt) {
+          const theme = resolvePacketTheme(pkt, currentStepData);
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, 5.5, 0, Math.PI * 2);
           ctx.fillStyle = "#ffffff";
-          ctx.shadowColor = "#fbbf24";
+          ctx.shadowColor = theme.dot;
           ctx.shadowBlur = 14;
           ctx.fill();
 
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, 8.5, 0, Math.PI * 2);
-          ctx.strokeStyle = "#d97706";
+          ctx.strokeStyle = theme.border;
           ctx.lineWidth = 1.8;
           ctx.stroke();
 
-          drawFloatingTag(ctx, "REQ_WEIGHTS", pt.x, pt.y - 14, "#f59e0b", "rgba(15, 23, 42, 0.94)", "#fde68a");
+          drawFloatingTag(ctx, "REQ_WEIGHTS", pt.x, pt.y - 14, theme.border, theme.bg, theme.dot);
         }
       } else {
         const arrProg = (tPkt - 0.80) / 0.20;
@@ -11168,17 +11266,18 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
         // Head position
         const headPt = getPointAlongPath(path, prog, physNodePosMap);
         if (headPt) {
+          const theme = resolvePacketTheme(pkt, currentStepData);
           ctx.save();
           ctx.beginPath();
           ctx.arc(headPt.x, headPt.y, 6.5, 0, Math.PI * 2);
-          ctx.strokeStyle = "#047857";
+          ctx.strokeStyle = theme.border;
           ctx.lineWidth = 1.6;
           ctx.stroke();
           ctx.restore();
 
           // Floating tag on packet
-          const tagLabel = "WEIGHTS_RESP (15B)";
-          drawFloatingTag(ctx, tagLabel, headPt.x, headPt.y - 12, "#10b981", "rgba(15, 23, 42, 0.94)", "#a7f3d0");
+          const tagLabel = pkt.label || "WEIGHTS_RESP (15B)";
+          drawFloatingTag(ctx, tagLabel, headPt.x, headPt.y - 12, theme.border, theme.bg, theme.dot);
         }
       } else {
         // Arrival / Ingestion ring at target client node

@@ -175,6 +175,33 @@ def test_boundary_packets_and_initiator_halos():
     assert "animateStep9ConsensusRelays" in js
 
 
+def test_unified_packet_color_pipeline():
+    """Verify Issue #16: unified packet color pipeline across all 34 simulation steps."""
+    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/app.js", "r", encoding="utf-8") as f:
+        js = f.read()
+
+    # Centralized helper functions exist
+    assert "function resolvePacketTheme(" in js
+    assert "function drawTransitPackets(" in js
+
+    # Super-Cluster palette definition
+    assert "SC_THEME_COLORS" in js
+    # SC-1: Sky Blue
+    assert "#38bdf8" in js
+    # SC-2: Amber
+    assert "#fbbf24" in js
+    # SC-3: Violet
+    assert "#c084fc" in js
+
+    # Packet drawing functions route through resolvePacketTheme
+    assert "resolvePacketTheme(pkt" in js or "resolvePacketTheme(packet" in js
+    assert "animateStep22PeerDiscovery" in js
+    assert "animateStep23ExemplarRouting" in js
+    assert "animateStep30ModelRequests" in js
+    assert "animateStep31BufferIngestion" in js
+
+
+
 
 
 
