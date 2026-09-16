@@ -1104,9 +1104,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 28)
+// 4. Main Step Loading Function (Steps 1 to 29)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 28) return;
+  if (stepNumber < 1 || stepNumber > 29) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -1357,6 +1357,13 @@ async function loadStep(stepNumber) {
       } catch (renderErr) {
         console.error("Step 28 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 28 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 29) {
+      try {
+        renderStep29(data);
+      } catch (renderErr) {
+        console.error("Step 29 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 29 Render Error: ${renderErr.message}`);
       }
     }
 
@@ -1623,6 +1630,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 28 / CONSOLIDATION";
     if (stepTitle) stepTitle.textContent = "Step 28: Global Super-Peer Cross-Cluster Similarity Consolidation";
     if (stepDesc) stepDesc.textContent = "Super-Peers consolidate candidate scores across all intra-cluster branches, establishing authoritative descending similarity orders for every query.";
+  } else if (step === 29) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 29: TOP-K PARTNER MATCH DELIVERY (K = 2)";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-950 border border-emerald-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 29 / TOP-K DELIVERY";
+    if (stepTitle) stepTitle.textContent = "Step 29: Top-K Partner Match Delivery to Requesting Clients (K = 2)";
+    if (stepDesc) stepDesc.textContent = "Super-Peers dispatch the resolved Top-K partner lists back to requesting clients across physical ad-hoc routes.";
   }
 }
 
@@ -6188,6 +6203,72 @@ function renderStep28(data) {
   animateStep28Consolidation(rankings, data.nodes);
 }
 
+// Step 29: Top-K Partner Match Delivery to Requesting Clients (K = 2)
+function renderStep29(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 29: TOP-K PARTNER MATCH DELIVERY (K = 2)";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-950 border border-emerald-400";
+  });
+
+  renderSidebarFormula(
+    "Step 29: Top-K Partner Match Delivery to Requesting Clients (K = 2)",
+    "\\mathcal{P}_i^* = \\text{Top-}K(\\mathcal{R}(q_i)), \\quad K = 2",
+    "Super-Peers dispatch the resolved Top-K partner lists back to requesting clients across physical ad-hoc routes.",
+    "Step 29: Top-K Delivery",
+    false,
+    "emerald"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      ? "Top-K Match Delivery — Downward Hierarchical Dispatch (Super-Peer Tier 3 -> Client Tier 1)"
+      : "Top-K Match Delivery — Multi-Hop Physical Route Dispatch (K = 2)";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Federation Status: <span class="text-emerald-600 font-bold font-mono">10 Clients Locked</span> | Model Sync: <span class="text-emerald-700 font-bold font-mono">Ready for FedAvg</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = PHYSICAL_LAYOUT_COORDS[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("INFO", "[STEP 29] Super-Peers dispatching resolved Top-2 partner matches across physical mesh paths.");
+  logToTerminal("SUCCESS", "[C1 DISPATCH] Delivered Top-2 partners to C2 along [1, 2] and C9 along [1, 4, 7, 9]. Self-resolved C1.");
+  logToTerminal("SUCCESS", "[C5 DISPATCH] Delivered Top-2 partners to C3 [5, 3], C4 [5, 4], C8 [5, 6, 8]. Self-resolved C5.");
+  logToTerminal("SUCCESS", "[C10 DISPATCH] Delivered Top-2 partners to C7 [10, 9, 7] and C6 [10, 9, 7, 4, 6]. Self-resolved C10.");
+  logToTerminal("SUCCESS", "[FEDERATION_PARTNERS_LOCKED] All 10 edge clients locked Top-2 federation partners. Ready for FedAvg.");
+
+  const packets = data.final_delivery_packets || data.packets || [];
+  animateStep29MatchDelivery(packets, data.nodes);
+}
+
 // Global reference to hover virtual node in Figure 3(f) / Physical
 let figure3fHoveredVirtualNode = null;
 let figure3fCanvasListenersBound = false;
@@ -9534,6 +9615,418 @@ function animateStep28Consolidation(consolidatedRankings, allNodes) {
       renderFigure3fConsolidation(now);
     } else {
       renderPhysicalConsolidation(now);
+    }
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+// -------------------------------------------------------------
+// Step 29 Animation: Top-K Partner Match Delivery to Requesting Clients (K = 2)
+// -------------------------------------------------------------
+function animateStep29MatchDelivery(packetTraces, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const startTime = performance.now();
+  const CYCLE_MS = 4200;
+
+  const traces = (packetTraces && packetTraces.length > 0) ? packetTraces : [
+    { from: 1, to: 2, path: [1, 2], fromKey: "top_1", toKey: "bot_2", label: "MATCH_REPLY (C2)", top_k: [{ peer: 9, sim: 0.9429 }, { peer: 1, sim: 0.8531 }] },
+    { from: 1, to: 9, path: [1, 4, 7, 9], fromKey: "top_1", toKey: "bot_9", label: "MATCH_REPLY (C9)", top_k: [{ peer: 1, sim: 0.9429 }, { peer: 2, sim: 0.7581 }] },
+    { from: 5, to: 3, path: [5, 3], fromKey: "top_5", toKey: "bot_3", label: "MATCH_REPLY (C3)", top_k: [{ peer: 5, sim: 0.9323 }, { peer: 8, sim: 0.9179 }] },
+    { from: 5, to: 4, path: [5, 4], fromKey: "top_5", toKey: "bot_4", label: "MATCH_REPLY (C4)", top_k: [{ peer: 5, sim: 0.9453 }, { peer: 8, sim: 0.8388 }] },
+    { from: 5, to: 8, path: [5, 6, 8], fromKey: "top_5", toKey: "bot_8", label: "MATCH_REPLY (C8)", top_k: [{ peer: 3, sim: 0.9179 }, { peer: 5, sim: 0.8536 }] },
+    { from: 10, to: 7, path: [10, 9, 7], fromKey: "top_10", toKey: "bot_7", label: "MATCH_REPLY (C7)", top_k: [{ peer: 10, sim: 0.9378 }, { peer: 6, sim: 0.5365 }] },
+    { from: 10, to: 6, path: [10, 9, 7, 4, 6], fromKey: "top_10", toKey: "bot_6", label: "MATCH_REPLY (C6)", top_k: [{ peer: 7, sim: 0.5365 }, { peer: 10, sim: 0.5341 }] }
+  ];
+
+  traces.forEach(t => {
+    if (!t.fromKey) t.fromKey = `top_${t.from}`;
+    if (!t.toKey) t.toKey = `bot_${t.to}`;
+  });
+
+  const selfResolvedSuperPeers = [
+    { id: 1, top_k: [{ peer: 9, sim: 0.9429 }, { peer: 2, sim: 0.8531 }], key: "top_1", botKey: "bot_1" },
+    { id: 5, top_k: [{ peer: 4, sim: 0.9453 }, { peer: 3, sim: 0.9323 }], key: "top_5", botKey: "bot_5" },
+    { id: 10, top_k: [{ peer: 7, sim: 0.9378 }, { peer: 6, sim: 0.5341 }], key: "top_10", botKey: "bot_10" }
+  ];
+
+  function getPointAlongPath(path, prog, posMap) {
+    if (!path || path.length === 0) return null;
+    if (path.length === 1) return posMap[path[0]];
+    const numSegs = path.length - 1;
+    const clampedProg = Math.max(0, Math.min(0.9999, prog));
+    const segIdx = Math.floor(clampedProg * numSegs);
+    const segProg = (clampedProg * numSegs) - segIdx;
+    const pA = posMap[path[segIdx]];
+    const pB = posMap[path[segIdx + 1]];
+    if (!pA || !pB) return null;
+    return {
+      x: pA.x + (pB.x - pA.x) * segProg,
+      y: pA.y + (pB.y - pA.y) * segProg
+    };
+  }
+
+  function drawFloatingTag(ctx, text, x, y, borderColor, bgColor, textColor) {
+    ctx.save();
+    ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+    const textW = ctx.measureText(text).width;
+    const boxH = 14;
+    const boxW = textW + 12;
+    const boxX = x - boxW / 2;
+    const boxY = y - boxH / 2;
+
+    ctx.fillStyle = bgColor || "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = borderColor || "#10b981";
+    ctx.lineWidth = 1;
+    ctx.shadowColor = borderColor || "#10b981";
+    ctx.shadowBlur = 6;
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = textColor || "#d1fae5";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function renderPhysicalMatchDelivery(now) {
+    if (cy) cy.elements().style("opacity", 1);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 500) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    // Top Status Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "PHYSICAL TOPOLOGY: TOP-K PARTNER MATCH DELIVERY (K = 2) [SUPER-PEERS -> REQUESTING CLIENTS]";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#a7f3d0";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Node position map
+    const physNodePosMap = {};
+    for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          physNodePosMap[id] = { id, x: rp.x, y: rp.y };
+          continue;
+        }
+      }
+      const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
+      physNodePosMap[id] = { id, x: c.x, y: c.y };
+    }
+
+    // Physical Mesh Links
+    ctx.save();
+    PHYSICAL_TOPOLOGY_EDGES.forEach(edge => {
+      const p1 = physNodePosMap[edge.from];
+      const p2 = physNodePosMap[edge.to];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Highlighted Physical Delivery Routes
+    ctx.save();
+    traces.forEach(pkt => {
+      if (!pkt.path || pkt.path.length < 2) return;
+      for (let i = 0; i < pkt.path.length - 1; i++) {
+        const pA = physNodePosMap[pkt.path[i]];
+        const pB = physNodePosMap[pkt.path[i + 1]];
+        if (!pA || !pB) continue;
+        ctx.beginPath();
+        ctx.moveTo(pA.x, pA.y);
+        ctx.lineTo(pB.x, pB.y);
+        ctx.strokeStyle = "#10b981";
+        ctx.lineWidth = 3.0;
+        ctx.shadowColor = "#10b981";
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+      }
+    });
+    ctx.restore();
+
+    // Animated Outward Packets
+    ctx.save();
+    traces.forEach((pkt, idx) => {
+      const phaseOffset = (idx * 0.18) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      if (tPkt < 0.78) {
+        const travelProg = tPkt / 0.78;
+        const pt = getPointAlongPath(pkt.path, travelProg, physNodePosMap);
+        if (pt) {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 6.5, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = "#34d399";
+          ctx.shadowBlur = 16;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 9.5, 0, Math.PI * 2);
+          ctx.strokeStyle = "#059669";
+          ctx.lineWidth = 2.0;
+          ctx.stroke();
+
+          drawFloatingTag(ctx, pkt.label || "MATCH_REPLY", pt.x, pt.y - 16, "#10b981", "rgba(15, 23, 42, 0.94)", "#6ee7b7");
+        }
+      } else {
+        const arrProg = (tPkt - 0.78) / 0.22;
+        const pDest = physNodePosMap[pkt.to];
+        if (pDest) {
+          const rRing = 26 + arrProg * 22;
+          ctx.beginPath();
+          ctx.arc(pDest.x, pDest.y, rRing, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(16, 185, 129, ${1 - arrProg})`;
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = "#10b981";
+          ctx.shadowBlur = 14;
+          ctx.stroke();
+
+          drawFloatingTag(ctx, "TOP-2 LOCKED", pDest.x, pDest.y - 28, "#10b981", "rgba(6, 78, 59, 0.94)", "#a7f3d0");
+        }
+      }
+    });
+    ctx.restore();
+
+    // Self-resolved super-peer badges
+    ctx.save();
+    selfResolvedSuperPeers.forEach(sp => {
+      const pSP = physNodePosMap[sp.id];
+      if (pSP) {
+        ctx.beginPath();
+        ctx.arc(pSP.x, pSP.y, 28 + pulse * 4, 0, Math.PI * 2);
+        ctx.strokeStyle = "#10b981";
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+        drawFloatingTag(ctx, "LOCAL TOP-2 LOCKED", pSP.x, pSP.y + 32, "#10b981", "rgba(6, 78, 59, 0.94)", "#6ee7b7");
+      }
+    });
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function renderFigure3fMatchDelivery(now) {
+    if (cy) cy.elements().style("opacity", 0);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 500) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    const layout = getFigure3fLayoutTransform();
+    const nodePosMap = computeFigure3fRenderedPositions(layout);
+
+    // Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "FIGURE 3(f) HIERARCHICAL OVERLAY: TOP-K MATCH DELIVERY (TIER 3 SUPER-PEERS -> TIER 1 BASE CLIENTS)";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#a7f3d0";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    const hull = computeFigure3fHull(layout);
+    const capsules = computeFigure3fCapsules(layout);
+
+    // Node backplates
+    ctx.save();
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isTop = n.tier === 3;
+      const isMid = n.tier === 2;
+      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
+      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
+      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
+      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Hull & Capsules
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillStyle = "#e11d48";
+    ctx.textAlign = "center";
+    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
+    ctx.restore();
+
+    capsules.forEach(cap => {
+      ctx.save();
+      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
+      ctx.fillStyle = cap.fill;
+      ctx.fill();
+      ctx.strokeStyle = cap.border;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillStyle = cap.textColor;
+      ctx.textAlign = "center";
+      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
+      ctx.restore();
+    });
+
+    // All delivery pairs (Tier 3 Super-Peers -> Tier 1 Base Clients)
+    const tier3ToTier1Pairs = [
+      { fromKey: "top_1", toKey: "bot_2", label: "MATCH_REPLY (C2)" },
+      { fromKey: "top_1", toKey: "bot_9", label: "MATCH_REPLY (C9)" },
+      { fromKey: "top_1", toKey: "bot_1", label: "LOCAL (C1)" },
+      { fromKey: "top_5", toKey: "bot_3", label: "MATCH_REPLY (C3)" },
+      { fromKey: "top_5", toKey: "bot_4", label: "MATCH_REPLY (C4)" },
+      { fromKey: "top_5", toKey: "bot_8", label: "MATCH_REPLY (C8)" },
+      { fromKey: "top_5", toKey: "bot_5", label: "LOCAL (C5)" },
+      { fromKey: "top_10", toKey: "bot_7", label: "MATCH_REPLY (C7)" },
+      { fromKey: "top_10", toKey: "bot_6", label: "MATCH_REPLY (C6)" },
+      { fromKey: "top_10", toKey: "bot_10", label: "LOCAL (C10)" }
+    ];
+
+    // Draw downward beams from Tier 3 to Tier 1
+    ctx.save();
+    tier3ToTier1Pairs.forEach((pair, idx) => {
+      const pA = nodePosMap[pair.fromKey];
+      const pB = nodePosMap[pair.toKey];
+      if (!pA || !pB) return;
+
+      // Draw faint guide beam
+      ctx.beginPath();
+      ctx.moveTo(pA.renderedX, pA.renderedY);
+      ctx.lineTo(pB.renderedX, pB.renderedY);
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.35)";
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const phaseOffset = (idx * 0.12) % 1.0;
+      const tBeam = (tCycle + phaseOffset) % 1.0;
+
+      if (tBeam < 0.75) {
+        const t = tBeam / 0.75;
+        const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
+        const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
+
+        ctx.beginPath();
+        ctx.arc(px, py, 6.0, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = "#34d399";
+        ctx.shadowBlur = 16;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(px, py, 9.0, 0, Math.PI * 2);
+        ctx.strokeStyle = "#059669";
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, pair.label, px, py - 14, "#10b981", "rgba(15, 23, 42, 0.94)", "#6ee7b7");
+      } else {
+        const arrProg = (tBeam - 0.75) / 0.25;
+        const rBeacon = 24 + arrProg * 20;
+        ctx.beginPath();
+        ctx.arc(pB.renderedX, pB.renderedY, rBeacon, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(16, 185, 129, ${1 - arrProg})`;
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = "#10b981";
+        ctx.shadowBlur = 14;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, "TOP-2 LOCKED", pB.renderedX, pB.renderedY + 28, "#10b981", "rgba(6, 78, 59, 0.94)", "#a7f3d0");
+      }
+    });
+    ctx.restore();
+
+    // Draw Nodes
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
+      drawNode(ctx, {
+        id: n.id,
+        node_id: n.label,
+        x: p.renderedX,
+        y: p.renderedY,
+        tier: n.tier,
+        zone: n.zone
+      }, isHov, pulse, rad);
+
+      if (n.tier === 1) {
+        drawFloatingTag(ctx, "FEDERATION_LOCKED", p.renderedX, p.renderedY + rad + 12, "#10b981", "rgba(6, 78, 59, 0.94)", "#d1fae5");
+      }
+    });
+
+    ctx.restore();
+  }
+
+  function runFrame(now) {
+    if (currentStep !== 29) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentLayout === "figure3f" || currentLayout === "overlay") {
+      renderFigure3fMatchDelivery(now);
+    } else {
+      renderPhysicalMatchDelivery(now);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
@@ -14225,6 +14718,118 @@ function renderNodeModal(node, stepData = currentStepData) {
           </div>
         `;
       }
+    } else if (currentStep === 29) {
+      if (discoverySection) discoverySection.classList.remove("hidden");
+
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "🟢 FEDERATION_PARTNERS_LOCKED";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-emerald-100 text-emerald-950 border-emerald-400";
+      }
+
+      if (discoveryBadge) {
+        discoveryBadge.textContent = "STEP 29: TOP-K DELIVERY (K = 2)";
+        discoveryBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-950 border border-emerald-300";
+      }
+
+      if (discoveryContent) {
+        const scId = [1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3");
+
+        const peerClassMap = {
+          1: "1, 2, 3 (Airplane, Auto, Bird)",
+          2: "1, 2, 3 (Airplane, Auto, Bird)",
+          3: "4, 5, 6 (Cat, Deer, Dog)",
+          4: "4, 5, 6 (Cat, Deer, Dog)",
+          5: "4, 5, 6 (Cat, Deer, Dog)",
+          6: "7, 9, 10 (Frog, Ship, Truck)",
+          7: "8, 9, 10 (Horse, Ship, Truck)",
+          8: "4, 5, 6 (Cat, Deer, Dog)",
+          9: "1, 2, 3 (Airplane, Auto, Bird)",
+          10: "7, 8, 9, 10 (Frog, Horse, Ship, Truck)"
+        };
+
+        const defaultTopK = {
+          1: [{ peer: 9, sim: 0.9429 }, { peer: 2, sim: 0.8531 }],
+          2: [{ peer: 9, sim: 0.9429 }, { peer: 1, sim: 0.8531 }],
+          3: [{ peer: 5, sim: 0.9323 }, { peer: 8, sim: 0.9179 }],
+          4: [{ peer: 5, sim: 0.9453 }, { peer: 8, sim: 0.8388 }],
+          5: [{ peer: 4, sim: 0.9453 }, { peer: 3, sim: 0.9323 }],
+          6: [{ peer: 7, sim: 0.5365 }, { peer: 10, sim: 0.5341 }],
+          7: [{ peer: 10, sim: 0.9378 }, { peer: 6, sim: 0.5365 }],
+          8: [{ peer: 3, sim: 0.9179 }, { peer: 5, sim: 0.8536 }],
+          9: [{ peer: 1, sim: 0.9429 }, { peer: 2, sim: 0.7581 }],
+          10: [{ peer: 7, sim: 0.9378 }, { peer: 6, sim: 0.5341 }]
+        };
+
+        const topKList = mergedNode?.top_k || (currentStepData?.client_locked_partners && currentStepData.client_locked_partners[idNum]?.top_k) || defaultTopK[idNum] || [];
+
+        const tableRows = topKList.map((item, idx) => {
+          const rank = idx + 1;
+          const peer = item.peer;
+          const sim = Number(item.sim || 0).toFixed(4);
+          const classes = peerClassMap[peer] || "N/A";
+          const rankBadge = rank === 1
+            ? "bg-emerald-500 text-white font-extrabold"
+            : "bg-teal-700 text-emerald-100 font-bold";
+
+          return `
+            <tr style="border-bottom: 1px solid rgba(16, 185, 129, 0.25);">
+              <td style="padding: 8px 6px; text-align: center;">
+                <span class="px-2 py-0.5 rounded text-[10px] ${rankBadge}">#${rank}</span>
+              </td>
+              <td style="padding: 8px 6px; font-weight: bold; color: #38bdf8; font-family: ui-monospace, SFMono-Regular, monospace;">
+                Peer Node C${peer}
+              </td>
+              <td style="padding: 8px 6px; text-align: center;">
+                <span class="px-2 py-0.5 rounded font-mono font-bold text-[11px] bg-emerald-950 text-emerald-300 border border-emerald-500/50">
+                  ${sim}
+                </span>
+              </td>
+              <td style="padding: 8px 6px; color: #cbd5e1; font-size: 10.5px;">
+                ${classes}
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+        discoveryContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-emerald-300 bg-emerald-50 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-emerald-950 flex items-center gap-1">
+                  <span>🏆</span><span>Locked Federation Partners (Top-K = 2):</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold text-[10px] bg-emerald-200 text-emerald-950 border border-emerald-400">🟢 FEDERATION_PARTNERS_LOCKED</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-emerald-900 font-semibold">
+                Super-Cluster: <span class="font-bold text-emerald-950">${scId}</span> | Client Node C${idNum} Delivery Finalized
+              </div>
+            </div>
+
+            <div class="modal-section" style="background: rgba(15, 23, 42, 0.92); border: 1.5px solid #10b981; border-radius: 8px; padding: 10px;">
+              <h4 style="color: #6ee7b7; margin-top: 0; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: bold;">
+                <span>🔒 Locked Federation Partners (Top-K = 2)</span>
+                <span style="font-size: 10px; color: #a7f3d0; font-family: ui-monospace, SFMono-Regular, monospace;">K = 2</span>
+              </h4>
+              <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                <thead>
+                  <tr style="border-bottom: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7; font-family: ui-monospace, SFMono-Regular, monospace; text-transform: uppercase; font-size: 10px;">
+                    <th style="padding: 6px; text-align: center;">Rank</th>
+                    <th style="padding: 6px; text-align: left;">Matched Peer</th>
+                    <th style="padding: 6px; text-align: center;">Cosine Similarity</th>
+                    <th style="padding: 6px; text-align: left;">Target Classes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${tableRows}
+                </tbody>
+              </table>
+              <div style="margin-top: 8px; font-size: 10px; color: #a7f3d0; font-style: italic; text-align: right;">
+                Ready for decentralized federated model aggregation (FedAvg).
+              </div>
+            </div>
+          </div>
+        `;
+      }
     } else {
       if (discoverySection) discoverySection.classList.add("hidden");
     }
@@ -14644,7 +15249,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 28; s++) {
+  for (let s = 1; s <= 29; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -14687,6 +15292,8 @@ function updateStepper(step) {
         item.classList.add("step-purple");
       } else if (step === 28) {
         item.classList.add("step-gold");
+      } else if (step === 29) {
+        item.classList.add("step-emerald");
       }
     }
   }
@@ -14716,7 +15323,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 28) {
+    if (step < 29) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -14724,7 +15331,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 28 active (Global Super-Peer Cross-Cluster Similarity Consolidation complete)";
+      btnNext.title = "Step 29 active (Top-K Partner Match Delivery complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -14737,7 +15344,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 28);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 29);
 }
 
 function bindActionButtons() {
@@ -14761,16 +15368,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 28) {
+      if (currentStep < 29) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 28 is active (Global Super-Peer Cross-Cluster Similarity Consolidation complete).");
+        logToTerminal("INFO", "Step 29 is active (Top-K Partner Match Delivery complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 28)
-  for (let s = 1; s <= 28; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 29)
+  for (let s = 1; s <= 29; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

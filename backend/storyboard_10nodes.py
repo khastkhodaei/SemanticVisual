@@ -12,7 +12,7 @@ import copy
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 28
+TOTAL_STEPS: int = 29
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -5249,6 +5249,72 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "boundary_nodes": [1, 6],
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 29:
+        # Step 29: Top-K Partner Match Delivery to Requesting Clients (K = 2)
+        step28_data = _get_10node_step_data_raw(28)
+        step29_nodes = copy.deepcopy(step28_data["nodes"])
+
+        for n in step29_nodes:
+            nid = n["id"]
+            n["status"] = "FEDERATION_PARTNERS_LOCKED"
+            n["top_k"] = STEP29_LOCKED_PARTNERS[nid]["top_k"]
+            n["locked_partners"] = STEP29_LOCKED_PARTNERS[nid]["top_k"]
+            n["federation_partners"] = STEP29_LOCKED_PARTNERS[nid]["top_k"]
+            n["is_federation_locked"] = True
+            n["match_reply_received"] = True
+
+        terminal_logs = [
+            "[STEP 29] Top-K Partner Match Delivery to Requesting Clients (K = 2) initiated.",
+            "[DISPATCH C1 -> C2] Path [1, 2]: Top-2 resolved partners {C9 (0.9429), C1 (0.8531)} delivered.",
+            "[DISPATCH C1 -> C9] Path [1, 4, 7, 9]: Top-2 resolved partners {C1 (0.9429), C2 (0.7581)} delivered.",
+            "[LOCAL RESOLUTION C1] Self-resolved Top-2 partners {C9 (0.9429), C2 (0.8531)} locked.",
+            "[DISPATCH C5 -> C3] Path [5, 3]: Top-2 resolved partners {C5 (0.9323), C8 (0.9179)} delivered.",
+            "[DISPATCH C5 -> C4] Path [5, 4]: Top-2 resolved partners {C5 (0.9453), C8 (0.8388)} delivered.",
+            "[DISPATCH C5 -> C8] Path [5, 6, 8]: Top-2 resolved partners {C3 (0.9179), C5 (0.8536)} delivered.",
+            "[LOCAL RESOLUTION C5] Self-resolved Top-2 partners {C4 (0.9453), C3 (0.9323)} locked.",
+            "[DISPATCH C10 -> C6] Path [10, 9, 7, 4, 6]: Top-2 resolved partners {C7 (0.5365), C10 (0.5341)} delivered.",
+            "[DISPATCH C10 -> C7] Path [10, 9, 7]: Top-2 resolved partners {C10 (0.9378), C6 (0.5365)} delivered.",
+            "[LOCAL RESOLUTION C10] Self-resolved Top-2 partners {C7 (0.9378), C6 (0.5341)} locked.",
+            "[STATUS: FEDERATION_PARTNERS_LOCKED] All 10 clients successfully locked Top-2 federation partners for decentralized FedAvg aggregation.",
+        ]
+
+        return {
+            "step": 29,
+            "total_steps": 29,
+            "title": "Step 29: Top-K Partner Match Delivery to Requesting Clients (K = 2)",
+            "phase_badge": "ACTIVE PHASE: STEP 29: TOP-K PARTNER MATCH DELIVERY (K = 2)",
+            "description": "Super-Peers evaluate the consolidated similarity rankings from Step 28, prune the candidate lists down to the Top-K (K = 2) semantically nearest peers, and dispatch the finalized federation match response back to each requesting client across valid physical underlay routes.",
+            "formula": r"\mathcal{P}_i^* = \text{Top-}K(\mathcal{R}(q_i)), \quad K = 2",
+            "formula_desc": "Super-Peers dispatch the resolved Top-K partner lists back to requesting clients across physical ad-hoc routes.",
+            "nodes": step29_nodes,
+            "edges": step28_data["edges"],
+            "final_delivery_packets": STEP29_FINAL_DELIVERY_PACKETS,
+            "packets": STEP29_FINAL_DELIVERY_PACKETS,
+            "client_locked_partners": STEP29_LOCKED_PARTNERS,
+            "locked_partners": STEP29_LOCKED_PARTNERS,
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step28_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": [1, 5, 10],
+            "exemplars": [1, 3, 5, 7, 8, 9, 10],
+            "leaf_nodes": [2, 4, 6],
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -5426,3 +5492,64 @@ STEP28_SUPER_PEER_CONSOLIDATED_RANKINGS = {
     }
 }
 super_peer_consolidated_rankings = STEP28_SUPER_PEER_CONSOLIDATED_RANKINGS
+
+STEP29_FINAL_DELIVERY_PACKETS = [
+    {
+        "from": 1, "to": 2, "path": [1, 2],
+        "type": "RESP_TOP_K_MATCH",
+        "top_k": [{"peer": 9, "sim": 0.9429}, {"peer": 1, "sim": 0.8531}],
+        "label": "MATCH_REPLY (C2)"
+    },
+    {
+        "from": 1, "to": 9, "path": [1, 4, 7, 9],
+        "type": "RESP_TOP_K_MATCH",
+        "top_k": [{"peer": 1, "sim": 0.9429}, {"peer": 2, "sim": 0.7581}],
+        "label": "MATCH_REPLY (C9)"
+    },
+    {
+        "from": 5, "to": 3, "path": [5, 3],
+        "type": "RESP_TOP_K_MATCH",
+        "top_k": [{"peer": 5, "sim": 0.9323}, {"peer": 8, "sim": 0.9179}],
+        "label": "MATCH_REPLY (C3)"
+    },
+    {
+        "from": 5, "to": 4, "path": [5, 4],
+        "type": "RESP_TOP_K_MATCH",
+        "top_k": [{"peer": 5, "sim": 0.9453}, {"peer": 8, "sim": 0.8388}],
+        "label": "MATCH_REPLY (C4)"
+    },
+    {
+        "from": 5, "to": 8, "path": [5, 6, 8],
+        "type": "RESP_TOP_K_MATCH",
+        "top_k": [{"peer": 3, "sim": 0.9179}, {"peer": 5, "sim": 0.8536}],
+        "label": "MATCH_REPLY (C8)"
+    },
+    {
+        "from": 10, "to": 7, "path": [10, 9, 7],
+        "type": "RESP_TOP_K_MATCH",
+        "top_k": [{"peer": 10, "sim": 0.9378}, {"peer": 6, "sim": 0.5365}],
+        "label": "MATCH_REPLY (C7)"
+    },
+    {
+        "from": 10, "to": 6, "path": [10, 9, 7, 4, 6],
+        "type": "RESP_TOP_K_MATCH",
+        "top_k": [{"peer": 7, "sim": 0.5365}, {"peer": 10, "sim": 0.5341}],
+        "label": "MATCH_REPLY (C6)"
+    }
+]
+final_delivery_packets = STEP29_FINAL_DELIVERY_PACKETS
+
+STEP29_LOCKED_PARTNERS = {
+    1: {"top_k": [{"peer": 9, "sim": 0.9429}, {"peer": 2, "sim": 0.8531}], "status": "FEDERATION_PARTNERS_LOCKED"},
+    2: {"top_k": [{"peer": 9, "sim": 0.9429}, {"peer": 1, "sim": 0.8531}], "status": "FEDERATION_PARTNERS_LOCKED"},
+    3: {"top_k": [{"peer": 5, "sim": 0.9323}, {"peer": 8, "sim": 0.9179}], "status": "FEDERATION_PARTNERS_LOCKED"},
+    4: {"top_k": [{"peer": 5, "sim": 0.9453}, {"peer": 8, "sim": 0.8388}], "status": "FEDERATION_PARTNERS_LOCKED"},
+    5: {"top_k": [{"peer": 4, "sim": 0.9453}, {"peer": 3, "sim": 0.9323}], "status": "FEDERATION_PARTNERS_LOCKED"},
+    6: {"top_k": [{"peer": 7, "sim": 0.5365}, {"peer": 10, "sim": 0.5341}], "status": "FEDERATION_PARTNERS_LOCKED"},
+    7: {"top_k": [{"peer": 10, "sim": 0.9378}, {"peer": 6, "sim": 0.5365}], "status": "FEDERATION_PARTNERS_LOCKED"},
+    8: {"top_k": [{"peer": 3, "sim": 0.9179}, {"peer": 5, "sim": 0.8536}], "status": "FEDERATION_PARTNERS_LOCKED"},
+    9: {"top_k": [{"peer": 1, "sim": 0.9429}, {"peer": 2, "sim": 0.7581}], "status": "FEDERATION_PARTNERS_LOCKED"},
+    10: {"top_k": [{"peer": 7, "sim": 0.9378}, {"peer": 6, "sim": 0.5341}], "status": "FEDERATION_PARTNERS_LOCKED"}
+}
+client_locked_partners = STEP29_LOCKED_PARTNERS
+

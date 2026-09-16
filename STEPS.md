@@ -1102,3 +1102,35 @@ $$\mathcal{R}(q_i) = \text{SortDescending}(\{(j, \text{CosSim}(\mathbf{w}_i, \ma
 
 ### 2. Node State Transitions
 - Super-Peers transition to status: `GLOBAL_MATCHMAKING_LOCKED`.
+
+---
+
+## Step 29 — Top-K Partner Match Delivery to Requesting Clients (K = 2)
+
+Super-Peers evaluate the consolidated similarity rankings from Step 28, prune the candidate lists down to the Top-$K$ ($K = 2$) semantically nearest peers, and dispatch the finalized federation match response back to each requesting client across valid physical underlay routes.
+
+### 1. Multi-Hop Response Dispatch Traces (Strict Step 1 Physical Edges)
+- $C_1 \xrightarrow{[1, 2]} C_2$: Resolves Top-2 partners $\{C_9 (0.9429), C_1 (0.8531)\}$
+- $C_1 \xrightarrow{[1, 4, 7, 9]} C_9$: Resolves Top-2 partners $\{C_1 (0.9429), C_2 (0.7581)\}$
+- $C_1 \xrightarrow{\text{local}} C_1$: Self-resolves Top-2 partners $\{C_9 (0.9429), C_2 (0.8531)\}$
+- $C_5 \xrightarrow{[5, 3]} C_3$: Resolves Top-2 partners $\{C_5 (0.9323), C_8 (0.9179)\}$
+- $C_5 \xrightarrow{[5, 4]} C_4$: Resolves Top-2 partners $\{C_5 (0.9453), C_8 (0.8388)\}$
+- $C_5 \xrightarrow{[5, 6, 8]} C_8$: Resolves Top-2 partners $\{C_3 (0.9179), C_5 (0.8536)\}$
+- $C_5 \xrightarrow{\text{local}} C_5$: Self-resolves Top-2 partners $\{C_4 (0.9453), C_3 (0.9323)\}$
+- $C_{10} \xrightarrow{[10, 9, 7, 4, 6]} C_6$: Resolves Top-2 partners $\{C_7 (0.5365), C_{10} (0.5341)\}$
+- $C_{10} \xrightarrow{[10, 9, 7]} C_7$: Resolves Top-2 partners $\{C_{10} (0.9378), C_6 (0.5365)\}$
+- $C_{10} \xrightarrow{\text{local}} C_{10}$: Self-resolves Top-2 partners $\{C_7 (0.9378), C_6 (0.5341)\}$
+
+### 2. Final Node Locked Partner State
+- Every client receives their resolved Top-2 partners and locks their federation configuration:
+  - $C_1$: $\{C_9 (0.9429), C_2 (0.8531)\}$
+  - $C_2$: $\{C_9 (0.9429), C_1 (0.8531)\}$
+  - $C_3$: $\{C_5 (0.9323), C_8 (0.9179)\}$
+  - $C_4$: $\{C_5 (0.9453), C_8 (0.8388)\}$
+  - $C_5$: $\{C_4 (0.9453), C_3 (0.9323)\}$
+  - $C_6$: $\{C_7 (0.5365), C_{10} (0.5341)\}$
+  - $C_7$: $\{C_{10} (0.9378), C_6 (0.5365)\}$
+  - $C_8$: $\{C_3 (0.9179), C_5 (0.8536)\}$
+  - $C_9$: $\{C_1 (0.9429), C_2 (0.7581)\}$
+  - $C_{10}$: $\{C_7 (0.9378), C_6 (0.5341)\}$
+- All 10 nodes transition to status: `FEDERATION_PARTNERS_LOCKED`.
