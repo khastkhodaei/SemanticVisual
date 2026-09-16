@@ -56,9 +56,11 @@ from backend.storyboard_10nodes import (
     STEP32_REFERENCE_MODELS,
     aggregated_models,
     STEP33_AGGREGATED_MODELS,
+    simulation_summary,
+    STEP34_SIMULATION_SUMMARY,
 )
 
-TOTAL_STEPS: int = 33
+TOTAL_STEPS: int = 34
 
 
 

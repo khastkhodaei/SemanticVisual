@@ -12,7 +12,7 @@ import copy
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 33
+TOTAL_STEPS: int = 34
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -5578,6 +5578,63 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "boundary_nodes": [1, 6],
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 34:
+        # Step 34: Round 1 Finalization, System Benchmarks & Next-Epoch Transition
+        step33_data = _get_10node_step_data_raw(33)
+        step34_nodes = copy.deepcopy(step33_data["nodes"])
+
+        for n in step34_nodes:
+            n["status"] = "EPOCH_1_FINALIZED"
+            n["model_state"] = "ROUND_1_FINALIZED_READY_FOR_NEXT_EPOCH"
+            n["epoch_2_seed"] = STEP34_SIMULATION_SUMMARY["next_epoch_seed"]
+            n["epoch_2_ready"] = True
+            n["bandwidth_savings_pct"] = STEP34_SIMULATION_SUMMARY["bandwidth_savings_pct"]
+
+        terminal_logs = [
+            "[STEP 34] Round 1 Finalization, System Benchmarks & Next-Epoch Transition initiated.",
+            "[BENCHMARK] Bandwidth optimization: 62.5% reduction via P=3 Top-P sparsification (15B vs 40B).",
+            "[BENCHMARK] Matchmaking precision: Cosine similarity achieved 100% alignment across SC-1, SC-2, SC-3.",
+            "[BENCHMARK] Decentralized FedAvg convergence complete across all 10 nodes with zero raw data leakage.",
+            "[SEED REFRESH] seed_0 -> seed_1 (0x8f3c4e9b21a7) derived for Epoch 2 federation rounds.",
+            "[STATUS: SIMULATION_ROUND_1_COMPLETE] All 10 clients successfully completed Round 1 and are ready for Epoch 2.",
+        ]
+
+        return {
+            "step": 34,
+            "total_steps": 34,
+            "title": "Step 34: Round 1 Finalization, System Benchmarks & Next-Epoch Transition",
+            "phase_badge": "🎉 PROTOCOL COMPLETE: STEP 34: ROUND 1 FINALIZATION & BENCHMARK AUDIT",
+            "description": "Decentralized SemanticDFL round 1 execution successfully verified across all tiers.",
+            "formula": r"\text{Round 1 Closed} \implies \text{Bandwidth Savings: 62.5\%} \mid \text{seed}_e \to \text{seed}_{e+1}",
+            "formula_desc": "Protocol round 1 concluded with 62.5% wire bandwidth reduction and deterministic next-epoch seed refresh.",
+            "nodes": step34_nodes,
+            "edges": step33_data["edges"],
+            "simulation_summary": STEP34_SIMULATION_SUMMARY,
+            "aggregated_models": STEP33_AGGREGATED_MODELS,
+            "packets": [],
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step33_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": [1, 5, 10],
+            "exemplars": [1, 3, 5, 7, 8, 9, 10],
+            "leaf_nodes": [2, 4, 6],
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -6002,6 +6059,19 @@ STEP33_AGGREGATED_MODELS = {
     10: {"round": 1, "status": "AGGREGATION_COMMITTED", "weights": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0497, 0.3295, 0.2867, 0.2028], "accuracy_gain": "+4.9%"}
 }
 aggregated_models = STEP33_AGGREGATED_MODELS
+
+# Step 34: Round 1 Finalization, System Benchmarks & Next-Epoch Transition
+STEP34_SIMULATION_SUMMARY = {
+    "status": "SIMULATION_ROUND_1_COMPLETE",
+    "total_nodes": 10,
+    "total_super_clusters": 3,
+    "bandwidth_savings_pct": 62.5,
+    "average_model_accuracy_gain": "+4.93%",
+    "next_epoch_seed": "0x8f3c4e9b21a7",
+    "nodes_ready_for_epoch_2": True,
+}
+simulation_summary = STEP34_SIMULATION_SUMMARY
+
 
 
 

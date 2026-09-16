@@ -1393,6 +1393,13 @@ async function loadStep(stepNumber) {
         console.error("Step 33 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 33 Render Error: ${renderErr.message}`);
       }
+    } else if (stepNumber === 34) {
+      try {
+        renderStep34(data);
+      } catch (renderErr) {
+        console.error("Step 34 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 34 Render Error: ${renderErr.message}`);
+      }
     }
 
 
@@ -1698,6 +1705,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 33 / MODEL CONVERGENCE";
     if (stepTitle) stepTitle.textContent = "Step 33: Local Model Aggregation (FedAvg) & Convergence Commitment";
     if (stepDesc) stepDesc.textContent = "Round 1 federated aggregation complete across all 10 nodes with zero raw data leakage.";
+  } else if (step === 34) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "🎉 PROTOCOL COMPLETE: STEP 34: ROUND 1 FINALIZATION & BENCHMARK AUDIT";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-950 border border-emerald-500 shadow-sm";
+    });
+    if (stepTag) stepTag.textContent = "STEP 34 / SIMULATION COMPLETE";
+    if (stepTitle) stepTitle.textContent = "Step 34: Round 1 Finalization, System Benchmarks & Next-Epoch Transition";
+    if (stepDesc) stepDesc.textContent = "Decentralized SemanticDFL round 1 execution successfully verified across all tiers.";
   }
 }
 
@@ -6593,6 +6608,71 @@ function renderStep33(data) {
   logToTerminal("SUCCESS", "[STATUS: AGGREGATION_COMMITTED] Round 1 federated aggregation complete across all 10 nodes with zero raw data leakage.");
 
   animateStep33Convergence(data.nodes);
+}
+
+function renderStep34(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "🎉 PROTOCOL COMPLETE: STEP 34: ROUND 1 FINALIZATION & BENCHMARK AUDIT";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-950 border border-emerald-500 shadow-sm";
+  });
+
+  renderSidebarFormula(
+    "Step 34: Round 1 Finalization, System Benchmarks & Next-Epoch Transition",
+    "\\text{Round 1 Closed} \\implies \\text{Bandwidth Savings: 62.5\\%} \\mid \\text{seed}_e \\to \\text{seed}_{e+1}",
+    "Decentralized SemanticDFL round 1 execution successfully verified across all tiers.",
+    "Step 34: Audit",
+    true,
+    "emerald"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      ? "Simulation Round 1 Complete — Full Protocol Benchmarks & Epoch 2 Seed Transition"
+      : "SemanticDFL Protocol Complete — Round 1 Performance Audit & Next-Epoch Readiness";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Simulation: <span class="text-emerald-600 font-bold font-mono">100% COMPLETE</span> | Wire Saved: <span class="text-emerald-700 font-bold font-mono">62.5%</span> | Seed 1: <span class="text-indigo-600 font-bold font-mono">0x8f3c4e9b21a7</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = PHYSICAL_LAYOUT_COORDS[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("SUCCESS", "[STEP 34] Round 1 Finalization, System Benchmarks & Next-Epoch Transition initiated.");
+  logToTerminal("SUCCESS", "[BENCHMARK] Bandwidth optimization: 62.5% reduction via P=3 Top-P sparsification (15B vs 40B).");
+  logToTerminal("SUCCESS", "[BENCHMARK] Matchmaking precision: Cosine similarity achieved 100% alignment across SC-1, SC-2, SC-3.");
+  logToTerminal("SUCCESS", "[BENCHMARK] Decentralized FedAvg convergence complete across all 10 nodes with zero raw data leakage.");
+  logToTerminal("SUCCESS", "[SEED REFRESH] seed_0 -> seed_1 (0x8f3c4e9b21a7) derived for Epoch 2 federation rounds.");
+  logToTerminal("SUCCESS", "[STATUS: SIMULATION_ROUND_1_COMPLETE] All 10 clients successfully completed Round 1 and are ready for Epoch 2.");
+
+  animateStep34Finalization(data.nodes);
 }
 
 // Global reference to hover virtual node in Figure 3(f) / Physical
@@ -11762,6 +11842,303 @@ function animateStep33Convergence(allNodes) {
       renderFigure3fConvergence(now);
     } else {
       renderPhysicalConvergence(now);
+    }
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+function animateStep34Finalization(allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const startTime = performance.now();
+
+  function drawFloatingTag(ctx, text, x, y, borderColor, bgColor, textColor) {
+    ctx.save();
+    ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+    const textW = ctx.measureText(text).width;
+    const boxH = 14;
+    const boxW = textW + 12;
+    const boxX = x - boxW / 2;
+    const boxY = y - boxH / 2;
+
+    ctx.fillStyle = bgColor || "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = borderColor || "#10b981";
+    ctx.lineWidth = 1;
+    ctx.shadowColor = borderColor || "#10b981";
+    ctx.shadowBlur = 6;
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = textColor || "#a7f3d0";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function renderPhysicalFinalization(now) {
+    if (cy) cy.elements().style("opacity", 1);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 500) * Math.PI) + 1) / 2;
+
+    // Top Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "PHYSICAL TOPOLOGY: ROUND 1 FINALIZATION & PROTOCOL BENCHMARKS [SIMULATION 100% COMPLETE]";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.96)";
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 1.3;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#a7f3d0";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Node position map
+    const physNodePosMap = {};
+    for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          physNodePosMap[id] = { id, x: rp.x, y: rp.y };
+          continue;
+        }
+      }
+      const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
+      physNodePosMap[id] = { id, x: c.x, y: c.y };
+    }
+
+    // Physical Mesh Links (passive background)
+    ctx.save();
+    PHYSICAL_TOPOLOGY_EDGES.forEach(edge => {
+      const p1 = physNodePosMap[edge.from];
+      const p2 = physNodePosMap[edge.to];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Active Intra-Cluster Semantic Overlay Edges (celebratory radiant links)
+    ctx.save();
+    PHYSICAL_SEMANTIC_OVERLAY_EDGES.forEach(edge => {
+      const p1 = physNodePosMap[edge.from];
+      const p2 = physNodePosMap[edge.to];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = `rgba(16, 185, 129, ${0.45 + pulse * 0.35})`;
+      ctx.lineWidth = 2.2;
+      ctx.shadowColor = "#10b981";
+      ctx.shadowBlur = 8;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Subtle celebratory aura rings around all 10 nodes
+    for (let id = 1; id <= 10; id++) {
+      const p = physNodePosMap[id];
+      if (!p) continue;
+
+      ctx.save();
+      // Outer celebratory radiant aura
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 26 + pulse * 8, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(245, 158, 11, ${0.65 - pulse * 0.35})`;
+      ctx.lineWidth = 2.0;
+      ctx.shadowColor = "#f59e0b";
+      ctx.shadowBlur = 12 + pulse * 6;
+      ctx.stroke();
+
+      // Middle emerald beacon ring
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 18 + pulse * 4, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(16, 185, 129, ${0.75 - pulse * 0.25})`;
+      ctx.lineWidth = 2.2;
+      ctx.shadowColor = "#10b981";
+      ctx.shadowBlur = 10;
+      ctx.stroke();
+
+      // Core wash
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(16, 185, 129, ${0.20 + pulse * 0.20})`;
+      ctx.fill();
+      ctx.restore();
+
+      // Floating celebratory badge below node
+      drawFloatingTag(ctx, "🎉 R1 FINALIZED (EPOCH 2 READY)", p.x, p.y + 28, "#10b981", "rgba(6, 78, 59, 0.94)", "#a7f3d0");
+    }
+
+    ctx.restore();
+  }
+
+  function renderFigure3fFinalization(now) {
+    if (cy) cy.elements().style("opacity", 0);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 500) * Math.PI) + 1) / 2;
+
+    const layout = getFigure3fLayoutParameters(canvas.width, canvas.height);
+    const nodePosMap = {};
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      nodePosMap[n.key] = computeFigure3fNodePosition(n, layout);
+    });
+
+    // Top Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "FIGURE 3(f) 3-TIER: ROUND 1 PROTOCOL COMPLETE & NEXT-EPOCH SEED READY";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 28;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.96)";
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 1.3;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#a7f3d0";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    const hull = computeFigure3fHull(layout);
+    const capsules = computeFigure3fCapsules(layout);
+
+    // Node backplates
+    ctx.save();
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isTop = n.tier === 3;
+      const isMid = n.tier === 2;
+      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
+      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
+      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
+      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Hull & Capsules
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillStyle = "#e11d48";
+    ctx.textAlign = "center";
+    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
+    ctx.restore();
+
+    capsules.forEach(cap => {
+      ctx.save();
+      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
+      ctx.fillStyle = cap.fill;
+      ctx.fill();
+      ctx.strokeStyle = cap.border;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillStyle = cap.textColor;
+      ctx.textAlign = "center";
+      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
+      ctx.restore();
+    });
+
+    // Draw Nodes
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
+
+      if (n.tier === 1) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.renderedX, p.renderedY, rad + 6 + pulse * 4, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(245, 158, 11, ${0.65 - pulse * 0.3})`;
+        ctx.lineWidth = 2.0;
+        ctx.shadowColor = "#f59e0b";
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(p.renderedX, p.renderedY, rad + 3 + pulse * 2, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(16, 185, 129, ${0.75 - pulse * 0.25})`;
+        ctx.lineWidth = 2.2;
+        ctx.shadowColor = "#10b981";
+        ctx.shadowBlur = 6;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      drawNode(ctx, {
+        id: n.id,
+        node_id: n.label,
+        x: p.renderedX,
+        y: p.renderedY,
+        tier: n.tier,
+        zone: n.zone
+      }, isHov, pulse, rad);
+
+      if (n.tier === 1) {
+        drawFloatingTag(ctx, "🎉 R1 COMPLETE", p.renderedX, p.renderedY + rad + 12, "#10b981", "rgba(6, 78, 59, 0.94)", "#a7f3d0");
+      }
+    });
+
+    ctx.restore();
+  }
+
+  function runFrame(now) {
+    if (currentStep !== 34) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentLayout === "figure3f" || currentLayout === "overlay") {
+      renderFigure3fFinalization(now);
+    } else {
+      renderPhysicalFinalization(now);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
@@ -17058,6 +17435,137 @@ function renderNodeModal(node, stepData = currentStepData) {
           </div>
         `;
       }
+    } else if (currentStep === 34) {
+      if (discoverySection) discoverySection.classList.remove("hidden");
+
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "🟢 ROUND_1_FINALIZED_READY_FOR_NEXT_EPOCH";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-emerald-100 text-emerald-950 border-emerald-500 shadow-xs";
+      }
+
+      if (discoveryBadge) {
+        discoveryBadge.textContent = "STEP 34: ROUND 1 AUDIT & CERTIFICATE";
+        discoveryBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-emerald-100 text-emerald-950 border border-emerald-400";
+      }
+
+      if (discoveryContent) {
+        const scId = [1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3");
+
+        const defaultAggregatedModels = {
+          1: { round: 1, status: "AGGREGATION_COMMITTED", weights: [0.3742, 0.2419, 0.3838, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], accuracy_gain: "+4.8%" },
+          2: { round: 1, status: "AGGREGATION_COMMITTED", weights: [0.3600, 0.2456, 0.3944, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], accuracy_gain: "+6.2%" },
+          3: { round: 1, status: "AGGREGATION_COMMITTED", weights: [0.0, 0.0, 0.0, 0.3957, 0.2319, 0.3725, 0.0, 0.0, 0.0, 0.0], accuracy_gain: "+5.1%" },
+          4: { round: 1, status: "AGGREGATION_COMMITTED", weights: [0.0, 0.0, 0.0, 0.4990, 0.2306, 0.2703, 0.0, 0.0, 0.0, 0.0], accuracy_gain: "+3.9%" },
+          5: { round: 1, status: "AGGREGATION_COMMITTED", weights: [0.0, 0.0, 0.0, 0.4981, 0.1755, 0.3264, 0.0, 0.0, 0.0, 0.0], accuracy_gain: "+4.4%" },
+          6: { round: 1, status: "AGGREGATION_COMMITTED", weights: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1111, 0.2171, 0.3037, 0.2169], accuracy_gain: "+5.7%" },
+          7: { round: 1, status: "AGGREGATION_COMMITTED", weights: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0499, 0.3287, 0.2837, 0.2066], accuracy_gain: "+4.1%" },
+          8: { round: 1, status: "AGGREGATION_COMMITTED", weights: [0.0, 0.0, 0.0, 0.3913, 0.2403, 0.3684, 0.0, 0.0, 0.0, 0.0], accuracy_gain: "+5.3%" },
+          9: { round: 1, status: "AGGREGATION_COMMITTED", weights: [0.3805, 0.2452, 0.3743, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], accuracy_gain: "+4.6%" },
+          10: { round: 1, status: "AGGREGATION_COMMITTED", weights: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0497, 0.3295, 0.2867, 0.2028], accuracy_gain: "+4.9%" }
+        };
+
+        const aggInfo = mergedNode?.aggregated_model || (currentStepData?.aggregated_models && currentStepData.aggregated_models[idNum]) || defaultAggregatedModels[idNum];
+        const updatedWeights = aggInfo?.weights || [];
+        const accuracyGain = aggInfo?.accuracy_gain || "+4.8%";
+        const baselineWeights = STORYBOARD_10_VECTORS[idNum] || [];
+
+        // Baseline vector cells
+        const baselineCells = baselineWeights.map((val, dIdx) => {
+          const isNonZero = Math.abs(val) > 0.001;
+          const bgClass = isNonZero ? "background: rgba(99, 102, 241, 0.2); color: #818cf8; font-weight: bold; border: 1px solid rgba(99, 102, 241, 0.4);" : "background: rgba(30, 41, 59, 0.5); color: #475569; border: 1px solid rgba(51, 65, 85, 0.4);";
+          return `
+            <div style="flex: 1; min-width: 0; text-align: center; padding: 3px 1px; border-radius: 4px; ${bgClass}">
+              <div style="font-size: 7px; opacity: 0.7; font-family: ui-monospace, SFMono-Regular, monospace;">d${dIdx}</div>
+              <div style="font-size: 8.5px; font-family: ui-monospace, SFMono-Regular, monospace;">${val.toFixed(2)}</div>
+            </div>
+          `;
+        }).join("");
+
+        // Final converged vector cells
+        const updatedCells = updatedWeights.map((val, dIdx) => {
+          const isNonZero = Math.abs(val) > 0.001;
+          const bgClass = isNonZero ? "background: rgba(16, 185, 129, 0.25); color: #34d399; font-weight: bold; border: 1px solid rgba(16, 185, 129, 0.5);" : "background: rgba(30, 41, 59, 0.5); color: #475569; border: 1px solid rgba(51, 65, 85, 0.4);";
+          return `
+            <div style="flex: 1; min-width: 0; text-align: center; padding: 4px 1px; border-radius: 4px; ${bgClass}">
+              <div style="font-size: 7.5px; opacity: 0.7; font-family: ui-monospace, SFMono-Regular, monospace;">d${dIdx}</div>
+              <div style="font-size: 9px; font-family: ui-monospace, SFMono-Regular, monospace;">${val.toFixed(4)}</div>
+            </div>
+          `;
+        }).join("");
+
+        discoveryContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <!-- Header Certificate Banner -->
+            <div class="p-2.5 rounded-lg border border-emerald-400 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-emerald-950 flex items-center gap-1">
+                  <span>📜</span><span>Federation Round 1 Certificate & Performance Summary</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold text-[10px] bg-emerald-200 text-emerald-950 border border-emerald-500">🟢 READY_FOR_EPOCH_2</span>
+              </div>
+              <div class="flex items-center justify-between text-[9.5px] font-mono text-emerald-900 font-semibold">
+                <span>Super-Cluster: <span class="font-bold text-emerald-950">${scId}</span> | Client Node C${idNum}</span>
+                <span class="px-2 py-0.5 rounded bg-white border border-emerald-300 font-bold text-emerald-900 shadow-2xs">Epoch 2 Readiness: READY</span>
+              </div>
+            </div>
+
+            <!-- Protocol Efficiency & System Benchmarks Grid -->
+            <div style="background: rgba(15, 23, 42, 0.96); border: 1.5px solid #10b981; border-radius: 8px; padding: 10px;">
+              <h4 style="color: #34d399; margin-top: 0; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; font-weight: bold;">
+                <span>📊 Protocol Audit & Efficiency Metrics</span>
+                <span style="font-size: 9px; color: #a7f3d0; font-family: ui-monospace, SFMono-Regular, monospace;">100% VERIFIED</span>
+              </h4>
+
+              <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px;">
+                <div style="background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 6px 8px;">
+                  <div style="font-size: 8px; color: #94a3b8; font-family: ui-monospace, monospace; text-transform: uppercase;">Bandwidth Wire Savings</div>
+                  <div style="font-size: 13px; font-weight: bold; color: #34d399; font-family: ui-monospace, monospace;">62.5% Reduction</div>
+                  <div style="font-size: 7.5px; color: #64748b;">15 Bytes payload (P=3) vs 40 Bytes dense</div>
+                </div>
+
+                <div style="background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 6px 8px;">
+                  <div style="font-size: 8px; color: #94a3b8; font-family: ui-monospace, monospace; text-transform: uppercase;">Average Model Accuracy Gain</div>
+                  <div style="font-size: 13px; font-weight: bold; color: #38bdf8; font-family: ui-monospace, monospace;">${accuracyGain} (Avg +4.93%)</div>
+                  <div style="font-size: 7.5px; color: #64748b;">Synthesized from Top-2 semantic peers</div>
+                </div>
+
+                <div style="background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 6px 8px;">
+                  <div style="font-size: 8px; color: #94a3b8; font-family: ui-monospace, monospace; text-transform: uppercase;">Privacy Preservation</div>
+                  <div style="font-size: 12px; font-weight: bold; color: #a7f3d0; font-family: ui-monospace, monospace;">100% Zero Data Leakage</div>
+                  <div style="font-size: 7.5px; color: #64748b;">Zero raw CIFAR-10 data on physical wire</div>
+                </div>
+
+                <div style="background: rgba(30, 41, 59, 0.65); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 6px 8px;">
+                  <div style="font-size: 8px; color: #94a3b8; font-family: ui-monospace, monospace; text-transform: uppercase;">Next-Epoch Cryptographic Seed</div>
+                  <div style="font-size: 12px; font-weight: bold; color: #c084fc; font-family: ui-monospace, monospace;">0x8f3c4e9b21a7</div>
+                  <div style="font-size: 7.5px; color: #64748b;">seed_1 = Hash(seed_0 || Round_1)</div>
+                </div>
+              </div>
+
+              <!-- Model Vectors: Initial vs Final -->
+              <h4 style="color: #94a3b8; margin-top: 6px; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; font-size: 10.5px; font-weight: bold;">
+                <span>Initial Local Model (w<sub>${idNum}</sub><sup>0</sup> — Step 2)</span>
+                <span style="font-size: 8px; color: #818cf8; font-family: ui-monospace, SFMono-Regular, monospace;">Pre-Federation Baseline</span>
+              </h4>
+              <div style="display: flex; gap: 3px; margin-bottom: 6px;">
+                ${baselineCells}
+              </div>
+
+              <h4 style="color: #34d399; margin-top: 6px; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; font-size: 10.5px; font-weight: bold;">
+                <span>Final Converged Model (w<sub>${idNum}</sub><sup>t+1</sup> — Step 34)</span>
+                <span style="font-size: 8px; color: #a7f3d0; font-family: ui-monospace, SFMono-Regular, monospace;">FedAvg Aggregated</span>
+              </h4>
+              <div style="display: flex; gap: 3px; margin-bottom: 8px;">
+                ${updatedCells}
+              </div>
+
+              <div style="font-size: 9.5px; color: #a7f3d0; background: rgba(6, 78, 59, 0.6); border: 1px dashed #10b981; border-radius: 4px; padding: 6px; text-align: center;">
+                🏆 Round 1 Certified: Node C${idNum} achieved local federated convergence. Primed for subsequent federation epochs with cryptographic seed 0x8f3c4e9b21a7.
+              </div>
+            </div>
+          </div>
+        `;
+      }
     } else {
       if (discoverySection) discoverySection.classList.add("hidden");
     }
@@ -17477,7 +17985,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 33; s++) {
+  for (let s = 1; s <= 34; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -17530,6 +18038,8 @@ function updateStepper(step) {
         item.classList.add("step-cyan");
       } else if (step === 33) {
         item.classList.add("step-emerald");
+      } else if (step === 34) {
+        item.classList.add("step-emerald");
       }
     }
   }
@@ -17559,16 +18069,16 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 33) {
+    if (step < 34) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
       btnNext.title = `Advance to Step ${step + 1}`;
     } else {
       btnNext.disabled = true;
-      btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 33 active (Local Model Aggregation & Convergence complete)";
-      btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
+      btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-75 cursor-default bg-emerald-700 text-white border border-emerald-600 shadow-sm";
+      btnNext.title = "Step 34 active (Round 1 Finalization & Benchmarks complete — Simulation 100% complete)";
+      btnNext.innerHTML = `<span>✓ Round 1 Complete</span>`;
     }
   }
 }
@@ -17580,7 +18090,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 33);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 34);
 }
 
 function bindActionButtons() {
@@ -17604,16 +18114,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 33) {
+      if (currentStep < 34) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 33 is active (Local Model Aggregation & Convergence complete).");
+        logToTerminal("INFO", "Step 34 is active (Round 1 Finalization & Benchmarks complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 33)
-  for (let s = 1; s <= 33; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 34)
+  for (let s = 1; s <= 34; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {
