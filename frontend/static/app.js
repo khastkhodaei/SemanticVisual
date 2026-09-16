@@ -2219,25 +2219,41 @@ function animateStep5ProbePackets(packets, allNodes) {
       const curY = p1.y + (p2.y - p1.y) * ease;
 
       const initId = pkt.initiator_id || (typeof srcId === "number" ? srcId : parseInt(String(srcId).replace("C", "").replace("node_", ""), 10));
-      let badgeBg = "rgba(209, 250, 229, 0.98)";
-      let badgeText = "#065f46";
-      let badgeBorder = "#059669";
-      if (initId === 4) {
-        badgeBg = "rgba(255, 237, 213, 0.98)";
-        badgeText = "#9a3412";
-        badgeBorder = "#ea580c";
-      } else if (initId === 8) {
-        badgeBg = "rgba(237, 233, 254, 0.98)";
-        badgeText = "#5b21b6";
-        badgeBorder = "#7c3aed";
-      }
+
+      const INITIATOR_PACKET_PALETTES = {
+        2: {
+          dot: "#ef4444",
+          badgeBg: "rgba(254, 242, 242, 0.96)",
+          border: "#dc2626",
+          text: "#b91c1c"
+        },
+        4: {
+          dot: "#22c55e",
+          badgeBg: "rgba(240, 253, 244, 0.96)",
+          border: "#16a34a",
+          text: "#15803d"
+        },
+        8: {
+          dot: "#eab308",
+          badgeBg: "rgba(254, 252, 232, 0.96)",
+          border: "#ca8a04",
+          text: "#a16207"
+        }
+      };
+
+      const palette = INITIATOR_PACKET_PALETTES[initId] || {
+        dot: "#2563eb",
+        badgeBg: "rgba(239, 246, 255, 0.96)",
+        border: "#2563eb",
+        text: "#1d4ed8"
+      };
 
       ctx.save();
       ctx.beginPath();
       ctx.arc(curX, curY, 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = badgeBorder;
+      ctx.fillStyle = palette.dot;
       ctx.shadowBlur = 8;
-      ctx.shadowColor = badgeBorder;
+      ctx.shadowColor = palette.dot;
       ctx.fill();
       ctx.restore();
 
@@ -2246,9 +2262,9 @@ function animateStep5ProbePackets(packets, allNodes) {
         `PROBE(TTL=1)`,
         curX,
         curY - 14,
-        badgeBg,
-        badgeText,
-        badgeBorder
+        palette.badgeBg,
+        palette.text,
+        palette.border
       );
     });
 

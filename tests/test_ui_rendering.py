@@ -132,5 +132,23 @@ def test_sidebar_stabilization_structure_and_styles():
         assert ".formula-container" in css
 
 
+def test_step5_initiator_packet_color_palette():
+    """Verify Step 5 PROBE packet colors match originating initiator colors (C4 green, C2 red, C8 yellow)."""
+    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/app.js", "r", encoding="utf-8") as f:
+        js = f.read()
+
+    assert "INITIATOR_PACKET_PALETTES" in js
+    # Node 2 -> red
+    assert '#ef4444' in js
+    assert '#dc2626' in js
+    # Node 4 -> green
+    assert '#22c55e' in js
+    assert '#16a34a' in js
+    # Node 8 -> amber/yellow
+    assert '#eab308' in js
+    assert '#ca8a04' in js
+
+
+
 
 
