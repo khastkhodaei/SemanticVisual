@@ -75,3 +75,38 @@ def test_phase_tabs_and_substep_containers_rendered_in_html():
                 assert f'id="stepNav{s}"' in content, f"Missing #stepNav{s} in {path}"
 
 
+def test_node_inspector_modal_structure_and_node_payloads(client):
+    """Verify node inspector modal elements exist in HTML and all steps contain inspectable node payloads."""
+    for path in [
+        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/index.html",
+        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/templates/index.html",
+    ]:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+            for elem_id in [
+                "nodeInfoCard",
+                "cardNodeId",
+                "cardStatusBadge",
+                "btnCloseModal",
+                "cardDegree",
+                "cardNeighbors",
+                "cardClientClasses",
+                "cardDataDistributionSection",
+                "cardVectorSection",
+            ]:
+                assert f'id="{elem_id}"' in content, f"Missing #{elem_id} in {path}"
+
+    for step_num in range(1, TOTAL_STEPS + 1):
+        res = client.get(f"/api/v1/storyboard/step/{step_num}")
+        assert res.status_code == 200
+        data = res.json()
+        nodes = data.get("nodes", [])
+        assert len(nodes) == 10, f"Step {step_num} should have 10 nodes, found {len(nodes)}"
+        for n in nodes:
+            assert "id" in n, f"Step {step_num} node missing id"
+            assert (
+                "distribution" in n or "data_distribution" in n or "vector_10d" in n or "normalized_vector" in n
+            ), f"Step {step_num} node {n['id']} missing distribution/vector"
+
+
+

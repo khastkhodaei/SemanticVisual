@@ -752,3 +752,21 @@ body {
 .phase-substeps.hidden {
   display: none !important;
 }
+
+/* Ensure packet animation canvas passes pointer clicks through to Cytoscape */
+#packetCanvas,
+.animation-layer,
+.packet-overlay {
+  pointer-events: none;
+}
+
+#cy,
+.interactive-node-canvas {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+#packetCanvas.interactive-overlay {
+  pointer-events: auto !important;
+}
+

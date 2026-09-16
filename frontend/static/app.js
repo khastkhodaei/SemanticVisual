@@ -244,6 +244,34 @@ const STORYBOARD_10_VRF_SCORES = {
   10: 0.4126
 };
 
+// Ground-Truth CIFAR-10 Local Data Distributions from scenario_data.json
+const STORYBOARD_10_DISTRIBUTION = {
+  1: { C1: 46, C2: 17, C3: 37 },
+  2: { C1: 19, C2: 24, C3: 57 },
+  3: { C4: 34, C5: 20, C6: 46 },
+  4: { C4: 62, C5: 21, C6: 17 },
+  5: { C4: 53, C5: 12, C6: 35 },
+  6: { C7: 23, C8: 19, C9: 34, C10: 24 },
+  7: { C7: 11, C8: 41, C9: 21, C10: 27 },
+  8: { C4: 32, C5: 38, C6: 30 },
+  9: { C1: 45, C2: 32, C3: 23 },
+  10: { C7: 12, C8: 43, C9: 33, C10: 12 }
+};
+
+// Ground-Truth 1-Hop Physical Adjacency Map from scenario_data.json
+const STORYBOARD_10_ADJACENCY = {
+  1: [2, 4],
+  2: [1, 3],
+  3: [2, 5, 6, 7],
+  4: [1, 5, 6, 7],
+  5: [3, 4, 6, 10],
+  6: [3, 4, 5, 8, 9],
+  7: [3, 4, 9],
+  8: [6, 9, 10],
+  9: [6, 7, 8, 10],
+  10: [5, 8, 9]
+};
+
 function getCifarClass(keyOrId) {
   if (typeof keyOrId === "string" && keyOrId.startsWith("C")) {
     const num = parseInt(keyOrId.slice(1), 10);
@@ -895,6 +923,9 @@ function stopCurrentPacketAnimation() {
   }
   const canvas = document.getElementById("packetCanvas");
   if (canvas) {
+    canvas.classList.remove("interactive-overlay");
+    canvas.style.pointerEvents = "none";
+    canvas.style.cursor = "";
     const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -13007,59 +13038,56 @@ function renderNodeModal(node, stepData = currentStepData) {
   }
 
   // Local Data Distribution: Clean percentage table showing ONLY classes this client actually holds
-  // In Steps 2, 3, and 4, remove redundant data percentage from node information box to free up space (Issue #1)
   const distSection = document.getElementById("cardDataDistributionSection");
-  if (currentStep >= 2) {
-    if (distSection) distSection.classList.add("hidden");
-  } else {
-    if (distSection) distSection.classList.remove("hidden");
-    if (distTableBody) {
-      distTableBody.innerHTML = "";
-      const dist = nodeData.data_distribution || nodeData.distribution || {};
-      const entries = Object.entries(dist).filter(([_, pct]) => Number(pct) > 0);
+  if (distSection) distSection.classList.remove("hidden");
+  if (distTableBody) {
+    distTableBody.innerHTML = "";
+    const dist = nodeData.data_distribution || nodeData.distribution || STORYBOARD_10_DISTRIBUTION[idNum] || {};
+    const entries = Object.entries(dist).filter(([_, pct]) => Number(pct) > 0);
 
-      if (entries.length === 0) {
-        distTableBody.innerHTML = '<tr><td colspan="3" class="py-1 px-2 text-slate-400 italic">No local distribution data</td></tr>';
-      } else {
-        entries.forEach(([clsKey, pct]) => {
-          const clsInfo = getCifarClass(clsKey);
-          const tr = document.createElement("tr");
-          tr.className = "hover:bg-slate-50 transition-colors";
-          tr.innerHTML = `
-            <td class="py-1.5 px-2 font-bold text-blue-700 font-mono">${clsKey}</td>
-            <td class="py-1.5 px-2 text-slate-800 font-sans font-medium">${clsInfo.name}</td>
-            <td class="py-1.5 px-2 text-right font-mono">
-              <span class="inline-block px-1.5 py-0.5 rounded font-bold text-slate-900 bg-slate-100 border border-slate-200">${pct}%</span>
-            </td>
-          `;
-          distTableBody.appendChild(tr);
-        });
-      }
+    if (entries.length === 0) {
+      distTableBody.innerHTML = '<tr><td colspan="3" class="py-1 px-2 text-slate-400 italic">No local distribution data</td></tr>';
+    } else {
+      entries.forEach(([clsKey, pct]) => {
+        const clsInfo = getCifarClass(clsKey);
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition-colors";
+        tr.innerHTML = `
+          <td class="py-1.5 px-2 font-bold text-blue-700 font-mono">${clsKey}</td>
+          <td class="py-1.5 px-2 text-slate-800 font-sans font-medium">${clsInfo.name}</td>
+          <td class="py-1.5 px-2 text-right font-mono">
+            <span class="inline-block px-1.5 py-0.5 rounded font-bold text-slate-900 bg-slate-100 border border-slate-200">${pct}%</span>
+          </td>
+        `;
+        distTableBody.appendChild(tr);
+      });
     }
   }
 
-  // Step 2, Step 3, Step 4+: Normalized 10D Semantic Vector (w_i) - Kept in Step 4+ per Issue #4
+  // Normalized 10D Semantic Vector (w_i) - Universal baseline across all steps
   const vectorSection = document.getElementById("cardVectorSection");
   const vectorArrayEl = document.getElementById("cardVectorArray");
   const vectorBreakdownContainer = document.getElementById("cardVectorBreakdownContainer");
   const vectorBreakdownBody = document.getElementById("cardVectorBreakdownBody");
 
-  if (currentStep >= 2) {
-    if (cardStatusBadge && currentStep === 2) {
-      cardStatusBadge.textContent = "LOCAL_TRAINED";
-      cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-cyan-50 text-cyan-800 border border-cyan-300";
-    }
+  if (vectorSection) vectorSection.classList.remove("hidden");
 
-    if (vectorSection) vectorSection.classList.remove("hidden");
+  if (cardStatusBadge && currentStep === 1) {
+    cardStatusBadge.textContent = "INITIALIZED";
+    cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200";
+  } else if (cardStatusBadge && currentStep === 2) {
+    cardStatusBadge.textContent = "LOCAL_TRAINED";
+    cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded bg-cyan-50 text-cyan-800 border border-cyan-300";
+  }
 
-    let vec = nodeData.vector_10d || nodeData.normalized_vector || nodeData.vector;
-    if (!vec || !Array.isArray(vec) || vec.length === 0) {
-      vec = STORYBOARD_10_VECTORS[idNum] || [];
-    }
+  let vec = nodeData.vector_10d || nodeData.normalized_vector || nodeData.vector;
+  if (!vec || !Array.isArray(vec) || vec.length === 0) {
+    vec = STORYBOARD_10_VECTORS[idNum] || [];
+  }
 
-    if (vectorArrayEl) {
-      vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
-    }
+  if (vectorArrayEl) {
+    vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
+  }
 
     // Mini bar profile for Step 5, 6, 7, 8, 9, 10, 11, 12 & 13
     const vectorBarsContainer = document.getElementById("cardVectorBarsContainer");
