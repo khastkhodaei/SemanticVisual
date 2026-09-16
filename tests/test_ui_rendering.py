@@ -44,3 +44,16 @@ def test_step_titles_and_badges_non_empty(client):
         data = res.json()
         assert data.get("title"), f"Step {step_num} missing title"
         assert data.get("phase_badge"), f"Step {step_num} missing phase_badge"
+
+
+def test_step_jump_dropdown_rendered_in_html():
+    """Verify #stepJumpSelect is present in the static and template HTML pages."""
+    for path in [
+        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/index.html",
+        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/templates/index.html",
+    ]:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+            assert 'id="stepJumpSelect"' in content, f"Missing #stepJumpSelect in {path}"
+            assert 'class="step-jump-dropdown' in content, f"Missing class in {path}"
+

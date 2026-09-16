@@ -15,6 +15,56 @@ let currentLayout = "physical"; // "physical" | "overlay"
 let layoutAnimationId = null;
 const TOTAL_STEPS = 34;
 
+const STEP_CATALOG = [
+  { step: 1, title: "Step 1: Network Creation & Non-IID Data", phase: 1 },
+  { step: 2, title: "Step 2: Local Training & Weight Vectors", phase: 1 },
+  { step: 3, title: "Step 3: Local VRF Score Calculation", phase: 2 },
+  { step: 4, title: "Step 4: 1-Hop Neighbor Score Exchange & Election", phase: 2 },
+  { step: 5, title: "Step 5: Zone Creation via PROBE Flooding (TTL=1)", phase: 3 },
+  { step: 6, title: "Step 6: Zone Formation & Boundary Discovery", phase: 3 },
+  { step: 7, title: "Step 7: Initiator P_min Query Request", phase: 3 },
+  { step: 8, title: "Step 8: Local Binary Search & P_min Reporting", phase: 3 },
+  { step: 9, title: "Step 9: Boundary Inter-Initiator Consensus Exchange", phase: 3 },
+  { step: 10, title: "Step 10: ORDER_EXTRACT (P=3) Broadcast", phase: 3 },
+  { step: 11, title: "Step 11: Top-P Signature Extraction & Dispatch", phase: 4 },
+  { step: 12, title: "Step 12: Intra-Zone Semantic Clustering (AP)", phase: 4 },
+  { step: 13, title: "Step 13: Intra-Zone Exemplar & Member Assignment", phase: 4 },
+  { step: 14, title: "Step 14: Top-Level Initiator Election & Super-Zone", phase: 5 },
+  { step: 15, title: "Step 15: Top-Level Catalog Query Dispatch", phase: 5 },
+  { step: 16, title: "Step 16: Zone Catalog Response & Signature Ingestion", phase: 5 },
+  { step: 17, title: "Step 17: Global Super-Cluster Formation (SC1-SC3)", phase: 5 },
+  { step: 18, title: "Step 18: ORDER_SET_SUPER_CLUSTERS Dispatch", phase: 5 },
+  { step: 19, title: "Step 19: Intra-Zone Super-Peer & Exemplar Binding", phase: 5 },
+  { step: 20, title: "Step 20: 2-Tier Semantic Overlay Network (SON)", phase: 5 },
+  { step: 21, title: "Step 21: Model Parameter Pruning & Sparsification", phase: 6 },
+  { step: 22, title: "Step 22: Hierarchical Semantic Peer Discovery", phase: 6 },
+  { step: 23, title: "Step 23: Super-Peer Semantic Query Routing", phase: 6 },
+  { step: 24, title: "Step 24: Exemplar-to-Leaf Query Dispatch", phase: 6 },
+  { step: 25, title: "Step 25: Local Cosine Similarity Evaluation", phase: 6 },
+  { step: 26, title: "Step 26: Upward Similarity Score Reporting", phase: 6 },
+  { step: 27, title: "Step 27: Exemplar Similarity Ranking & Dispatch", phase: 6 },
+  { step: 28, title: "Step 28: Super-Peer Cross-Cluster Consolidation", phase: 6 },
+  { step: 29, title: "Step 29: Top-K Partner Match Delivery (K=2)", phase: 6 },
+  { step: 30, title: "Step 30: P2P Model Weight Request Dispatch", phase: 7 },
+  { step: 31, title: "Step 31: Sparse Parameter Ingestion & Buffer", phase: 7 },
+  { step: 32, title: "Step 32: Reference Model Construction & Alignment", phase: 7 },
+  { step: 33, title: "Step 33: Federated Aggregation (FedAvg) & Convergence", phase: 7 },
+  { step: 34, title: "Step 34: Round 1 Finalization & Benchmarks", phase: 7 }
+];
+
+function initStepJumpSelector() {
+  const jumpSelect = document.getElementById("stepJumpSelect");
+  if (!jumpSelect) return;
+
+  jumpSelect.innerHTML = "";
+  STEP_CATALOG.forEach((item) => {
+    const opt = document.createElement("option");
+    opt.value = String(item.step);
+    opt.textContent = `${item.title}`;
+    jumpSelect.appendChild(opt);
+  });
+}
+
 // Universal Canvas Rounded Rectangle Utility & Polyfill
 if (typeof CanvasRenderingContext2D !== "undefined" && !CanvasRenderingContext2D.prototype.roundRect) {
   CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
@@ -234,6 +284,7 @@ function getZoneColor(zone) {
 
 document.addEventListener("DOMContentLoaded", async () => {
   initCytoscape();
+  initStepJumpSelector();
   bindActionButtons();
   setupPacketCanvas();
   await loadGlobalConfig();
@@ -18094,16 +18145,23 @@ function updateNavButtons(step) {
       btnNext.innerHTML = `<span>✓ Round 1 Complete</span>`;
     }
   }
+
+  const jumpSelect = document.getElementById("stepJumpSelect");
+  if (jumpSelect && jumpSelect.value !== String(step)) {
+    jumpSelect.value = String(step);
+  }
 }
 
 function setNavButtonsDisabled(disabled) {
   const btnReset = document.getElementById("btnReset");
   const btnPrev = document.getElementById("btnPrev");
   const btnNext = document.getElementById("btnNext");
+  const jumpSelect = document.getElementById("stepJumpSelect");
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
   if (btnNext) btnNext.disabled = disabled || (currentStep >= TOTAL_STEPS);
+  if (jumpSelect) jumpSelect.disabled = disabled;
 }
 
 function bindActionButtons() {
@@ -18131,6 +18189,16 @@ function bindActionButtons() {
         loadStep(currentStep + 1);
       } else {
         logToTerminal("INFO", `Step ${TOTAL_STEPS} is active (Round 1 Finalization & Benchmarks complete).`);
+      }
+    });
+  }
+
+  const jumpSelect = document.getElementById("stepJumpSelect");
+  if (jumpSelect) {
+    jumpSelect.addEventListener("change", (e) => {
+      const targetStep = parseInt(e.target.value, 10);
+      if (!isNaN(targetStep) && targetStep >= 1 && targetStep <= TOTAL_STEPS) {
+        loadStep(targetStep);
       }
     });
   }

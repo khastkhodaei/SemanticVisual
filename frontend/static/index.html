@@ -274,6 +274,12 @@
           <span>Next Step (Step 2)</span>
           <span>▶️</span>
         </button>
+        <div class="step-jump-container flex items-center gap-1.5 ml-2 pl-2 border-l border-slate-200">
+          <label for="stepJumpSelect" class="text-xs text-slate-500 font-sans font-medium">Go to:</label>
+          <select id="stepJumpSelect" class="step-jump-dropdown text-xs font-mono font-semibold bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs cursor-pointer" title="Directly jump to any step">
+            <!-- Dynamically populated from Step 1 to TOTAL_STEPS -->
+          </select>
+        </div>
       </div>
 
       <!-- Current Step Badge -->

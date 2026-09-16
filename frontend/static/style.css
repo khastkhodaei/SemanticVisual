@@ -664,6 +664,24 @@ body {
   stroke-width: 1.5px !important;
 }
 
+/* Direct Step Jump Selector Styling */
+.step-jump-container {
+  display: inline-flex;
+  align-items: center;
+}
 
+.step-jump-dropdown {
+  max-width: 280px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: all 0.15s ease-in-out;
+}
 
+.step-jump-dropdown:hover {
+  border-color: #94a3b8;
+}
 
+.step-jump-dropdown:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
