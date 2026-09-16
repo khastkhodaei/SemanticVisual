@@ -13,6 +13,7 @@ let activeSelectedNodeData = null;
 let activeAnimationId = null;
 let currentLayout = "physical"; // "physical" | "overlay"
 let layoutAnimationId = null;
+const TOTAL_STEPS = 34;
 
 // Universal Canvas Rounded Rectangle Utility & Polyfill
 if (typeof CanvasRenderingContext2D !== "undefined" && !CanvasRenderingContext2D.prototype.roundRect) {
@@ -1104,9 +1105,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 30)
+// 4. Main Step Loading Function (Steps 1 to 34)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 30) return;
+  if (stepNumber < 1 || stepNumber > TOTAL_STEPS) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -17985,7 +17986,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 34; s++) {
+  for (let s = 1; s <= TOTAL_STEPS; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -18069,7 +18070,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 34) {
+    if (step < TOTAL_STEPS) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -18077,7 +18078,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-75 cursor-default bg-emerald-700 text-white border border-emerald-600 shadow-sm";
-      btnNext.title = "Step 34 active (Round 1 Finalization & Benchmarks complete — Simulation 100% complete)";
+      btnNext.title = `Step ${TOTAL_STEPS} active (Round 1 Finalization & Benchmarks complete — Simulation 100% complete)`;
       btnNext.innerHTML = `<span>✓ Round 1 Complete</span>`;
     }
   }
@@ -18090,7 +18091,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 34);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= TOTAL_STEPS);
 }
 
 function bindActionButtons() {
@@ -18114,16 +18115,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 34) {
+      if (currentStep < TOTAL_STEPS) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 34 is active (Round 1 Finalization & Benchmarks complete).");
+        logToTerminal("INFO", `Step ${TOTAL_STEPS} is active (Round 1 Finalization & Benchmarks complete).`);
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 34)
-  for (let s = 1; s <= 34; s++) {
+  // Clickable Stepper tabs (Step 1 to TOTAL_STEPS)
+  for (let s = 1; s <= TOTAL_STEPS; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {
