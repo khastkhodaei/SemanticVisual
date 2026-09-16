@@ -12,7 +12,7 @@ import copy
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 31
+TOTAL_STEPS: int = 32
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -5447,6 +5447,71 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "boundary_nodes": [1, 6],
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 32:
+        # Step 32: Reference Model Construction & Similarity Weight Alignment
+        step31_data = _get_10node_step_data_raw(31)
+        step32_nodes = copy.deepcopy(step31_data["nodes"])
+
+        for n in step32_nodes:
+            nid = n["id"]
+            ref_info = STEP32_REFERENCE_MODELS[nid]
+            n["status"] = "REFERENCE_MODEL_BUILT"
+            n["reference_model"] = ref_info
+            n["ref_vector"] = ref_info["ref_vector"]
+            n["alpha_self"] = ref_info["alpha_self"]
+            n["partner_weights"] = ref_info["partner_weights"]
+            n["is_reference_ready"] = True
+
+        terminal_logs = [
+            "[STEP 32] Reference Model Construction & Similarity Weight Alignment initiated.",
+            "[SYNTHESIS C1] w_1^ref constructed: alpha_self=0.3577, alpha_C9=0.3372, alpha_C2=0.3051.",
+            "[SYNTHESIS C2] w_2^ref constructed: alpha_self=0.3577, alpha_C9=0.3372, alpha_C1=0.3051.",
+            "[SYNTHESIS C3] w_3^ref constructed: alpha_self=0.3508, alpha_C5=0.3271, alpha_C8=0.3220.",
+            "[SYNTHESIS C4] w_4^ref constructed: alpha_self=0.3592, alpha_C5=0.3395, alpha_C8=0.3013.",
+            "[SYNTHESIS C5] w_5^ref constructed: alpha_self=0.3475, alpha_C4=0.3285, alpha_C3=0.3240.",
+            "[SYNTHESIS C6] w_6^ref constructed: alpha_self=0.4829, alpha_C7=0.2591, alpha_C10=0.2580.",
+            "[SYNTHESIS C7] w_7^ref constructed: alpha_self=0.4042, alpha_C10=0.3790, alpha_C6=0.2168.",
+            "[SYNTHESIS C8] w_8^ref constructed: alpha_self=0.3608, alpha_C3=0.3312, alpha_C5=0.3080.",
+            "[SYNTHESIS C9] w_9^ref constructed: alpha_self=0.3702, alpha_C1=0.3491, alpha_C2=0.2807.",
+            "[SYNTHESIS C10] w_10^ref constructed: alpha_self=0.4045, alpha_C7=0.3794, alpha_C6=0.2161.",
+            "[STATUS: REFERENCE_MODEL_BUILT] All 10 clients successfully constructed similarity-normalized Reference Models in local RAM.",
+        ]
+
+        return {
+            "step": 32,
+            "total_steps": 32,
+            "title": "Step 32: Reference Model Construction & Similarity Weight Alignment",
+            "phase_badge": "ACTIVE PHASE: STEP 32: REFERENCE MODEL CONSTRUCTION",
+            "description": "Each client synthesizes a synthesized Reference Model w_i^ref by computing similarity-normalized weights alpha_{i, j} across its local vector and its Top-2 ingested partner vectors.",
+            "formula": r"\mathbf{w}_i^{\text{ref}} = \alpha_{i, i}\mathbf{w}_i + \sum_{j \in \mathcal{P}_i^*} \alpha_{i, j}\mathbf{w}_j, \quad \alpha_{i, j} \propto \text{Sim}(i, j)",
+            "formula_desc": "Each client synthesizes a reference model vector via similarity-normalized alignment over local and partner weights.",
+            "nodes": step32_nodes,
+            "edges": step31_data["edges"],
+            "reference_models": STEP32_REFERENCE_MODELS,
+            "packets": [],
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step31_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": [1, 5, 10],
+            "exemplars": [1, 3, 5, 7, 8, 9, 10],
+            "leaf_nodes": [2, 4, 6],
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -5841,5 +5906,20 @@ for nid in range(1, 11):
         ]
     }
 node_memory_buffers = STEP31_NODE_BUFFERS
+
+# Step 32: Reference Model Construction & Similarity Weight Alignment
+STEP32_REFERENCE_MODELS = {
+    1: {"alpha_self": 0.3577, "partner_weights": {9: 0.3372, 2: 0.3051}, "ref_vector": [0.3742, 0.2419, 0.3838, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]},
+    2: {"alpha_self": 0.3577, "partner_weights": {9: 0.3372, 1: 0.3051}, "ref_vector": [0.3600, 0.2456, 0.3944, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]},
+    3: {"alpha_self": 0.3508, "partner_weights": {5: 0.3271, 8: 0.3220}, "ref_vector": [0.0, 0.0, 0.0, 0.3957, 0.2319, 0.3725, 0.0, 0.0, 0.0, 0.0]},
+    4: {"alpha_self": 0.3592, "partner_weights": {5: 0.3395, 8: 0.3013}, "ref_vector": [0.0, 0.0, 0.0, 0.4990, 0.2306, 0.2703, 0.0, 0.0, 0.0, 0.0]},
+    5: {"alpha_self": 0.3475, "partner_weights": {4: 0.3285, 3: 0.3240}, "ref_vector": [0.0, 0.0, 0.0, 0.4981, 0.1755, 0.3264, 0.0, 0.0, 0.0, 0.0]},
+    6: {"alpha_self": 0.4829, "partner_weights": {7: 0.2591, 10: 0.2580}, "ref_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1111, 0.2171, 0.3037, 0.2169]},
+    7: {"alpha_self": 0.4042, "partner_weights": {10: 0.3790, 6: 0.2168}, "ref_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0499, 0.3287, 0.2837, 0.2066]},
+    8: {"alpha_self": 0.3608, "partner_weights": {3: 0.3312, 5: 0.3080}, "ref_vector": [0.0, 0.0, 0.0, 0.3913, 0.2403, 0.3684, 0.0, 0.0, 0.0, 0.0]},
+    9: {"alpha_self": 0.3702, "partner_weights": {1: 0.3491, 2: 0.2807}, "ref_vector": [0.3805, 0.2452, 0.3743, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]},
+    10: {"alpha_self": 0.4045, "partner_weights": {7: 0.3794, 6: 0.2161}, "ref_vector": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0497, 0.3295, 0.2867, 0.2028]}
+}
+reference_models = STEP32_REFERENCE_MODELS
 
 

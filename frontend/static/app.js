@@ -1379,6 +1379,13 @@ async function loadStep(stepNumber) {
         console.error("Step 31 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 31 Render Error: ${renderErr.message}`);
       }
+    } else if (stepNumber === 32) {
+      try {
+        renderStep32(data);
+      } catch (renderErr) {
+        console.error("Step 32 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 32 Render Error: ${renderErr.message}`);
+      }
     }
 
 
@@ -1668,6 +1675,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 31 / BUFFER INGESTION";
     if (stepTitle) stepTitle.textContent = "Step 31: Sparse Parameter Delivery & Local Buffer Ingestion (REP_MODEL_WEIGHTS)";
     if (stepDesc) stepDesc.textContent = "Clients ingest 15-byte parameter payloads from their Top-2 partners into local memory buffers.";
+  } else if (step === 32) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 32: REFERENCE MODEL CONSTRUCTION";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-cyan-50 text-cyan-950 border border-cyan-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 32 / REFERENCE MODEL";
+    if (stepTitle) stepTitle.textContent = "Step 32: Reference Model Construction & Similarity Weight Alignment";
+    if (stepDesc) stepDesc.textContent = "Each client calculates similarity-weighted influence coefficients (\alpha_{i, j}) and constructs its local Reference Model vector.";
   }
 }
 
@@ -6430,6 +6445,70 @@ function renderStep31(data) {
   animateStep31BufferIngestion(packets, data.nodes);
 }
 
+function renderStep32(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 32: REFERENCE MODEL CONSTRUCTION";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-cyan-50 text-cyan-950 border border-cyan-400";
+  });
+
+  renderSidebarFormula(
+    "Step 32: Reference Model Construction & Similarity Weight Alignment",
+    "\\mathbf{w}_i^{\\text{ref}} = \\alpha_{i, i}\\mathbf{w}_i + \\sum_{j \\in \\mathcal{P}_i^*} \\alpha_{i, j}\\mathbf{w}_j, \\quad \\alpha_{i, j} \\propto \\text{Sim}(i, j)",
+    "Each client synthesizes a reference model vector via similarity-normalized alignment over local and partner weights.",
+    "Step 32: Ref Model",
+    true,
+    "cyan"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      ? "Reference Model Synthesis (w_i^ref) — Intra-Cluster Collaborative Weight Alignment"
+      : "Reference Model Synthesis (w_i^ref) — Local RAM Similarity-Normalized Computation";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>Reference Models: <span class="text-cyan-600 font-bold font-mono">10 Synthesized</span> | Computation: <span class="text-cyan-700 font-bold font-mono">LOCAL_SIMILARITY_ALIGNMENT</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = PHYSICAL_LAYOUT_COORDS[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("INFO", "[STEP 32] Local reference model construction (w_i^ref) initiated across all 10 clients.");
+  logToTerminal("SUCCESS", "[SC-1 REF] C1, C2, C9 computed normalized influence coefficients alpha_{i, j} and synthesized 10D reference vectors.");
+  logToTerminal("SUCCESS", "[SC-2 REF] C3, C4, C5, C8 computed normalized influence coefficients alpha_{i, j} and synthesized 10D reference vectors.");
+  logToTerminal("SUCCESS", "[SC-3 REF] C6, C7, C10 computed normalized influence coefficients alpha_{i, j} and synthesized 10D reference vectors.");
+  logToTerminal("SUCCESS", "[REFERENCE_MODEL_BUILT] All 10 clients have valid precomputed reference vectors. Zero runtime float overhead.");
+
+  animateStep32ReferenceSynthesis(data.nodes);
+}
+
 // Global reference to hover virtual node in Figure 3(f) / Physical
 let figure3fHoveredVirtualNode = null;
 let figure3fCanvasListenersBound = false;
@@ -11007,6 +11086,277 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
       renderFigure3fWeightDelivery(now);
     } else {
       renderPhysicalWeightDelivery(now);
+    }
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+function animateStep32ReferenceSynthesis(allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const startTime = performance.now();
+
+  function drawFloatingTag(ctx, text, x, y, borderColor, bgColor, textColor) {
+    ctx.save();
+    ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+    const textW = ctx.measureText(text).width;
+    const boxH = 14;
+    const boxW = textW + 12;
+    const boxX = x - boxW / 2;
+    const boxY = y - boxH / 2;
+
+    ctx.fillStyle = bgColor || "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = borderColor || "#06b6d4";
+    ctx.lineWidth = 1;
+    ctx.shadowColor = borderColor || "#06b6d4";
+    ctx.shadowBlur = 6;
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = textColor || "#cffafe";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function renderPhysicalSynthesis(now) {
+    if (cy) cy.elements().style("opacity", 1);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
+
+    // Top Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "PHYSICAL TOPOLOGY: REFERENCE MODEL SYNTHESIS [INTERNAL SIMILARITY-WEIGHTED ALIGNMENT]";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#06b6d4";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#cffafe";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Node position map
+    const physNodePosMap = {};
+    for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          physNodePosMap[id] = { id, x: rp.x, y: rp.y };
+          continue;
+        }
+      }
+      const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
+      physNodePosMap[id] = { id, x: c.x, y: c.y };
+    }
+
+    // Physical Mesh Links (passive background)
+    ctx.save();
+    PHYSICAL_TOPOLOGY_EDGES.forEach(edge => {
+      const p1 = physNodePosMap[edge.from];
+      const p2 = physNodePosMap[edge.to];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.22)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Concentric steady cyan synthesis pulsing rings on each node
+    for (let id = 1; id <= 10; id++) {
+      const p = physNodePosMap[id];
+      if (!p) continue;
+
+      ctx.save();
+      // Outer harmonic synthesis glow
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 24 + pulse * 6, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(6, 182, 212, ${0.5 + pulse * 0.4})`;
+      ctx.lineWidth = 2.0;
+      ctx.shadowColor = "#06b6d4";
+      ctx.shadowBlur = 10 + pulse * 8;
+      ctx.stroke();
+
+      // Inner steady ring
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 16 + pulse * 3, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(14, 165, 233, 0.75)";
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+
+      // Glowing core wash
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(6, 182, 212, ${0.20 + pulse * 0.20})`;
+      ctx.fill();
+      ctx.restore();
+
+      // Floating status tag below node
+      drawFloatingTag(ctx, "w_i^ref BUILT", p.x, p.y + 28, "#06b6d4", "rgba(8, 51, 68, 0.94)", "#cffafe");
+    }
+
+    ctx.restore();
+  }
+
+  function renderFigure3fSynthesis(now) {
+    if (cy) cy.elements().style("opacity", 0);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
+
+    const layout = getFigure3fLayoutParameters(canvas.width, canvas.height);
+    const nodePosMap = {};
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      nodePosMap[n.key] = computeFigure3fNodePosition(n, layout);
+    });
+
+    // Top Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "FIGURE 3(f) 3-TIER: REFERENCE MODEL SYNTHESIS & SIMILARITY ALIGNMENT";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 28;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#06b6d4";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#cffafe";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    const hull = computeFigure3fHull(layout);
+    const capsules = computeFigure3fCapsules(layout);
+
+    // Node backplates
+    ctx.save();
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isTop = n.tier === 3;
+      const isMid = n.tier === 2;
+      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
+      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
+      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
+      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Hull & Capsules
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillStyle = "#e11d48";
+    ctx.textAlign = "center";
+    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
+    ctx.restore();
+
+    capsules.forEach(cap => {
+      ctx.save();
+      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
+      ctx.fillStyle = cap.fill;
+      ctx.fill();
+      ctx.strokeStyle = cap.border;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillStyle = cap.textColor;
+      ctx.textAlign = "center";
+      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
+      ctx.restore();
+    });
+
+    // Draw Nodes
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
+
+      if (n.tier === 1) {
+        // Cyan harmonic inner pulsing ring indicating reference model synthesis
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(p.renderedX, p.renderedY, rad + 4 + pulse * 4, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(6, 182, 212, ${0.5 + pulse * 0.4})`;
+        ctx.lineWidth = 2.2;
+        ctx.shadowColor = "#06b6d4";
+        ctx.shadowBlur = 10;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      drawNode(ctx, {
+        id: n.id,
+        node_id: n.label,
+        x: p.renderedX,
+        y: p.renderedY,
+        tier: n.tier,
+        zone: n.zone
+      }, isHov, pulse, rad);
+
+      if (n.tier === 1) {
+        drawFloatingTag(ctx, "w_i^ref SYNTHESIZED", p.renderedX, p.renderedY + rad + 12, "#06b6d4", "rgba(8, 51, 68, 0.94)", "#cffafe");
+      }
+    });
+
+    ctx.restore();
+  }
+
+  function runFrame(now) {
+    if (currentStep !== 32) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentLayout === "figure3f" || currentLayout === "overlay") {
+      renderFigure3fSynthesis(now);
+    } else {
+      renderPhysicalSynthesis(now);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
@@ -16048,6 +16398,121 @@ function renderNodeModal(node, stepData = currentStepData) {
           </div>
         `;
       }
+    } else if (currentStep === 32) {
+      if (discoverySection) discoverySection.classList.remove("hidden");
+
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "🟢 REFERENCE_MODEL_BUILT";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-cyan-100 text-cyan-950 border-cyan-400";
+      }
+
+      if (discoveryBadge) {
+        discoveryBadge.textContent = "STEP 32: REFERENCE MODEL";
+        discoveryBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-cyan-100 text-cyan-950 border border-cyan-300";
+      }
+
+      if (discoveryContent) {
+        const scId = [1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3");
+
+        const defaultRefModels = {
+          1: { alpha_self: 0.3577, partner_weights: { 9: 0.3372, 2: 0.3051 }, ref_vector: [0.3742, 0.2419, 0.3838, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] },
+          2: { alpha_self: 0.3577, partner_weights: { 9: 0.3372, 1: 0.3051 }, ref_vector: [0.3600, 0.2456, 0.3944, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] },
+          3: { alpha_self: 0.3508, partner_weights: { 5: 0.3271, 8: 0.3220 }, ref_vector: [0.0, 0.0, 0.0, 0.3957, 0.2319, 0.3725, 0.0, 0.0, 0.0, 0.0] },
+          4: { alpha_self: 0.3592, partner_weights: { 5: 0.3395, 8: 0.3013 }, ref_vector: [0.0, 0.0, 0.0, 0.4990, 0.2306, 0.2703, 0.0, 0.0, 0.0, 0.0] },
+          5: { alpha_self: 0.3475, partner_weights: { 4: 0.3285, 3: 0.3240 }, ref_vector: [0.0, 0.0, 0.0, 0.4981, 0.1755, 0.3264, 0.0, 0.0, 0.0, 0.0] },
+          6: { alpha_self: 0.4829, partner_weights: { 7: 0.2591, 10: 0.2580 }, ref_vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1111, 0.2171, 0.3037, 0.2169] },
+          7: { alpha_self: 0.4042, partner_weights: { 10: 0.3790, 6: 0.2168 }, ref_vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0499, 0.3287, 0.2837, 0.2066] },
+          8: { alpha_self: 0.3608, partner_weights: { 3: 0.3312, 5: 0.3080 }, ref_vector: [0.0, 0.0, 0.0, 0.3913, 0.2403, 0.3684, 0.0, 0.0, 0.0, 0.0] },
+          9: { alpha_self: 0.3702, partner_weights: { 1: 0.3491, 2: 0.2807 }, ref_vector: [0.3805, 0.2452, 0.3743, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] },
+          10: { alpha_self: 0.4045, partner_weights: { 7: 0.3794, 6: 0.2161 }, ref_vector: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0497, 0.3295, 0.2867, 0.2028] }
+        };
+
+        const refData = mergedNode?.reference_model || (currentStepData?.reference_models && currentStepData.reference_models[idNum]) || defaultRefModels[idNum];
+        const alphaSelf = refData?.alpha_self ?? 0.3333;
+        const partnerWeights = refData?.partner_weights ?? {};
+        const pIds = Object.keys(partnerWeights);
+        const p1Id = pIds[0] || "?";
+        const p2Id = pIds[1] || "?";
+        const alphaP1 = partnerWeights[p1Id] ?? 0.3333;
+        const alphaP2 = partnerWeights[p2Id] ?? 0.3333;
+
+        const weightTableRows = `
+          <tr style="border-bottom: 1px solid rgba(6, 182, 212, 0.25);">
+            <td style="padding: 5px 8px; color: #e2e8f0; font-weight: 600;"><span class="px-1.5 py-0.2 rounded text-[8.5px] font-mono bg-indigo-950 text-indigo-300 border border-indigo-500 mr-1.5">Self</span>Local C${idNum}</td>
+            <td style="padding: 5px 8px; text-align: center; color: #a5f3fc; font-family: ui-monospace, SFMono-Regular, monospace; font-weight: bold;">${alphaSelf.toFixed(4)}</td>
+            <td style="padding: 5px 8px; text-align: right; color: #67e8f9; font-family: ui-monospace, SFMono-Regular, monospace;">${(alphaSelf * 100).toFixed(1)}%</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(6, 182, 212, 0.25);">
+            <td style="padding: 5px 8px; color: #e2e8f0; font-weight: 600;"><span class="px-1.5 py-0.2 rounded text-[8.5px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-500 mr-1.5">Partner 1</span>Node C${p1Id}</td>
+            <td style="padding: 5px 8px; text-align: center; color: #a5f3fc; font-family: ui-monospace, SFMono-Regular, monospace; font-weight: bold;">${alphaP1.toFixed(4)}</td>
+            <td style="padding: 5px 8px; text-align: right; color: #67e8f9; font-family: ui-monospace, SFMono-Regular, monospace;">${(alphaP1 * 100).toFixed(1)}%</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(6, 182, 212, 0.25);">
+            <td style="padding: 5px 8px; color: #e2e8f0; font-weight: 600;"><span class="px-1.5 py-0.2 rounded text-[8.5px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-500 mr-1.5">Partner 2</span>Node C${p2Id}</td>
+            <td style="padding: 5px 8px; text-align: center; color: #a5f3fc; font-family: ui-monospace, SFMono-Regular, monospace; font-weight: bold;">${alphaP2.toFixed(4)}</td>
+            <td style="padding: 5px 8px; text-align: right; color: #67e8f9; font-family: ui-monospace, SFMono-Regular, monospace;">${(alphaP2 * 100).toFixed(1)}%</td>
+          </tr>
+        `;
+
+        const refVec = refData?.ref_vector || [];
+        const vectorCells = refVec.map((val, dIdx) => {
+          const isNonZero = Math.abs(val) > 0.001;
+          const bgClass = isNonZero ? "background: rgba(6, 182, 212, 0.25); color: #22d3ee; font-weight: bold; border: 1px solid rgba(6, 182, 212, 0.5);" : "background: rgba(30, 41, 59, 0.5); color: #475569; border: 1px solid rgba(51, 65, 85, 0.4);";
+          return `
+            <div style="flex: 1; min-width: 0; text-align: center; padding: 4px 1px; border-radius: 4px; ${bgClass}">
+              <div style="font-size: 7.5px; opacity: 0.7; font-family: ui-monospace, SFMono-Regular, monospace;">d${dIdx}</div>
+              <div style="font-size: 9px; font-family: ui-monospace, SFMono-Regular, monospace;">${val.toFixed(4)}</div>
+            </div>
+          `;
+        }).join("");
+
+        discoveryContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-cyan-300 bg-cyan-50 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-cyan-950 flex items-center gap-1">
+                  <span>📐</span><span>Reference Model Synthesis & Weight Distribution</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold text-[10px] bg-cyan-200 text-cyan-950 border border-cyan-400">🟢 REFERENCE_MODEL_BUILT</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-cyan-900 font-semibold">
+                Super-Cluster: <span class="font-bold text-cyan-950">${scId}</span> | Client Node C${idNum} | Status: <span class="font-bold">SYNTHESIZED_LOCAL_RAM</span>
+              </div>
+            </div>
+
+            <div class="modal-section" style="background: rgba(15, 23, 42, 0.96); border: 1.5px solid #06b6d4; border-radius: 8px; padding: 10px;">
+              <h4 style="color: #22d3ee; margin-top: 0; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: bold;">
+                <span>⚖️ Influence Coefficients (&alpha;<sub>i, j</sub>)</span>
+                <span style="font-size: 10px; color: #a5f3fc; font-family: ui-monospace, SFMono-Regular, monospace;">&sum; &alpha; = 1.0000</span>
+              </h4>
+              <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px;">
+                <thead>
+                  <tr style="border-bottom: 1.5px solid rgba(6, 182, 212, 0.5); color: #22d3ee; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 9.5px; text-transform: uppercase;">
+                    <th style="padding: 4px 8px; text-align: left;">Component</th>
+                    <th style="padding: 4px 8px; text-align: center;">Normalized Weight (&alpha;)</th>
+                    <th style="padding: 4px 8px; text-align: right;">Contribution</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${weightTableRows}
+                </tbody>
+              </table>
+
+              <h4 style="color: #22d3ee; margin-top: 8px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; font-weight: bold;">
+                <span>🧬 Synthesized Reference Model Vector (w<sub>${idNum}</sub><sup>ref</sup>)</span>
+                <span style="font-size: 9px; color: #a5f3fc; font-family: ui-monospace, SFMono-Regular, monospace;">10D Precomputed</span>
+              </h4>
+              <div style="display: flex; gap: 3px; margin-bottom: 8px;">
+                ${vectorCells}
+              </div>
+
+              <div style="font-size: 10px; color: #cffafe; background: rgba(8, 51, 68, 0.6); border: 1px dashed #06b6d4; border-radius: 4px; padding: 6px; text-align: center;">
+                ✨ Reference model w<sub>${idNum}</sub><sup>ref</sup> synthesized with zero runtime float overhead. Primed for Step 33 aggregation.
+              </div>
+            </div>
+          </div>
+        `;
+      }
     } else {
       if (discoverySection) discoverySection.classList.add("hidden");
     }
@@ -16467,7 +16932,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 31; s++) {
+  for (let s = 1; s <= 32; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -16516,6 +16981,8 @@ function updateStepper(step) {
         item.classList.add("step-amber");
       } else if (step === 31) {
         item.classList.add("step-emerald");
+      } else if (step === 32) {
+        item.classList.add("step-cyan");
       }
     }
   }
@@ -16545,7 +17012,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 31) {
+    if (step < 32) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -16553,7 +17020,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 31 active (Sparse Parameter Delivery & Local Buffer Ingestion complete)";
+      btnNext.title = "Step 32 active (Reference Model Construction & Similarity Weight Alignment complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -16566,7 +17033,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 31);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 32);
 }
 
 function bindActionButtons() {
@@ -16590,16 +17057,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 31) {
+      if (currentStep < 32) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 31 is active (Sparse Parameter Delivery & Local Buffer Ingestion complete).");
+        logToTerminal("INFO", "Step 32 is active (Reference Model Construction & Similarity Weight Alignment complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 31)
-  for (let s = 1; s <= 31; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 32)
+  for (let s = 1; s <= 32; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

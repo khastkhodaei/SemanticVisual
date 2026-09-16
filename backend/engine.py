@@ -52,9 +52,11 @@ from backend.storyboard_10nodes import (
     node_memory_buffers,
     STEP31_NODE_BUFFERS,
     STEP31_SPARSE_VECTORS,
+    reference_models,
+    STEP32_REFERENCE_MODELS,
 )
 
-TOTAL_STEPS: int = 31
+TOTAL_STEPS: int = 32
 
 
 

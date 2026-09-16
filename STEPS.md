@@ -1178,3 +1178,26 @@ Requested peers reply with their Top-P sparsified model parameters (15-byte payl
 - Each node $C_i$ stores its own local sparse vector $\mathbf{w}_i^{\text{sparse}}$ and the two incoming partner vectors $\mathbf{w}_{p_1}^{\text{sparse}}, \mathbf{w}_{p_2}^{\text{sparse}}$ in its dedicated local buffer $\mathcal{B}_i$.
 - Payload size per packet: 15 Bytes (3 non-zero floats + dimension indices).
 - All 10 nodes transition to status: `LOCAL_BUFFER_INGESTED` with buffer state `BUFFER_READY_FOR_ALIGNMENT`.
+
+---
+
+## Step 32 — Reference Model Construction & Similarity Weight Alignment
+
+Each client calculates similarity-weighted influence coefficients ($\alpha_{i, j}$) and constructs its local Reference Model vector:
+$$\mathbf{w}_i^{\text{ref}} = \alpha_{i, i} \mathbf{w}_i^{\text{sparse}} + \sum_{j \in \mathcal{P}_i^*} \alpha_{i, j} \mathbf{w}_j^{\text{sparse}}$$
+
+### 1. Precomputed Reference Vectors
+- **Node 1:** `[0.3742, 0.2419, 0.3838, 0, 0, 0, 0, 0, 0, 0]`
+- **Node 2:** `[0.3600, 0.2456, 0.3944, 0, 0, 0, 0, 0, 0, 0]`
+- **Node 3:** `[0, 0, 0, 0.3957, 0.2319, 0.3725, 0, 0, 0, 0]`
+- **Node 4:** `[0, 0, 0, 0.4990, 0.2306, 0.2703, 0, 0, 0, 0]`
+- **Node 5:** `[0, 0, 0, 0.4981, 0.1755, 0.3264, 0, 0, 0, 0]`
+- **Node 6:** `[0, 0, 0, 0, 0, 0, 0.1111, 0.2171, 0.3037, 0.2169]`
+- **Node 7:** `[0, 0, 0, 0, 0, 0, 0.0499, 0.3287, 0.2837, 0.2066]`
+- **Node 8:** `[0, 0, 0, 0.3913, 0.2403, 0.3684, 0, 0, 0, 0]`
+- **Node 9:** `[0.3805, 0.2452, 0.3743, 0, 0, 0, 0, 0, 0, 0]`
+- **Node 10:** `[0, 0, 0, 0, 0, 0, 0.0497, 0.3295, 0.2867, 0.2028]`
+
+### 2. Node State Transitions
+- All 10 nodes transition to status: `REFERENCE_MODEL_BUILT`.
+- Each node synthesizes an internal synthesized reference model $\mathbf{w}_i^{\text{ref}}$ with normalized weights $\alpha_{i, \cdot}$.
