@@ -1431,6 +1431,18 @@ async function loadStep(stepNumber) {
   }
 }
 
+// Sanitized Phase Badge Setter (Guarantees exactly one prefix without duplication)
+function setActivePhaseBadge(badge, text) {
+  if (!badge) return;
+  const raw = String(text || "").trim();
+  if (raw.startsWith("🎉")) {
+    badge.textContent = raw;
+    return;
+  }
+  const clean = raw.replace(/^(ACTIVE PHASE:\s*)+/i, "").trim();
+  badge.textContent = `ACTIVE PHASE: ${clean}`;
+}
+
 // Update Top Headers and Narrative Cards
 function updateUIHeaders(data) {
   const step = data.step || currentStep || 1;
