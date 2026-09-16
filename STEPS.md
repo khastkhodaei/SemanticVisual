@@ -1134,3 +1134,24 @@ Super-Peers evaluate the consolidated similarity rankings from Step 28, prune th
   - $C_9$: $\{C_1 (0.9429), C_2 (0.7581)\}$
   - $C_{10}$: $\{C_7 (0.9378), C_6 (0.5341)\}$
 - All 10 nodes transition to status: `FEDERATION_PARTNERS_LOCKED`.
+
+---
+
+## Step 30 — Pull-Based P2P Model Request Dispatch (REQ_MODEL_WEIGHTS)
+
+Each client initiates decentralized model exchange by dispatching `REQ_MODEL_WEIGHTS` packets to its Top-2 locked federation partners across valid physical underlay paths.
+
+### 1. Request Routing Ledger
+- $C_1 \to C_9$ via $[1, 4, 7, 9]$ & $C_1 \to C_2$ via $[1, 2]$
+- $C_2 \to C_9$ via $[2, 1, 4, 7, 9]$ & $C_2 \to C_1$ via $[2, 1]$
+- $C_3 \to C_5$ via $[3, 5]$ & $C_3 \to C_8$ via $[3, 6, 8]$
+- $C_4 \to C_5$ via $[4, 5]$ & $C_4 \to C_8$ via $[4, 6, 8]$
+- $C_5 \to C_4$ via $[5, 4]$ & $C_5 \to C_3$ via $[5, 3]$
+- $C_6 \to C_7$ via $[6, 4, 7]$ & $C_6 \to C_{10}$ via $[6, 8, 10]$
+- $C_7 \to C_{10}$ via $[7, 9, 10]$ & $C_7 \to C_6$ via $[7, 4, 6]$
+- $C_8 \to C_3$ via $[8, 6, 3]$ & $C_8 \to C_5$ via $[8, 6, 5]$
+- $C_9 \to C_1$ via $[9, 7, 4, 1]$ & $C_9 \to C_2$ via $[9, 7, 4, 1, 2]$
+- $C_{10} \to C_7$ via $[10, 9, 7]$ & $C_{10} \to C_6$ via $[10, 8, 6]$
+
+### 2. Node State Transitions
+- All 10 nodes transition to status: `DISPATCHED_MODEL_REQUESTS`.

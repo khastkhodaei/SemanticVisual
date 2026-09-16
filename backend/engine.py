@@ -43,9 +43,13 @@ from backend.storyboard_10nodes import (
     STEP29_FINAL_DELIVERY_PACKETS,
     client_locked_partners,
     STEP29_LOCKED_PARTNERS,
+    p2p_model_requests,
+    STEP30_P2P_MODEL_REQUESTS,
+    node_outbound_requests,
+    STEP30_NODE_OUTBOUND_REQUESTS,
 )
 
-TOTAL_STEPS: int = 29
+TOTAL_STEPS: int = 30
 
 
 

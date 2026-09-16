@@ -1104,9 +1104,9 @@ function getNodeElement(id) {
   return (el && el.length && el.isNode && el.isNode()) ? el : null;
 }
 
-// 4. Main Step Loading Function (Steps 1 to 29)
+// 4. Main Step Loading Function (Steps 1 to 30)
 async function loadStep(stepNumber) {
-  if (stepNumber < 1 || stepNumber > 29) return;
+  if (stepNumber < 1 || stepNumber > 30) return;
   setNavButtonsDisabled(true);
   hideNodeModal();
   stopCurrentPacketAnimation();
@@ -1364,6 +1364,13 @@ async function loadStep(stepNumber) {
       } catch (renderErr) {
         console.error("Step 29 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 29 Render Error: ${renderErr.message}`);
+      }
+    } else if (stepNumber === 30) {
+      try {
+        renderStep30(data);
+      } catch (renderErr) {
+        console.error("Step 30 Render Crash:", renderErr);
+        logToTerminal("ERROR", `Step 30 Render Error: ${renderErr.message}`);
       }
     }
 
@@ -1638,6 +1645,14 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 29 / TOP-K DELIVERY";
     if (stepTitle) stepTitle.textContent = "Step 29: Top-K Partner Match Delivery to Requesting Clients (K = 2)";
     if (stepDesc) stepDesc.textContent = "Super-Peers dispatch the resolved Top-K partner lists back to requesting clients across physical ad-hoc routes.";
+  } else if (step === 30) {
+    activeBadges.forEach(badge => {
+      badge.textContent = "ACTIVE PHASE: STEP 30: P2P MODEL WEIGHT REQUEST DISPATCH";
+      badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-950 border border-amber-400";
+    });
+    if (stepTag) stepTag.textContent = "STEP 30 / MODEL REQUEST";
+    if (stepTitle) stepTitle.textContent = "Step 30: Pull-Based P2P Model Request Dispatch (REQ_MODEL_WEIGHTS)";
+    if (stepDesc) stepDesc.textContent = "Clients dispatch pull requests across physical routes to request model weights from their Top-2 partners.";
   }
 }
 
@@ -6269,6 +6284,72 @@ function renderStep29(data) {
   animateStep29MatchDelivery(packets, data.nodes);
 }
 
+// Step 30: Pull-Based P2P Model Request Dispatch (REQ_MODEL_WEIGHTS)
+function renderStep30(data) {
+  stopCurrentPacketAnimation();
+
+  const activeBadges = [
+    document.getElementById("activePhaseBadge"),
+    document.getElementById("activeStepBadge")
+  ].filter(Boolean);
+  activeBadges.forEach(badge => {
+    badge.textContent = "ACTIVE PHASE: STEP 30: P2P MODEL WEIGHT REQUEST DISPATCH";
+    badge.className = "text-xs font-bold font-mono uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-50 text-amber-950 border border-amber-400";
+  });
+
+  renderSidebarFormula(
+    "Step 30: Pull-Based P2P Model Request Dispatch (REQ_MODEL_WEIGHTS)",
+    "C_i \\xrightarrow{\\text{REQ\\_MODEL\\_WEIGHTS}} \\{p \\in \\mathcal{P}_i^* \\mid K=2\\}",
+    "Clients dispatch pull requests across physical routes to request model weights from their Top-2 partners.",
+    "Step 30: Model Request",
+    true,
+    "amber"
+  );
+
+  const canvasLabel = document.getElementById("canvasViewLabel");
+  if (canvasLabel) {
+    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      ? "P2P Model Weight Requests — Intra-Cluster Collaborative Dialogue"
+      : "P2P Model Weight Requests — Multi-Hop Physical Route Dispatch (REQ_MODEL_WEIGHTS)";
+  }
+
+  const statLeaders = document.getElementById("statLeaders");
+  if (statLeaders) {
+    statLeaders.innerHTML = '<span>P2P Requests: <span class="text-amber-600 font-bold font-mono">20 Outbound Emitted</span> | Protocol Phase: <span class="text-amber-700 font-bold font-mono">REQ_MODEL_WEIGHTS</span></span>';
+    statLeaders.className = "text-xs font-bold text-slate-800";
+  }
+
+  const nodesWithCoords = (data.nodes || []).map(n => {
+    const coord = PHYSICAL_LAYOUT_COORDS[n.id] || { x: n.x, y: n.y };
+    return Object.assign({}, n, { x: coord.x, y: coord.y });
+  });
+
+  renderCytoscapeGraph(nodesWithCoords, data.edges, {
+    showInitiators: true,
+    useTonalZoneColors: true,
+    clusterHalos: true,
+    isStep20: true,
+    isStep19: true,
+    isStep18: true,
+  });
+
+  const btnToggle = document.getElementById("btn-toggle-layout");
+  if (btnToggle) {
+    btnToggle.classList.remove("hidden");
+    btnToggle.style.display = "inline-flex";
+    updateLayoutButtonUI();
+  }
+
+  logToTerminal("INFO", "[STEP 30] Clients dispatching pull-based REQ_MODEL_WEIGHTS packets across physical mesh paths.");
+  logToTerminal("SUCCESS", "[SC-1 P2P REQ] C1 emits REQ to C9 [1,4,7,9] & C2 [1,2]. C2 emits to C9 [2,1,4,7,9] & C1 [2,1]. C9 emits to C1 [9,7,4,1] & C2 [9,7,4,1,2].");
+  logToTerminal("SUCCESS", "[SC-2 P2P REQ] C3 emits REQ to C5 [3,5] & C8 [3,6,8]. C4 emits to C5 [4,5] & C8 [4,6,8]. C5 emits to C4 [5,4] & C3 [5,3]. C8 emits to C3 [8,6,3] & C5 [8,6,5].");
+  logToTerminal("SUCCESS", "[SC-3 P2P REQ] C6 emits REQ to C7 [6,4,7] & C10 [6,8,10]. C7 emits to C10 [7,9,10] & C6 [7,4,6]. C10 emits to C7 [10,9,7] & C6 [10,8,6].");
+  logToTerminal("SUCCESS", "[DISPATCHED_MODEL_REQUESTS] 20 pull request packets in flight across physical underlay. Awaiting model weight responses.");
+
+  const packets = data.p2p_model_requests || data.packets || [];
+  animateStep30ModelRequests(packets, data.nodes);
+}
+
 // Global reference to hover virtual node in Figure 3(f) / Physical
 let figure3fHoveredVirtualNode = null;
 let figure3fCanvasListenersBound = false;
@@ -10027,6 +10108,399 @@ function animateStep29MatchDelivery(packetTraces, allNodes) {
       renderFigure3fMatchDelivery(now);
     } else {
       renderPhysicalMatchDelivery(now);
+    }
+
+    activeAnimationId = requestAnimationFrame(runFrame);
+  }
+
+  activeAnimationId = requestAnimationFrame(runFrame);
+}
+
+// -------------------------------------------------------------
+// Step 30 Animation: Pull-Based P2P Model Request Dispatch (REQ_MODEL_WEIGHTS)
+// -------------------------------------------------------------
+function animateStep30ModelRequests(packetTraces, allNodes) {
+  stopCurrentPacketAnimation();
+  syncPacketCanvasSize();
+
+  const canvas = document.getElementById("packetCanvas");
+  if (!canvas || !cy) return;
+  const ctx = canvas.getContext("2d");
+
+  const startTime = performance.now();
+  const CYCLE_MS = 3800;
+
+  const traces = (packetTraces && packetTraces.length > 0) ? packetTraces : [
+    { from: 1, to: 9, path: [1, 4, 7, 9], label: "REQ_WEIGHTS (C9)" },
+    { from: 1, to: 2, path: [1, 2], label: "REQ_WEIGHTS (C2)" },
+    { from: 2, to: 9, path: [2, 1, 4, 7, 9], label: "REQ_WEIGHTS (C9)" },
+    { from: 2, to: 1, path: [2, 1], label: "REQ_WEIGHTS (C1)" },
+    { from: 9, to: 1, path: [9, 7, 4, 1], label: "REQ_WEIGHTS (C1)" },
+    { from: 9, to: 2, path: [9, 7, 4, 1, 2], label: "REQ_WEIGHTS (C2)" },
+    { from: 3, to: 5, path: [3, 5], label: "REQ_WEIGHTS (C5)" },
+    { from: 3, to: 8, path: [3, 6, 8], label: "REQ_WEIGHTS (C8)" },
+    { from: 4, to: 5, path: [4, 5], label: "REQ_WEIGHTS (C5)" },
+    { from: 4, to: 8, path: [4, 6, 8], label: "REQ_WEIGHTS (C8)" },
+    { from: 5, to: 4, path: [5, 4], label: "REQ_WEIGHTS (C4)" },
+    { from: 5, to: 3, path: [5, 3], label: "REQ_WEIGHTS (C3)" },
+    { from: 8, to: 3, path: [8, 6, 3], label: "REQ_WEIGHTS (C3)" },
+    { from: 8, to: 5, path: [8, 6, 5], label: "REQ_WEIGHTS (C5)" },
+    { from: 6, to: 7, path: [6, 4, 7], label: "REQ_WEIGHTS (C7)" },
+    { from: 6, to: 10, path: [6, 8, 10], label: "REQ_WEIGHTS (C10)" },
+    { from: 7, to: 10, path: [7, 9, 10], label: "REQ_WEIGHTS (C10)" },
+    { from: 7, to: 6, path: [7, 4, 6], label: "REQ_WEIGHTS (C6)" },
+    { from: 10, to: 7, path: [10, 9, 7], label: "REQ_WEIGHTS (C7)" },
+    { from: 10, to: 6, path: [10, 8, 6], label: "REQ_WEIGHTS (C6)" }
+  ];
+
+  traces.forEach(t => {
+    if (!t.fromKey) t.fromKey = `bot_${t.from}`;
+    if (!t.toKey) t.toKey = `bot_${t.to}`;
+  });
+
+  function getPointAlongPath(path, prog, posMap) {
+    if (!path || path.length === 0) return null;
+    if (path.length === 1) return posMap[path[0]];
+    const numSegs = path.length - 1;
+    const clampedProg = Math.max(0, Math.min(0.9999, prog));
+    const segIdx = Math.floor(clampedProg * numSegs);
+    const segProg = (clampedProg * numSegs) - segIdx;
+    const pA = posMap[path[segIdx]];
+    const pB = posMap[path[segIdx + 1]];
+    if (!pA || !pB) return null;
+    return {
+      x: pA.x + (pB.x - pA.x) * segProg,
+      y: pA.y + (pB.y - pA.y) * segProg
+    };
+  }
+
+  function drawFloatingTag(ctx, text, x, y, borderColor, bgColor, textColor) {
+    ctx.save();
+    ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+    const textW = ctx.measureText(text).width;
+    const boxH = 14;
+    const boxW = textW + 12;
+    const boxX = x - boxW / 2;
+    const boxY = y - boxH / 2;
+
+    ctx.fillStyle = bgColor || "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = borderColor || "#f59e0b";
+    ctx.lineWidth = 1;
+    ctx.shadowColor = borderColor || "#f59e0b";
+    ctx.shadowBlur = 6;
+    drawRoundedRect(ctx, boxX, boxY, boxW, boxH, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = textColor || "#fef3c7";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  function renderPhysicalModelRequests(now) {
+    if (cy) cy.elements().style("opacity", 1);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    // Top Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "PHYSICAL TOPOLOGY: P2P MODEL WEIGHT REQUEST DISPATCH [REQ_MODEL_WEIGHTS -> TOP-2 PARTNERS]";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#fde68a";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    // Node position map
+    const physNodePosMap = {};
+    for (let id = 1; id <= 10; id++) {
+      const ele = getNodeElement(id);
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          physNodePosMap[id] = { id, x: rp.x, y: rp.y };
+          continue;
+        }
+      }
+      const c = PHYSICAL_LAYOUT_COORDS[id] || { x: 500, y: 300 };
+      physNodePosMap[id] = { id, x: c.x, y: c.y };
+    }
+
+    // Physical Mesh Links
+    ctx.save();
+    PHYSICAL_TOPOLOGY_EDGES.forEach(edge => {
+      const p1 = physNodePosMap[edge.from];
+      const p2 = physNodePosMap[edge.to];
+      if (!p1 || !p2) return;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.strokeStyle = "rgba(148, 163, 184, 0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Highlighted Request Routes in Amber
+    ctx.save();
+    traces.forEach(pkt => {
+      if (!pkt.path || pkt.path.length < 2) return;
+      for (let i = 0; i < pkt.path.length - 1; i++) {
+        const pA = physNodePosMap[pkt.path[i]];
+        const pB = physNodePosMap[pkt.path[i + 1]];
+        if (!pA || !pB) continue;
+        ctx.beginPath();
+        ctx.moveTo(pA.x, pA.y);
+        ctx.lineTo(pB.x, pB.y);
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 2.2;
+        ctx.shadowColor = "#f59e0b";
+        ctx.shadowBlur = 6;
+        ctx.stroke();
+      }
+    });
+    ctx.restore();
+
+    // Animated Request Pulses
+    ctx.save();
+    traces.forEach((pkt, idx) => {
+      const phaseOffset = (idx * 0.05) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      if (tPkt < 0.80) {
+        const travelProg = tPkt / 0.80;
+        const pt = getPointAlongPath(pkt.path, travelProg, physNodePosMap);
+        if (pt) {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 5.5, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = "#fbbf24";
+          ctx.shadowBlur = 14;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 8.5, 0, Math.PI * 2);
+          ctx.strokeStyle = "#d97706";
+          ctx.lineWidth = 1.8;
+          ctx.stroke();
+
+          drawFloatingTag(ctx, "REQ_WEIGHTS", pt.x, pt.y - 14, "#f59e0b", "rgba(15, 23, 42, 0.94)", "#fde68a");
+        }
+      } else {
+        const arrProg = (tPkt - 0.80) / 0.20;
+        const pDest = physNodePosMap[pkt.to];
+        if (pDest) {
+          const rRing = 24 + arrProg * 18;
+          ctx.beginPath();
+          ctx.arc(pDest.x, pDest.y, rRing, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(245, 158, 11, ${1 - arrProg})`;
+          ctx.lineWidth = 2.0;
+          ctx.shadowColor = "#f59e0b";
+          ctx.shadowBlur = 10;
+          ctx.stroke();
+
+          drawFloatingTag(ctx, "REQ_RECEIVED", pDest.x, pDest.y - 28, "#f59e0b", "rgba(120, 53, 15, 0.94)", "#fef3c7");
+        }
+      }
+    });
+    ctx.restore();
+
+    // Node state tags
+    ctx.save();
+    for (let id = 1; id <= 10; id++) {
+      const p = physNodePosMap[id];
+      if (p) {
+        drawFloatingTag(ctx, "DISPATCHED_REQ", p.x, p.y + 32, "#f59e0b", "rgba(15, 23, 42, 0.92)", "#fde68a");
+      }
+    }
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function renderFigure3fModelRequests(now) {
+    if (cy) cy.elements().style("opacity", 0);
+    canvas.style.pointerEvents = "auto";
+
+    ctx.save();
+    const elapsed = now - startTime;
+    const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
+    const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
+
+    const layout = getFigure3fLayoutTransform();
+    const nodePosMap = computeFigure3fRenderedPositions(layout);
+
+    // Banner
+    ctx.save();
+    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
+    const bannerText = "FIGURE 3(f) HIERARCHICAL OVERLAY: INTRA-CLUSTER COLLABORATIVE DIALOGUE (REQ_MODEL_WEIGHTS)";
+    const bW = ctx.measureText(bannerText).width;
+    const bX = canvas.width / 2;
+    const bY = 32;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#fde68a";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(bannerText, bX, bY);
+    ctx.restore();
+
+    const hull = computeFigure3fHull(layout);
+    const capsules = computeFigure3fCapsules(layout);
+
+    // Node backplates
+    ctx.save();
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isTop = n.tier === 3;
+      const isMid = n.tier === 2;
+      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
+      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
+      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
+      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // Hull & Capsules
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillStyle = "#e11d48";
+    ctx.textAlign = "center";
+    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
+    ctx.restore();
+
+    capsules.forEach(cap => {
+      ctx.save();
+      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
+      ctx.fillStyle = cap.fill;
+      ctx.fill();
+      ctx.strokeStyle = cap.border;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillStyle = cap.textColor;
+      ctx.textAlign = "center";
+      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
+      ctx.restore();
+    });
+
+    // Collaborative dialogue request pairs between Tier 1 base clients
+    ctx.save();
+    traces.forEach((pkt, idx) => {
+      const pA = nodePosMap[pkt.fromKey];
+      const pB = nodePosMap[pkt.toKey];
+      if (!pA || !pB) return;
+
+      // Draw faint curved/guided beam between partner clients
+      const midX = (pA.renderedX + pB.renderedX) / 2;
+      const arcLift = -Math.min(60, Math.abs(pB.renderedX - pA.renderedX) * 0.15);
+      const midY = (pA.renderedY + pB.renderedY) / 2 + arcLift;
+
+      ctx.beginPath();
+      ctx.moveTo(pA.renderedX, pA.renderedY);
+      ctx.quadraticCurveTo(midX, midY, pB.renderedX, pB.renderedY);
+      ctx.strokeStyle = "rgba(245, 158, 11, 0.30)";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const phaseOffset = (idx * 0.05) % 1.0;
+      const tPkt = (tCycle + phaseOffset) % 1.0;
+
+      if (tPkt < 0.78) {
+        const t = tPkt / 0.78;
+        // Quadratic bezier interpolation
+        const qx = (1 - t) * (1 - t) * pA.renderedX + 2 * (1 - t) * t * midX + t * t * pB.renderedX;
+        const qy = (1 - t) * (1 - t) * pA.renderedY + 2 * (1 - t) * t * midY + t * t * pB.renderedY;
+
+        ctx.beginPath();
+        ctx.arc(qx, qy, 5.0, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffffff";
+        ctx.shadowColor = "#fbbf24";
+        ctx.shadowBlur = 14;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(qx, qy, 8.0, 0, Math.PI * 2);
+        ctx.strokeStyle = "#d97706";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, "REQ_WEIGHTS", qx, qy - 12, "#f59e0b", "rgba(15, 23, 42, 0.94)", "#fde68a");
+      }
+    });
+    ctx.restore();
+
+    // Draw Nodes
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
+      drawNode(ctx, {
+        id: n.id,
+        node_id: n.label,
+        x: p.renderedX,
+        y: p.renderedY,
+        tier: n.tier,
+        zone: n.zone
+      }, isHov, pulse, rad);
+
+      if (n.tier === 1) {
+        drawFloatingTag(ctx, "DISPATCHED_REQ", p.renderedX, p.renderedY + rad + 12, "#f59e0b", "rgba(15, 23, 42, 0.94)", "#fde68a");
+      }
+    });
+
+    ctx.restore();
+  }
+
+  function runFrame(now) {
+    if (currentStep !== 30) return;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentLayout === "figure3f" || currentLayout === "overlay") {
+      renderFigure3fModelRequests(now);
+    } else {
+      renderPhysicalModelRequests(now);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
@@ -14830,6 +15304,92 @@ function renderNodeModal(node, stepData = currentStepData) {
           </div>
         `;
       }
+    } else if (currentStep === 30) {
+      if (discoverySection) discoverySection.classList.remove("hidden");
+
+      if (cardStatusBadge) {
+        cardStatusBadge.textContent = "🟡 DISPATCHED_MODEL_REQUESTS";
+        cardStatusBadge.className = "text-[9px] font-semibold px-2 py-0.5 rounded border font-bold bg-amber-100 text-amber-950 border-amber-400";
+      }
+
+      if (discoveryBadge) {
+        discoveryBadge.textContent = "STEP 30: MODEL REQUESTS";
+        discoveryBadge.className = "text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-100 text-amber-950 border border-amber-300";
+      }
+
+      if (discoveryContent) {
+        const scId = [1, 2, 9].includes(idNum) ? "SC-1" : ([3, 4, 5, 8].includes(idNum) ? "SC-2" : "SC-3");
+
+        const defaultOutbound = {
+          1: [{ to: 9, path: [1, 4, 7, 9] }, { to: 2, path: [1, 2] }],
+          2: [{ to: 9, path: [2, 1, 4, 7, 9] }, { to: 1, path: [2, 1] }],
+          3: [{ to: 5, path: [3, 5] }, { to: 8, path: [3, 6, 8] }],
+          4: [{ to: 5, path: [4, 5] }, { to: 8, path: [4, 6, 8] }],
+          5: [{ to: 4, path: [5, 4] }, { to: 3, path: [5, 3] }],
+          6: [{ to: 7, path: [6, 4, 7] }, { to: 10, path: [6, 8, 10] }],
+          7: [{ to: 10, path: [7, 9, 10] }, { to: 6, path: [7, 4, 6] }],
+          8: [{ to: 3, path: [8, 6, 3] }, { to: 5, path: [8, 6, 5] }],
+          9: [{ to: 1, path: [9, 7, 4, 1] }, { to: 2, path: [9, 7, 4, 1, 2] }],
+          10: [{ to: 7, path: [10, 9, 7] }, { to: 6, path: [10, 8, 6] }]
+        };
+
+        const outboundList = mergedNode?.outbound_requests || (currentStepData?.outbound_requests && currentStepData.outbound_requests[idNum]) || defaultOutbound[idNum] || [];
+
+        const requestCards = outboundList.map((req, idx) => {
+          const targetPeer = req.to;
+          const routeStr = (req.path || []).map(p => `C${p}`).join(" → ");
+          const hopCount = Math.max(1, (req.path || []).length - 1);
+
+          return `
+            <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 6px; padding: 8px; margin-bottom: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-weight: bold; color: #38bdf8; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11.5px;">
+                  Target Peer: Node C${targetPeer}
+                </span>
+                <span style="font-size: 9.5px; font-family: ui-monospace, SFMono-Regular, monospace; background: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 4px; padding: 1px 5px;">
+                  ${hopCount} Hop${hopCount > 1 ? "s" : ""}
+                </span>
+              </div>
+              <div style="font-size: 10.5px; color: #e2e8f0; font-family: ui-monospace, SFMono-Regular, monospace; display: flex; align-items: center; gap: 4px;">
+                <span style="color: #94a3b8;">Route:</span>
+                <span style="color: #fbbf24; font-weight: 600;">${routeStr}</span>
+              </div>
+              <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">
+                Packet: <span style="color: #fde68a; font-family: ui-monospace, SFMono-Regular, monospace;">REQ_MODEL_WEIGHTS</span>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        discoveryContent.innerHTML = `
+          <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-xs space-y-2.5">
+            <div class="p-2.5 rounded-lg border border-amber-300 bg-amber-50 space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-amber-950 flex items-center gap-1">
+                  <span>📤</span><span>Outbound Model Requests (K = 2)</span>
+                </span>
+                <span class="px-2 py-0.5 rounded font-mono font-extrabold text-[10px] bg-amber-200 text-amber-950 border border-amber-400">🟡 DISPATCHED_MODEL_REQUESTS</span>
+              </div>
+              <div class="text-[9.5px] font-mono text-amber-900 font-semibold">
+                Super-Cluster: <span class="font-bold text-amber-950">${scId}</span> | Client Node C${idNum}
+              </div>
+            </div>
+
+            <div class="modal-section" style="background: rgba(15, 23, 42, 0.94); border: 1.5px solid #f59e0b; border-radius: 8px; padding: 10px;">
+              <h4 style="color: #fbbf24; margin-top: 0; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: bold;">
+                <span>📡 Outbound Pull Requests</span>
+                <span style="font-size: 10px; color: #fde68a; font-family: ui-monospace, SFMono-Regular, monospace;">2 Requests Dispatched</span>
+              </h4>
+              <div class="space-y-1.5">
+                ${requestCards}
+              </div>
+              <div style="margin-top: 8px; font-size: 10.5px; color: #fef3c7; background: rgba(120, 53, 15, 0.5); border: 1px dashed #f59e0b; border-radius: 4px; padding: 6px; text-align: center;">
+                ⏳ Awaiting response payloads in Step 31.
+              </div>
+            </div>
+          </div>
+        `;
+      }
     } else {
       if (discoverySection) discoverySection.classList.add("hidden");
     }
@@ -15249,7 +15809,7 @@ function renderSidebarFormula(title, texStr, description, badgeText, isAmber = f
 
 // 12. Stepper & Navigation Buttons
 function updateStepper(step) {
-  for (let s = 1; s <= 29; s++) {
+  for (let s = 1; s <= 30; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (!item) continue;
 
@@ -15294,6 +15854,8 @@ function updateStepper(step) {
         item.classList.add("step-gold");
       } else if (step === 29) {
         item.classList.add("step-emerald");
+      } else if (step === 30) {
+        item.classList.add("step-amber");
       }
     }
   }
@@ -15323,7 +15885,7 @@ function updateNavButtons(step) {
   }
 
   if (btnNext) {
-    if (step < 29) {
+    if (step < 30) {
       btnNext.disabled = false;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 hover:bg-blue-700 cursor-pointer transition-colors shadow-sm";
       btnNext.innerHTML = `<span>Next Step (Step ${step + 1})</span><span>▶️</span>`;
@@ -15331,7 +15893,7 @@ function updateNavButtons(step) {
     } else {
       btnNext.disabled = true;
       btnNext.className = "btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 opacity-50 cursor-not-allowed";
-      btnNext.title = "Step 29 active (Top-K Partner Match Delivery complete)";
+      btnNext.title = "Step 30 active (P2P Model Weight Request Dispatch complete)";
       btnNext.innerHTML = `<span>Next Step</span><span>🔒</span>`;
     }
   }
@@ -15344,7 +15906,7 @@ function setNavButtonsDisabled(disabled) {
 
   if (btnReset) btnReset.disabled = disabled;
   if (btnPrev) btnPrev.disabled = disabled || (currentStep <= 1);
-  if (btnNext) btnNext.disabled = disabled || (currentStep >= 29);
+  if (btnNext) btnNext.disabled = disabled || (currentStep >= 30);
 }
 
 function bindActionButtons() {
@@ -15368,16 +15930,16 @@ function bindActionButtons() {
   if (btnNext) {
     btnNext.addEventListener("click", (e) => {
       e.preventDefault();
-      if (currentStep < 29) {
+      if (currentStep < 30) {
         loadStep(currentStep + 1);
       } else {
-        logToTerminal("INFO", "Step 29 is active (Top-K Partner Match Delivery complete).");
+        logToTerminal("INFO", "Step 30 is active (P2P Model Weight Request Dispatch complete).");
       }
     });
   }
 
-  // Clickable Stepper tabs (Step 1 to Step 29)
-  for (let s = 1; s <= 29; s++) {
+  // Clickable Stepper tabs (Step 1 to Step 30)
+  for (let s = 1; s <= 30; s++) {
     const item = document.getElementById(`stepNav${s}`);
     if (item) {
       item.addEventListener("click", () => {

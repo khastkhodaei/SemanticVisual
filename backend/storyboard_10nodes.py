@@ -12,7 +12,7 @@ import copy
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-TOTAL_STEPS: int = 29
+TOTAL_STEPS: int = 30
 
 CIFAR10_CLASSES: Dict[int, Dict[str, Any]] = {
     1: {"class_id": 1, "code": "C1", "name": "Airplane", "english_name": "Airplane", "icon": "✈️"},
@@ -5315,6 +5315,68 @@ def _get_10node_step_data_raw(step_number: int) -> Dict[str, Any]:
             "boundary_nodes": [1, 6],
             "terminal_logs": terminal_logs,
         }
+    elif step_number == 30:
+        # Step 30: Pull-Based P2P Model Request Dispatch (REQ_MODEL_WEIGHTS)
+        step29_data = _get_10node_step_data_raw(29)
+        step30_nodes = copy.deepcopy(step29_data["nodes"])
+
+        for n in step30_nodes:
+            nid = n["id"]
+            n["status"] = "DISPATCHED_MODEL_REQUESTS"
+            n["outbound_requests"] = STEP30_NODE_OUTBOUND_REQUESTS[nid]
+            n["is_requesting_weights"] = True
+
+        terminal_logs = [
+            "[STEP 30] Pull-Based P2P Model Request Dispatch (REQ_MODEL_WEIGHTS) initiated.",
+            "[P2P REQ C1] Dispatched REQ_MODEL_WEIGHTS to C9 via [1, 4, 7, 9] and C2 via [1, 2].",
+            "[P2P REQ C2] Dispatched REQ_MODEL_WEIGHTS to C9 via [2, 1, 4, 7, 9] and C1 via [2, 1].",
+            "[P2P REQ C3] Dispatched REQ_MODEL_WEIGHTS to C5 via [3, 5] and C8 via [3, 6, 8].",
+            "[P2P REQ C4] Dispatched REQ_MODEL_WEIGHTS to C5 via [4, 5] and C8 via [4, 6, 8].",
+            "[P2P REQ C5] Dispatched REQ_MODEL_WEIGHTS to C4 via [5, 4] and C3 via [5, 3].",
+            "[P2P REQ C6] Dispatched REQ_MODEL_WEIGHTS to C7 via [6, 4, 7] and C10 via [6, 8, 10].",
+            "[P2P REQ C7] Dispatched REQ_MODEL_WEIGHTS to C10 via [7, 9, 10] and C6 via [7, 4, 6].",
+            "[P2P REQ C8] Dispatched REQ_MODEL_WEIGHTS to C3 via [8, 6, 3] and C5 via [8, 6, 5].",
+            "[P2P REQ C9] Dispatched REQ_MODEL_WEIGHTS to C1 via [9, 7, 4, 1] and C2 via [9, 7, 4, 1, 2].",
+            "[P2P REQ C10] Dispatched REQ_MODEL_WEIGHTS to C7 via [10, 9, 7] and C6 via [10, 8, 6].",
+            "[STATUS: DISPATCHED_MODEL_REQUESTS] All 10 clients dispatched pull requests to their 2 locked federation partners.",
+        ]
+
+        return {
+            "step": 30,
+            "total_steps": 30,
+            "title": "Step 30: Pull-Based P2P Model Request Dispatch (REQ_MODEL_WEIGHTS)",
+            "phase_badge": "ACTIVE PHASE: STEP 30: P2P MODEL WEIGHT REQUEST DISPATCH",
+            "description": "Each client initiates decentralized model exchange by dispatching REQ_MODEL_WEIGHTS packets to its Top-2 locked federation partners across valid physical underlay paths.",
+            "formula": r"C_i \xrightarrow{\text{REQ\_MODEL\_WEIGHTS}} \{p \in \mathcal{P}_i^* \mid K=2\}",
+            "formula_desc": "Clients dispatch pull requests across physical routes to request model weights from their Top-2 partners.",
+            "nodes": step30_nodes,
+            "edges": step29_data["edges"],
+            "p2p_model_requests": STEP30_P2P_MODEL_REQUESTS,
+            "packets": STEP30_P2P_MODEL_REQUESTS,
+            "outbound_requests": STEP30_NODE_OUTBOUND_REQUESTS,
+            "figure3f_3tier_nodes": FIGURE3F_3TIER_NODES,
+            "figure3f_3tier_edges": FIGURE3F_3TIER_EDGES,
+            "semantic_overlay_edges": FIGURE3F_3TIER_EDGES,
+            "overlay_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_edges": FIGURE3F_3TIER_EDGES,
+            "figure3f_coordinates": FIGURE3F_COORDINATES,
+            "total_nodes": 10,
+            "total_edges": 18,
+            "unique_edges": len(step29_data["edges"]),
+            "active_leaders": [1, 5, 10],
+            "super_peers": [1, 5, 10],
+            "exemplars": [1, 3, 5, 7, 8, 9, 10],
+            "leaf_nodes": [2, 4, 6],
+            "adjacency_list": {i: STORYBOARD_10_ADJACENCY[i] for i in range(1, 11)},
+            "coords": {i: {"x": STORYBOARD_10_COORDINATES[i][0], "y": STORYBOARD_10_COORDINATES[i][1]} for i in range(1, 11)},
+            "zones": {
+                2: [1, 2, 3],
+                4: [4, 5, 6, 7],
+                8: [8, 9, 10],
+            },
+            "boundary_nodes": [1, 6],
+            "terminal_logs": terminal_logs,
+        }
     else:
         return {
             "step": step_number,
@@ -5552,4 +5614,38 @@ STEP29_LOCKED_PARTNERS = {
     10: {"top_k": [{"peer": 7, "sim": 0.9378}, {"peer": 6, "sim": 0.5341}], "status": "FEDERATION_PARTNERS_LOCKED"}
 }
 client_locked_partners = STEP29_LOCKED_PARTNERS
+
+STEP30_P2P_MODEL_REQUESTS = [
+    # SC-1 Group
+    {"from": 1, "to": 9, "path": [1, 4, 7, 9], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C9)"},
+    {"from": 1, "to": 2, "path": [1, 2], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C2)"},
+    {"from": 2, "to": 9, "path": [2, 1, 4, 7, 9], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C9)"},
+    {"from": 2, "to": 1, "path": [2, 1], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C1)"},
+    {"from": 9, "to": 1, "path": [9, 7, 4, 1], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C1)"},
+    {"from": 9, "to": 2, "path": [9, 7, 4, 1, 2], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C2)"},
+    # SC-2 Group
+    {"from": 3, "to": 5, "path": [3, 5], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C5)"},
+    {"from": 3, "to": 8, "path": [3, 6, 8], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C8)"},
+    {"from": 4, "to": 5, "path": [4, 5], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C5)"},
+    {"from": 4, "to": 8, "path": [4, 6, 8], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C8)"},
+    {"from": 5, "to": 4, "path": [5, 4], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C4)"},
+    {"from": 5, "to": 3, "path": [5, 3], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C3)"},
+    {"from": 8, "to": 3, "path": [8, 6, 3], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C3)"},
+    {"from": 8, "to": 5, "path": [8, 6, 5], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C5)"},
+    # SC-3 Group
+    {"from": 6, "to": 7, "path": [6, 4, 7], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C7)"},
+    {"from": 6, "to": 10, "path": [6, 8, 10], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C10)"},
+    {"from": 7, "to": 10, "path": [7, 9, 10], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C10)"},
+    {"from": 7, "to": 6, "path": [7, 4, 6], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C6)"},
+    {"from": 10, "to": 7, "path": [10, 9, 7], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C7)"},
+    {"from": 10, "to": 6, "path": [10, 8, 6], "type": "REQ_MODEL_WEIGHTS", "label": "REQ_WEIGHTS (C6)"}
+]
+p2p_model_requests = STEP30_P2P_MODEL_REQUESTS
+
+STEP30_NODE_OUTBOUND_REQUESTS = {
+    nid: [req for req in STEP30_P2P_MODEL_REQUESTS if req["from"] == nid]
+    for nid in range(1, 11)
+}
+node_outbound_requests = STEP30_NODE_OUTBOUND_REQUESTS
+
 
