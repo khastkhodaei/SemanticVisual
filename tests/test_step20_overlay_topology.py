@@ -190,10 +190,38 @@ def test_app_js_contains_figure3f_specifications():
 
     assert "FIGURE3F_3TIER_NODES" in content
     assert "FIGURE3F_3TIER_EDGES" in content
+    assert "CANONICAL_HIERARCHICAL_EDGES" in content
+    assert "drawFigure3fCanonicalOverlayEdges" in content
     assert "drawFigure3fSmartphone" in content
     assert "Hierarchical Overlay (Figure 3(f))" in content
     assert "4000" in content  # Cycle duration for ping-pong heartbeat
     assert "INTRA-ZONE" in content or "intra-zone" in content or "INTRA_ZONE_CLUSTER" in content
     assert "SUPER_PEER_OVERLAY" in content or "SUPER-PEER" in content
     assert "#b91c1c" in content
+
+
+def test_figure3f_canonical_hierarchical_overlay_edges_rendered_in_steps_26_27():
+    """Verify that drawFigure3fCanonicalOverlayEdges is called in Step 26 and Step 27 Figure 3(f) renderers."""
+    app_path = Path(__file__).resolve().parent.parent / "frontend" / "static" / "app.js"
+    assert app_path.exists()
+    content = app_path.read_text(encoding="utf-8")
+
+    # Verify function definition
+    assert "function drawFigure3fCanonicalOverlayEdges(" in content
+
+    # Verify inclusion in Step 26 and Step 27 functions
+    assert "function renderFigure3fScoreReporting(" in content
+    assert "function renderFigure3fExemplarRanking(" in content
+
+    # Check that Step 26 & 27 invoke drawFigure3fCanonicalOverlayEdges
+    step26_idx = content.find("function renderFigure3fScoreReporting(")
+    step26_end = content.find("function renderPhysicalScoreReporting(", step26_idx)
+    step26_body = content[step26_idx:step26_end] if step26_end != -1 else content[step26_idx:step26_idx + 6000]
+    assert "drawFigure3fCanonicalOverlayEdges(" in step26_body, "Step 26 missing drawFigure3fCanonicalOverlayEdges"
+
+    step27_idx = content.find("function renderFigure3fExemplarRanking(")
+    step27_end = content.find("function renderPhysicalExemplarRanking(", step27_idx)
+    step27_body = content[step27_idx:step27_end] if step27_end != -1 else content[step27_idx:step27_idx + 6000]
+    assert "drawFigure3fCanonicalOverlayEdges(" in step27_body, "Step 27 missing drawFigure3fCanonicalOverlayEdges"
+
 

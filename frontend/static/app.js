@@ -201,39 +201,42 @@ const FIGURE3F_3TIER_NODES = [
   { key: "bot_10", id: 10, node_id: "C10", tier: 1, role: "CLIENT", zone: 8, x: 970, y: 430, label: "Node 10" },
 ];
 
-const FIGURE3F_3TIER_EDGES = [
+const CANONICAL_HIERARCHICAL_EDGES = [
   // A. Bottom-to-Middle Links (Intra-Zone Clustering - dashed colored lines)
   // Zone 2 (Warm Yellow/Gold dashed lines: #eab308)
-  { fromKey: "bot_1", toKey: "mid_1", from: 1, to: 1, source: "bot_1", target: "mid_1", fromTier: 1, toTier: 2, zone: 2, color: "#eab308", style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 1 -> Middle 1" },
-  { fromKey: "bot_2", toKey: "mid_1", from: 2, to: 1, source: "bot_2", target: "mid_1", fromTier: 1, toTier: 2, zone: 2, color: "#eab308", style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 2 -> Middle 1" },
-  { fromKey: "bot_3", toKey: "mid_3", from: 3, to: 3, source: "bot_3", target: "mid_3", fromTier: 1, toTier: 2, zone: 2, color: "#eab308", style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 3 -> Middle 3" },
+  { source: "bot_1", target: "mid_1", fromKey: "bot_1", toKey: "mid_1", from: 1, to: 1, fromTier: 1, toTier: 2, zone: 2, color: "#eab308", dashed: true, style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 1 -> Middle 1" },
+  { source: "bot_2", target: "mid_1", fromKey: "bot_2", toKey: "mid_1", from: 2, to: 1, fromTier: 1, toTier: 2, zone: 2, color: "#eab308", dashed: true, style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 2 -> Middle 1" },
+  { source: "bot_3", target: "mid_3", fromKey: "bot_3", toKey: "mid_3", from: 3, to: 3, fromTier: 1, toTier: 2, zone: 2, color: "#eab308", dashed: true, style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 3 -> Middle 3" },
 
   // Zone 4 (Green dashed lines: #10b981)
-  { fromKey: "bot_4", toKey: "mid_5", from: 4, to: 5, source: "bot_4", target: "mid_5", fromTier: 1, toTier: 2, zone: 4, color: "#10b981", style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 4 -> Middle 5" },
-  { fromKey: "bot_5", toKey: "mid_5", from: 5, to: 5, source: "bot_5", target: "mid_5", fromTier: 1, toTier: 2, zone: 4, color: "#10b981", style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 5 -> Middle 5" },
-  { fromKey: "bot_6", toKey: "mid_7", from: 6, to: 7, source: "bot_6", target: "mid_7", fromTier: 1, toTier: 2, zone: 4, color: "#10b981", style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 6 -> Middle 7" },
-  { fromKey: "bot_7", toKey: "mid_7", from: 7, to: 7, source: "bot_7", target: "mid_7", fromTier: 1, toTier: 2, zone: 4, color: "#10b981", style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 7 -> Middle 7" },
+  { source: "bot_4", target: "mid_5", fromKey: "bot_4", toKey: "mid_5", from: 4, to: 5, fromTier: 1, toTier: 2, zone: 4, color: "#10b981", dashed: true, style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 4 -> Middle 5" },
+  { source: "bot_5", target: "mid_5", fromKey: "bot_5", toKey: "mid_5", from: 5, to: 5, fromTier: 1, toTier: 2, zone: 4, color: "#10b981", dashed: true, style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 5 -> Middle 5" },
+  { source: "bot_6", target: "mid_7", fromKey: "bot_6", toKey: "mid_7", from: 6, to: 7, fromTier: 1, toTier: 2, zone: 4, color: "#10b981", dashed: true, style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 6 -> Middle 7" },
+  { source: "bot_7", target: "mid_7", fromKey: "bot_7", toKey: "mid_7", from: 7, to: 7, fromTier: 1, toTier: 2, zone: 4, color: "#10b981", dashed: true, style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 7 -> Middle 7" },
 
   // Zone 8 (Blue dashed lines: #38bdf8)
-  { fromKey: "bot_8", toKey: "mid_8", from: 8, to: 8, source: "bot_8", target: "mid_8", fromTier: 1, toTier: 2, zone: 8, color: "#38bdf8", style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 8 -> Middle 8" },
-  { fromKey: "bot_9", toKey: "mid_9", from: 9, to: 9, source: "bot_9", target: "mid_9", fromTier: 1, toTier: 2, zone: 8, color: "#38bdf8", style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 9 -> Middle 9" },
-  { fromKey: "bot_10", toKey: "mid_10", from: 10, to: 10, source: "bot_10", target: "mid_10", fromTier: 1, toTier: 2, zone: 8, color: "#38bdf8", style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 10 -> Middle 10" },
+  { source: "bot_8", target: "mid_8", fromKey: "bot_8", toKey: "mid_8", from: 8, to: 8, fromTier: 1, toTier: 2, zone: 8, color: "#38bdf8", dashed: true, style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 8 -> Middle 8" },
+  { source: "bot_9", target: "mid_9", fromKey: "bot_9", toKey: "mid_9", from: 9, to: 9, fromTier: 1, toTier: 2, zone: 8, color: "#38bdf8", dashed: true, style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 9 -> Middle 9" },
+  { source: "bot_10", target: "mid_10", fromKey: "bot_10", toKey: "mid_10", from: 10, to: 10, fromTier: 1, toTier: 2, zone: 8, color: "#38bdf8", dashed: true, style: "dashed", width: 2.0, type: "INTRA_ZONE_CLUSTER", label: "Bottom 10 -> Middle 10" },
 
   // B. Middle-to-Top Links (Inter-Zone Super-Peer Overlays)
   // Prominent dashed dark reddish-brown / maroon lines (#b91c1c, width 2.5px)
   // To Super-Peer 1:
-  { fromKey: "mid_1", toKey: "top_1", from: 1, to: 1, source: "mid_1", target: "top_1", fromTier: 2, toTier: 3, targetSp: 1, color: "#b91c1c", style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 1 -> Top 1 (Vertical)" },
-  { fromKey: "mid_9", toKey: "top_1", from: 9, to: 1, source: "mid_9", target: "top_1", fromTier: 2, toTier: 3, targetSp: 1, color: "#b91c1c", style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 9 -> Top 1 (Cross-diagonal)" },
+  { source: "mid_1", target: "top_1", fromKey: "mid_1", toKey: "top_1", from: 1, to: 1, fromTier: 2, toTier: 3, targetSp: 1, color: "#b91c1c", dashed: true, style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 1 -> Top 1 (Vertical)" },
+  { source: "mid_9", target: "top_1", fromKey: "mid_9", toKey: "top_1", from: 9, to: 1, fromTier: 2, toTier: 3, targetSp: 1, color: "#b91c1c", dashed: true, style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 9 -> Top 1 (Cross-diagonal)" },
 
   // To Super-Peer 5:
-  { fromKey: "mid_3", toKey: "top_5", from: 3, to: 5, source: "mid_3", target: "top_5", fromTier: 2, toTier: 3, targetSp: 5, color: "#b91c1c", style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 3 -> Top 5 (Cross-diagonal)" },
-  { fromKey: "mid_5", toKey: "top_5", from: 5, to: 5, source: "mid_5", target: "top_5", fromTier: 2, toTier: 3, targetSp: 5, color: "#b91c1c", style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 5 -> Top 5 (Vertical)" },
-  { fromKey: "mid_8", toKey: "top_5", from: 8, to: 5, source: "mid_8", target: "top_5", fromTier: 2, toTier: 3, targetSp: 5, color: "#b91c1c", style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 8 -> Top 5 (Cross-diagonal)" },
+  { source: "mid_3", target: "top_5", fromKey: "mid_3", toKey: "top_5", from: 3, to: 5, fromTier: 2, toTier: 3, targetSp: 5, color: "#b91c1c", dashed: true, style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 3 -> Top 5 (Cross-diagonal)" },
+  { source: "mid_5", target: "top_5", fromKey: "mid_5", toKey: "top_5", from: 5, to: 5, fromTier: 2, toTier: 3, targetSp: 5, color: "#b91c1c", dashed: true, style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 5 -> Top 5 (Vertical)" },
+  { source: "mid_8", target: "top_5", fromKey: "mid_8", toKey: "top_5", from: 8, to: 5, fromTier: 2, toTier: 3, targetSp: 5, color: "#b91c1c", dashed: true, style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 8 -> Top 5 (Cross-diagonal)" },
 
   // To Super-Peer 10:
-  { fromKey: "mid_7", toKey: "top_10", from: 7, to: 10, source: "mid_7", target: "top_10", fromTier: 2, toTier: 3, targetSp: 10, color: "#b91c1c", style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 7 -> Top 10 (Cross-diagonal)" },
-  { fromKey: "mid_10", toKey: "top_10", from: 10, to: 10, source: "mid_10", target: "top_10", fromTier: 2, toTier: 3, targetSp: 10, color: "#b91c1c", style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 10 -> Top 10 (Vertical)" },
+  { source: "mid_7", target: "top_10", fromKey: "mid_7", toKey: "top_10", from: 7, to: 10, fromTier: 2, toTier: 3, targetSp: 10, color: "#b91c1c", dashed: true, style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 7 -> Top 10 (Cross-diagonal)" },
+  { source: "mid_10", target: "top_10", fromKey: "mid_10", toKey: "top_10", from: 10, to: 10, fromTier: 2, toTier: 3, targetSp: 10, color: "#b91c1c", dashed: true, style: "dashed", width: 2.5, type: "SUPER_PEER_OVERLAY", label: "Middle 10 -> Top 10 (Vertical)" },
 ];
+
+const FIGURE3F_3TIER_EDGES = CANONICAL_HIERARCHICAL_EDGES;
+const FIGURE3F_EDGES = CANONICAL_HIERARCHICAL_EDGES;
 
 const FIGURE3F_COORDINATES = {
   1:  { x: 200, y: 100, tier: "SUPER_PEER", zone: 2 },
@@ -249,7 +252,6 @@ const FIGURE3F_COORDINATES = {
 };
 
 const OVERLAY_LAYOUT_COORDS = FIGURE3F_COORDINATES;
-const FIGURE3F_EDGES = FIGURE3F_3TIER_EDGES;
 
 // CIFAR-10 10-Class Definitions (C1 to C10)
 const CIFAR10_CLASSES = {
@@ -7322,6 +7324,49 @@ function getFigure3fLayout(canvas) {
   };
 }
 
+// Canonical Figure 3(f) 3-Tier Overlay Link Renderer (Intra-Zone Cluster + Super-Peer Overlay)
+function drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap) {
+  if (!ctx || !nodePosMap) return;
+  ctx.save();
+  const edges = (typeof CANONICAL_HIERARCHICAL_EDGES !== "undefined" && Array.isArray(CANONICAL_HIERARCHICAL_EDGES))
+    ? CANONICAL_HIERARCHICAL_EDGES
+    : (typeof FIGURE3F_3TIER_EDGES !== "undefined" ? FIGURE3F_3TIER_EDGES : []);
+
+  edges.forEach((edge) => {
+    const srcKey = edge.source || edge.fromKey;
+    const tgtKey = edge.target || edge.toKey;
+    const p1 = nodePosMap[srcKey];
+    const p2 = nodePosMap[tgtKey];
+    if (!p1 || !p2) return;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(p1.renderedX, p1.renderedY);
+    ctx.lineTo(p2.renderedX, p2.renderedY);
+
+    if (edge.type === "INTRA_ZONE_CLUSTER" || (srcKey && srcKey.startsWith("bot_"))) {
+      ctx.strokeStyle = edge.color || "#eab308";
+      ctx.lineWidth = edge.width || 2.0;
+      ctx.setLineDash(edge.dashed === false ? [] : [5, 5]);
+      ctx.stroke();
+    } else if (edge.type === "SUPER_PEER_OVERLAY" || (srcKey && srcKey.startsWith("mid_"))) {
+      ctx.strokeStyle = edge.color || "#b91c1c";
+      ctx.lineWidth = edge.width || 2.5;
+      ctx.setLineDash(edge.dashed === false ? [] : [6, 5]);
+      ctx.stroke();
+    } else {
+      ctx.strokeStyle = edge.color || "#b91c1c";
+      ctx.lineWidth = edge.width || 1.8;
+      ctx.setLineDash(edge.dashed ? [5, 4] : []);
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+  ctx.restore();
+}
+window.drawFigure3fCanonicalOverlayEdges = drawFigure3fCanonicalOverlayEdges;
+window.CANONICAL_HIERARCHICAL_EDGES = CANONICAL_HIERARCHICAL_EDGES;
+
 function showNodeDetailsModal(nodeId) {
   const nid = typeof nodeId === "object" ? (nodeId.id ?? nodeId) : nodeId;
   const numId = typeof nid === "string" ? parseInt(nid.replace(/\D/g, ""), 10) : Number(nid);
@@ -7536,30 +7581,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     });
 
     // 5. Draw 17 Dashed Hierarchy Links
-    ctx.save();
-    FIGURE3F_3TIER_EDGES.forEach((edge) => {
-      const p1 = nodePosMap[edge.fromKey];
-      const p2 = nodePosMap[edge.toKey];
-      if (!p1 || !p2) return;
-
-      ctx.beginPath();
-      ctx.moveTo(p1.renderedX, p1.renderedY);
-      ctx.lineTo(p2.renderedX, p2.renderedY);
-
-      if (edge.type === "INTRA_ZONE_CLUSTER") {
-        ctx.strokeStyle = edge.color;
-        ctx.lineWidth = edge.width || 2.0;
-        ctx.setLineDash([5, 5]);
-        ctx.stroke();
-      } else if (edge.type === "SUPER_PEER_OVERLAY") {
-        ctx.strokeStyle = "#b91c1c";
-        ctx.lineWidth = edge.width || 2.5;
-        ctx.setLineDash([6, 5]);
-        ctx.stroke();
-      }
-    });
-    ctx.setLineDash([]);
-    ctx.restore();
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
 
     // 6. Live Ping-Pong Heartbeat Animation
     ctx.save();
@@ -8133,21 +8155,7 @@ function animateStep22PeerDiscovery(discoveryPackets, allNodes) {
     });
 
     // 3. Hierarchy Links
-    ctx.save();
-    FIGURE3F_3TIER_EDGES.forEach(edge => {
-      const p1 = nodePosMap[edge.fromKey];
-      const p2 = nodePosMap[edge.toKey];
-      if (!p1 || !p2) return;
-      ctx.beginPath();
-      ctx.moveTo(p1.renderedX, p1.renderedY);
-      ctx.lineTo(p2.renderedX, p2.renderedY);
-      ctx.strokeStyle = edge.type === "SUPER_PEER_OVERLAY" ? "#b91c1c" : edge.color;
-      ctx.lineWidth = edge.type === "SUPER_PEER_OVERLAY" ? 2.2 : 1.8;
-      ctx.setLineDash([5, 5]);
-      ctx.stroke();
-    });
-    ctx.setLineDash([]);
-    ctx.restore();
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
 
     // 4. Upward Moving Query Pulses
     ctx.save();
@@ -8554,21 +8562,7 @@ function animateStep23ExemplarRouting(packetTraces, allNodes) {
     });
 
     // 3. Hierarchy Links
-    ctx.save();
-    FIGURE3F_3TIER_EDGES.forEach(edge => {
-      const p1 = nodePosMap[edge.fromKey];
-      const p2 = nodePosMap[edge.toKey];
-      if (!p1 || !p2) return;
-      ctx.beginPath();
-      ctx.moveTo(p1.renderedX, p1.renderedY);
-      ctx.lineTo(p2.renderedX, p2.renderedY);
-      ctx.strokeStyle = edge.type === "SUPER_PEER_OVERLAY" ? "#b91c1c" : edge.color;
-      ctx.lineWidth = edge.type === "SUPER_PEER_OVERLAY" ? 2.2 : 1.8;
-      ctx.setLineDash([5, 5]);
-      ctx.stroke();
-    });
-    ctx.setLineDash([]);
-    ctx.restore();
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
 
     // 4. Downward Moving Match Packets (Tier 3 Super-Peers -> Tier 2 Exemplars)
     ctx.save();
@@ -8948,21 +8942,7 @@ function animateStep24LeafDispatch(packetTraces, allNodes) {
     });
 
     // 3. Hierarchy Links
-    ctx.save();
-    FIGURE3F_3TIER_EDGES.forEach(edge => {
-      const p1 = nodePosMap[edge.fromKey];
-      const p2 = nodePosMap[edge.toKey];
-      if (!p1 || !p2) return;
-      ctx.beginPath();
-      ctx.moveTo(p1.renderedX, p1.renderedY);
-      ctx.lineTo(p2.renderedX, p2.renderedY);
-      ctx.strokeStyle = edge.type === "SUPER_PEER_OVERLAY" ? "#b91c1c" : edge.color;
-      ctx.lineWidth = edge.type === "SUPER_PEER_OVERLAY" ? 2.2 : 1.8;
-      ctx.setLineDash([5, 5]);
-      ctx.stroke();
-    });
-    ctx.setLineDash([]);
-    ctx.restore();
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
 
     // 4. Downward Moving Match Packets (Tier 2 Rose Oval Hub -> Tier 1 Bottom Zone Capsules)
     ctx.save();
@@ -9295,6 +9275,9 @@ function animateStep25SimilarityEval(evaluations, allNodes) {
       ctx.restore();
     });
 
+    // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
+
     // Draw Nodes
     FIGURE3F_3TIER_NODES.forEach(n => {
       const p = nodePosMap[n.key];
@@ -9626,6 +9609,9 @@ function animateStep26ScoreReporting(packetTraces, allNodes) {
       ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
       ctx.restore();
     });
+
+    // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
 
     // Upward Packets from Leaves to Exemplars
     ctx.save();
@@ -10002,6 +9988,9 @@ function animateStep27ExemplarRanking(packetTraces, allNodes) {
       ctx.restore();
     });
 
+    // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
+
     // Upward Packets from Exemplars to Super-Peers
     ctx.save();
     traces.forEach((pkt, idx) => {
@@ -10342,6 +10331,9 @@ function animateStep28Consolidation(consolidatedRankings, allNodes) {
       ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
       ctx.restore();
     });
+
+    // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
 
     // Draw Nodes
     FIGURE3F_3TIER_NODES.forEach(n => {
@@ -10702,6 +10694,9 @@ function animateStep29MatchDelivery(packetTraces, allNodes) {
       ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
       ctx.restore();
     });
+
+    // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
 
     // All delivery pairs (Tier 3 Super-Peers -> Tier 1 Base Clients)
     const tier3ToTier1Pairs = [
@@ -11118,6 +11113,9 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
       ctx.restore();
     });
 
+    // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
+
     // Collaborative dialogue request pairs between Tier 1 base clients
     ctx.save();
     traces.forEach((pkt, idx) => {
@@ -11533,6 +11531,9 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
       ctx.restore();
     });
 
+    // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
+
     // Collaborative dialogue streaming arcs between Tier 1 base clients
     ctx.save();
     traces.forEach((pkt, idx) => {
@@ -11850,6 +11851,9 @@ function animateStep32ReferenceSynthesis(allNodes) {
       ctx.restore();
     });
 
+    // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
+
     // Draw Nodes
     FIGURE3F_3TIER_NODES.forEach(n => {
       const p = nodePosMap[n.key];
@@ -12161,6 +12165,9 @@ function animateStep33Convergence(allNodes) {
       ctx.restore();
     });
 
+    // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
+
     // Draw Nodes
     FIGURE3F_3TIER_NODES.forEach(n => {
       const p = nodePosMap[n.key];
@@ -12458,6 +12465,9 @@ function animateStep34Finalization(allNodes) {
       ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
       ctx.restore();
     });
+
+    // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
 
     // Draw Nodes
     FIGURE3F_3TIER_NODES.forEach(n => {
