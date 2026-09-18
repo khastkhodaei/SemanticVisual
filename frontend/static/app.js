@@ -1478,8 +1478,11 @@ async function loadStep(stepNumber) {
       if (currentLayout === "hierarchical" || currentLayout === "figure3f" || currentLayout === "overlay") {
         setLayout("physical");
       }
-      // Rename or reconfigure secondary layout mode
-      updateLayoutButtonLabel("Logical Top-2 Overlay");
+      if (stepNumber === 30) {
+        updateLayoutButtonLabel("Hierarchical Overlay (Figure 3(f))");
+      } else {
+        updateLayoutButtonLabel("Logical Top-2 Overlay");
+      }
     } else if (stepNumber >= 20) {
       updateLayoutButtonLabel("Hierarchical Overlay (Figure 3(f))");
     }
@@ -5953,7 +5956,9 @@ let secondaryLayoutLabel = "Hierarchical Overlay (Figure 3(f))";
 function updateLayoutButtonLabel(label) {
   if (label) {
     secondaryLayoutLabel = label;
-  } else if (currentStep >= 30) {
+  } else if (currentStep === 30) {
+    secondaryLayoutLabel = "Hierarchical Overlay (Figure 3(f))";
+  } else if (currentStep > 30) {
     secondaryLayoutLabel = "Logical Top-2 Overlay";
   } else {
     secondaryLayoutLabel = "Hierarchical Overlay (Figure 3(f))";
@@ -6033,7 +6038,7 @@ function toggleLayout() {
         : "Top-K Partner Match Delivery — Physical Topology (Multi-Hop Response Paths)";
     } else if (currentStep === 30) {
       canvasLabel.textContent = isFigure3fLayout()
-        ? "Top-K Partner Model Requests — Logical Overlay (Top-2 Partners)"
+        ? "Top-K Partner Model Requests — Hierarchical Overlay (Figure 3(f))"
         : "Pull-Based Model Request Dispatch — Physical Multi-Hop Ad-Hoc Paths";
     } else if (currentStep === 31) {
       canvasLabel.textContent = isFigure3fLayout()
@@ -6061,9 +6066,11 @@ function toggleLayout() {
   logToTerminal(
     "ZONE",
     isFigure3fLayout()
-      ? (currentStep >= 30
-          ? "[DUAL-LAYOUT] Switching to Logical Overlay (Top-2 Partners): Peer-to-peer data plane topology."
-          : "[DUAL-LAYOUT] Switching to Figure 3(f) 3-Tier Hierarchical Overlay: Super-Peers, Exemplars Oval, and Physical Zone Capsules.")
+      ? (currentStep === 30
+          ? "[DUAL-LAYOUT] Switching to Figure 3(f) 3-Tier Hierarchical Overlay: Super-Peers, Exemplars Oval, and Physical Zone Capsules."
+          : (currentStep > 30
+              ? "[DUAL-LAYOUT] Switching to Logical Overlay (Top-2 Partners): Peer-to-peer data plane topology."
+              : "[DUAL-LAYOUT] Switching to Figure 3(f) 3-Tier Hierarchical Overlay: Super-Peers, Exemplars Oval, and Physical Zone Capsules."))
       : "[DUAL-LAYOUT] Restoring original Physical Topology Layout: 10-node ad-hoc mesh view."
   );
 
@@ -6074,9 +6081,9 @@ function updateLayoutButtonUI() {
   const btn = document.getElementById("btn-toggle-layout") || document.getElementById("layoutToggleBtn");
   if (!btn) return;
   const isFigure3f = isFigure3fLayout();
-  const secModeName = (currentStep >= 30)
-    ? "Logical Overlay (Top-2 Partners)"
-    : (secondaryLayoutLabel || "Hierarchical Overlay (Figure 3(f))");
+  const secModeName = (currentStep === 30)
+    ? "Hierarchical Overlay (Figure 3(f))"
+    : ((currentStep > 30) ? "Logical Overlay (Top-2 Partners)" : (secondaryLayoutLabel || "Hierarchical Overlay (Figure 3(f))"));
 
   if (isFigure3f) {
     btn.innerHTML = `<span>✨</span><span>Layout: ${secModeName}</span>`;
@@ -6864,7 +6871,7 @@ function renderStep30(data) {
   const canvasLabel = document.getElementById("canvasViewLabel");
   if (canvasLabel) {
     canvasLabel.textContent = isFigure3fLayout()
-      ? "Top-K Partner Model Requests — Logical Overlay (Top-2 Partners)"
+      ? "Top-K Partner Model Requests — Hierarchical Overlay (Figure 3(f))"
       : "Pull-Based Model Request Dispatch — Physical Multi-Hop Ad-Hoc Paths";
   }
 
@@ -7567,7 +7574,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
 
       if (isFigure3f) {
         let found = null;
-        if (currentStep >= 30) {
+        if (currentStep > 30) {
           const posMap = getTop2OverlayCoordinates(canvas);
           for (let id = 1; id <= 10; id++) {
             const p = posMap[id];
@@ -11230,27 +11237,44 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
     ctx.restore();
   }
 
+  function interpolateFigure3fPath(path, t, nodePosMap) {
+    if (!path || path.length === 0) return null;
+    if (path.length === 1) {
+      const p = nodePosMap[path[0]];
+      return p ? { x: p.renderedX, y: p.renderedY } : null;
+    }
+    const numSegs = path.length - 1;
+    const clampedT = Math.max(0, Math.min(0.9999, t));
+    const segIdx = Math.floor(clampedT * numSegs);
+    const segProg = (clampedT * numSegs) - segIdx;
+    const pA = nodePosMap[path[segIdx]];
+    const pB = nodePosMap[path[segIdx + 1]];
+    if (!pA || !pB) return null;
+    return {
+      x: pA.renderedX + (pB.renderedX - pA.renderedX) * segProg,
+      y: pA.renderedY + (pB.renderedY - pA.renderedY) * segProg
+    };
+  }
+
   function renderFigure3fModelRequests(now) {
     if (cy) cy.elements().style("opacity", 0);
     canvas.style.pointerEvents = "auto";
-
-    // Retained for Step 20 Figure 3(f) edge verification suite
-    if (false) drawFigure3fCanonicalOverlayEdges(ctx, {});
 
     ctx.save();
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
 
-    const posMap = getTop2OverlayCoordinates(canvas);
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
 
-    // 1. Top Status Banner
+    // 1. Status Banner
     ctx.save();
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "LOGICAL OVERLAY (TOP-2 PARTNERS): P2P MODEL REQUEST DISPATCH (REQ_MODEL_WEIGHTS)";
+    const bannerText = "FIGURE 3(f) HIERARCHICAL OVERLAY: P2P MODEL REQUEST DISPATCH (TIER 1 CLIENTS -> HIERARCHICAL TREE -> PARTNERS)";
     const bW = ctx.measureText(bannerText).width;
     const bX = canvas.width / 2;
-    const bY = 28;
+    const bY = 32;
     ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
     ctx.strokeStyle = "#f59e0b";
     ctx.lineWidth = 1.2;
@@ -11264,146 +11288,193 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
 
-    // 2. Draw directed, glowing dashed edges ONLY between each node and its locked Top-2 federation partners
+    // 2. Node Backplates
     ctx.save();
-    TOP2_PAIRS.forEach(([from, to], idx) => {
-      const pA = posMap[from];
-      const pB = posMap[to];
-      if (!pA || !pB) return;
-
-      const dx = pB.x - pA.x;
-      const dy = pB.y - pA.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist === 0) return;
-
-      const nx = -dy / dist;
-      const ny = dx / dist;
-      // Directional lateral offset so bidirectional edges do not overlap
-      const curveOffset = Math.min(26, Math.max(14, dist * 0.11));
-      const midX = (pA.x + pB.x) / 2 + nx * curveOffset;
-      const midY = (pA.y + pB.y) / 2 + ny * curveOffset;
-
-      // Glow & Dashed Line
-      ctx.beginPath();
-      ctx.moveTo(pA.x, pA.y);
-      ctx.quadraticCurveTo(midX, midY, pB.x, pB.y);
-      ctx.setLineDash([5, 4]);
-      ctx.strokeStyle = "rgba(245, 158, 11, 0.60)";
-      ctx.lineWidth = 1.6;
-      ctx.shadowColor = "#f59e0b";
-      ctx.shadowBlur = 6;
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Draw arrowhead at target boundary (radius ~24)
-      const targetRad = 24;
-      const tEnd = Math.max(0.80, 1.0 - (targetRad + 2) / dist);
-      const endPt = {
-        x: (1 - tEnd) * (1 - tEnd) * pA.x + 2 * (1 - tEnd) * tEnd * midX + tEnd * tEnd * pB.x,
-        y: (1 - tEnd) * (1 - tEnd) * pA.y + 2 * (1 - tEnd) * tEnd * midY + tEnd * tEnd * pB.y
-      };
-      const angle = Math.atan2(pB.y - endPt.y, pB.x - endPt.x);
-      const headLen = 7;
-      ctx.beginPath();
-      ctx.moveTo(endPt.x, endPt.y);
-      ctx.lineTo(endPt.x - headLen * Math.cos(angle - Math.PI / 6), endPt.y - headLen * Math.sin(angle - Math.PI / 6));
-      ctx.lineTo(endPt.x - headLen * Math.cos(angle + Math.PI / 6), endPt.y - headLen * Math.sin(angle + Math.PI / 6));
-      ctx.closePath();
-      ctx.fillStyle = "#f59e0b";
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isTop = n.tier === 3;
+      const isMid = n.tier === 2;
+      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
+      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
+      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
+      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
+      ctx.lineWidth = 1;
+      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
       ctx.fill();
+      ctx.stroke();
     });
     ctx.restore();
 
-    // 3. Animated REQ_MODEL_WEIGHTS packets traveling smoothly along these explicit Top-2 logical edges
+    // 3. Tier 2 Pink Oval Hull & Tier 1 Zone Capsules
     ctx.save();
-    TOP2_PAIRS.forEach(([from, to], idx) => {
-      const pA = posMap[from];
-      const pB = posMap[to];
-      if (!pA || !pB) return;
+    ctx.beginPath();
+    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
 
-      const dx = pB.x - pA.x;
-      const dy = pB.y - pA.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist === 0) return;
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    ctx.fillStyle = "#e11d48";
+    ctx.textAlign = "center";
+    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
+    ctx.restore();
 
-      const nx = -dy / dist;
-      const ny = dx / dist;
-      const curveOffset = Math.min(26, Math.max(14, dist * 0.11));
-      const midX = (pA.x + pB.x) / 2 + nx * curveOffset;
-      const midY = (pA.y + pB.y) / 2 + ny * curveOffset;
+    capsules.forEach(cap => {
+      ctx.save();
+      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
+      ctx.fillStyle = cap.fill;
+      ctx.fill();
+      ctx.strokeStyle = cap.border;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
+      ctx.fillStyle = cap.textColor;
+      ctx.textAlign = "center";
+      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
+      ctx.restore();
+    });
+
+    // 4. Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
+    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
+
+    // 5. Hierarchical Routes for P2P Model Requests (Routing via Hierarchical Tree)
+    const HIERARCHICAL_REQUEST_ROUTES = {
+      // Super-Cluster 1 (Super-Peer 1)
+      "1->9": ["bot_1", "mid_1", "top_1", "mid_9", "bot_9"],
+      "1->2": ["bot_1", "mid_1", "bot_2"],
+      "2->9": ["bot_2", "mid_1", "top_1", "mid_9", "bot_9"],
+      "2->1": ["bot_2", "mid_1", "bot_1"],
+      "9->1": ["bot_9", "mid_9", "top_1", "mid_1", "bot_1"],
+      "9->2": ["bot_9", "mid_9", "top_1", "mid_1", "bot_2"],
+
+      // Super-Cluster 2 (Super-Peer 5)
+      "3->5": ["bot_3", "mid_3", "top_5", "mid_5", "bot_5"],
+      "3->8": ["bot_3", "mid_3", "top_5", "mid_8", "bot_8"],
+      "4->5": ["bot_4", "mid_5", "bot_5"],
+      "4->8": ["bot_4", "mid_5", "top_5", "mid_8", "bot_8"],
+      "5->4": ["bot_5", "mid_5", "bot_4"],
+      "5->3": ["bot_5", "mid_5", "top_5", "mid_3", "bot_3"],
+      "8->3": ["bot_8", "mid_8", "top_5", "mid_3", "bot_3"],
+      "8->5": ["bot_8", "mid_8", "top_5", "mid_5", "bot_5"],
+
+      // Super-Cluster 3 (Super-Peer 10)
+      "6->7": ["bot_6", "mid_7", "bot_7"],
+      "6->10": ["bot_6", "mid_7", "top_10", "mid_10", "bot_10"],
+      "7->10": ["bot_7", "mid_7", "top_10", "mid_10", "bot_10"],
+      "7->6": ["bot_7", "mid_7", "bot_6"],
+      "10->7": ["bot_10", "mid_10", "top_10", "mid_7", "bot_7"],
+      "10->6": ["bot_10", "mid_10", "top_10", "mid_7", "bot_6"]
+    };
+
+    const hierarchicalRequests = [
+      { key: "1->9", path: HIERARCHICAL_REQUEST_ROUTES["1->9"], label: "REQ_WEIGHTS (C9)" },
+      { key: "1->2", path: HIERARCHICAL_REQUEST_ROUTES["1->2"], label: "REQ_WEIGHTS (C2)" },
+      { key: "2->9", path: HIERARCHICAL_REQUEST_ROUTES["2->9"], label: "REQ_WEIGHTS (C9)" },
+      { key: "2->1", path: HIERARCHICAL_REQUEST_ROUTES["2->1"], label: "REQ_WEIGHTS (C1)" },
+      { key: "9->1", path: HIERARCHICAL_REQUEST_ROUTES["9->1"], label: "REQ_WEIGHTS (C1)" },
+      { key: "9->2", path: HIERARCHICAL_REQUEST_ROUTES["9->2"], label: "REQ_WEIGHTS (C2)" },
+      { key: "3->5", path: HIERARCHICAL_REQUEST_ROUTES["3->5"], label: "REQ_WEIGHTS (C5)" },
+      { key: "3->8", path: HIERARCHICAL_REQUEST_ROUTES["3->8"], label: "REQ_WEIGHTS (C8)" },
+      { key: "4->5", path: HIERARCHICAL_REQUEST_ROUTES["4->5"], label: "REQ_WEIGHTS (C5)" },
+      { key: "4->8", path: HIERARCHICAL_REQUEST_ROUTES["4->8"], label: "REQ_WEIGHTS (C8)" },
+      { key: "5->4", path: HIERARCHICAL_REQUEST_ROUTES["5->4"], label: "REQ_WEIGHTS (C4)" },
+      { key: "5->3", path: HIERARCHICAL_REQUEST_ROUTES["5->3"], label: "REQ_WEIGHTS (C3)" },
+      { key: "8->3", path: HIERARCHICAL_REQUEST_ROUTES["8->3"], label: "REQ_WEIGHTS (C3)" },
+      { key: "8->5", path: HIERARCHICAL_REQUEST_ROUTES["8->5"], label: "REQ_WEIGHTS (C5)" },
+      { key: "6->7", path: HIERARCHICAL_REQUEST_ROUTES["6->7"], label: "REQ_WEIGHTS (C7)" },
+      { key: "6->10", path: HIERARCHICAL_REQUEST_ROUTES["6->10"], label: "REQ_WEIGHTS (C10)" },
+      { key: "7->10", path: HIERARCHICAL_REQUEST_ROUTES["7->10"], label: "REQ_WEIGHTS (C10)" },
+      { key: "7->6", path: HIERARCHICAL_REQUEST_ROUTES["7->6"], label: "REQ_WEIGHTS (C6)" },
+      { key: "10->7", path: HIERARCHICAL_REQUEST_ROUTES["10->7"], label: "REQ_WEIGHTS (C7)" },
+      { key: "10->6", path: HIERARCHICAL_REQUEST_ROUTES["10->6"], label: "REQ_WEIGHTS (C6)" }
+    ];
+
+    // 6. Draw Animated Hierarchical Beams & Moving Request Packets
+    ctx.save();
+    hierarchicalRequests.forEach((req, idx) => {
+      const path = req.path;
+      if (!path || path.length < 2) return;
+      const pStart = nodePosMap[path[0]];
+      if (!pStart) return;
+
+      // Draw faint guide beam along hierarchical hops
+      ctx.beginPath();
+      ctx.moveTo(pStart.renderedX, pStart.renderedY);
+      for (let i = 1; i < path.length; i++) {
+        const pt = nodePosMap[path[i]];
+        if (pt) ctx.lineTo(pt.renderedX, pt.renderedY);
+      }
+      ctx.strokeStyle = "rgba(245, 158, 11, 0.30)";
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
       const phaseOffset = (idx * 0.05) % 1.0;
-      const tPkt = (tCycle + phaseOffset) % 1.0;
+      const tBeam = (tCycle + phaseOffset) % 1.0;
 
-      if (tPkt < 0.80) {
-        const t = tPkt / 0.80;
-        const qx = (1 - t) * (1 - t) * pA.x + 2 * (1 - t) * t * midX + t * t * pB.x;
-        const qy = (1 - t) * (1 - t) * pA.y + 2 * (1 - t) * t * midY + t * t * pB.y;
+      if (tBeam < 0.75) {
+        const t = tBeam / 0.75;
+        const pt = interpolateFigure3fPath(path, t, nodePosMap);
+        if (pt) {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 5.5, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = "#f59e0b";
+          ctx.shadowBlur = 14;
+          ctx.fill();
 
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(qx, qy, 5.0, 0, Math.PI * 2);
-        ctx.fillStyle = "#ffffff";
-        ctx.shadowColor = "#fbbf24";
-        ctx.shadowBlur = 12;
-        ctx.fill();
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 8.5, 0, Math.PI * 2);
+          ctx.strokeStyle = "#d97706";
+          ctx.lineWidth = 1.8;
+          ctx.stroke();
 
-        ctx.beginPath();
-        ctx.arc(qx, qy, 7.5, 0, Math.PI * 2);
-        ctx.strokeStyle = "#f59e0b";
-        ctx.lineWidth = 1.6;
-        ctx.stroke();
-
-        const tagOffsetY = (idx % 2 === 0 ? -12 : 12);
-        drawFloatingTag(ctx, "REQ_WEIGHTS", qx, qy + tagOffsetY, "#f59e0b", "rgba(15, 23, 42, 0.94)", "#fde68a");
-        ctx.restore();
+          const tagOffsetY = (idx % 2 === 0 ? -14 : 14);
+          drawFloatingTag(ctx, req.label, pt.x, pt.y + tagOffsetY, "#f59e0b", "rgba(15, 23, 42, 0.94)", "#fde68a");
+        }
       } else {
-        const arrProg = (tPkt - 0.80) / 0.20;
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(pB.x, pB.y, 20 + arrProg * 16, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(245, 158, 11, ${1 - arrProg})`;
-        ctx.lineWidth = 2.0;
-        ctx.shadowColor = "#f59e0b";
-        ctx.shadowBlur = 8;
-        ctx.stroke();
+        const arrProg = (tBeam - 0.75) / 0.25;
+        const pDest = nodePosMap[path[path.length - 1]];
+        if (pDest) {
+          const rBeacon = 22 + arrProg * 18;
+          ctx.beginPath();
+          ctx.arc(pDest.renderedX, pDest.renderedY, rBeacon, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(245, 158, 11, ${1 - arrProg})`;
+          ctx.lineWidth = 2.2;
+          ctx.shadowColor = "#f59e0b";
+          ctx.shadowBlur = 12;
+          ctx.stroke();
 
-        drawFloatingTag(ctx, "REQ_RECEIVED", pB.x, pB.y - 28, "#f59e0b", "rgba(120, 53, 15, 0.94)", "#fef3c7");
-        ctx.restore();
+          drawFloatingTag(ctx, "REQ_RECEIVED", pDest.renderedX, pDest.renderedY + 28, "#f59e0b", "rgba(120, 53, 15, 0.94)", "#fef3c7");
+        }
       }
     });
     ctx.restore();
 
-    // 4. Render the 10 nodes in clean circular layout with Top-2 partner tags
-    const TOP2_PARTNERS_MAP = {
-      1: [9, 2],
-      2: [9, 1],
-      3: [5, 8],
-      4: [5, 8],
-      5: [4, 3],
-      6: [7, 10],
-      7: [10, 6],
-      8: [3, 5],
-      9: [1, 2],
-      10: [7, 6]
-    };
-
-    ctx.save();
-    for (let id = 1; id <= 10; id++) {
-      const p = posMap[id];
-      if (!p) continue;
-      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
+    // 7. Draw Nodes
+    FIGURE3F_3TIER_NODES.forEach(n => {
+      const p = nodePosMap[n.key];
+      if (!p) return;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
+      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
       drawNode(ctx, {
-        id,
-        node_id: `C${id}`,
-        x: p.x,
-        y: p.y
-      }, isHov, pulse, 24);
+        id: n.id,
+        node_id: n.label,
+        x: p.renderedX,
+        y: p.renderedY,
+        tier: n.tier,
+        zone: n.zone
+      }, isHov, pulse, rad);
 
-      const partners = TOP2_PARTNERS_MAP[id] || [];
-      drawFloatingTag(ctx, `Top-2: {C${partners[0]}, C${partners[1]}}`, p.x, p.y + 32, "#f59e0b", "rgba(15, 23, 42, 0.92)", "#fde68a");
-    }
-    ctx.restore();
+      if (n.tier === 1) {
+        drawFloatingTag(ctx, "REQ_DISPATCHED", p.renderedX, p.renderedY + rad + 12, "#f59e0b", "rgba(120, 53, 15, 0.94)", "#fde68a");
+      }
+    });
 
     ctx.restore();
   }
