@@ -243,6 +243,20 @@ def test_session_status_and_canvas_elements_in_html():
         assert 'id="packetCanvas"' in content, f"Missing #packetCanvas in {path}"
 
 
+def test_no_redundant_phase_badge_in_toolbar():
+    """Verify Issue #20: redundant right-hand Phase: badge is removed from toolbar."""
+    for path in [
+        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/index.html",
+        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/templates/index.html",
+    ]:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+        assert 'id="activePhaseBadge"' not in content, f"#activePhaseBadge should be removed in {path}"
+        assert 'id="subStepScrubber"' in content, f"Missing #subStepScrubber in {path}"
+
+
+
+
 
 
 

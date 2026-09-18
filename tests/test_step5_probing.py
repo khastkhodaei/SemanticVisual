@@ -219,7 +219,7 @@ def test_step5_frontend_elements_and_logic():
         html = f.read()
 
     assert 'id="stepNav5"' in html
-    assert 'id="activePhaseBadge"' in html
+    assert 'id="subStepScrubber"' in html
     assert 'id="zoneLegendItem"' in html
     assert 'id="cardProbeSection"' in html
     assert 'id="cardVectorBarsContainer"' in html
