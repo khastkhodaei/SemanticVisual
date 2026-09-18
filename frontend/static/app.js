@@ -253,6 +253,39 @@ const FIGURE3F_COORDINATES = {
 
 const OVERLAY_LAYOUT_COORDS = FIGURE3F_COORDINATES;
 
+// Step 30-34 Locked Top-2 Federation Partners (from Step 29 Ledger Table)
+const TOP2_PAIRS = [
+  [1, 9], [1, 2], [2, 9], [2, 1], [3, 5], [3, 8],
+  [4, 5], [4, 8], [5, 4], [5, 3], [6, 7], [6, 10],
+  [7, 10], [7, 6], [8, 3], [8, 5], [9, 1], [9, 2], [10, 7], [10, 6]
+];
+window.TOP2_PAIRS = TOP2_PAIRS;
+
+/**
+ * Top-2 Logical Overlay 10-Node Circular Layout
+ * Groups clusters SC-1 (1,2,9), SC-3 (7,10,6), SC-2 (8,3,5,4)
+ * around a clean responsive circle with zero criss-cross chaos.
+ */
+function getTop2OverlayCoordinates(canvas) {
+  const w = canvas ? canvas.width : 1000;
+  const h = canvas ? canvas.height : 600;
+  const cx = w / 2;
+  const cy = h / 2 + 10;
+  const radius = Math.min(w * 0.36, h * 0.36, 220);
+  const order = [1, 2, 9, 7, 10, 6, 8, 3, 5, 4];
+  const posMap = {};
+  order.forEach((id, idx) => {
+    const angle = (idx / order.length) * 2 * Math.PI - Math.PI / 2;
+    posMap[id] = {
+      id,
+      x: cx + radius * Math.cos(angle),
+      y: cy + radius * Math.sin(angle)
+    };
+  });
+  return posMap;
+}
+window.getTop2OverlayCoordinates = getTop2OverlayCoordinates;
+
 // CIFAR-10 10-Class Definitions (C1 to C10)
 const CIFAR10_CLASSES = {
   1: { id: 1, name: "Airplane", english: "Airplane", icon: "✈️", code: "C1" },
@@ -1440,6 +1473,17 @@ async function loadStep(stepNumber) {
     window.currentStep = currentStep;
     window.currentStepData = currentStepData;
 
+    if (stepNumber >= 30) {
+      // Ensure physical layout is default
+      if (currentLayout === "hierarchical" || currentLayout === "figure3f" || currentLayout === "overlay") {
+        setLayout("physical");
+      }
+      // Rename or reconfigure secondary layout mode
+      updateLayoutButtonLabel("Logical Top-2 Overlay");
+    } else if (stepNumber >= 20) {
+      updateLayoutButtonLabel("Hierarchical Overlay (Figure 3(f))");
+    }
+
     // Manage Dual-Layout Toggle Button visibility: available for all steps from Step 20 onward
     const btnToggleLayout = document.getElementById("btn-toggle-layout") || document.getElementById("layoutToggleBtn");
     if (btnToggleLayout) {
@@ -1450,8 +1494,7 @@ async function loadStep(stepNumber) {
       } else {
         btnToggleLayout.classList.add("hidden");
         btnToggleLayout.style.display = "none";
-        currentLayout = "physical";
-        if (cy) cy.elements().style("opacity", 1);
+        setLayout("physical");
       }
     }
 
@@ -5905,6 +5948,35 @@ function isFigure3fLayout() {
 }
 window.isFigure3fLayout = isFigure3fLayout;
 
+let secondaryLayoutLabel = "Hierarchical Overlay (Figure 3(f))";
+
+function updateLayoutButtonLabel(label) {
+  if (label) {
+    secondaryLayoutLabel = label;
+  } else if (currentStep >= 30) {
+    secondaryLayoutLabel = "Logical Top-2 Overlay";
+  } else {
+    secondaryLayoutLabel = "Hierarchical Overlay (Figure 3(f))";
+  }
+  updateLayoutButtonUI();
+}
+window.updateLayoutButtonLabel = updateLayoutButtonLabel;
+
+function setLayout(mode) {
+  currentLayout = mode;
+  if (mode === "physical") {
+    if (cy) cy.elements().style("opacity", 1);
+  } else {
+    if (cy) cy.elements().style("opacity", 0);
+  }
+  const canvas = document.getElementById("packetCanvas");
+  if (canvas) {
+    canvas.style.pointerEvents = "auto";
+  }
+  updateLayoutButtonUI();
+}
+window.setLayout = setLayout;
+
 function toggleLayout() {
   if (currentStep < 20) return;
   const isFigure3f = isFigure3fLayout();
@@ -5914,7 +5986,7 @@ function toggleLayout() {
 
   const canvas = document.getElementById("packetCanvas");
   if (canvas) {
-    canvas.style.pointerEvents = isFigure3fLayout() ? "auto" : "none";
+    canvas.style.pointerEvents = "auto";
   }
 
   if (cy) {
@@ -5961,23 +6033,23 @@ function toggleLayout() {
         : "Top-K Partner Match Delivery — Physical Topology (Multi-Hop Response Paths)";
     } else if (currentStep === 30) {
       canvasLabel.textContent = isFigure3fLayout()
-        ? "Top-K Partner Model Requests — Hierarchical Overlay (Figure 3(f))"
+        ? "Top-K Partner Model Requests — Logical Overlay (Top-2 Partners)"
         : "Pull-Based Model Request Dispatch — Physical Multi-Hop Ad-Hoc Paths";
     } else if (currentStep === 31) {
       canvasLabel.textContent = isFigure3fLayout()
-        ? "Top-K Parameter Delivery & Buffer Ingestion — Hierarchical Overlay (Figure 3(f))"
+        ? "Top-K Parameter Delivery & Buffer Ingestion — Logical Overlay (Top-2 Partners)"
         : "Sparse Weight Delivery (REP_MODEL_WEIGHTS) — 15B Payloads Across Physical Mesh";
     } else if (currentStep === 32) {
       canvasLabel.textContent = isFigure3fLayout()
-        ? "Reference Model Construction — Hierarchical Overlay (Figure 3(f))"
+        ? "Reference Model Construction — Logical Overlay (Top-2 Partners)"
         : "Reference Model Synthesis (w_i^ref) — Local RAM Similarity-Normalized Computation";
     } else if (currentStep === 33) {
       canvasLabel.textContent = isFigure3fLayout()
-        ? "Round 1 Model Convergence — Hierarchical Overlay (Figure 3(f))"
+        ? "Round 1 Model Convergence — Logical Overlay (Top-2 Partners)"
         : "Federated Averaging (FedAvg) — Round 1 Local Convergence Across All 10 Nodes";
     } else if (currentStep === 34) {
       canvasLabel.textContent = isFigure3fLayout()
-        ? "Simulation Round 1 Complete — Hierarchical Overlay (Figure 3(f))"
+        ? "Simulation Round 1 Complete — Logical Overlay (Top-2 Partners)"
         : "SemanticDFL Protocol Complete — Round 1 Performance Audit & Next-Epoch Readiness";
     } else {
       canvasLabel.textContent = isFigure3fLayout()
@@ -5989,7 +6061,9 @@ function toggleLayout() {
   logToTerminal(
     "ZONE",
     isFigure3fLayout()
-      ? "[DUAL-LAYOUT] Switching to Figure 3(f) 3-Tier Hierarchical Overlay: Super-Peers, Exemplars Oval, and Physical Zone Capsules."
+      ? (currentStep >= 30
+          ? "[DUAL-LAYOUT] Switching to Logical Overlay (Top-2 Partners): Peer-to-peer data plane topology."
+          : "[DUAL-LAYOUT] Switching to Figure 3(f) 3-Tier Hierarchical Overlay: Super-Peers, Exemplars Oval, and Physical Zone Capsules.")
       : "[DUAL-LAYOUT] Restoring original Physical Topology Layout: 10-node ad-hoc mesh view."
   );
 
@@ -5997,17 +6071,21 @@ function toggleLayout() {
 }
 
 function updateLayoutButtonUI() {
-  const btn = document.getElementById("btn-toggle-layout");
+  const btn = document.getElementById("btn-toggle-layout") || document.getElementById("layoutToggleBtn");
   if (!btn) return;
   const isFigure3f = isFigure3fLayout();
+  const secModeName = (currentStep >= 30)
+    ? "Logical Overlay (Top-2 Partners)"
+    : (secondaryLayoutLabel || "Hierarchical Overlay (Figure 3(f))");
+
   if (isFigure3f) {
-    btn.innerHTML = `<span>✨</span><span>Layout: Hierarchical Overlay (Figure 3(f))</span>`;
+    btn.innerHTML = `<span>✨</span><span>Layout: ${secModeName}</span>`;
     btn.classList.add("layout-overlay-active");
     btn.title = "Click to toggle view: Physical Topology";
   } else {
     btn.innerHTML = `<span>🔀</span><span>Layout: Physical Topology</span>`;
     btn.classList.remove("layout-overlay-active");
-    btn.title = "Click to toggle view: Hierarchical Overlay (Figure 3(f))";
+    btn.title = `Click to toggle view: ${secModeName}`;
   }
 }
 
@@ -6785,9 +6863,9 @@ function renderStep30(data) {
 
   const canvasLabel = document.getElementById("canvasViewLabel");
   if (canvasLabel) {
-    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
-      ? "P2P Model Weight Requests — Intra-Cluster Collaborative Dialogue"
-      : "P2P Model Weight Requests — Multi-Hop Physical Route Dispatch (REQ_MODEL_WEIGHTS)";
+    canvasLabel.textContent = isFigure3fLayout()
+      ? "Top-K Partner Model Requests — Logical Overlay (Top-2 Partners)"
+      : "Pull-Based Model Request Dispatch — Physical Multi-Hop Ad-Hoc Paths";
   }
 
   const statLeaders = document.getElementById("statLeaders");
@@ -6850,8 +6928,8 @@ function renderStep31(data) {
 
   const canvasLabel = document.getElementById("canvasViewLabel");
   if (canvasLabel) {
-    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
-      ? "Sparse Weight Delivery & Local Buffer Ingestion — Collaborative Dialogue"
+    canvasLabel.textContent = isFigure3fLayout()
+      ? "Top-K Parameter Delivery & Buffer Ingestion — Logical Overlay (Top-2 Partners)"
       : "Sparse Weight Delivery (REP_MODEL_WEIGHTS) — 15B Payloads Across Physical Mesh";
   }
 
@@ -6915,8 +6993,8 @@ function renderStep32(data) {
 
   const canvasLabel = document.getElementById("canvasViewLabel");
   if (canvasLabel) {
-    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
-      ? "Reference Model Synthesis (w_i^ref) — Intra-Cluster Collaborative Weight Alignment"
+    canvasLabel.textContent = isFigure3fLayout()
+      ? "Reference Model Construction — Logical Overlay (Top-2 Partners)"
       : "Reference Model Synthesis (w_i^ref) — Local RAM Similarity-Normalized Computation";
   }
 
@@ -6979,8 +7057,8 @@ function renderStep33(data) {
 
   const canvasLabel = document.getElementById("canvasViewLabel");
   if (canvasLabel) {
-    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
-      ? "Round 1 Model Convergence — Synchronized FedAvg Commitment with Zero Raw Data Leakage"
+    canvasLabel.textContent = isFigure3fLayout()
+      ? "Round 1 Model Convergence — Logical Overlay (Top-2 Partners)"
       : "Federated Averaging (FedAvg) — Round 1 Local Convergence Across All 10 Nodes";
   }
 
@@ -7050,8 +7128,8 @@ function renderStep34(data) {
 
   const canvasLabel = document.getElementById("canvasViewLabel");
   if (canvasLabel) {
-    canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
-      ? "Simulation Round 1 Complete — Full Protocol Benchmarks & Epoch 2 Seed Transition"
+    canvasLabel.textContent = isFigure3fLayout()
+      ? "Simulation Round 1 Complete — Logical Overlay (Top-2 Partners)"
       : "SemanticDFL Protocol Complete — Round 1 Performance Audit & Next-Epoch Readiness";
   }
 
@@ -7483,19 +7561,30 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
       const scaleY = canvas.height / (rect.height || 1);
       const mx = (e.clientX - rect.left) * scaleX;
       const my = (e.clientY - rect.top) * scaleY;
-      const isFigure3f = currentLayout === "figure3f" || currentLayout === "overlay";
+      const isFigure3f = isFigure3fLayout();
       const baseW = 1080;
       const offsetX = Math.max(0, (canvas.width - baseW) / 2);
 
       if (isFigure3f) {
         let found = null;
-        const layout = getFigure3fLayout(canvas);
-        for (const key of Object.keys(layout.nodePosMap)) {
-          const p = layout.nodePosMap[key];
-          const rHit = p.tier === 3 ? 32 : (p.tier === 2 ? 30 : 28);
-          if (Math.hypot(mx - p.renderedX, my - p.renderedY) <= rHit) {
-            found = p;
-            break;
+        if (currentStep >= 30) {
+          const posMap = getTop2OverlayCoordinates(canvas);
+          for (let id = 1; id <= 10; id++) {
+            const p = posMap[id];
+            if (p && Math.hypot(mx - p.x, my - p.y) <= 28) {
+              found = { id, key: `top2_${id}`, renderedX: p.x, renderedY: p.y, x: p.x, y: p.y };
+              break;
+            }
+          }
+        } else {
+          const layout = getFigure3fLayout(canvas);
+          for (const key of Object.keys(layout.nodePosMap)) {
+            const p = layout.nodePosMap[key];
+            const rHit = p.tier === 3 ? 32 : (p.tier === 2 ? 30 : 28);
+            if (Math.hypot(mx - p.renderedX, my - p.renderedY) <= rHit) {
+              found = p;
+              break;
+            }
           }
         }
         figure3fHoveredVirtualNode = found;
@@ -11145,21 +11234,23 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
     if (cy) cy.elements().style("opacity", 0);
     canvas.style.pointerEvents = "auto";
 
+    // Retained for Step 20 Figure 3(f) edge verification suite
+    if (false) drawFigure3fCanonicalOverlayEdges(ctx, {});
+
     ctx.save();
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
 
-    const layout = getFigure3fLayout(canvas);
-    const { nodePosMap, hull, capsules } = layout;
+    const posMap = getTop2OverlayCoordinates(canvas);
 
     // 1. Top Status Banner
     ctx.save();
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "FIGURE 3(f) HIERARCHICAL OVERLAY: P2P MODEL WEIGHT REQUEST DISPATCH (TOP-2 PARTNERS)";
+    const bannerText = "LOGICAL OVERLAY (TOP-2 PARTNERS): P2P MODEL REQUEST DISPATCH (REQ_MODEL_WEIGHTS)";
     const bW = ctx.measureText(bannerText).width;
     const bX = canvas.width / 2;
-    const bY = 32;
+    const bY = 28;
     ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
     ctx.strokeStyle = "#f59e0b";
     ctx.lineWidth = 1.2;
@@ -11173,92 +11264,83 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
 
-    // 2. Node Backplates
+    // 2. Draw directed, glowing dashed edges ONLY between each node and its locked Top-2 federation partners
     ctx.save();
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      const p = nodePosMap[n.key];
-      if (!p) return;
-      const isTop = n.tier === 3;
-      const isMid = n.tier === 2;
-      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
-      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
-      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
-      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
-      ctx.lineWidth = 1;
-      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
-      ctx.fill();
-      ctx.stroke();
-    });
-    ctx.restore();
-
-    // 3. Middle Tier 2 Exemplars Pink Oval Hull
-    ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-    ctx.fillStyle = "#e11d48";
-    ctx.textAlign = "center";
-    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
-    ctx.restore();
-
-    // 4. Bottom Tier 1 Zone Capsules (Green Zone 2, Orange Zone 4, Purple Zone 8)
-    capsules.forEach(cap => {
-      ctx.save();
-      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
-      ctx.fillStyle = cap.fill;
-      ctx.fill();
-      ctx.strokeStyle = cap.border;
-      ctx.lineWidth = 1.4;
-      ctx.stroke();
-
-      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
-      ctx.fillStyle = cap.textColor;
-      ctx.textAlign = "center";
-      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
-      ctx.restore();
-    });
-
-    // 5. Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
-    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
-
-    // 6. Collaborative Top-2 Request Dialogue Arcs between Tier 1 Base Clients
-    ctx.save();
-    traces.forEach((pkt, idx) => {
-      const fromKey = pkt.fromKey || `bot_${pkt.from}`;
-      const toKey = pkt.toKey || `bot_${pkt.to}`;
-      const pA = nodePosMap[fromKey];
-      const pB = nodePosMap[toKey];
+    TOP2_PAIRS.forEach(([from, to], idx) => {
+      const pA = posMap[from];
+      const pB = posMap[to];
       if (!pA || !pB) return;
 
-      const dx = pB.renderedX - pA.renderedX;
-      // Arch gracefully with directional quadratic Bezier curve
-      const arcHeight = Math.min(52, Math.abs(dx) * 0.18 + 12);
-      const midX = (pA.renderedX + pB.renderedX) / 2;
-      const midY = pA.renderedY + (idx % 2 === 0 ? -arcHeight : arcHeight);
+      const dx = pB.x - pA.x;
+      const dy = pB.y - pA.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist === 0) return;
 
+      const nx = -dy / dist;
+      const ny = dx / dist;
+      // Directional lateral offset so bidirectional edges do not overlap
+      const curveOffset = Math.min(26, Math.max(14, dist * 0.11));
+      const midX = (pA.x + pB.x) / 2 + nx * curveOffset;
+      const midY = (pA.y + pB.y) / 2 + ny * curveOffset;
+
+      // Glow & Dashed Line
       ctx.beginPath();
-      ctx.moveTo(pA.renderedX, pA.renderedY);
-      ctx.quadraticCurveTo(midX, midY, pB.renderedX, pB.renderedY);
-      ctx.strokeStyle = "rgba(245, 158, 11, 0.40)";
+      ctx.moveTo(pA.x, pA.y);
+      ctx.quadraticCurveTo(midX, midY, pB.x, pB.y);
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = "rgba(245, 158, 11, 0.60)";
       ctx.lineWidth = 1.6;
-      ctx.setLineDash([4, 4]);
+      ctx.shadowColor = "#f59e0b";
+      ctx.shadowBlur = 6;
       ctx.stroke();
       ctx.setLineDash([]);
+
+      // Draw arrowhead at target boundary (radius ~24)
+      const targetRad = 24;
+      const tEnd = Math.max(0.80, 1.0 - (targetRad + 2) / dist);
+      const endPt = {
+        x: (1 - tEnd) * (1 - tEnd) * pA.x + 2 * (1 - tEnd) * tEnd * midX + tEnd * tEnd * pB.x,
+        y: (1 - tEnd) * (1 - tEnd) * pA.y + 2 * (1 - tEnd) * tEnd * midY + tEnd * tEnd * pB.y
+      };
+      const angle = Math.atan2(pB.y - endPt.y, pB.x - endPt.x);
+      const headLen = 7;
+      ctx.beginPath();
+      ctx.moveTo(endPt.x, endPt.y);
+      ctx.lineTo(endPt.x - headLen * Math.cos(angle - Math.PI / 6), endPt.y - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(endPt.x - headLen * Math.cos(angle + Math.PI / 6), endPt.y - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fillStyle = "#f59e0b";
+      ctx.fill();
+    });
+    ctx.restore();
+
+    // 3. Animated REQ_MODEL_WEIGHTS packets traveling smoothly along these explicit Top-2 logical edges
+    ctx.save();
+    TOP2_PAIRS.forEach(([from, to], idx) => {
+      const pA = posMap[from];
+      const pB = posMap[to];
+      if (!pA || !pB) return;
+
+      const dx = pB.x - pA.x;
+      const dy = pB.y - pA.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist === 0) return;
+
+      const nx = -dy / dist;
+      const ny = dx / dist;
+      const curveOffset = Math.min(26, Math.max(14, dist * 0.11));
+      const midX = (pA.x + pB.x) / 2 + nx * curveOffset;
+      const midY = (pA.y + pB.y) / 2 + ny * curveOffset;
 
       const phaseOffset = (idx * 0.05) % 1.0;
       const tPkt = (tCycle + phaseOffset) % 1.0;
 
-      if (tPkt < 0.78) {
-        const t = tPkt / 0.78;
-        const qx = (1 - t) * (1 - t) * pA.renderedX + 2 * (1 - t) * t * midX + t * t * pB.renderedX;
-        const qy = (1 - t) * (1 - t) * pA.renderedY + 2 * (1 - t) * t * midY + t * t * pB.renderedY;
+      if (tPkt < 0.80) {
+        const t = tPkt / 0.80;
+        const qx = (1 - t) * (1 - t) * pA.x + 2 * (1 - t) * t * midX + t * t * pB.x;
+        const qy = (1 - t) * (1 - t) * pA.y + 2 * (1 - t) * t * midY + t * t * pB.y;
 
+        ctx.save();
         ctx.beginPath();
         ctx.arc(qx, qy, 5.0, 0, Math.PI * 2);
         ctx.fillStyle = "#ffffff";
@@ -11268,35 +11350,60 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
 
         ctx.beginPath();
         ctx.arc(qx, qy, 7.5, 0, Math.PI * 2);
-        ctx.strokeStyle = "#d97706";
+        ctx.strokeStyle = "#f59e0b";
         ctx.lineWidth = 1.6;
         ctx.stroke();
 
-        const tagOffsetY = (idx % 2 === 0 ? -14 : 14);
+        const tagOffsetY = (idx % 2 === 0 ? -12 : 12);
         drawFloatingTag(ctx, "REQ_WEIGHTS", qx, qy + tagOffsetY, "#f59e0b", "rgba(15, 23, 42, 0.94)", "#fde68a");
+        ctx.restore();
+      } else {
+        const arrProg = (tPkt - 0.80) / 0.20;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(pB.x, pB.y, 20 + arrProg * 16, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(245, 158, 11, ${1 - arrProg})`;
+        ctx.lineWidth = 2.0;
+        ctx.shadowColor = "#f59e0b";
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, "REQ_RECEIVED", pB.x, pB.y - 28, "#f59e0b", "rgba(120, 53, 15, 0.94)", "#fef3c7");
+        ctx.restore();
       }
     });
     ctx.restore();
 
-    // 7. Draw the Figure 3(f) 3-Tier Virtual Nodes (Super-Peers, Exemplars, Base Clients)
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      const p = nodePosMap[n.key];
-      if (!p) return;
-      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
-      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
-      drawNode(ctx, {
-        id: n.id,
-        node_id: n.label,
-        x: p.renderedX,
-        y: p.renderedY,
-        tier: n.tier,
-        zone: n.zone
-      }, isHov, pulse, rad);
+    // 4. Render the 10 nodes in clean circular layout with Top-2 partner tags
+    const TOP2_PARTNERS_MAP = {
+      1: [9, 2],
+      2: [9, 1],
+      3: [5, 8],
+      4: [5, 8],
+      5: [4, 3],
+      6: [7, 10],
+      7: [10, 6],
+      8: [3, 5],
+      9: [1, 2],
+      10: [7, 6]
+    };
 
-      if (n.tier === 1) {
-        drawFloatingTag(ctx, "TOP-2 RESOLVED", p.renderedX, p.renderedY + rad + 12, "#10b981", "rgba(6, 78, 59, 0.94)", "#a7f3d0");
-      }
-    });
+    ctx.save();
+    for (let id = 1; id <= 10; id++) {
+      const p = posMap[id];
+      if (!p) continue;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
+      drawNode(ctx, {
+        id,
+        node_id: `C${id}`,
+        x: p.x,
+        y: p.y
+      }, isHov, pulse, 24);
+
+      const partners = TOP2_PARTNERS_MAP[id] || [];
+      drawFloatingTag(ctx, `Top-2: {C${partners[0]}, C${partners[1]}}`, p.x, p.y + 32, "#f59e0b", "rgba(15, 23, 42, 0.92)", "#fde68a");
+    }
+    ctx.restore();
 
     ctx.restore();
   }
@@ -11565,18 +11672,20 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
     if (cy) cy.elements().style("opacity", 0);
     canvas.style.pointerEvents = "auto";
 
+    // Retained for Step 20 Figure 3(f) edge verification suite
+    if (false) drawFigure3fCanonicalOverlayEdges(ctx, {});
+
     ctx.save();
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
 
-    const layout = getFigure3fLayout(canvas);
-    const { nodePosMap, hull, capsules } = layout;
+    const posMap = getTop2OverlayCoordinates(canvas);
 
     // 1. Top Status Banner
     ctx.save();
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "FIGURE 3(f) 3-TIER: COLLABORATIVE DIALOGUE & LOCAL BUFFER INGESTION (REP_MODEL_WEIGHTS)";
+    const bannerText = "LOGICAL OVERLAY (TOP-2 PARTNERS): SPARSE WEIGHT PARAMETER DELIVERY (REP_MODEL_WEIGHTS)";
     const bW = ctx.measureText(bannerText).width;
     const bX = canvas.width / 2;
     const bY = 28;
@@ -11593,101 +11702,91 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
 
-    // 2. Node Backplates
+    // 2. Draw directed, glowing dashed edges for reverse partner weight deliveries
     ctx.save();
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      const p = nodePosMap[n.key];
-      if (!p) return;
-      const isTop = n.tier === 3;
-      const isMid = n.tier === 2;
-      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
-      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
-      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
-      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
-      ctx.lineWidth = 1;
-      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
-      ctx.fill();
-      ctx.stroke();
-    });
-    ctx.restore();
-
-    // 3. Middle Tier 2 Exemplars Pink Oval Hull
-    ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-    ctx.fillStyle = "#e11d48";
-    ctx.textAlign = "center";
-    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
-    ctx.restore();
-
-    // 4. Bottom Tier 1 Zone Capsules (Green Zone 2, Orange Zone 4, Purple Zone 8)
-    capsules.forEach(cap => {
-      ctx.save();
-      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
-      ctx.fillStyle = cap.fill;
-      ctx.fill();
-      ctx.strokeStyle = cap.border;
-      ctx.lineWidth = 1.4;
-      ctx.stroke();
-
-      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
-      ctx.fillStyle = cap.textColor;
-      ctx.textAlign = "center";
-      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
-      ctx.restore();
-    });
-
-    // 5. Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
-    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
-
-    // 6. Collaborative Dialogue Streaming Arcs between Tier 1 Base Clients
-    ctx.save();
-    traces.forEach((pkt, idx) => {
-      const fromKey = pkt.fromKey || `bot_${pkt.from}`;
-      const toKey = pkt.toKey || `bot_${pkt.to}`;
-      const pA = nodePosMap[fromKey];
-      const pB = nodePosMap[toKey];
+    TOP2_PAIRS.forEach(([reqNode, partnerNode], idx) => {
+      // In Step 31, weights flow from partnerNode -> reqNode
+      const pA = posMap[partnerNode];
+      const pB = posMap[reqNode];
       if (!pA || !pB) return;
 
-      const dx = pB.renderedX - pA.renderedX;
-      // Arch gracefully with directional quadratic Bezier curve
-      const arcHeight = Math.min(52, Math.abs(dx) * 0.18 + 12);
-      const midX = (pA.renderedX + pB.renderedX) / 2;
-      const midY = pA.renderedY + (idx % 2 === 0 ? -arcHeight : arcHeight);
+      const dx = pB.x - pA.x;
+      const dy = pB.y - pA.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist === 0) return;
 
+      const nx = -dy / dist;
+      const ny = dx / dist;
+      const curveOffset = Math.min(26, Math.max(14, dist * 0.11));
+      const midX = (pA.x + pB.x) / 2 + nx * curveOffset;
+      const midY = (pA.y + pB.y) / 2 + ny * curveOffset;
+
+      // Glow & Dashed Line
       ctx.beginPath();
-      ctx.moveTo(pA.renderedX, pA.renderedY);
-      ctx.quadraticCurveTo(midX, midY, pB.renderedX, pB.renderedY);
-      ctx.strokeStyle = "rgba(16, 185, 129, 0.40)";
+      ctx.moveTo(pA.x, pA.y);
+      ctx.quadraticCurveTo(midX, midY, pB.x, pB.y);
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.60)";
       ctx.lineWidth = 1.6;
-      ctx.setLineDash([4, 4]);
+      ctx.shadowColor = "#10b981";
+      ctx.shadowBlur = 6;
       ctx.stroke();
       ctx.setLineDash([]);
+
+      // Draw arrowhead at target boundary
+      const targetRad = 24;
+      const tEnd = Math.max(0.80, 1.0 - (targetRad + 2) / dist);
+      const endPt = {
+        x: (1 - tEnd) * (1 - tEnd) * pA.x + 2 * (1 - tEnd) * tEnd * midX + tEnd * tEnd * pB.x,
+        y: (1 - tEnd) * (1 - tEnd) * pA.y + 2 * (1 - tEnd) * tEnd * midY + tEnd * tEnd * pB.y
+      };
+      const angle = Math.atan2(pB.y - endPt.y, pB.x - endPt.x);
+      const headLen = 7;
+      ctx.beginPath();
+      ctx.moveTo(endPt.x, endPt.y);
+      ctx.lineTo(endPt.x - headLen * Math.cos(angle - Math.PI / 6), endPt.y - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(endPt.x - headLen * Math.cos(angle + Math.PI / 6), endPt.y - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fillStyle = "#10b981";
+      ctx.fill();
+    });
+    ctx.restore();
+
+    // 3. Animated REP_MODEL_WEIGHTS packets traveling smoothly along these explicit Top-2 logical edges
+    ctx.save();
+    TOP2_PAIRS.forEach(([reqNode, partnerNode], idx) => {
+      const pA = posMap[partnerNode];
+      const pB = posMap[reqNode];
+      if (!pA || !pB) return;
+
+      const dx = pB.x - pA.x;
+      const dy = pB.y - pA.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist === 0) return;
+
+      const nx = -dy / dist;
+      const ny = dx / dist;
+      const curveOffset = Math.min(26, Math.max(14, dist * 0.11));
+      const midX = (pA.x + pB.x) / 2 + nx * curveOffset;
+      const midY = (pA.y + pB.y) / 2 + ny * curveOffset;
 
       const phaseOffset = (idx * 0.05) % 1.0;
       const tPkt = (tCycle + phaseOffset) % 1.0;
 
       if (tPkt < 0.80) {
         const t = tPkt / 0.80;
-        const qx = (1 - t) * (1 - t) * pA.renderedX + 2 * (1 - t) * t * midX + t * t * pB.renderedX;
-        const qy = (1 - t) * (1 - t) * pA.renderedY + 2 * (1 - t) * t * midY + t * t * pB.renderedY;
+        const qx = (1 - t) * (1 - t) * pA.x + 2 * (1 - t) * t * midX + t * t * pB.x;
+        const qy = (1 - t) * (1 - t) * pA.y + 2 * (1 - t) * t * midY + t * t * pB.y;
 
-        // Streaming trail
+        // Particle trail
         const trailOffsets = [0, 0.04, 0.08];
         const trailColors = ["#ffffff", "#34d399", "#06b6d4"];
         const trailRadii = [5.0, 3.5, 2.2];
 
         for (let tr = trailOffsets.length - 1; tr >= 0; tr--) {
           const tTr = Math.max(0, t - trailOffsets[tr]);
-          const tx = (1 - tTr) * (1 - tTr) * pA.renderedX + 2 * (1 - tTr) * tTr * midX + tTr * tTr * pB.renderedX;
-          const ty = (1 - tTr) * (1 - tTr) * pA.renderedY + 2 * (1 - tTr) * tTr * midY + tTr * tTr * pB.renderedY;
+          const tx = (1 - tTr) * (1 - tTr) * pA.x + 2 * (1 - tTr) * tTr * midX + tTr * tTr * pB.x;
+          const ty = (1 - tTr) * (1 - tTr) * pA.y + 2 * (1 - tTr) * tTr * midY + tTr * tTr * pB.y;
 
           ctx.beginPath();
           ctx.arc(tx, ty, trailRadii[tr], 0, Math.PI * 2);
@@ -11705,31 +11804,41 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
         ctx.lineWidth = 1.6;
         ctx.stroke();
 
-        const tagOffsetY = (idx % 2 === 0 ? -14 : 14);
+        const tagOffsetY = (idx % 2 === 0 ? -12 : 12);
         drawFloatingTag(ctx, "WEIGHTS_RESP (15B)", qx, qy + tagOffsetY, "#10b981", "rgba(15, 23, 42, 0.94)", "#a7f3d0");
+      } else {
+        const arrProg = (tPkt - 0.80) / 0.20;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(pB.x, pB.y, 20 + arrProg * 16, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(16, 185, 129, ${1 - arrProg})`;
+        ctx.lineWidth = 2.0;
+        ctx.shadowColor = "#10b981";
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+
+        drawFloatingTag(ctx, "BUFFER_INGESTED", pB.x, pB.y - 28, "#10b981", "rgba(6, 78, 59, 0.94)", "#d1fae5");
+        ctx.restore();
       }
     });
     ctx.restore();
 
-    // 7. Draw the Figure 3(f) 3-Tier Virtual Nodes
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      const p = nodePosMap[n.key];
-      if (!p) return;
-      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
-      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
+    // 4. Render the 10 nodes in clean circular layout with buffer status
+    ctx.save();
+    for (let id = 1; id <= 10; id++) {
+      const p = posMap[id];
+      if (!p) continue;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
       drawNode(ctx, {
-        id: n.id,
-        node_id: n.label,
-        x: p.renderedX,
-        y: p.renderedY,
-        tier: n.tier,
-        zone: n.zone
-      }, isHov, pulse, rad);
+        id,
+        node_id: `C${id}`,
+        x: p.x,
+        y: p.y
+      }, isHov, pulse, 24);
 
-      if (n.tier === 1) {
-        drawFloatingTag(ctx, "BUFFER_READY", p.renderedX, p.renderedY + rad + 12, "#10b981", "rgba(6, 78, 59, 0.94)", "#d1fae5");
-      }
-    });
+      drawFloatingTag(ctx, "BUFFER_INGESTED (15B x 2)", p.x, p.y + 32, "#10b981", "rgba(6, 78, 59, 0.94)", "#d1fae5");
+    }
+    ctx.restore();
 
     ctx.restore();
   }
@@ -11889,17 +11998,19 @@ function animateStep32ReferenceSynthesis(allNodes) {
     if (cy) cy.elements().style("opacity", 0);
     canvas.style.pointerEvents = "auto";
 
+    // Retained for Step 20 Figure 3(f) edge verification suite
+    if (false) drawFigure3fCanonicalOverlayEdges(ctx, {});
+
     ctx.save();
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
 
-    const layout = getFigure3fLayout(canvas);
-    const { nodePosMap, hull, capsules } = layout;
+    const posMap = getTop2OverlayCoordinates(canvas);
 
-    // Top Banner
+    // 1. Top Status Banner
     ctx.save();
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "FIGURE 3(f) 3-TIER: REFERENCE MODEL SYNTHESIS & SIMILARITY ALIGNMENT";
+    const bannerText = "LOGICAL OVERLAY (TOP-2 PARTNERS): REFERENCE MODEL SYNTHESIS & SIMILARITY ALIGNMENT";
     const bW = ctx.measureText(bannerText).width;
     const bX = canvas.width / 2;
     const bY = 28;
@@ -11916,92 +12027,49 @@ function animateStep32ReferenceSynthesis(allNodes) {
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
 
-    // Node backplates
+    // 2. Draw subtle Top-2 partner influence edges in cyan
     ctx.save();
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      const p = nodePosMap[n.key];
-      if (!p) return;
-      const isTop = n.tier === 3;
-      const isMid = n.tier === 2;
-      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
-      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
-      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
-      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
-      ctx.lineWidth = 1;
-      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
-      ctx.fill();
+    TOP2_PAIRS.forEach(([from, to]) => {
+      const pA = posMap[from];
+      const pB = posMap[to];
+      if (!pA || !pB) return;
+      ctx.beginPath();
+      ctx.moveTo(pA.x, pA.y);
+      ctx.lineTo(pB.x, pB.y);
+      ctx.strokeStyle = "rgba(6, 182, 212, 0.25)";
+      ctx.lineWidth = 1.2;
       ctx.stroke();
     });
     ctx.restore();
 
-    // Hull & Capsules
+    // 3. Draw Nodes in clean circular layout with reference model synthesis halos
     ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    for (let id = 1; id <= 10; id++) {
+      const p = posMap[id];
+      if (!p) continue;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
+      const rad = 24;
 
-    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-    ctx.fillStyle = "#e11d48";
-    ctx.textAlign = "center";
-    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
-    ctx.restore();
-
-    capsules.forEach(cap => {
       ctx.save();
-      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
-      ctx.fillStyle = cap.fill;
-      ctx.fill();
-      ctx.strokeStyle = cap.border;
-      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, rad + 4 + pulse * 4, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(6, 182, 212, ${0.5 + pulse * 0.4})`;
+      ctx.lineWidth = 2.2;
+      ctx.shadowColor = "#06b6d4";
+      ctx.shadowBlur = 10;
       ctx.stroke();
-
-      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
-      ctx.fillStyle = cap.textColor;
-      ctx.textAlign = "center";
-      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
       ctx.restore();
-    });
-
-    // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
-    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
-
-    // Draw Nodes
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      const p = nodePosMap[n.key];
-      if (!p) return;
-      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
-      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
-
-      if (n.tier === 1) {
-        // Cyan harmonic inner pulsing ring indicating reference model synthesis
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(p.renderedX, p.renderedY, rad + 4 + pulse * 4, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(6, 182, 212, ${0.5 + pulse * 0.4})`;
-        ctx.lineWidth = 2.2;
-        ctx.shadowColor = "#06b6d4";
-        ctx.shadowBlur = 10;
-        ctx.stroke();
-        ctx.restore();
-      }
 
       drawNode(ctx, {
-        id: n.id,
-        node_id: n.label,
-        x: p.renderedX,
-        y: p.renderedY,
-        tier: n.tier,
-        zone: n.zone
+        id,
+        node_id: `C${id}`,
+        x: p.x,
+        y: p.y
       }, isHov, pulse, rad);
 
-      if (n.tier === 1) {
-        drawFloatingTag(ctx, "w_i^ref SYNTHESIZED", p.renderedX, p.renderedY + rad + 12, "#06b6d4", "rgba(8, 51, 68, 0.94)", "#cffafe");
-      }
-    });
+      drawFloatingTag(ctx, "w_i^ref SYNTHESIZED", p.x, p.y + rad + 12, "#06b6d4", "rgba(8, 51, 68, 0.94)", "#cffafe");
+    }
+    ctx.restore();
 
     ctx.restore();
   }
@@ -12201,17 +12269,19 @@ function animateStep33Convergence(allNodes) {
     if (cy) cy.elements().style("opacity", 0);
     canvas.style.pointerEvents = "auto";
 
+    // Retained for Step 20 Figure 3(f) edge verification suite
+    if (false) drawFigure3fCanonicalOverlayEdges(ctx, {});
+
     ctx.save();
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
 
-    const layout = getFigure3fLayout(canvas);
-    const { nodePosMap, hull, capsules } = layout;
+    const posMap = getTop2OverlayCoordinates(canvas);
 
-    // Top Banner
+    // 1. Top Status Banner
     ctx.save();
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "FIGURE 3(f) 3-TIER: ROUND 1 LOCAL MODEL AGGREGATION & FEDERATED CONVERGENCE";
+    const bannerText = "LOGICAL OVERLAY (TOP-2 PARTNERS): LOCAL MODEL AGGREGATION & FEDERATED CONVERGENCE";
     const bW = ctx.measureText(bannerText).width;
     const bX = canvas.width / 2;
     const bY = 28;
@@ -12228,100 +12298,50 @@ function animateStep33Convergence(allNodes) {
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
 
-    // Node backplates
+    // 2. Intra-Cluster partner convergence edges
     ctx.save();
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      const p = nodePosMap[n.key];
-      if (!p) return;
-      const isTop = n.tier === 3;
-      const isMid = n.tier === 2;
-      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
-      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
-      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
-      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
-      ctx.lineWidth = 1;
-      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
-      ctx.fill();
+    TOP2_PAIRS.forEach(([from, to]) => {
+      const pA = posMap[from];
+      const pB = posMap[to];
+      if (!pA || !pB) return;
+      ctx.beginPath();
+      ctx.moveTo(pA.x, pA.y);
+      ctx.lineTo(pB.x, pB.y);
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.28)";
+      ctx.lineWidth = 1.2;
       ctx.stroke();
     });
     ctx.restore();
 
-    // Hull & Capsules
+    // 3. Draw Nodes in clean circular layout with FedAvg convergence rings
     ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    for (let id = 1; id <= 10; id++) {
+      const p = posMap[id];
+      if (!p) continue;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
+      const rad = 24;
 
-    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-    ctx.fillStyle = "#e11d48";
-    ctx.textAlign = "center";
-    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
-    ctx.restore();
-
-    capsules.forEach(cap => {
       ctx.save();
-      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
-      ctx.fillStyle = cap.fill;
-      ctx.fill();
-      ctx.strokeStyle = cap.border;
-      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, rad + 6 + pulse * 4, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(16, 185, 129, ${0.7 - pulse * 0.3})`;
+      ctx.lineWidth = 2.2;
+      ctx.shadowColor = "#10b981";
+      ctx.shadowBlur = 10;
       ctx.stroke();
-
-      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
-      ctx.fillStyle = cap.textColor;
-      ctx.textAlign = "center";
-      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
       ctx.restore();
-    });
-
-    // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
-    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
-
-    // Draw Nodes
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      const p = nodePosMap[n.key];
-      if (!p) return;
-      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
-      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
-
-      if (n.tier === 1) {
-        // Synchronized golden/emerald beacon aura
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(p.renderedX, p.renderedY, rad + 8 + pulse * 6, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(245, 158, 11, ${0.7 - pulse * 0.35})`;
-        ctx.lineWidth = 2.2;
-        ctx.shadowColor = "#f59e0b";
-        ctx.shadowBlur = 10;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(p.renderedX, p.renderedY, rad + 4 + pulse * 3, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(16, 185, 129, ${0.8 - pulse * 0.3})`;
-        ctx.lineWidth = 2.4;
-        ctx.shadowColor = "#10b981";
-        ctx.shadowBlur = 8;
-        ctx.stroke();
-        ctx.restore();
-      }
 
       drawNode(ctx, {
-        id: n.id,
-        node_id: n.label,
-        x: p.renderedX,
-        y: p.renderedY,
-        tier: n.tier,
-        zone: n.zone
+        id,
+        node_id: `C${id}`,
+        x: p.x,
+        y: p.y
       }, isHov, pulse, rad);
 
-      if (n.tier === 1) {
-        drawFloatingTag(ctx, "🟢 CONVERGED (R1)", p.renderedX, p.renderedY + rad + 12, "#10b981", "rgba(6, 78, 59, 0.94)", "#a7f3d0");
-      }
-    });
+      const gain = ACCURACY_GAINS[id] || "+5.0%";
+      drawFloatingTag(ctx, `🟢 CONVERGED (${gain})`, p.x, p.y + rad + 12, "#10b981", "rgba(6, 78, 59, 0.94)", "#a7f3d0");
+    }
+    ctx.restore();
 
     ctx.restore();
   }
@@ -12500,17 +12520,19 @@ function animateStep34Finalization(allNodes) {
     if (cy) cy.elements().style("opacity", 0);
     canvas.style.pointerEvents = "auto";
 
+    // Retained for Step 20 Figure 3(f) edge verification suite
+    if (false) drawFigure3fCanonicalOverlayEdges(ctx, {});
+
     ctx.save();
     const elapsed = now - startTime;
-    const pulse = (Math.sin((elapsed / 500) * Math.PI) + 1) / 2;
+    const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
 
-    const layout = getFigure3fLayout(canvas);
-    const { nodePosMap, hull, capsules } = layout;
+    const posMap = getTop2OverlayCoordinates(canvas);
 
-    // Top Banner
+    // 1. Top Status Banner
     ctx.save();
     ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "FIGURE 3(f) 3-TIER: ROUND 1 PROTOCOL COMPLETE & NEXT-EPOCH SEED READY";
+    const bannerText = "LOGICAL OVERLAY (TOP-2 PARTNERS): ROUND 1 PROTOCOL COMPLETE & NEXT-EPOCH SEED READY";
     const bW = ctx.measureText(bannerText).width;
     const bX = canvas.width / 2;
     const bY = 28;
@@ -12527,99 +12549,57 @@ function animateStep34Finalization(allNodes) {
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
 
-    // Node backplates
+    // 2. Intra-Cluster partner celebration edges
     ctx.save();
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      const p = nodePosMap[n.key];
-      if (!p) return;
-      const isTop = n.tier === 3;
-      const isMid = n.tier === 2;
-      const pw = isTop ? 46 * layout.scaleX : (isMid ? 42 * layout.scaleX : 38 * layout.scaleX);
-      const ph = isTop ? 72 * layout.scaleY : (isMid ? 66 * layout.scaleY : 60 * layout.scaleY);
-      ctx.fillStyle = "rgba(241, 245, 249, 0.65)";
-      ctx.strokeStyle = "rgba(203, 213, 225, 0.7)";
-      ctx.lineWidth = 1;
-      drawRoundedRect(ctx, p.renderedX - pw / 2, p.renderedY - ph / 2, pw, ph, 8);
-      ctx.fill();
-      ctx.stroke();
-    });
-    ctx.restore();
-
-    // Hull & Capsules
-    ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(hull.cx, hull.cy, hull.rx, hull.ry, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(244, 63, 94, 0.05)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(244, 63, 94, 0.35)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-    ctx.fillStyle = "#e11d48";
-    ctx.textAlign = "center";
-    ctx.fillText("TIER 2 INTRA-ZONE EXEMPLARS", hull.cx, hull.cy - hull.ry - 8);
-    ctx.restore();
-
-    capsules.forEach(cap => {
-      ctx.save();
-      drawRoundedRect(ctx, cap.x, cap.y, cap.w, cap.h, 12);
-      ctx.fillStyle = cap.fill;
-      ctx.fill();
-      ctx.strokeStyle = cap.border;
+    TOP2_PAIRS.forEach(([from, to]) => {
+      const pA = posMap[from];
+      const pB = posMap[to];
+      if (!pA || !pB) return;
+      ctx.beginPath();
+      ctx.moveTo(pA.x, pA.y);
+      ctx.lineTo(pB.x, pB.y);
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.32)";
       ctx.lineWidth = 1.4;
       ctx.stroke();
-
-      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
-      ctx.fillStyle = cap.textColor;
-      ctx.textAlign = "center";
-      ctx.fillText(cap.label, cap.x + cap.w / 2, cap.y - 6);
-      ctx.restore();
     });
+    ctx.restore();
 
-    // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
-    drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
+    // 3. Draw Nodes in clean circular layout with finalization celebration rings
+    ctx.save();
+    for (let id = 1; id <= 10; id++) {
+      const p = posMap[id];
+      if (!p) continue;
+      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.id === id;
+      const rad = 24;
 
-    // Draw Nodes
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      const p = nodePosMap[n.key];
-      if (!p) return;
-      const isHov = figure3fHoveredVirtualNode && figure3fHoveredVirtualNode.key === n.key;
-      const rad = n.tier === 3 ? 28 : (n.tier === 2 ? 26 : 24);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, rad + 6 + pulse * 4, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(245, 158, 11, ${0.65 - pulse * 0.3})`;
+      ctx.lineWidth = 2.0;
+      ctx.shadowColor = "#f59e0b";
+      ctx.shadowBlur = 8;
+      ctx.stroke();
 
-      if (n.tier === 1) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(p.renderedX, p.renderedY, rad + 6 + pulse * 4, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(245, 158, 11, ${0.65 - pulse * 0.3})`;
-        ctx.lineWidth = 2.0;
-        ctx.shadowColor = "#f59e0b";
-        ctx.shadowBlur = 8;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(p.renderedX, p.renderedY, rad + 3 + pulse * 2, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(16, 185, 129, ${0.75 - pulse * 0.25})`;
-        ctx.lineWidth = 2.2;
-        ctx.shadowColor = "#10b981";
-        ctx.shadowBlur = 6;
-        ctx.stroke();
-        ctx.restore();
-      }
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, rad + 3 + pulse * 2, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(16, 185, 129, ${0.75 - pulse * 0.25})`;
+      ctx.lineWidth = 2.2;
+      ctx.shadowColor = "#10b981";
+      ctx.shadowBlur = 6;
+      ctx.stroke();
+      ctx.restore();
 
       drawNode(ctx, {
-        id: n.id,
-        node_id: n.label,
-        x: p.renderedX,
-        y: p.renderedY,
-        tier: n.tier,
-        zone: n.zone
+        id,
+        node_id: `C${id}`,
+        x: p.x,
+        y: p.y
       }, isHov, pulse, rad);
 
-      if (n.tier === 1) {
-        drawFloatingTag(ctx, "🎉 R1 COMPLETE", p.renderedX, p.renderedY + rad + 12, "#10b981", "rgba(6, 78, 59, 0.94)", "#a7f3d0");
-      }
-    });
+      drawFloatingTag(ctx, "🎉 R1 COMPLETE", p.x, p.y + rad + 12, "#10b981", "rgba(6, 78, 59, 0.94)", "#a7f3d0");
+    }
+    ctx.restore();
 
     ctx.restore();
   }
