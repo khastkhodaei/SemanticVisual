@@ -52,6 +52,57 @@ const STEP_CATALOG = [
   { step: 34, title: "Step 34: Round 1 Finalization & Benchmarks", phase: 7 }
 ];
 
+const PHASE_SUB_STEPS = {
+  1: [
+    { step: 1, label: "Physical Mesh" },
+    { step: 2, label: "Local Vectors" }
+  ],
+  2: [
+    { step: 3, label: "Local VRF" },
+    { step: 4, label: "Initiator Election" }
+  ],
+  3: [
+    { step: 5, label: "Zone PROBE" },
+    { step: 6, label: "Boundary Discovery" },
+    { step: 7, label: "P_min Query" },
+    { step: 8, label: "Binary Search" },
+    { step: 9, label: "Consensus" },
+    { step: 10, label: "Extract (P=3)" }
+  ],
+  4: [
+    { step: 11, label: "Signatures" },
+    { step: 12, label: "AP Clustering" },
+    { step: 13, label: "Exemplars" }
+  ],
+  5: [
+    { step: 14, label: "Super-Zone" },
+    { step: 15, label: "Catalog Query" },
+    { step: 16, label: "Catalog Response" },
+    { step: 17, label: "Super-Clusters" },
+    { step: 18, label: "Directives" },
+    { step: 19, label: "Super-Peer" },
+    { step: 20, label: "SON Dual-View" }
+  ],
+  6: [
+    { step: 21, label: "Sparsify" },
+    { step: 22, label: "Query" },
+    { step: 23, label: "SP Route" },
+    { step: 24, label: "Leaf Fwd" },
+    { step: 25, label: "CosSim" },
+    { step: 26, label: "Scores" },
+    { step: 27, label: "Rank" },
+    { step: 28, label: "Consolidate" },
+    { step: 29, label: "Match (K=2)" }
+  ],
+  7: [
+    { step: 30, label: "Model Req" },
+    { step: 31, label: "Sparse Buffer" },
+    { step: 32, label: "Ref Model" },
+    { step: 33, label: "FedAvg" },
+    { step: 34, label: "Benchmarks" }
+  ]
+};
+
 function initStepJumpSelector() {
   const jumpSelect = document.getElementById("stepJumpSelect");
   if (!jumpSelect) return;

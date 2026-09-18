@@ -790,18 +790,57 @@ body {
 }
 
 /* Sub-step Scrubber within Action Controls */
-.substep-scrubber {
+.substep-scrubber,
+.sub-steps-container,
+#subStepsContainer,
+#subStepScrubber {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  gap: 4px;
+  max-width: 100%;
   transition: all 0.2s ease-in-out;
+}
+
+.substep-scrubber::-webkit-scrollbar,
+.sub-steps-container::-webkit-scrollbar,
+#subStepsContainer::-webkit-scrollbar,
+#subStepScrubber::-webkit-scrollbar,
+.phase-substeps::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 
 .phase-substeps {
   display: flex;
   align-items: center;
-  gap: 6px;
+  flex-wrap: nowrap !important;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .phase-substeps.hidden {
   display: none !important;
+}
+
+/* Compact styling for sub-step pills */
+.sub-step-item,
+.step-item {
+  flex: 0 0 auto;
+  font-size: 11px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.sub-step-item .step-number,
+.step-item .step-bubble {
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  margin-right: 3px;
 }
 
 /* Ensure packet animation canvas passes pointer clicks through to Cytoscape */

@@ -255,6 +255,37 @@ def test_no_redundant_phase_badge_in_toolbar():
         assert 'id="subStepScrubber"' in content, f"Missing #subStepScrubber in {path}"
 
 
+def test_phase6_compact_substep_labels_and_nowrap_styling():
+    """Verify Issue #21: Phase 6 compact labels and single-row nowrap layout styling."""
+    phase6_labels = [
+        "Sparsify", "Query", "SP Route", "Leaf Fwd",
+        "CosSim", "Scores", "Rank", "Consolidate", "Match (K=2)"
+    ]
+
+    for path in [
+        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/index.html",
+        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/templates/index.html",
+    ]:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+        for label in phase6_labels:
+            assert f"<span>{label}</span>" in content, f"Missing compact label '{label}' in {path}"
+
+    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/style.css", "r", encoding="utf-8") as f:
+        css = f.read()
+    assert "flex-wrap: nowrap !important" in css
+    assert "scrollbar-width: none" in css
+    assert ".substep-scrubber" in css
+    assert ".phase-substeps" in css
+
+    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/app.js", "r", encoding="utf-8") as f:
+        js = f.read()
+    assert "PHASE_SUB_STEPS" in js
+    for label in phase6_labels:
+        assert f'"{label}"' in js
+
+
+
 
 
 
