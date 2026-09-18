@@ -7329,6 +7329,35 @@ function getFigure3fLayout(canvas) {
   };
 }
 
+// Module-scope Figure 3(f) Layout Compatibility Helpers
+function getFigure3fLayoutTransform(canvas) {
+  const c = canvas || document.getElementById("packetCanvas") || { width: 1000, height: 600 };
+  return getFigure3fLayout(c);
+}
+function getFigure3fLayoutParameters(w, h) {
+  return getFigure3fLayout({ width: w || 1000, height: h || 600 });
+}
+function computeFigure3fRenderedPositions(layout) {
+  return (layout && layout.nodePosMap) ? layout.nodePosMap : getFigure3fLayout(document.getElementById("packetCanvas") || { width: 1000, height: 600 }).nodePosMap;
+}
+function computeFigure3fHull(layout) {
+  return (layout && layout.hull) ? layout.hull : getFigure3fLayout(document.getElementById("packetCanvas") || { width: 1000, height: 600 }).hull;
+}
+function computeFigure3fCapsules(layout) {
+  return (layout && layout.capsules) ? layout.capsules : getFigure3fLayout(document.getElementById("packetCanvas") || { width: 1000, height: 600 }).capsules;
+}
+function computeFigure3fNodePosition(node, layout) {
+  const nodePosMap = computeFigure3fRenderedPositions(layout);
+  return nodePosMap[node.key] || { renderedX: 500, renderedY: 300 };
+}
+window.getFigure3fLayout = getFigure3fLayout;
+window.getFigure3fLayoutTransform = getFigure3fLayoutTransform;
+window.getFigure3fLayoutParameters = getFigure3fLayoutParameters;
+window.computeFigure3fRenderedPositions = computeFigure3fRenderedPositions;
+window.computeFigure3fHull = computeFigure3fHull;
+window.computeFigure3fCapsules = computeFigure3fCapsules;
+window.computeFigure3fNodePosition = computeFigure3fNodePosition;
+
 // Canonical Figure 3(f) 3-Tier Overlay Link Renderer (Intra-Zone Cluster + Super-Peer Overlay)
 function drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap) {
   if (!ctx || !nodePosMap) return;
@@ -10629,8 +10658,8 @@ function animateStep29MatchDelivery(packetTraces, allNodes) {
     const pulse = (Math.sin((elapsed / 500) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
 
-    const layout = getFigure3fLayoutTransform();
-    const nodePosMap = computeFigure3fRenderedPositions(layout);
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
 
     // Banner
     ctx.save();
@@ -10651,9 +10680,6 @@ function animateStep29MatchDelivery(packetTraces, allNodes) {
     ctx.textBaseline = "middle";
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
-
-    const hull = computeFigure3fHull(layout);
-    const capsules = computeFigure3fCapsules(layout);
 
     // Node backplates
     ctx.save();
@@ -10802,13 +10828,17 @@ function animateStep29MatchDelivery(packetTraces, allNodes) {
 
   function runFrame(now) {
     if (currentStep !== 29) return;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    try {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (currentLayout === "figure3f" || currentLayout === "overlay") {
-      renderFigure3fMatchDelivery(now);
-    } else {
-      renderPhysicalMatchDelivery(now);
+      if (isFigure3fLayout()) {
+        renderFigure3fMatchDelivery(now);
+      } else {
+        renderPhysicalMatchDelivery(now);
+      }
+    } catch (err) {
+      console.error("[STEP 29 CANVAS ERROR]", err);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
@@ -11047,8 +11077,8 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
     const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
 
-    const layout = getFigure3fLayoutTransform();
-    const nodePosMap = computeFigure3fRenderedPositions(layout);
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
 
     // Banner
     ctx.save();
@@ -11069,9 +11099,6 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
     ctx.textBaseline = "middle";
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
-
-    const hull = computeFigure3fHull(layout);
-    const capsules = computeFigure3fCapsules(layout);
 
     // Node backplates
     ctx.save();
@@ -11199,13 +11226,17 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
 
   function runFrame(now) {
     if (currentStep !== 30) return;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    try {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (currentLayout === "figure3f" || currentLayout === "overlay") {
-      renderFigure3fModelRequests(now);
-    } else {
-      renderPhysicalModelRequests(now);
+      if (isFigure3fLayout()) {
+        renderFigure3fModelRequests(now);
+      } else {
+        renderPhysicalModelRequests(now);
+      }
+    } catch (err) {
+      console.error("[STEP 30 CANVAS ERROR]", err);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
@@ -11462,11 +11493,8 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
     const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
 
-    const layout = getFigure3fLayoutParameters(canvas.width, canvas.height);
-    const nodePosMap = {};
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      nodePosMap[n.key] = computeFigure3fNodePosition(n, layout);
-    });
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
 
     // Top Banner
     ctx.save();
@@ -11487,9 +11515,6 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
     ctx.textBaseline = "middle";
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
-
-    const hull = computeFigure3fHull(layout);
-    const capsules = computeFigure3fCapsules(layout);
 
     // Node backplates
     ctx.save();
@@ -11629,13 +11654,17 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
 
   function runFrame(now) {
     if (currentStep !== 31) return;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    try {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (currentLayout === "figure3f" || currentLayout === "overlay") {
-      renderFigure3fWeightDelivery(now);
-    } else {
-      renderPhysicalWeightDelivery(now);
+      if (isFigure3fLayout()) {
+        renderFigure3fWeightDelivery(now);
+      } else {
+        renderPhysicalWeightDelivery(now);
+      }
+    } catch (err) {
+      console.error("[STEP 31 CANVAS ERROR]", err);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
@@ -11782,11 +11811,8 @@ function animateStep32ReferenceSynthesis(allNodes) {
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
 
-    const layout = getFigure3fLayoutParameters(canvas.width, canvas.height);
-    const nodePosMap = {};
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      nodePosMap[n.key] = computeFigure3fNodePosition(n, layout);
-    });
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
 
     // Top Banner
     ctx.save();
@@ -11807,9 +11833,6 @@ function animateStep32ReferenceSynthesis(allNodes) {
     ctx.textBaseline = "middle";
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
-
-    const hull = computeFigure3fHull(layout);
-    const capsules = computeFigure3fCapsules(layout);
 
     // Node backplates
     ctx.save();
@@ -11903,13 +11926,17 @@ function animateStep32ReferenceSynthesis(allNodes) {
 
   function runFrame(now) {
     if (currentStep !== 32) return;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    try {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (currentLayout === "figure3f" || currentLayout === "overlay") {
-      renderFigure3fSynthesis(now);
-    } else {
-      renderPhysicalSynthesis(now);
+      if (isFigure3fLayout()) {
+        renderFigure3fSynthesis(now);
+      } else {
+        renderPhysicalSynthesis(now);
+      }
+    } catch (err) {
+      console.error("[STEP 32 CANVAS ERROR]", err);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
@@ -12096,11 +12123,8 @@ function animateStep33Convergence(allNodes) {
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
 
-    const layout = getFigure3fLayoutParameters(canvas.width, canvas.height);
-    const nodePosMap = {};
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      nodePosMap[n.key] = computeFigure3fNodePosition(n, layout);
-    });
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
 
     // Top Banner
     ctx.save();
@@ -12121,9 +12145,6 @@ function animateStep33Convergence(allNodes) {
     ctx.textBaseline = "middle";
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
-
-    const hull = computeFigure3fHull(layout);
-    const capsules = computeFigure3fCapsules(layout);
 
     // Node backplates
     ctx.save();
@@ -12225,13 +12246,17 @@ function animateStep33Convergence(allNodes) {
 
   function runFrame(now) {
     if (currentStep !== 33) return;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    try {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (currentLayout === "figure3f" || currentLayout === "overlay") {
-      renderFigure3fConvergence(now);
-    } else {
-      renderPhysicalConvergence(now);
+      if (isFigure3fLayout()) {
+        renderFigure3fConvergence(now);
+      } else {
+        renderPhysicalConvergence(now);
+      }
+    } catch (err) {
+      console.error("[STEP 33 CANVAS ERROR]", err);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
@@ -12397,11 +12422,8 @@ function animateStep34Finalization(allNodes) {
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 500) * Math.PI) + 1) / 2;
 
-    const layout = getFigure3fLayoutParameters(canvas.width, canvas.height);
-    const nodePosMap = {};
-    FIGURE3F_3TIER_NODES.forEach(n => {
-      nodePosMap[n.key] = computeFigure3fNodePosition(n, layout);
-    });
+    const layout = getFigure3fLayout(canvas);
+    const { nodePosMap, hull, capsules } = layout;
 
     // Top Banner
     ctx.save();
@@ -12422,9 +12444,6 @@ function animateStep34Finalization(allNodes) {
     ctx.textBaseline = "middle";
     ctx.fillText(bannerText, bX, bY);
     ctx.restore();
-
-    const hull = computeFigure3fHull(layout);
-    const capsules = computeFigure3fCapsules(layout);
 
     // Node backplates
     ctx.save();
@@ -12525,13 +12544,17 @@ function animateStep34Finalization(allNodes) {
 
   function runFrame(now) {
     if (currentStep !== 34) return;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    try {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (currentLayout === "figure3f" || currentLayout === "overlay") {
-      renderFigure3fFinalization(now);
-    } else {
-      renderPhysicalFinalization(now);
+      if (isFigure3fLayout()) {
+        renderFigure3fFinalization(now);
+      } else {
+        renderPhysicalFinalization(now);
+      }
+    } catch (err) {
+      console.error("[STEP 34 CANVAS ERROR]", err);
     }
 
     activeAnimationId = requestAnimationFrame(runFrame);
