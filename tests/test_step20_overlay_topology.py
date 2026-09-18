@@ -200,28 +200,42 @@ def test_app_js_contains_figure3f_specifications():
     assert "#b91c1c" in content
 
 
-def test_figure3f_canonical_hierarchical_overlay_edges_rendered_in_steps_26_27():
-    """Verify that drawFigure3fCanonicalOverlayEdges is called in Step 26 and Step 27 Figure 3(f) renderers."""
+def test_figure3f_canonical_hierarchical_overlay_edges_rendered_in_steps_20_to_34():
+    """Verify that drawFigure3fCanonicalOverlayEdges is defined and called across all Step 20-34 Figure 3(f) renderers."""
     app_path = Path(__file__).resolve().parent.parent / "frontend" / "static" / "app.js"
     assert app_path.exists()
     content = app_path.read_text(encoding="utf-8")
 
-    # Verify function definition
+    # Verify function definitions and aliases
     assert "function drawFigure3fCanonicalOverlayEdges(" in content
+    assert "function renderHierarchicalEdges(" in content
+    assert "function isFigure3fLayout(" in content
+    assert "window.CANONICAL_HIERARCHICAL_EDGES = CANONICAL_HIERARCHICAL_EDGES" in content
 
-    # Verify inclusion in Step 26 and Step 27 functions
-    assert "function renderFigure3fScoreReporting(" in content
-    assert "function renderFigure3fExemplarRanking(" in content
+    # Check that each Figure 3(f) step renderer invokes drawFigure3fCanonicalOverlayEdges
+    step_renderers = [
+        ("renderFigure3fView", "renderPhysicalView"),
+        ("renderFigure3fDiscoveryView", "renderPhysicalDiscoveryView"),
+        ("renderFigure3fExemplarRouting", "renderPhysicalExemplarRouting"),
+        ("renderFigure3fLeafDispatch", "renderPhysicalLeafDispatch"),
+        ("renderFigure3fSimilarityEval", "renderPhysicalSimilarityEval"),
+        ("renderFigure3fScoreReporting", "renderPhysicalScoreReporting"),
+        ("renderFigure3fExemplarRanking", "renderPhysicalExemplarRanking"),
+        ("renderFigure3fConsolidation", "renderPhysicalConsolidation"),
+        ("renderFigure3fMatchDelivery", "renderPhysicalMatchDelivery"),
+        ("renderFigure3fModelRequests", "renderPhysicalModelRequests"),
+        ("renderFigure3fWeightDelivery", "renderPhysicalWeightDelivery"),
+        ("renderFigure3fSynthesis", "renderPhysicalSynthesis"),
+        ("renderFigure3fConvergence", "renderPhysicalConvergence"),
+        ("renderFigure3fFinalization", "renderPhysicalFinalization"),
+    ]
 
-    # Check that Step 26 & 27 invoke drawFigure3fCanonicalOverlayEdges
-    step26_idx = content.find("function renderFigure3fScoreReporting(")
-    step26_end = content.find("function renderPhysicalScoreReporting(", step26_idx)
-    step26_body = content[step26_idx:step26_end] if step26_end != -1 else content[step26_idx:step26_idx + 6000]
-    assert "drawFigure3fCanonicalOverlayEdges(" in step26_body, "Step 26 missing drawFigure3fCanonicalOverlayEdges"
+    for fn_name, next_fn in step_renderers:
+        fn_idx = content.find(f"function {fn_name}(")
+        assert fn_idx != -1, f"Missing function {fn_name}"
+        next_idx = content.find(f"function {next_fn}(", fn_idx)
+        body = content[fn_idx:next_idx] if next_idx != -1 else content[fn_idx : fn_idx + 6000]
+        assert "drawFigure3fCanonicalOverlayEdges(" in body, f"{fn_name} missing drawFigure3fCanonicalOverlayEdges"
 
-    step27_idx = content.find("function renderFigure3fExemplarRanking(")
-    step27_end = content.find("function renderPhysicalExemplarRanking(", step27_idx)
-    step27_body = content[step27_idx:step27_end] if step27_end != -1 else content[step27_idx:step27_idx + 6000]
-    assert "drawFigure3fCanonicalOverlayEdges(" in step27_body, "Step 27 missing drawFigure3fCanonicalOverlayEdges"
 
 

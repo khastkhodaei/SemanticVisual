@@ -5899,20 +5899,25 @@ const animateStep19SemanticOverlay = animateStep19IntraZoneDirectives;
 // Dual-Layout Switcher: Physical Topology <---> Semantic Overlay Layout
 // ============================================================================
 
+function isFigure3fLayout() {
+  return currentLayout === "figure3f" || currentLayout === "overlay" || currentLayout === "hierarchical";
+}
+window.isFigure3fLayout = isFigure3fLayout;
+
 function toggleLayout() {
   if (currentStep < 20) return;
-  const isFigure3f = currentLayout === "figure3f" || currentLayout === "overlay";
+  const isFigure3f = isFigure3fLayout();
   const nextLayout = isFigure3f ? "physical" : "figure3f";
   currentLayout = nextLayout;
   updateLayoutButtonUI();
 
   const canvas = document.getElementById("packetCanvas");
   if (canvas) {
-    canvas.style.pointerEvents = (currentLayout === "figure3f" || currentLayout === "overlay") ? "auto" : "none";
+    canvas.style.pointerEvents = isFigure3fLayout() ? "auto" : "none";
   }
 
   if (cy) {
-    if (currentLayout === "figure3f" || currentLayout === "overlay") {
+    if (isFigure3fLayout()) {
       cy.elements().style("opacity", 0);
     } else {
       cy.elements().style("opacity", 1);
@@ -5922,19 +5927,19 @@ function toggleLayout() {
   const canvasLabel = document.getElementById("canvasViewLabel");
   if (canvasLabel) {
     if (currentStep === 22) {
-      canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      canvasLabel.textContent = isFigure3fLayout()
         ? "Semantic Peer Discovery — Hierarchical Overlay (Upward Search Waves)"
         : "Semantic Peer Discovery — Physical Topology (Multi-Hop Routes to Super-Peers)";
     } else if (currentStep === 23) {
-      canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      canvasLabel.textContent = isFigure3fLayout()
         ? "Super-Peer Downward Forwarding — Hierarchical Overlay (Tier 3 → Tier 2)"
         : "Super-Peer Downward Forwarding — Physical Topology (Multi-Hop Routes to Exemplars)";
     } else if (currentStep === 24) {
-      canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      canvasLabel.textContent = isFigure3fLayout()
         ? "Exemplar-to-Leaf Dispatch — Hierarchical Overlay (Tier 2 → Tier 1)"
         : "Exemplar-to-Leaf Dispatch — Physical Topology (Paths [1,2], [5,4], [7,4,6])";
     } else {
-      canvasLabel.textContent = (currentLayout === "figure3f" || currentLayout === "overlay")
+      canvasLabel.textContent = isFigure3fLayout()
         ? "Semantic Overlay Network (SON) — Hierarchical Overlay (Figure 3(f))"
         : "Semantic Overlay Network (SON) — Physical Topology";
     }
@@ -5942,7 +5947,7 @@ function toggleLayout() {
 
   logToTerminal(
     "ZONE",
-    (currentLayout === "figure3f" || currentLayout === "overlay")
+    isFigure3fLayout()
       ? "[DUAL-LAYOUT] Switching to Figure 3(f) 3-Tier Hierarchical Overlay: Super-Peers, Exemplars Oval, and Physical Zone Capsules."
       : "[DUAL-LAYOUT] Restoring original Physical Topology Layout: 10-node ad-hoc mesh view."
   );
@@ -5953,7 +5958,7 @@ function toggleLayout() {
 function updateLayoutButtonUI() {
   const btn = document.getElementById("btn-toggle-layout");
   if (!btn) return;
-  const isFigure3f = currentLayout === "figure3f" || currentLayout === "overlay";
+  const isFigure3f = isFigure3fLayout();
   if (isFigure3f) {
     btn.innerHTML = `<span>✨</span><span>Layout: Hierarchical Overlay (Figure 3(f))</span>`;
     btn.classList.add("layout-overlay-active");
@@ -5972,7 +5977,7 @@ function animateLayoutTransition(toLayout, onComplete) {
     layoutAnimationId = null;
   }
 
-  if (toLayout === "figure3f" || toLayout === "overlay") {
+  if (toLayout === "figure3f" || toLayout === "overlay" || toLayout === "hierarchical") {
     cy.elements().style("opacity", 0);
   } else {
     cy.elements().style("opacity", 1);
@@ -7366,6 +7371,11 @@ function drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap) {
 }
 window.drawFigure3fCanonicalOverlayEdges = drawFigure3fCanonicalOverlayEdges;
 window.CANONICAL_HIERARCHICAL_EDGES = CANONICAL_HIERARCHICAL_EDGES;
+
+function renderHierarchicalEdges(ctx, edges, nodePosMap) {
+  drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
+}
+window.renderHierarchicalEdges = renderHierarchicalEdges;
 
 function showNodeDetailsModal(nodeId) {
   const nid = typeof nodeId === "object" ? (nodeId.id ?? nodeId) : nodeId;
@@ -13095,7 +13105,7 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   }
 
   if (cy) {
-    if (options.isStep20 && (currentLayout === "figure3f" || currentLayout === "overlay")) {
+    if ((options.isStep20 || currentStep >= 20) && isFigure3fLayout()) {
       cy.elements().style("opacity", 0);
     } else {
       cy.elements().style("opacity", 1);
