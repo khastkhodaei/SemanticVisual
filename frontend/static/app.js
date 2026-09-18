@@ -418,6 +418,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadStep(1);
 });
 
+// Canvas and Network Topology Initialization Guard
+function initCanvas() {
+  initCytoscape();
+  setupPacketCanvas();
+}
+window.initCanvas = initCanvas;
+
 // 1. Initialize Cytoscape.js with strict preset coordinates
 function initCytoscape() {
   if (typeof cytoscape === "undefined") {
@@ -1346,7 +1353,7 @@ async function loadStep(stepNumber) {
 
     if (stepNumber === 1) {
       try {
-        renderStep1(data);
+        renderNetworkTopology(data);
       } catch (renderErr) {
         console.error("Step 1 Render Crash:", renderErr);
         logToTerminal("ERROR", `Step 1 Render Error: ${renderErr.message}`);
@@ -1911,8 +1918,28 @@ function updateUIHeaders(data) {
 }
 
 
+// Guard Canvas Initialization & Render Step 1 Topology (Strictly 10 Nodes)
+function renderNetworkTopology(stepData) {
+  const nodeCount = stepData && stepData.nodes
+    ? (Array.isArray(stepData.nodes) ? stepData.nodes.length : Object.keys(stepData.nodes).length)
+    : 0;
+  if (!stepData || !stepData.nodes || nodeCount !== 10) {
+    console.error("Invalid topology payload: Expected exactly 10 nodes.", stepData);
+    return;
+  }
+  renderStep1(stepData);
+}
+window.renderNetworkTopology = renderNetworkTopology;
+
 // 5. STEP 1: Base Physical Topology & Non-IID Data Distribution
 function renderStep1(data) {
+  const nodeCount = data && data.nodes
+    ? (Array.isArray(data.nodes) ? data.nodes.length : Object.keys(data.nodes).length)
+    : 0;
+  if (!data || !data.nodes || nodeCount !== 10) {
+    console.error("Invalid topology payload: Expected exactly 10 nodes.", data);
+    return;
+  }
   renderSidebarFormula(
     "Step 1: Network Creation & Non-IID Data Distribution",
     "G = (V, E), \\quad |V| = 10, \\quad |E| = 18, \\quad \\sum_{c=1}^{10} \\text{Data}_{i, c} = 100\\%",

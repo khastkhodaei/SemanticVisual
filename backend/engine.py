@@ -11,6 +11,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from sklearn.cluster import AffinityPropagation
 
+from backend.config import TOTAL_NODES, CANONICAL_EDGES, NODE_DATA_DISTRIBUTIONS
 from backend.storyboard_10nodes import (
     CIFAR10_CLASSES as STORYBOARD_10_CIFAR10_CLASSES,
     STORYBOARD_10_ADJACENCY,
@@ -248,6 +249,8 @@ def load_step1_data() -> Dict[str, Any]:
 
         # dominant class
         best_k = max(dist, key=lambda k: dist[k])
+        c_num = int(best_k.replace("C", ""))
+        cls_meta = STORYBOARD_10_CIFAR10_CLASSES.get(c_num, {"name": f"Class {c_num}", "icon": ""})
 
         nodes.append({
             "id": nid,
@@ -263,6 +266,12 @@ def load_step1_data() -> Dict[str, Any]:
             "neighbors_str": [f"C{nb}" for nb in nbrs],
             "degree": len(nbrs),
             "dominant_class": best_k,
+            "dominant_class_id": cls_meta.get("class_id", c_num - 1),
+            "dominant_class_name": cls_meta.get("name", f"Class {c_num}"),
+            "dominant_class_icon": cls_meta.get("icon", ""),
+            "class_id": cls_meta.get("class_id", c_num - 1),
+            "class_title": cls_meta.get("name", f"Class {c_num}"),
+            "class_icon": cls_meta.get("icon", ""),
             "assigned_classes": assigned_classes,
             "class_distribution": class_dist_0idx,
             "distribution": dist,
@@ -365,10 +374,10 @@ class SemanticDFLEngine:
     def generate_storyboard_step1(
         self,
         benchmark: str = "Non-IID 10-Class Storyboard",
-        num_nodes: int = 10,
+        num_nodes: int = TOTAL_NODES,
     ) -> Dict[str, Any]:
         """Generate the deterministic 10-node CIFAR-10 physical ad-hoc network for Step 1 from scenario_data.json."""
-        if num_nodes == 10:
+        if num_nodes == TOTAL_NODES:
             return load_step1_data()
         # Uniform spatial rejection sampling across [70, 840] x [60, 520] with min distance >= 65px
         rng = np.random.default_rng(10)
@@ -498,7 +507,7 @@ class SemanticDFLEngine:
 
     def generate_topology(
         self,
-        N: int,
+        N: int = TOTAL_NODES,
         D_limit: float = 0.35,
         maintain_connectivity: bool = True,
         benchmark: str = DEFAULT_BENCHMARK,
@@ -519,7 +528,7 @@ class SemanticDFLEngine:
         if D_limit <= 0.0:
             raise ValueError("D_limit must be strictly positive.")
 
-        if N == 10 and benchmark == "Non-IID 10-Class Storyboard":
+        if (N == 10 or N == TOTAL_NODES) and benchmark == "Non-IID 10-Class Storyboard":
             return {
                 "nodes": get_10node_nodes(),
                 "edges": get_10node_edges(),
