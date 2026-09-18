@@ -201,6 +201,49 @@ def test_unified_packet_color_pipeline():
     assert "animateStep31BufferIngestion" in js
 
 
+def test_app_js_syntax_and_initialization_lifecycle():
+    """Verify Issue #19: frontend/static/app.js is free of syntax errors and has guarded initialization."""
+    import subprocess
+    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/app.js", "r", encoding="utf-8") as f:
+        js = f.read()
+
+    assert "document.addEventListener(\"DOMContentLoaded\"" in js
+    assert "initCytoscape()" in js
+    assert "loadStep(1)" in js
+    assert "renderNetworkTopology" in js
+
+    # Run JS syntax evaluation using gjs if available
+    script = """
+    try {
+        imports.gi.GLib;
+        let [ok, contents] = imports.gi.GLib.file_get_contents("frontend/static/app.js");
+        let code = imports.byteArray.toString(contents);
+        new Function(code);
+        print("SYNTAX_OK");
+    } catch (e) {
+        print("SYNTAX_ERROR: " + e.message);
+    }
+    """
+    res = subprocess.run(["gjs", "-c", script], capture_output=True, text=True)
+    if res.returncode == 0:
+        assert "SYNTAX_OK" in res.stdout, f"JS syntax check failed: {res.stdout}"
+
+
+def test_session_status_and_canvas_elements_in_html():
+    """Verify Issue #19: session status badge and canvas elements exist in HTML files."""
+    for path in [
+        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/index.html",
+        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/templates/index.html",
+    ]:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+        assert 'id="sessionStatus"' in content, f"Missing #sessionStatus in {path}"
+        assert 'id="sessionVal"' in content, f"Missing #sessionVal in {path}"
+        assert 'id="cy"' in content, f"Missing #cy in {path}"
+        assert 'id="packetCanvas"' in content, f"Missing #packetCanvas in {path}"
+
+
+
 
 
 

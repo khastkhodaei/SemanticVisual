@@ -410,12 +410,47 @@ function getZoneColor(zone) {
 
 
 document.addEventListener("DOMContentLoaded", async () => {
-  initCytoscape();
-  initStepJumpSelector();
-  bindActionButtons();
-  setupPacketCanvas();
-  await loadGlobalConfig();
-  await loadStep(1);
+  console.log("[INIT] Initializing Storyboard simulator...");
+  try {
+    initCytoscape();
+  } catch (err) {
+    console.error("Error in initCytoscape:", err);
+  }
+
+  try {
+    initStepJumpSelector();
+  } catch (err) {
+    console.error("Error in initStepJumpSelector:", err);
+  }
+
+  try {
+    bindActionButtons();
+  } catch (err) {
+    console.error("Error in bindActionButtons:", err);
+  }
+
+  try {
+    setupPacketCanvas();
+  } catch (err) {
+    console.error("Error in setupPacketCanvas:", err);
+  }
+
+  try {
+    await loadGlobalConfig();
+  } catch (err) {
+    console.error("Error in loadGlobalConfig:", err);
+  }
+
+  try {
+    await loadStep(1);
+    const sessionStatus = document.getElementById("sessionStatus");
+    if (sessionStatus) sessionStatus.textContent = "SESSION:";
+    const sessionVal = document.getElementById("sessionVal");
+    if (sessionVal) sessionVal.textContent = "Active (10-Node CIFAR-10)";
+  } catch (err) {
+    console.error("CRITICAL RUNTIME ERROR IN STEP 1:", err);
+    logToTerminal("ERROR", `Critical Initialization Error: ${err.message}`);
+  }
 });
 
 // Canvas and Network Topology Initialization Guard
@@ -13291,9 +13326,10 @@ function renderNodeModal(node, stepData = currentStepData) {
     vec = STORYBOARD_10_VECTORS[idNum] || [];
   }
 
-  if (vectorArrayEl) {
-    vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
-  }
+  if (vec && vec.length > 0) {
+    if (vectorArrayEl) {
+      vectorArrayEl.textContent = `[${vec.map(v => Number(v).toFixed(2)).join(", ")}]`;
+    }
 
     // Mini bar profile for Step 5, 6, 7, 8, 9, 10, 11, 12 & 13
     const vectorBarsContainer = document.getElementById("cardVectorBarsContainer");
