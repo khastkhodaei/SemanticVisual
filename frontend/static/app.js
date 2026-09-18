@@ -1446,6 +1446,10 @@ async function loadStep(stepNumber) {
       if (stepNumber >= 20) {
         btnToggleLayout.classList.remove("hidden");
         btnToggleLayout.style.display = "inline-flex";
+        // Steps 30-34 represent underlay P2P model aggregation: default to physical mesh view
+        if (stepNumber >= 30 && currentLayout !== "physical") {
+          currentLayout = "physical";
+        }
         updateLayoutButtonUI();
       } else {
         btnToggleLayout.classList.add("hidden");
@@ -11192,10 +11196,11 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
       const pB = nodePosMap[pkt.toKey];
       if (!pA || !pB) return;
 
-      // Draw faint curved/guided beam between partner clients
+      // Calculate directional quadratic curved path to prevent overlapping straight chords
+      const dx = pB.renderedX - pA.renderedX;
+      const arcHeight = Math.min(60, Math.abs(dx) * 0.20);
       const midX = (pA.renderedX + pB.renderedX) / 2;
-      const arcLift = -Math.min(60, Math.abs(pB.renderedX - pA.renderedX) * 0.15);
-      const midY = (pA.renderedY + pB.renderedY) / 2 + arcLift;
+      const midY = pA.renderedY + (dx > 0 ? arcHeight : -arcHeight);
 
       ctx.beginPath();
       ctx.moveTo(pA.renderedX, pA.renderedY);
@@ -11228,7 +11233,9 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
         ctx.lineWidth = 1.8;
         ctx.stroke();
 
-        drawFloatingTag(ctx, "REQ_WEIGHTS", qx, qy - 12, "#f59e0b", "rgba(15, 23, 42, 0.94)", "#fde68a");
+        // Stagger floating tags vertically to prevent chaotic label overlap
+        const tagOffsetY = (idx % 2 === 0 ? -16 : (dx > 0 ? 16 : -26));
+        drawFloatingTag(ctx, "REQ_WEIGHTS", qx, qy + tagOffsetY, "#f59e0b", "rgba(15, 23, 42, 0.94)", "#fde68a");
       }
     });
     ctx.restore();
@@ -11608,9 +11615,11 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
       const pB = nodePosMap[pkt.toKey];
       if (!pA || !pB) return;
 
+      // Calculate directional quadratic curved path to prevent overlapping straight chords
+      const dx = pB.renderedX - pA.renderedX;
+      const arcHeight = Math.min(60, Math.abs(dx) * 0.20);
       const midX = (pA.renderedX + pB.renderedX) / 2;
-      const arcLift = -Math.min(60, Math.abs(pB.renderedX - pA.renderedX) * 0.15);
-      const midY = (pA.renderedY + pB.renderedY) / 2 + arcLift;
+      const midY = pA.renderedY + (dx > 0 ? arcHeight : -arcHeight);
 
       ctx.beginPath();
       ctx.moveTo(pA.renderedX, pA.renderedY);
@@ -11656,7 +11665,9 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
         ctx.lineWidth = 1.8;
         ctx.stroke();
 
-        drawFloatingTag(ctx, "WEIGHTS_RESP (15B)", qx, qy - 12, "#10b981", "rgba(15, 23, 42, 0.94)", "#a7f3d0");
+        // Stagger floating tags vertically to prevent chaotic label overlap
+        const tagOffsetY = (idx % 2 === 0 ? -16 : (dx > 0 ? 16 : -26));
+        drawFloatingTag(ctx, "WEIGHTS_RESP (15B)", qx, qy + tagOffsetY, "#10b981", "rgba(15, 23, 42, 0.94)", "#a7f3d0");
       }
     });
     ctx.restore();
