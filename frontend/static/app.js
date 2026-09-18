@@ -1440,21 +1440,18 @@ async function loadStep(stepNumber) {
     window.currentStep = currentStep;
     window.currentStepData = currentStepData;
 
-    // Manage Dual-Layout Toggle Button visibility: only available from Step 20 onward
-    const btnToggleLayout = document.getElementById("btn-toggle-layout");
+    // Manage Dual-Layout Toggle Button visibility: only available from Step 20 to Step 29
+    const btnToggleLayout = document.getElementById("btn-toggle-layout") || document.getElementById("layoutToggleBtn");
     if (btnToggleLayout) {
-      if (stepNumber >= 20) {
+      if (stepNumber >= 20 && stepNumber < 30) {
         btnToggleLayout.classList.remove("hidden");
         btnToggleLayout.style.display = "inline-flex";
-        // Steps 30-34 represent underlay P2P model aggregation: default to physical mesh view
-        if (stepNumber >= 30 && currentLayout !== "physical") {
-          currentLayout = "physical";
-        }
         updateLayoutButtonUI();
       } else {
         btnToggleLayout.classList.add("hidden");
         btnToggleLayout.style.display = "none";
         currentLayout = "physical";
+        if (cy) cy.elements().style("opacity", 1);
       }
     }
 
@@ -5909,7 +5906,7 @@ function isFigure3fLayout() {
 window.isFigure3fLayout = isFigure3fLayout;
 
 function toggleLayout() {
-  if (currentStep < 20) return;
+  if (currentStep < 20 || currentStep >= 30) return;
   const isFigure3f = isFigure3fLayout();
   const nextLayout = isFigure3f ? "physical" : "figure3f";
   currentLayout = nextLayout;
@@ -6773,11 +6770,10 @@ function renderStep30(data) {
     isStep18: true,
   });
 
-  const btnToggle = document.getElementById("btn-toggle-layout");
+  const btnToggle = document.getElementById("btn-toggle-layout") || document.getElementById("layoutToggleBtn");
   if (btnToggle) {
-    btnToggle.classList.remove("hidden");
-    btnToggle.style.display = "inline-flex";
-    updateLayoutButtonUI();
+    btnToggle.classList.add("hidden");
+    btnToggle.style.display = "none";
   }
 
   logToTerminal("INFO", "[STEP 30] Clients dispatching pull-based REQ_MODEL_WEIGHTS packets across physical mesh paths.");
@@ -6838,11 +6834,10 @@ function renderStep31(data) {
     isStep18: true,
   });
 
-  const btnToggle = document.getElementById("btn-toggle-layout");
+  const btnToggle = document.getElementById("btn-toggle-layout") || document.getElementById("layoutToggleBtn");
   if (btnToggle) {
-    btnToggle.classList.remove("hidden");
-    btnToggle.style.display = "inline-flex";
-    updateLayoutButtonUI();
+    btnToggle.classList.add("hidden");
+    btnToggle.style.display = "none";
   }
 
   logToTerminal("INFO", "[STEP 31] Sparse parameter delivery (REP_MODEL_WEIGHTS, 15 Bytes each) across physical reverse paths.");
@@ -6903,11 +6898,10 @@ function renderStep32(data) {
     isStep18: true,
   });
 
-  const btnToggle = document.getElementById("btn-toggle-layout");
+  const btnToggle = document.getElementById("btn-toggle-layout") || document.getElementById("layoutToggleBtn");
   if (btnToggle) {
-    btnToggle.classList.remove("hidden");
-    btnToggle.style.display = "inline-flex";
-    updateLayoutButtonUI();
+    btnToggle.classList.add("hidden");
+    btnToggle.style.display = "none";
   }
 
   logToTerminal("INFO", "[STEP 32] Local reference model construction (w_i^ref) initiated across all 10 clients.");
@@ -6967,11 +6961,10 @@ function renderStep33(data) {
     isStep18: true,
   });
 
-  const btnToggle = document.getElementById("btn-toggle-layout");
+  const btnToggle = document.getElementById("btn-toggle-layout") || document.getElementById("layoutToggleBtn");
   if (btnToggle) {
-    btnToggle.classList.remove("hidden");
-    btnToggle.style.display = "inline-flex";
-    updateLayoutButtonUI();
+    btnToggle.classList.add("hidden");
+    btnToggle.style.display = "none";
   }
 
   logToTerminal("INFO", "[STEP 33] Local Model Aggregation (FedAvg) & Convergence Commitment initiated across all 10 clients.");
@@ -7038,11 +7031,10 @@ function renderStep34(data) {
     isStep18: true,
   });
 
-  const btnToggle = document.getElementById("btn-toggle-layout");
+  const btnToggle = document.getElementById("btn-toggle-layout") || document.getElementById("layoutToggleBtn");
   if (btnToggle) {
-    btnToggle.classList.remove("hidden");
-    btnToggle.style.display = "inline-flex";
-    updateLayoutButtonUI();
+    btnToggle.classList.add("hidden");
+    btnToggle.style.display = "none";
   }
 
   logToTerminal("SUCCESS", "[STEP 34] Round 1 Finalization, System Benchmarks & Next-Epoch Transition initiated.");
@@ -11189,55 +11181,25 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
     // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
     drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
 
-    // Collaborative dialogue request pairs between Tier 1 base clients
+    // In Figure 3(f) hierarchical control-plane tree, underlay leaf-to-leaf P2P data packets are suppressed.
+    // Display informative banner explaining data plane routing
     ctx.save();
-    traces.forEach((pkt, idx) => {
-      const pA = nodePosMap[pkt.fromKey];
-      const pB = nodePosMap[pkt.toKey];
-      if (!pA || !pB) return;
+    const p2pBanner = "P2P Data Plane active: Switch to Physical Mesh to view multi-hop routing paths";
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    const pbW = ctx.measureText(p2pBanner).width;
+    const pbX = canvas.width / 2;
+    const pbY = canvas.height - 24;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, pbX - pbW / 2 - 14, pbY - 10, pbW + 28, 20, 6);
+    ctx.fill();
+    ctx.stroke();
 
-      // Calculate directional quadratic curved path to prevent overlapping straight chords
-      const dx = pB.renderedX - pA.renderedX;
-      const arcHeight = Math.min(60, Math.abs(dx) * 0.20);
-      const midX = (pA.renderedX + pB.renderedX) / 2;
-      const midY = pA.renderedY + (dx > 0 ? arcHeight : -arcHeight);
-
-      ctx.beginPath();
-      ctx.moveTo(pA.renderedX, pA.renderedY);
-      ctx.quadraticCurveTo(midX, midY, pB.renderedX, pB.renderedY);
-      ctx.strokeStyle = "rgba(245, 158, 11, 0.30)";
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([3, 3]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      const phaseOffset = (idx * 0.05) % 1.0;
-      const tPkt = (tCycle + phaseOffset) % 1.0;
-
-      if (tPkt < 0.78) {
-        const t = tPkt / 0.78;
-        // Quadratic bezier interpolation
-        const qx = (1 - t) * (1 - t) * pA.renderedX + 2 * (1 - t) * t * midX + t * t * pB.renderedX;
-        const qy = (1 - t) * (1 - t) * pA.renderedY + 2 * (1 - t) * t * midY + t * t * pB.renderedY;
-
-        ctx.beginPath();
-        ctx.arc(qx, qy, 5.0, 0, Math.PI * 2);
-        ctx.fillStyle = "#ffffff";
-        ctx.shadowColor = "#fbbf24";
-        ctx.shadowBlur = 14;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(qx, qy, 8.0, 0, Math.PI * 2);
-        ctx.strokeStyle = "#d97706";
-        ctx.lineWidth = 1.8;
-        ctx.stroke();
-
-        // Stagger floating tags vertically to prevent chaotic label overlap
-        const tagOffsetY = (idx % 2 === 0 ? -16 : (dx > 0 ? 16 : -26));
-        drawFloatingTag(ctx, "REQ_WEIGHTS", qx, qy + tagOffsetY, "#f59e0b", "rgba(15, 23, 42, 0.94)", "#fde68a");
-      }
-    });
+    ctx.fillStyle = "#fde68a";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(p2pBanner, pbX, pbY);
     ctx.restore();
 
     // Draw Nodes
@@ -11610,66 +11572,25 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
 
     // Collaborative dialogue streaming arcs between Tier 1 base clients
     ctx.save();
-    traces.forEach((pkt, idx) => {
-      const pA = nodePosMap[pkt.fromKey];
-      const pB = nodePosMap[pkt.toKey];
-      if (!pA || !pB) return;
+    // In Figure 3(f) hierarchical control-plane tree, underlay leaf-to-leaf P2P data packets are suppressed.
+    // Display informative banner explaining data plane routing
+    ctx.save();
+    const p2pBanner = "P2P Data Plane active: Switch to Physical Mesh to view multi-hop routing paths";
+    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
+    const pbW = ctx.measureText(p2pBanner).width;
+    const pbX = canvas.width / 2;
+    const pbY = canvas.height - 24;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    ctx.strokeStyle = "#10b981";
+    ctx.lineWidth = 1.2;
+    drawRoundedRect(ctx, pbX - pbW / 2 - 14, pbY - 10, pbW + 28, 20, 6);
+    ctx.fill();
+    ctx.stroke();
 
-      // Calculate directional quadratic curved path to prevent overlapping straight chords
-      const dx = pB.renderedX - pA.renderedX;
-      const arcHeight = Math.min(60, Math.abs(dx) * 0.20);
-      const midX = (pA.renderedX + pB.renderedX) / 2;
-      const midY = pA.renderedY + (dx > 0 ? arcHeight : -arcHeight);
-
-      ctx.beginPath();
-      ctx.moveTo(pA.renderedX, pA.renderedY);
-      ctx.quadraticCurveTo(midX, midY, pB.renderedX, pB.renderedY);
-      ctx.strokeStyle = "rgba(16, 185, 129, 0.35)";
-      ctx.lineWidth = 1.8;
-      ctx.setLineDash([3, 3]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      const phaseOffset = (idx * 0.05) % 1.0;
-      const tPkt = (tCycle + phaseOffset) % 1.0;
-
-      if (tPkt < 0.80) {
-        const t = tPkt / 0.80;
-        // Quadratic bezier interpolation
-        const qx = (1 - t) * (1 - t) * pA.renderedX + 2 * (1 - t) * t * midX + t * t * pB.renderedX;
-        const qy = (1 - t) * (1 - t) * pA.renderedY + 2 * (1 - t) * t * midY + t * t * pB.renderedY;
-
-        // Streaming trail
-        const trailOffsets = [0, 0.04, 0.08];
-        const trailColors = ["#ffffff", "#34d399", "#06b6d4"];
-        const trailRadii = [5.0, 3.5, 2.2];
-
-        for (let tr = trailOffsets.length - 1; tr >= 0; tr--) {
-          const tTr = Math.max(0, t - trailOffsets[tr]);
-          const tx = (1 - tTr) * (1 - tTr) * pA.renderedX + 2 * (1 - tTr) * tTr * midX + tTr * tTr * pB.renderedX;
-          const ty = (1 - tTr) * (1 - tTr) * pA.renderedY + 2 * (1 - tTr) * tTr * midY + tTr * tTr * pB.renderedY;
-
-          ctx.beginPath();
-          ctx.arc(tx, ty, trailRadii[tr], 0, Math.PI * 2);
-          ctx.fillStyle = trailColors[tr];
-          if (tr === 0) {
-            ctx.shadowColor = "#34d399";
-            ctx.shadowBlur = 14;
-          }
-          ctx.fill();
-        }
-
-        ctx.beginPath();
-        ctx.arc(qx, qy, 7.5, 0, Math.PI * 2);
-        ctx.strokeStyle = "#047857";
-        ctx.lineWidth = 1.8;
-        ctx.stroke();
-
-        // Stagger floating tags vertically to prevent chaotic label overlap
-        const tagOffsetY = (idx % 2 === 0 ? -16 : (dx > 0 ? 16 : -26));
-        drawFloatingTag(ctx, "WEIGHTS_RESP (15B)", qx, qy + tagOffsetY, "#10b981", "rgba(15, 23, 42, 0.94)", "#a7f3d0");
-      }
-    });
+    ctx.fillStyle = "#a7f3d0";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(p2pBanner, pbX, pbY);
     ctx.restore();
 
     // Draw Nodes
