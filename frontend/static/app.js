@@ -10734,31 +10734,53 @@ function animateStep29MatchDelivery(packetTraces, allNodes) {
     // Canonical Hierarchical Overlay Edges (Tier 1 -> Tier 2 & Tier 2 -> Tier 3)
     drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
 
-    // All delivery pairs (Tier 3 Super-Peers -> Tier 1 Base Clients)
-    const tier3ToTier1Pairs = [
-      { fromKey: "top_1", toKey: "bot_2", label: "MATCH_REPLY (C2)" },
-      { fromKey: "top_1", toKey: "bot_9", label: "MATCH_REPLY (C9)" },
-      { fromKey: "top_1", toKey: "bot_1", label: "LOCAL (C1)" },
-      { fromKey: "top_5", toKey: "bot_3", label: "MATCH_REPLY (C3)" },
-      { fromKey: "top_5", toKey: "bot_4", label: "MATCH_REPLY (C4)" },
-      { fromKey: "top_5", toKey: "bot_8", label: "MATCH_REPLY (C8)" },
-      { fromKey: "top_5", toKey: "bot_5", label: "LOCAL (C5)" },
-      { fromKey: "top_10", toKey: "bot_7", label: "MATCH_REPLY (C7)" },
-      { fromKey: "top_10", toKey: "bot_6", label: "MATCH_REPLY (C6)" },
-      { fromKey: "top_10", toKey: "bot_10", label: "LOCAL (C10)" }
+    // Hierarchical 2-Hop Routes for Match Delivery (Tier 3 Super-Peers -> Tier 2 Exemplars -> Tier 1 Leaf Clients)
+    const HIERARCHICAL_RESPONSE_ROUTES = {
+      // Deliveries from Super-Peer 1 (Classes 1, 2, 3)
+      "1->2": ["top_1", "mid_1", "bot_2"],
+      "1->9": ["top_1", "mid_9", "bot_9"],
+      "1->1": ["top_1", "mid_1", "bot_1"],
+
+      // Deliveries from Super-Peer 5 (Classes 4, 5, 6)
+      "5->3": ["top_5", "mid_3", "bot_3"],
+      "5->4": ["top_5", "mid_5", "bot_4"],
+      "5->8": ["top_5", "mid_8", "bot_8"],
+      "5->5": ["top_5", "mid_5", "bot_5"],
+
+      // Deliveries from Super-Peer 10 (Classes 8, 9, 10)
+      "10->6": ["top_10", "mid_7", "bot_6"],
+      "10->7": ["top_10", "mid_7", "bot_7"],
+      "10->10": ["top_10", "mid_10", "bot_10"]
+    };
+
+    const hierarchicalDeliveries = [
+      { key: "1->2", path: HIERARCHICAL_RESPONSE_ROUTES["1->2"], label: "MATCH_REPLY (C2)" },
+      { key: "1->9", path: HIERARCHICAL_RESPONSE_ROUTES["1->9"], label: "MATCH_REPLY (C9)" },
+      { key: "1->1", path: HIERARCHICAL_RESPONSE_ROUTES["1->1"], label: "LOCAL (C1)" },
+      { key: "5->3", path: HIERARCHICAL_RESPONSE_ROUTES["5->3"], label: "MATCH_REPLY (C3)" },
+      { key: "5->4", path: HIERARCHICAL_RESPONSE_ROUTES["5->4"], label: "MATCH_REPLY (C4)" },
+      { key: "5->8", path: HIERARCHICAL_RESPONSE_ROUTES["5->8"], label: "MATCH_REPLY (C8)" },
+      { key: "5->5", path: HIERARCHICAL_RESPONSE_ROUTES["5->5"], label: "LOCAL (C5)" },
+      { key: "10->6", path: HIERARCHICAL_RESPONSE_ROUTES["10->6"], label: "MATCH_REPLY (C6)" },
+      { key: "10->7", path: HIERARCHICAL_RESPONSE_ROUTES["10->7"], label: "MATCH_REPLY (C7)" },
+      { key: "10->10", path: HIERARCHICAL_RESPONSE_ROUTES["10->10"], label: "LOCAL (C10)" }
     ];
 
-    // Draw downward beams from Tier 3 to Tier 1
+    // Draw hierarchical 2-hop beams & moving particles (Tier 3 -> Tier 2 -> Tier 1)
     ctx.save();
-    tier3ToTier1Pairs.forEach((pair, idx) => {
-      const pA = nodePosMap[pair.fromKey];
-      const pB = nodePosMap[pair.toKey];
-      if (!pA || !pB) return;
+    hierarchicalDeliveries.forEach((delivery, idx) => {
+      const path = delivery.path;
+      if (!path || path.length < 3) return;
+      const p0 = nodePosMap[path[0]];
+      const p1 = nodePosMap[path[1]];
+      const p2 = nodePosMap[path[2]];
+      if (!p0 || !p1 || !p2) return;
 
-      // Draw faint guide beam
+      // Draw faint guide beam along hierarchical hops
       ctx.beginPath();
-      ctx.moveTo(pA.renderedX, pA.renderedY);
-      ctx.lineTo(pB.renderedX, pB.renderedY);
+      ctx.moveTo(p0.renderedX, p0.renderedY);
+      ctx.lineTo(p1.renderedX, p1.renderedY);
+      ctx.lineTo(p2.renderedX, p2.renderedY);
       ctx.strokeStyle = "rgba(16, 185, 129, 0.35)";
       ctx.lineWidth = 1.8;
       ctx.setLineDash([4, 4]);
@@ -10770,8 +10792,18 @@ function animateStep29MatchDelivery(packetTraces, allNodes) {
 
       if (tBeam < 0.75) {
         const t = tBeam / 0.75;
-        const px = pA.renderedX + (pB.renderedX - pA.renderedX) * t;
-        const py = pA.renderedY + (pB.renderedY - pA.renderedY) * t;
+        let px, py;
+        if (t < 0.5) {
+          // Hop 1 (Tier 3 Super-Peer -> Tier 2 Exemplar): first 50% of travel time
+          const segT = t / 0.5;
+          px = p0.renderedX + (p1.renderedX - p0.renderedX) * segT;
+          py = p0.renderedY + (p1.renderedY - p0.renderedY) * segT;
+        } else {
+          // Hop 2 (Tier 2 Exemplar -> Tier 1 Base Client): remaining 50% of travel time
+          const segT = (t - 0.5) / 0.5;
+          px = p1.renderedX + (p2.renderedX - p1.renderedX) * segT;
+          py = p1.renderedY + (p2.renderedY - p1.renderedY) * segT;
+        }
 
         ctx.beginPath();
         ctx.arc(px, py, 6.0, 0, Math.PI * 2);
@@ -10786,19 +10818,19 @@ function animateStep29MatchDelivery(packetTraces, allNodes) {
         ctx.lineWidth = 2.0;
         ctx.stroke();
 
-        drawFloatingTag(ctx, pair.label, px, py - 14, "#10b981", "rgba(15, 23, 42, 0.94)", "#6ee7b7");
+        drawFloatingTag(ctx, delivery.label, px, py - 14, "#10b981", "rgba(15, 23, 42, 0.94)", "#6ee7b7");
       } else {
         const arrProg = (tBeam - 0.75) / 0.25;
         const rBeacon = 24 + arrProg * 20;
         ctx.beginPath();
-        ctx.arc(pB.renderedX, pB.renderedY, rBeacon, 0, Math.PI * 2);
+        ctx.arc(p2.renderedX, p2.renderedY, rBeacon, 0, Math.PI * 2);
         ctx.strokeStyle = `rgba(16, 185, 129, ${1 - arrProg})`;
         ctx.lineWidth = 2.5;
         ctx.shadowColor = "#10b981";
         ctx.shadowBlur = 14;
         ctx.stroke();
 
-        drawFloatingTag(ctx, "TOP-2 LOCKED", pB.renderedX, pB.renderedY + 28, "#10b981", "rgba(6, 78, 59, 0.94)", "#a7f3d0");
+        drawFloatingTag(ctx, "TOP-2 LOCKED", p2.renderedX, p2.renderedY + 28, "#10b981", "rgba(6, 78, 59, 0.94)", "#a7f3d0");
       }
     });
     ctx.restore();
