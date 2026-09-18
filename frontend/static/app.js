@@ -1009,9 +1009,32 @@ function initCytoscape() {
 
 // 2. Setup Packet Animation Overlay Canvas
 function setupPacketCanvas() {
-  window.addEventListener("resize", syncPacketCanvasSize);
+  window.addEventListener("resize", () => {
+    syncPacketCanvasSize();
+    fitCytoscapeViewport(45);
+  });
   syncPacketCanvasSize();
 }
+
+function fitCytoscapeViewport(padding = 45) {
+  if (!cy) return;
+  try {
+    cy.resize();
+    cy.panningEnabled(true);
+    cy.zoomingEnabled(true);
+    cy.fit(undefined, padding);
+    if (!cy.zoom() || cy.zoom() <= 0.05 || isNaN(cy.zoom())) {
+      cy.zoom(1.0);
+      cy.center();
+    }
+    cy.userPanningEnabled(false);
+    cy.userZoomingEnabled(false);
+    cy.autoungrabify(true);
+  } catch (e) {
+    console.warn("fitCytoscapeViewport warning:", e);
+  }
+}
+window.fitCytoscapeViewport = fitCytoscapeViewport;
 
 function syncPacketCanvasSize() {
   const canvas = document.getElementById("packetCanvas");
@@ -12895,8 +12918,14 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
         active_overlay_neighbors: n.active_overlay_neighbors,
       },
       position: {
-        x: n.x,
-        y: n.y
+        x: (typeof n.x === "number" && !isNaN(n.x)) ? n.x :
+           (n.coords && typeof n.coords.x === "number" && !isNaN(n.coords.x)) ? n.coords.x :
+           (n.pos && typeof n.pos.x === "number" && !isNaN(n.pos.x)) ? n.pos.x :
+           (PHYSICAL_LAYOUT_COORDS[n.id] ? PHYSICAL_LAYOUT_COORDS[n.id].x : 100),
+        y: (typeof n.y === "number" && !isNaN(n.y)) ? n.y :
+           (n.coords && typeof n.coords.y === "number" && !isNaN(n.coords.y)) ? n.coords.y :
+           (n.pos && typeof n.pos.y === "number" && !isNaN(n.pos.y)) ? n.pos.y :
+           (PHYSICAL_LAYOUT_COORDS[n.id] ? PHYSICAL_LAYOUT_COORDS[n.id].y : 100)
       }
     });
   });
@@ -12924,17 +12953,19 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
 
   cy.elements().remove();
   cy.add(elements);
-  cy.resize();
   cy.layout({ name: "preset" }).run();
-  cy.panningEnabled(true);
-  cy.zoomingEnabled(true);
-  cy.fit(undefined, 35);
-  cy.panningEnabled(false);
-  cy.zoomingEnabled(false);
-  cy.userPanningEnabled(false);
-  cy.userZoomingEnabled(false);
-  cy.autoungrabify(true);
-  cy.nodes().lock();
+
+  function adjustViewport() {
+    fitCytoscapeViewport(45);
+    if (cy) {
+      cy.nodes().lock();
+    }
+  }
+
+  adjustViewport();
+  requestAnimationFrame(adjustViewport);
+  setTimeout(adjustViewport, 60);
+  setTimeout(adjustViewport, 250);
 
   if (options.clusterHalos) {
     nodes.forEach(n => {

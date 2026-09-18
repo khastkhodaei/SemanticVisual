@@ -252,7 +252,7 @@
         <div class="flex items-center gap-2 text-xs font-mono flex-shrink-0">
           <div class="bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-center min-w-[85px]">
             <div class="text-[9px] text-slate-500 font-sans">TOTAL PEERS</div>
-            <div id="statNodes" class="text-xs font-bold text-blue-600">50</div>
+            <div id="statNodes" class="text-xs font-bold text-blue-600">10</div>
           </div>
           <div class="bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-center min-w-[85px]">
             <div class="text-[9px] text-slate-500 font-sans">DATA CLASSES</div>
@@ -260,7 +260,7 @@
           </div>
           <div class="bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-center min-w-[95px]">
             <div class="text-[9px] text-slate-500 font-sans">AVG DEGREE</div>
-            <div id="statDegree" class="text-xs font-bold text-slate-700">3.8 (3-6)</div>
+            <div id="statDegree" class="text-xs font-bold text-slate-700">3.4 (18 links)</div>
           </div>
           <div class="bg-slate-50 border border-slate-200 px-3 py-1 rounded-lg text-center min-w-[110px]">
             <div class="text-[9px] text-slate-500 font-sans">INITIATORS (R=3)</div>
@@ -293,7 +293,7 @@
         </div>
 
         <p id="sidebarFormulaDesc" class="text-[11px] text-slate-600 leading-snug">
-          Overlay-free physical ad-hoc network. Each peer holds local dataset samples and a 50-dimensional parameter vector.
+          10 decentralized edge clients connected via 18 physical ad-hoc links. Each node holds local CIFAR-10 data.
         </p>
       </div>
 
@@ -303,11 +303,11 @@
           <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center">
             <span class="mr-1.5">🏷️</span> Dataset Classes (10)
           </h3>
-          <span class="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">M=50 Dims</span>
+          <span class="text-[10px] font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">10 Classes</span>
         </div>
 
         <p class="text-[11px] text-slate-500 my-1 flex-shrink-0">
-          5 clients per class. Each class boosts 5 dimensions ($0.85 \pm 0.05$).
+          10 decentralized edge clients partitioned across 10 CIFAR-10 classes.
         </p>
 
         <!-- Class List Chips -->
@@ -332,7 +332,7 @@
         <!-- Canvas Indicator Top-Left -->
         <div class="absolute top-3 left-3 z-10 flex items-center gap-2 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-mono shadow-sm">
           <span class="text-slate-400">TOPOLOGY:</span>
-          <span id="canvasViewLabel" class="font-bold text-slate-800">Physical Ad-Hoc Mesh (50 Dispersed Nodes)</span>
+          <span id="canvasViewLabel" class="font-bold text-slate-800">Physical Ad-Hoc Topology (10 Nodes, 18 Links)</span>
           <span class="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 font-sans ml-1">💡 Click node to pin details</span>
         </div>
 
