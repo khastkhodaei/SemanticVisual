@@ -2134,7 +2134,17 @@ function updateUIHeaders(data) {
     if (stepTag) stepTag.textContent = "STEP 34 / SIMULATION COMPLETE";
     if (stepTitle) stepTitle.textContent = "Step 34: Round 1 Finalization, System Benchmarks & Next-Epoch Transition";
   }
+  updateCanvasTitle();
 }
+
+// Suppress top-left canvas title badge completely (Issue #36)
+function updateCanvasTitle() {
+  const badge = document.getElementById("canvasTitle") || document.getElementById("canvasTitleBadge") || document.querySelector(".topology-title-badge");
+  if (badge) {
+    badge.style.display = "none";
+  }
+}
+window.updateCanvasTitle = updateCanvasTitle;
 
 
 // Guard Canvas Initialization & Render Step 1 Topology (Strictly 10 Nodes)
