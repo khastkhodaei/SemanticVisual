@@ -2135,6 +2135,7 @@ function updateUIHeaders(data) {
     if (stepTitle) stepTitle.textContent = "Step 34: Round 1 Finalization, System Benchmarks & Next-Epoch Transition";
   }
   updateCanvasTitle();
+  renderDirectiveBanner();
 }
 
 // Suppress top-left canvas title badge completely (Issue #36)
@@ -2145,6 +2146,16 @@ function updateCanvasTitle() {
   }
 }
 window.updateCanvasTitle = updateCanvasTitle;
+
+// Suppress floating canvas directive/status banners across all steps (Issue #37)
+function renderDirectiveBanner() {
+  const banner = document.getElementById("canvasDirectiveBanner") || document.querySelector(".directive-banner");
+  if (banner) {
+    banner.innerHTML = "";
+    banner.style.display = "none";
+  }
+}
+window.renderDirectiveBanner = renderDirectiveBanner;
 
 
 // Guard Canvas Initialization & Render Step 1 Topology (Strictly 10 Nodes)
@@ -5599,26 +5610,6 @@ function animateStep18SuperPeerDirectives(packets, allNodes) {
     ctx.setLineDash([]);
     ctx.restore();
 
-    // 2. Status Banner
-    ctx.save();
-    const aX = (p2.x + p8.x) / 2;
-    const aY = p4.y - 48;
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const aText = "ORDER_SET_SUPER_CLUSTERS: C4 ➔ C2 & C8 (SUPER-ZONE BACKBONE BROADCAST)";
-    const aW = ctx.measureText(aText).width;
-    ctx.fillStyle = "rgba(120, 53, 15, 0.94)";
-    ctx.strokeStyle = "#f59e0b";
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.roundRect(aX - aW / 2 - 8, aY - 10, aW + 16, 20, 4);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#fef3c7";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(aText, aX, aY);
-    ctx.restore();
-
     // 3. Moving Packets along 2 hops
     // West Branch: C4 -> C1 -> C2
     let westX, westY;
@@ -5820,26 +5811,6 @@ function animateStep19IntraZoneDirectives(packets, allNodes) {
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // 1. Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "INTRA-ZONE 1-HOP DIRECTIVES: C2, C4, C8 ➔ ZONE EXEMPLARS (SET_SUPER_PEER & BIND_SP)";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 24;
-    ctx.fillStyle = "rgba(120, 53, 15, 0.94)";
-    ctx.strokeStyle = "#f59e0b";
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.roundRect(bX - bW / 2 - 8, bY - 10, bW + 16, 20, 4);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#fef3c7";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // 2. Draw 1-hop physical transmission links and moving packets
     oneHopLinks.forEach(link => {
@@ -7729,39 +7700,6 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
     const tCycle = elapsed % CYCLE_MS;
 
-    // 1. Status / Heartbeat Stage Banner at Bottom of Canvas (Avoids Top HUD collision)
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    let bannerText = "";
-    let bannerColor = "#38bdf8";
-
-    if (tCycle < 1400) {
-      bannerText = "✨ FIGURE 3(f) SON: [1/3] ⬆ TIER 1 → TIER 2 INTRA-ZONE CLUSTERING";
-      bannerColor = "#10b981";
-    } else if (tCycle < 2800) {
-      bannerText = "🌟 FIGURE 3(f) SON: [2/3] ⤢ TIER 2 → TIER 3 INTER-ZONE SUPER-PEER OVERLAYS";
-      bannerColor = "#dc2626";
-    } else {
-      bannerText = "💫 FIGURE 3(f) SON: [3/3] ⬇ TIER 3 → TIER 2 → TIER 1 DOWNSTREAM BROADCAST";
-      bannerColor = "#38bdf8";
-    }
-
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = canvas.height - 18;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = bannerColor;
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = bannerColor;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // 2. TIER 3 (Top - Global Super-Peers): Standalone Header Badge & Plane
     ctx.save();
     ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
@@ -7958,26 +7896,6 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     ctx.save();
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
-
-    // 1. Status Banner at Top
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: 10 CLIENTS, 18 AD-HOC MESH LINKS & ACTIVE OVERLAYS";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#38bdf8";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#38bdf8";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // Build position map for the 10 canonical physical nodes matching Steps 1-19 exactly
     const physNodePosMap = {};
@@ -8179,26 +8097,6 @@ function animateStep22PeerDiscovery(discoveryPackets, allNodes) {
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
 
-    // 1. Top Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: MULTI-HOP DISCOVERY QUERIES TO SUPER-PEERS (C1, C5, C10)";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#38bdf8";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#38bdf8";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // Node position map
     const physNodePosMap = {};
     for (let id = 1; id <= 10; id++) {
@@ -8328,30 +8226,6 @@ function animateStep22PeerDiscovery(discoveryPackets, allNodes) {
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
-
-    // 1. Bottom Stage Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = tCycle < 0.45
-      ? "STAGE 1: LEAF NODES EMIT REQ_PEER_DISCOVERY UPWARD TO LOCAL EXEMPLARS"
-      : (tCycle < 0.85
-        ? "STAGE 2: EXEMPLARS PROPAGATE DISCOVERY QUERIES UPWARD TO SUPER-PEERS (TIER 3)"
-        : "STAGE 3: SUPER-PEERS RESOLVE AUTHORIZED FEDERATION PARTNER SETS (RESOLVED)");
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = canvas.height - 24;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = tCycle < 0.85 ? "#38bdf8" : "#10b981";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = tCycle < 0.85 ? "#38bdf8" : "#34d399";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // 2. Device Silhouettes
     ctx.save();
@@ -8590,26 +8464,6 @@ function animateStep23ExemplarRouting(packetTraces, allNodes) {
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
 
-    // 1. Top Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: SUPER-PEERS DOWNWARD ROUTING TO EXEMPLARS [FWD_QUERY]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#a855f7";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#c084fc";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // Node position map
     const physNodePosMap = {};
     for (let id = 1; id <= 10; id++) {
@@ -8737,28 +8591,6 @@ function animateStep23ExemplarRouting(packetTraces, allNodes) {
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
-
-    // 1. Bottom Stage Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = tCycle < 0.75
-      ? "DOWNWARD ROUTING: SUPER-PEERS FORWARD CLIENT QUERIES TO TIER-2 EXEMPLARS (TIER 3 → TIER 2)"
-      : "QUERY INGESTION: CLUSTER EXEMPLARS POPULATE RECEIVED QUERY INBOXES";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = canvas.height - 24;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = tCycle < 0.75 ? "#c084fc" : "#10b981";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = tCycle < 0.75 ? "#e9d5ff" : "#34d399";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // 2. Device Silhouettes
     ctx.save();
@@ -8971,26 +8803,6 @@ function animateStep24LeafDispatch(packetTraces, allNodes) {
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
 
-    // 1. Top Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: CLUSTER EXEMPLAR DISPATCH TO BASE LEAF MEMBERS [LEAF_DISPATCH]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#10b981";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#34d399";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // Node position map
     const physNodePosMap = {};
     for (let id = 1; id <= 10; id++) {
@@ -9117,28 +8929,6 @@ function animateStep24LeafDispatch(packetTraces, allNodes) {
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
-
-    // 1. Bottom Stage Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = tCycle < 0.75
-      ? "DOWNWARD DISPATCH: EXEMPLARS DELIVER PEER QUERIES & PARTNER LISTS TO LEAF MEMBERS (TIER 2 → TIER 1)"
-      : "FEDERATION LOCK: LEAF NODES (C2, C4, C6) POPULATE AGGREGATION INBOXES (READY FOR STEP 25)";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = canvas.height - 24;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#10b981";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#34d399";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // 2. Device Silhouettes
     ctx.save();
@@ -9336,26 +9126,6 @@ function animateStep25SimilarityEval(evaluations, allNodes) {
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
 
-    // Top Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: INTRA-CLUSTER LOCAL COSINE SIMILARITY EVALUATION [10 CLIENTS]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#10b981";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#34d399";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // Node position map
     const physNodePosMap = {};
     for (let id = 1; id <= 10; id++) {
@@ -9453,26 +9223,6 @@ function animateStep25SimilarityEval(evaluations, allNodes) {
     const { nodePosMap, hull, capsules } = layout;
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
-
-    // Bottom Stage Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "STEP 25: LOCAL COSINE SIMILARITY EVALUATION — PAIRWISE INTRA-CLUSTER ALIGNMENT";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = canvas.height - 24;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#10b981";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#34d399";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // Device Silhouettes
     ctx.save();
@@ -9642,26 +9392,6 @@ function animateStep26ScoreReporting(packetTraces, allNodes) {
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
 
-    // Top Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: UPWARD SIMILARITY SCORE REPORTING TO CLUSTER EXEMPLARS [TIER 1 -> TIER 2]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#38bdf8";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#7dd3fc";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // Node position map
     const physNodePosMap = {};
     for (let id = 1; id <= 10; id++) {
@@ -9786,28 +9516,6 @@ function animateStep26ScoreReporting(packetTraces, allNodes) {
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
-
-    // Bottom Stage Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = tCycle < 0.75
-      ? "UPWARD REPORTING: CLIENTS TRANSMIT COMPUTED SIMILARITY SCORES TO EXEMPLARS (TIER 1 → TIER 2)"
-      : "EXEMPLAR INGESTION: CLUSTER EXEMPLARS (C1, C5, C7) BUFFER MEMBER EVALUATIONS (ZONE_SCORES_INGESTED)";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = canvas.height - 24;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#38bdf8";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#7dd3fc";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // Device Silhouettes
     ctx.save();
@@ -10020,26 +9728,6 @@ function animateStep27ExemplarRanking(packetTraces, allNodes) {
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
 
-    // Top Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: EXEMPLAR SIMILARITY RANKING DISPATCH TO SUPER-PEERS [TIER 2 -> TIER 3]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#c084fc";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#e9d5ff";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // Node position map
     const physNodePosMap = {};
     for (let id = 1; id <= 10; id++) {
@@ -10164,28 +9852,6 @@ function animateStep27ExemplarRanking(packetTraces, allNodes) {
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
-
-    // Bottom Stage Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = tCycle < 0.75
-      ? "UPWARD RANKING DISPATCH: EXEMPLARS DELIVER SORTED CANDIDATE MATCHES TO SUPER-PEERS (TIER 2 → TIER 3)"
-      : "SUPER-PEER INGESTION: SUPER-PEERS (C1, C5, C10) BUFFER MULTI-BRANCH RANKINGS (EXEMPLAR_RANKINGS_INGESTED)";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = canvas.height - 24;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#c084fc";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#e9d5ff";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // Device Silhouettes
     ctx.save();
@@ -10375,26 +10041,6 @@ function animateStep28Consolidation(consolidatedRankings, allNodes) {
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
 
-    // Top Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: GLOBAL SUPER-PEER CROSS-CLUSTER SIMILARITY CONSOLIDATION [MATCHMAKING LOCKED]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#f59e0b";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#fbbf24";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // Node position map
     const physNodePosMap = {};
     for (let id = 1; id <= 10; id++) {
@@ -10492,26 +10138,6 @@ function animateStep28Consolidation(consolidatedRankings, allNodes) {
     const { nodePosMap, hull, capsules } = layout;
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
-
-    // Bottom Stage Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "STEP 28: CROSS-CLUSTER CONSOLIDATION COMPLETE — AUTHORITATIVE FEDERATION MATCHMAKING LOCKED";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = canvas.height - 24;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#f59e0b";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 14, bY - 10, bW + 28, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#fbbf24";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // Device Silhouettes
     ctx.save();
@@ -10727,26 +10353,6 @@ function animateStep29MatchDelivery(packetTraces, allNodes) {
     const pulse = (Math.sin((elapsed / 500) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
 
-    // Top Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: TOP-K PARTNER MATCH DELIVERY (K = 2) [SUPER-PEERS -> REQUESTING CLIENTS]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#10b981";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#a7f3d0";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // Node position map
     const physNodePosMap = {};
     for (let id = 1; id <= 10; id++) {
@@ -10870,26 +10476,6 @@ function animateStep29MatchDelivery(packetTraces, allNodes) {
 
     const layout = getFigure3fLayout(canvas);
     const { nodePosMap, hull, capsules } = layout;
-
-    // Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "FIGURE 3(f) HIERARCHICAL OVERLAY: TOP-K MATCH DELIVERY (TIER 3 SUPER-PEERS -> TIER 1 BASE CLIENTS)";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#10b981";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#a7f3d0";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // Node backplates
     ctx.save();
@@ -11201,26 +10787,6 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
     const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
 
-    // Top Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: P2P MODEL WEIGHT REQUEST DISPATCH [REQ_MODEL_WEIGHTS -> TOP-2 PARTNERS]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#f59e0b";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#fde68a";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // Node position map
     const physNodePosMap = {};
     for (let id = 1; id <= 10; id++) {
@@ -11340,26 +10906,6 @@ function animateStep30ModelRequests(packetTraces, allNodes) {
 
     const layout = getFigure3fLayout(canvas);
     const { nodePosMap, hull, capsules } = layout;
-
-    // 1. Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "FIGURE 3(f) HIERARCHICAL OVERLAY: P2P MODEL REQUEST DISPATCH (TIER 1 CLIENTS -> HIERARCHICAL TREE -> PARTNERS)";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#f59e0b";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#fde68a";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // 2. Node Backplates
     ctx.save();
@@ -11666,26 +11212,6 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
     const layout = getFigure3fLayout(canvas);
     const { nodePosMap, hull, capsules } = layout;
 
-    // 1. Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "FIGURE 3(f) HIERARCHICAL OVERLAY: SPARSE PARAMETER INGESTION (REP_MODEL_WEIGHTS VIA VIRTUAL TREE)";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#10b981";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#a7f3d0";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // 2. Node Backplates
     ctx.save();
     FIGURE3F_3TIER_NODES.forEach(n => {
@@ -11869,26 +11395,6 @@ function animateStep31BufferIngestion(packetTraces, allNodes) {
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
     const tCycle = (elapsed % CYCLE_MS) / CYCLE_MS;
-
-    // Top Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: SPARSE WEIGHT PARAMETER DELIVERY [15B PAYLOADS -> REVERSE PHYSICAL PATHS]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#10b981";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#a7f3d0";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // Node position map
     const physNodePosMap = {};
@@ -12087,26 +11593,6 @@ function animateStep32ReferenceSynthesis(allNodes) {
     const layout = getFigure3fLayout(canvas);
     const { nodePosMap, hull, capsules } = layout;
 
-    // 1. Top Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "FIGURE 3(f) HIERARCHICAL OVERLAY: REFERENCE MODEL SYNTHESIS (w_i^ref LOCAL SIMILARITY ALIGNMENT)";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#06b6d4";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#cffafe";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // 2. Node Backplates
     ctx.save();
     FIGURE3F_3TIER_NODES.forEach(n => {
@@ -12211,26 +11697,6 @@ function animateStep32ReferenceSynthesis(allNodes) {
     ctx.save();
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
-
-    // Top Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: REFERENCE MODEL SYNTHESIS [INTERNAL SIMILARITY-WEIGHTED ALIGNMENT]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#06b6d4";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#cffafe";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // Node position map
     const physNodePosMap = {};
@@ -12379,26 +11845,6 @@ function animateStep33Convergence(allNodes) {
     const layout = getFigure3fLayout(canvas);
     const { nodePosMap, hull, capsules } = layout;
 
-    // 1. Top Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "FIGURE 3(f) HIERARCHICAL OVERLAY: LOCAL MODEL AGGREGATION & FEDERATED CONVERGENCE [FEDAVG COMMITTED]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#10b981";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#a7f3d0";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // 2. Node Backplates
     ctx.save();
     FIGURE3F_3TIER_NODES.forEach(n => {
@@ -12508,26 +11954,6 @@ function animateStep33Convergence(allNodes) {
     ctx.save();
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 450) * Math.PI) + 1) / 2;
-
-    // Top Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: LOCAL MODEL AGGREGATION & FEDERATED CONVERGENCE [ROUND 1 COMMITTED]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.94)";
-    ctx.strokeStyle = "#10b981";
-    ctx.lineWidth = 1.2;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#a7f3d0";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // Node position map
     const physNodePosMap = {};
@@ -12690,26 +12116,6 @@ function animateStep34Finalization(allNodes) {
     const layout = getFigure3fLayout(canvas);
     const { nodePosMap, hull, capsules } = layout;
 
-    // 1. Top Status Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "FIGURE 3(f) HIERARCHICAL OVERLAY: ROUND 1 CONVERGED & PROTOCOL AUDIT COMPLETE [100% VERIFIED]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.96)";
-    ctx.strokeStyle = "#10b981";
-    ctx.lineWidth = 1.3;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#a7f3d0";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
-
     // 2. Node Backplates
     ctx.save();
     FIGURE3F_3TIER_NODES.forEach(n => {
@@ -12820,26 +12226,6 @@ function animateStep34Finalization(allNodes) {
     ctx.save();
     const elapsed = now - startTime;
     const pulse = (Math.sin((elapsed / 500) * Math.PI) + 1) / 2;
-
-    // Top Banner
-    ctx.save();
-    ctx.font = "bold 9.5px ui-monospace, SFMono-Regular, monospace";
-    const bannerText = "PHYSICAL TOPOLOGY: ROUND 1 FINALIZATION & PROTOCOL BENCHMARKS [SIMULATION 100% COMPLETE]";
-    const bW = ctx.measureText(bannerText).width;
-    const bX = canvas.width / 2;
-    const bY = 32;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.96)";
-    ctx.strokeStyle = "#10b981";
-    ctx.lineWidth = 1.3;
-    drawRoundedRect(ctx, bX - bW / 2 - 12, bY - 10, bW + 24, 20, 6);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#a7f3d0";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(bannerText, bX, bY);
-    ctx.restore();
 
     // Node position map
     const physNodePosMap = {};

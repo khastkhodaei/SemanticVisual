@@ -949,3 +949,18 @@ body {
   overflow: hidden !important;
 }
 
+/* Refactor (Issue #37): Permanently purge floating directive / action status banners across all steps */
+.directive-banner,
+.canvas-directive-pill,
+#canvasDirectiveBanner,
+.action-status-banner {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+
