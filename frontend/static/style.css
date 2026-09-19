@@ -891,9 +891,11 @@ body {
   pointer-events: auto !important;
 }
 
-/* Refactor (Issue #26): Clean canvas header - completely remove redundant legends and badges */
-#canvasLegend,
+/* Refactor (Issue #30): Clean canvas header - completely purge redundant legends and badges */
 .canvas-legend,
+#canvasLegend,
+.topology-hints,
+.legend-badges,
 .topology-legend,
 #leaderLegendItem,
 #zoneLegendItem,

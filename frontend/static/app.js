@@ -530,6 +530,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
+    updateCanvasLegend(1);
     await loadStep(1);
     const sessionStatus = document.getElementById("sessionStatus");
     if (sessionStatus) sessionStatus.textContent = "SESSION:";
@@ -1510,6 +1511,7 @@ async function loadStep(stepNumber) {
   window.currentSelectedNodeId = null;
   stopCurrentPacketAnimation();
   clearClassFilter();
+  updateCanvasLegend(stepNumber);
 
   const pCanvas = document.getElementById("packetCanvas");
   if (pCanvas && typeof ensureFigure3fCanvasListeners === "function") {
@@ -1860,9 +1862,21 @@ function setActivePhaseBadge(badge, text) {
   badge.textContent = `ACTIVE PHASE: ${clean}`;
 }
 
+// Clean canvas header: suppress and clear all redundant legend badges and hints across all steps
+function updateCanvasLegend(stepNumber) {
+  // Intentionally blank: legends removed to keep canvas header clean
+  const legendContainer = document.getElementById("canvasLegend");
+  if (legendContainer) {
+    legendContainer.innerHTML = "";
+    legendContainer.style.display = "none";
+  }
+}
+window.updateCanvasLegend = updateCanvasLegend;
+
 // Update Top Headers and Narrative Cards
 function updateUIHeaders(data) {
   const step = data.step || currentStep || 1;
+  updateCanvasLegend(step);
   const activeBadges = [
     document.getElementById("activePhaseBadge"),
     document.getElementById("activeStepBadge")
