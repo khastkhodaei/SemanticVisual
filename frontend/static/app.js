@@ -1557,12 +1557,12 @@ async function loadStep(stepNumber) {
         setLayout("physical");
       }
       if (stepNumber >= 30 && stepNumber <= 34) {
-        updateLayoutButtonLabel("Hierarchical Overlay (Figure 3(f))");
+        updateLayoutButtonLabel("Semantic Overlay Network");
       } else {
         updateLayoutButtonLabel("Logical Top-2 Overlay");
       }
     } else if (stepNumber >= 20) {
-      updateLayoutButtonLabel("Hierarchical Overlay (Figure 3(f))");
+      updateLayoutButtonLabel("Semantic Overlay Network");
     }
 
     // Manage Dual-Layout Toggle Button visibility: available for all steps from Step 20 onward
@@ -5993,15 +5993,15 @@ function isFigure3fLayout() {
 }
 window.isFigure3fLayout = isFigure3fLayout;
 
-let secondaryLayoutLabel = "Hierarchical Overlay (Figure 3(f))";
+let secondaryLayoutLabel = "Semantic Overlay Network";
 
 function updateLayoutButtonLabel(label) {
   if (label) {
     secondaryLayoutLabel = label;
   } else if (currentStep >= 20 && currentStep <= 34) {
-    secondaryLayoutLabel = "Hierarchical Overlay (Figure 3(f))";
+    secondaryLayoutLabel = "Semantic Overlay Network";
   } else {
-    secondaryLayoutLabel = "Hierarchical Overlay (Figure 3(f))";
+    secondaryLayoutLabel = "Semantic Overlay Network";
   }
   updateLayoutButtonUI();
 }
@@ -6107,8 +6107,8 @@ function toggleLayout() {
     "ZONE",
     isFigure3fLayout()
       ? ((currentStep >= 20 && currentStep <= 34)
-          ? "[DUAL-LAYOUT] Switching to Figure 3(f) 3-Tier Hierarchical Overlay: Super-Peers, Exemplars Oval, and Physical Zone Capsules."
-          : "[DUAL-LAYOUT] Switching to Figure 3(f) 3-Tier Hierarchical Overlay: Super-Peers, Exemplars Oval, and Physical Zone Capsules.")
+          ? "[DUAL-LAYOUT] Switching to Semantic Overlay Network: Super-Peers, Exemplars Oval, and Physical Zone Capsules."
+          : "[DUAL-LAYOUT] Switching to Semantic Overlay Network: Super-Peers, Exemplars Oval, and Physical Zone Capsules.")
       : "[DUAL-LAYOUT] Restoring original Physical Topology Layout: 10-node ad-hoc mesh view."
   );
 
@@ -6120,8 +6120,8 @@ function updateLayoutButtonUI() {
   if (!btn) return;
   const isFigure3f = isFigure3fLayout();
   const secModeName = (currentStep >= 20 && currentStep <= 34)
-    ? "Hierarchical Overlay (Figure 3(f))"
-    : (secondaryLayoutLabel || "Hierarchical Overlay (Figure 3(f))");
+    ? "Semantic Overlay Network"
+    : (secondaryLayoutLabel || "Semantic Overlay Network");
 
   if (isFigure3f) {
     btn.innerHTML = `<span>✨</span><span>Layout: ${secModeName}</span>`;
