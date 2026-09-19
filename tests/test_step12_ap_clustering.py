@@ -163,7 +163,7 @@ def test_step12_steps_markdown_documentation():
     """Verify STEPS.md contains documentation for Step 12."""
     steps_file = Path(__file__).resolve().parent.parent / "STEPS.md"
     assert steps_file.exists()
-    content = steps_file.read_text()
+    content = steps_file.read_text(encoding="utf-8")
     assert "## Step 12 — Intra-Zone Semantic Clustering (Affinity Propagation)" in content
     assert r"\text{Sim}(i, j)" in content
     assert "Cluster 2-A" in content

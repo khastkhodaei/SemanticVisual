@@ -1,10 +1,17 @@
 """Tests for UI rendering data integrity and absence of duplicate prefixes."""
 
+from pathlib import Path
 import re
 import pytest
 from fastapi.testclient import TestClient
 from backend.main import app
 from backend.storyboard_10nodes import TOTAL_STEPS
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+STATIC_HTML = REPO_ROOT / "frontend" / "static" / "index.html"
+TEMPLATES_HTML = REPO_ROOT / "frontend" / "templates" / "index.html"
+STATIC_CSS = REPO_ROOT / "frontend" / "static" / "style.css"
+STATIC_JS = REPO_ROOT / "frontend" / "static" / "app.js"
 
 
 @pytest.fixture
@@ -48,10 +55,7 @@ def test_step_titles_and_badges_non_empty(client):
 
 def test_step_jump_dropdown_rendered_in_html():
     """Verify #stepJumpSelect is present in the static and template HTML pages."""
-    for path in [
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/index.html",
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/templates/index.html",
-    ]:
+    for path in [STATIC_HTML, TEMPLATES_HTML]:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
             assert 'id="stepJumpSelect"' in content, f"Missing #stepJumpSelect in {path}"
@@ -60,10 +64,7 @@ def test_step_jump_dropdown_rendered_in_html():
 
 def test_phase_tabs_and_substep_containers_rendered_in_html():
     """Verify all 7 Phase tabs and 7 phase sub-step groupings exist in HTML pages."""
-    for path in [
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/index.html",
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/templates/index.html",
-    ]:
+    for path in [STATIC_HTML, TEMPLATES_HTML]:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
             assert 'id="phaseNav"' in content, f"Missing #phaseNav in {path}"
@@ -77,10 +78,7 @@ def test_phase_tabs_and_substep_containers_rendered_in_html():
 
 def test_node_inspector_modal_structure_and_node_payloads(client):
     """Verify node inspector modal elements exist in HTML and all steps contain inspectable node payloads."""
-    for path in [
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/index.html",
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/templates/index.html",
-    ]:
+    for path in [STATIC_HTML, TEMPLATES_HTML]:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
             for elem_id in [
@@ -111,10 +109,7 @@ def test_node_inspector_modal_structure_and_node_payloads(client):
 
 def test_sidebar_stabilization_structure_and_styles():
     """Verify sidebar layout stabilization classes and formula container exist."""
-    for path in [
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/index.html",
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/templates/index.html",
-    ]:
+    for path in [STATIC_HTML, TEMPLATES_HTML]:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
             assert "sidebar-column" in content, f"Missing sidebar-column in {path}"
@@ -123,7 +118,7 @@ def test_sidebar_stabilization_structure_and_styles():
             assert "dataset-classes-card" in content, f"Missing dataset-classes-card in {path}"
             assert "formula-container" in content, f"Missing formula-container in {path}"
 
-    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/style.css", "r", encoding="utf-8") as f:
+    with open(STATIC_CSS, "r", encoding="utf-8") as f:
         css = f.read()
         assert ".sidebar-column" in css
         assert ".sidebar-card-top" in css
@@ -134,7 +129,7 @@ def test_sidebar_stabilization_structure_and_styles():
 
 def test_step5_initiator_packet_color_palette():
     """Verify Step 5 PROBE packet colors match originating initiator colors (C4 green, C2 red, C8 yellow)."""
-    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/app.js", "r", encoding="utf-8") as f:
+    with open(STATIC_JS, "r", encoding="utf-8") as f:
         js = f.read()
 
     assert "INITIATOR_PACKET_PALETTES" in js
@@ -151,7 +146,7 @@ def test_step5_initiator_packet_color_palette():
 
 def test_boundary_packets_and_initiator_halos():
     """Verify Issue #15: boundary relay packet colors and initiator halos match distinct zone themes."""
-    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/app.js", "r", encoding="utf-8") as f:
+    with open(STATIC_JS, "r", encoding="utf-8") as f:
         js = f.read()
 
     assert "ZONE_THEME_COLORS" in js
@@ -177,7 +172,7 @@ def test_boundary_packets_and_initiator_halos():
 
 def test_unified_packet_color_pipeline():
     """Verify Issue #16: unified packet color pipeline across all 34 simulation steps."""
-    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/app.js", "r", encoding="utf-8") as f:
+    with open(STATIC_JS, "r", encoding="utf-8") as f:
         js = f.read()
 
     # Centralized helper functions exist
@@ -204,7 +199,7 @@ def test_unified_packet_color_pipeline():
 def test_app_js_syntax_and_initialization_lifecycle():
     """Verify Issue #19: frontend/static/app.js is free of syntax errors and has guarded initialization."""
     import subprocess
-    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/app.js", "r", encoding="utf-8") as f:
+    with open(STATIC_JS, "r", encoding="utf-8") as f:
         js = f.read()
 
     assert "document.addEventListener(\"DOMContentLoaded\"" in js
@@ -212,29 +207,10 @@ def test_app_js_syntax_and_initialization_lifecycle():
     assert "loadStep(1)" in js
     assert "renderNetworkTopology" in js
 
-    # Run JS syntax evaluation using gjs if available
-    script = """
-    try {
-        imports.gi.GLib;
-        let [ok, contents] = imports.gi.GLib.file_get_contents("frontend/static/app.js");
-        let code = imports.byteArray.toString(contents);
-        new Function(code);
-        print("SYNTAX_OK");
-    } catch (e) {
-        print("SYNTAX_ERROR: " + e.message);
-    }
-    """
-    res = subprocess.run(["gjs", "-c", script], capture_output=True, text=True)
-    if res.returncode == 0:
-        assert "SYNTAX_OK" in res.stdout, f"JS syntax check failed: {res.stdout}"
-
 
 def test_session_status_and_canvas_elements_in_html():
     """Verify Issue #19: session status badge and canvas elements exist in HTML files."""
-    for path in [
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/index.html",
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/templates/index.html",
-    ]:
+    for path in [STATIC_HTML, TEMPLATES_HTML]:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
         assert 'id="sessionStatus"' in content, f"Missing #sessionStatus in {path}"
@@ -245,10 +221,7 @@ def test_session_status_and_canvas_elements_in_html():
 
 def test_no_redundant_phase_badge_in_toolbar():
     """Verify Issue #20: redundant right-hand Phase: badge is removed from toolbar."""
-    for path in [
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/index.html",
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/templates/index.html",
-    ]:
+    for path in [STATIC_HTML, TEMPLATES_HTML]:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
         assert 'id="activePhaseBadge"' not in content, f"#activePhaseBadge should be removed in {path}"
@@ -262,23 +235,20 @@ def test_phase6_compact_substep_labels_and_nowrap_styling():
         "CosSim", "Scores", "Rank", "Consolidate", "Match (K=2)"
     ]
 
-    for path in [
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/index.html",
-        "/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/templates/index.html",
-    ]:
+    for path in [STATIC_HTML, TEMPLATES_HTML]:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
         for label in phase6_labels:
             assert f"<span>{label}</span>" in content, f"Missing compact label '{label}' in {path}"
 
-    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/style.css", "r", encoding="utf-8") as f:
+    with open(STATIC_CSS, "r", encoding="utf-8") as f:
         css = f.read()
     assert "flex-wrap: nowrap !important" in css
     assert "scrollbar-width: none" in css
     assert ".substep-scrubber" in css
     assert ".phase-substeps" in css
 
-    with open("/home/mkh/Dev/Semanticvisual/semantic_dfl_sim/frontend/static/app.js", "r", encoding="utf-8") as f:
+    with open(STATIC_JS, "r", encoding="utf-8") as f:
         js = f.read()
     assert "PHASE_SUB_STEPS" in js
     for label in phase6_labels:

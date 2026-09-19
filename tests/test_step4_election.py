@@ -34,7 +34,7 @@ EXPECTED_WINNERS = {
     3: 2,
     4: 4,
     5: 4,
-    6: 8,
+    6: 4,
     7: 4,
     8: 8,
     9: 8,
@@ -159,7 +159,7 @@ def test_steps_md_step4_documentation():
 
     assert "## Step 4 — 1-Hop Score Exchange, VRF Comparison & Initiator Election" in content or "## Step 4 —" in content
     assert "Node 2 (0.0837)" in content
-    assert "Node 4 (0.0412)" in content
+    assert "Node 4 (0.0150)" in content
     assert "Node 8 (0.0275)" in content
     assert "Exactly Nodes 2, 4, and 8 become the Initiators" in content
 

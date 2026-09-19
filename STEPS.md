@@ -78,7 +78,7 @@ Each node generates its local deterministic VRF score:
 - Node 1: 0.1543
 - Node 2: 0.0837
 - Node 3: 0.2318
-- Node 4: 0.0412
+- Node 4: 0.0150
 - Node 5: 0.3185
 - Node 6: 0.4721
 - Node 7: 0.3564
@@ -98,13 +98,13 @@ $$m_p = \min_{q \in \mathcal{N}_1(p) \cup \{p\}} (\sigma_q, id_q)$$
 If $(\sigma_p, id_p) == m_p$, node $p$ elects itself as an **Initiator**.
 
 Evaluation across the 10 nodes:
-- Node 1 (0.1543): Neighbors [C2: 0.0837, C4: 0.0412]. Min is C4. (Candidate)
+- Node 1 (0.1543): Neighbors [C2: 0.0837, C4: 0.0150]. Min is C4. (Candidate)
 - **Node 2 (0.0837)**: Neighbors [C1: 0.1543, C3: 0.2318]. Min is C2. (🏆 **INITIATOR**)
 - Node 3 (0.2318): Neighbors [C2: 0.0837, C5: 0.3185, C6: 0.4721, C7: 0.3564]. Min is C2. (Candidate)
-- **Node 4 (0.0412)**: Neighbors [C1: 0.1543, C5: 0.3185, C6: 0.4721, C7: 0.3564]. Min is C4. (🏆 **INITIATOR**)
-- Node 5 (0.3185): Neighbors [C3: 0.2318, C4: 0.0412, C6: 0.4721, C10: 0.4126]. Min is C4. (Candidate)
-- Node 6 (0.4721): Neighbors [C3: 0.2318, C4: 0.0412, C5: 0.3185, C8: 0.0275, C9: 0.2947]. Min is C8. (Candidate)
-- Node 7 (0.3564): Neighbors [C3: 0.2318, C4: 0.0412, C9: 0.2947]. Min is C4. (Candidate)
+- **Node 4 (0.0150)**: Neighbors [C1: 0.1543, C5: 0.3185, C6: 0.4721, C7: 0.3564]. Min is C4. (🏆 **INITIATOR**)
+- Node 5 (0.3185): Neighbors [C3: 0.2318, C4: 0.0150, C6: 0.4721, C10: 0.4126]. Min is C4. (Candidate)
+- Node 6 (0.4721): Neighbors [C3: 0.2318, C4: 0.0150, C5: 0.3185, C8: 0.0275, C9: 0.2947]. Min is C4. (Candidate)
+- Node 7 (0.3564): Neighbors [C3: 0.2318, C4: 0.0150, C9: 0.2947]. Min is C4. (Candidate)
 - **Node 8 (0.0275)**: Neighbors [C6: 0.4721, C9: 0.2947, C10: 0.4126]. Min is C8. (🏆 **INITIATOR**)
 - Node 9 (0.2947): Neighbors [C6: 0.4721, C7: 0.3564, C8: 0.0275, C10: 0.4126]. Min is C8. (Candidate)
 - Node 10 (0.4126): Neighbors [C5: 0.3185, C8: 0.0275, C9: 0.2947]. Min is C8. (Candidate)
@@ -379,8 +379,8 @@ Flanking initiators transmit their local VRF scores inward along multi-hop overl
 
 ### Phase 2: Outward Relay of Network-Wide Scores from $C_4$
 Having accumulated the scores from both endpoints, $C_4$ relays the complete scoreboard outward to guarantee full network visibility:
-- **Trace 3 ($C_4 \to C_2$ via path $[4, 1, 2]$):** $C_4$ sends its own score $\sigma_4 = 0.0412$ and relays $\sigma_8 = 0.0275$ to $C_2$.
-- **Trace 4 ($C_4 \to C_8$ via path $[4, 6, 8]$):** $C_4$ sends its own score $\sigma_4 = 0.0412$ and relays $\sigma_2 = 0.0837$ to $C_8$.
+- **Trace 3 ($C_4 \to C_2$ via path $[4, 1, 2]$):** $C_4$ sends its own score $\sigma_4 = 0.0150$ and relays $\sigma_8 = 0.0275$ to $C_2$.
+- **Trace 4 ($C_4 \to C_8$ via path $[4, 6, 8]$):** $C_4$ sends its own score $\sigma_4 = 0.0150$ and relays $\sigma_2 = 0.0837$ to $C_8$.
 
 ### Overlay VRF Scoreboards on Initiators
 Following two-way score dissemination, each initiator populates an explicit Overlay Scoreboard, validating Node $C_4$'s election as the Top-Level Super-Initiator:
@@ -389,14 +389,14 @@ Following two-way score dissemination, each initiator populates an explicit Over
    | Initiator | Role / Origin | VRF Score ($\sigma$) | Election Status |
    |---|---|---|---|
    | $C_2$ | Self | $0.0837$ | Member |
-   | $C_4$ | Direct Neighbor (Gateway $C_1$) | $0.0412$ | 🏆 **Elected Top-Level Initiator** |
+   | $C_4$ | Direct Neighbor (Gateway $C_1$) | $0.0150$ | 🏆 **Elected Top-Level Initiator** |
    | $C_8$ | Relayed via $C_4$ | $0.0275$ | Member |
    *Elected Leader: $C_4$ (Central aggregation bridge).*
 
 2. **Node 4 ($C_4$) Scoreboard (Winner):**
    | Initiator | Role / Origin | VRF Score ($\sigma$) | Election Status |
    |---|---|---|---|
-   | $C_4$ | Self (Central Bridge) | $0.0412$ | 🏆 **Elected Top-Level Initiator (👑👑)** |
+   | $C_4$ | Self (Central Bridge) | $0.0150$ | 🏆 **Elected Top-Level Initiator (👑👑)** |
    | $C_2$ | Direct Neighbor West (Gateway $C_1$) | $0.0837$ | Member |
    | $C_8$ | Direct Neighbor East (Gateway $C_6$) | $0.0275$ | Member |
    *Elected Leader: $C_4$ (Self, Central Hub).*
@@ -405,7 +405,7 @@ Following two-way score dissemination, each initiator populates an explicit Over
    | Initiator | Role / Origin | VRF Score ($\sigma$) | Election Status |
    |---|---|---|---|
    | $C_8$ | Self | $0.0275$ | Member |
-   | $C_4$ | Direct Neighbor (Gateway $C_6$) | $0.0412$ | 🏆 **Elected Top-Level Initiator** |
+   | $C_4$ | Direct Neighbor (Gateway $C_6$) | $0.0150$ | 🏆 **Elected Top-Level Initiator** |
    | $C_2$ | Relayed via $C_4$ | $0.0837$ | Member |
    *Elected Leader: $C_4$ (Central aggregation bridge).*
 
@@ -427,7 +427,7 @@ Initiate the hierarchical metadata exchange across the newly formed Super-Zone $
 
 ### Control Packet Specification
 1. **Query Message Type**: `REQ_CLUSTER_CATALOG`
-2. **Root Initiator**: $C_4$ ($\sigma = 0.0412$)
+2. **Root Initiator**: $C_4$ ($\sigma = 0.0150$)
 3. **Dispatch Routes & Overlay Traces**:
    - **Branch West ($C_4 \to C_2$)**:
      $$\text{Packet 1}: \quad C_4 \xrightarrow{\text{physical link}} C_1 \xrightarrow{\text{physical link}} C_2$$

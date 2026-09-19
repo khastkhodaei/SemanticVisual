@@ -13,8 +13,8 @@ Verifies:
 4. 1-hop bidirectional VRF score exchange events on overlay graph G_init:
    - C2 -> C4: score 0.0837 via path [2, 1, 4]
    - C8 -> C4: score 0.0275 via path [8, 6, 4]
-   - C4 -> C2: score 0.0412 via path [4, 1, 2]
-   - C4 -> C8: score 0.0412 via path [4, 6, 8]
+   - C4 -> C2: score 0.0150 via path [4, 1, 2]
+   - C4 -> C8: score 0.0150 via path [4, 6, 8]
 5. Symmetrical TOP_PROBE broadcasts from C4 with TTL=1:
    - C4 -> C1 -> C2 (root=4, ttl=1)
    - C4 -> C6 -> C8 (root=4, ttl=1)
@@ -67,7 +67,7 @@ def test_step14_top_level_zone_structure():
     assert top_zone["winner_initiator"] == 4
     assert set(top_zone["member_initiators"]) == {2, 4, 8}
     assert top_zone["ttl"] == 1
-    assert top_zone["vrf_scores"][4] == 0.0412
+    assert top_zone["vrf_scores"][4] == 0.0150
     assert top_zone["vrf_scores"][8] == 0.0275
     assert top_zone["vrf_scores"][2] == 0.0837
 
@@ -119,12 +119,12 @@ def test_step14_vrf_score_exchange_events():
 
     # C4 -> C2
     assert (4, 2) in exchanges
-    assert exchanges[(4, 2)]["score"] == 0.0412
+    assert exchanges[(4, 2)]["score"] == 0.0150
     assert exchanges[(4, 2)]["path"] == [4, 1, 2]
 
     # C4 -> C8
     assert (4, 8) in exchanges
-    assert exchanges[(4, 8)]["score"] == 0.0412
+    assert exchanges[(4, 8)]["score"] == 0.0150
     assert exchanges[(4, 8)]["path"] == [4, 6, 8]
 
 
@@ -197,14 +197,14 @@ def test_step14_overlay_scoreboards_and_traces():
     assert sb2["self"]["score"] == 0.0837
     assert sb2["elected_leader"] == 4
     recv2 = {r["id"]: r for r in sb2["received"]}
-    assert 4 in recv2 and recv2[4]["score"] == 0.0412 and recv2[4]["via"] == "direct"
+    assert 4 in recv2 and recv2[4]["score"] == 0.0150 and recv2[4]["via"] == "direct"
     assert 8 in recv2 and recv2[8]["score"] == 0.0275 and recv2[8]["via"] == "relayed_by_C4"
 
     # Node 4 Scoreboard
     sb4 = nodes[4].get("overlay_scoreboard")
     assert sb4 is not None
     assert sb4["self"]["id"] == 4
-    assert sb4["self"]["score"] == 0.0412
+    assert sb4["self"]["score"] == 0.0150
     assert sb4["elected_leader"] == 4
     assert sb4["is_winner"] is True
     recv4 = {r["id"]: r for r in sb4["received"]}
@@ -218,7 +218,7 @@ def test_step14_overlay_scoreboards_and_traces():
     assert sb8["self"]["score"] == 0.0275
     assert sb8["elected_leader"] == 4
     recv8 = {r["id"]: r for r in sb8["received"]}
-    assert 4 in recv8 and recv8[4]["score"] == 0.0412 and recv8[4]["via"] == "direct"
+    assert 4 in recv8 and recv8[4]["score"] == 0.0150 and recv8[4]["via"] == "direct"
     assert 2 in recv8 and recv8[2]["score"] == 0.0837 and recv8[2]["via"] == "relayed_by_C4"
 
     # 3. Assert elected_leader == 4 across all three initiators
@@ -238,11 +238,11 @@ def test_step14_overlay_scoreboards_and_traces():
     assert t2["path"] == [8, 6, 4]
 
     t3 = next(t for t in traces if t["from"] == 4 and t["to"] == 2)
-    assert t3["payload"] == {"C4_vrf": 0.0412, "relayed_C8_vrf": 0.0275}
+    assert t3["payload"] == {"C4_vrf": 0.0150, "relayed_C8_vrf": 0.0275}
     assert t3["path"] == [4, 1, 2]
 
     t4 = next(t for t in traces if t["from"] == 4 and t["to"] == 8)
-    assert t4["payload"] == {"C4_vrf": 0.0412, "relayed_C2_vrf": 0.0837}
+    assert t4["payload"] == {"C4_vrf": 0.0150, "relayed_C2_vrf": 0.0837}
     assert t4["path"] == [4, 6, 8]
 
 
@@ -261,7 +261,7 @@ def test_step14_steps_markdown_documentation():
     """Verify STEPS.md contains documentation for Step 14 with C4 Top-Level Initiator."""
     steps_file = Path(__file__).resolve().parent.parent / "STEPS.md"
     assert steps_file.exists()
-    content = steps_file.read_text()
+    content = steps_file.read_text(encoding="utf-8")
     assert "## Step 14 — Top-Level Initiator Election & Super-Zone Creation (Figure 3(e))" in content
     assert r"\mathcal{G}_{\text{init}}" in content
     assert "Phase 1: Inward VRF Score Reporting to Central Bridge" in content

@@ -323,7 +323,7 @@ const STORYBOARD_10_VRF_SCORES = {
   1: 0.1543,
   2: 0.0837,
   3: 0.2318,
-  4: 0.0412,
+  4: 0.0150,
   5: 0.3185,
   6: 0.4721,
   7: 0.3564,
@@ -2346,7 +2346,7 @@ function renderStep4(data) {
   logToTerminal("VRF_TX", "[1/4 SCORE TRANSMISSION] Broadcasting local VRF scores to direct 1-hop physical neighbors...");
   logToTerminal("VRF_RX", "[2/4 SCORE RECEPTION] 1-hop neighbor scores received across all 18 physical links.");
   logToTerminal("ELECTION", "[3/4 WINNER SELECTION] Evaluating closed-ball minimums: m_p = min_{q in N_1(p) U {p}} (sigma_q, id_q).");
-  logToTerminal("INITIATOR", "[4/4 INITIATOR IDENTIFIED] Node 4 (0.0412) elected Winner -> Dark Green");
+  logToTerminal("INITIATOR", "[4/4 INITIATOR IDENTIFIED] Node 4 (0.0150) elected Winner -> Dark Green");
   logToTerminal("INITIATOR", "[4/4 INITIATOR IDENTIFIED] Node 2 (0.0837) elected Winner -> Dark Red");
   logToTerminal("INITIATOR", "[4/4 INITIATOR IDENTIFIED] Node 8 (0.0275) elected Winner -> Dark Yellow");
 
@@ -4150,7 +4150,7 @@ function renderStep14(data) {
 
   logToTerminal("ZONE", "[STEP 14] Hierarchical Top-Level Zone Creation initialized (Figure 3(e)).");
   logToTerminal("INFO", "Base zone initiators form higher-level overlay graph: V_init={C2, C4, C8}, E_init={(C2, C4), (C4, C8)}.");
-  logToTerminal("VRF", "Phase 1 (1-Hop VRF Exchange): C2 <-> C4 (scores 0.0837 <-> 0.0412 via C1) and C4 <-> C8 (scores 0.0412 <-> 0.0275 via C6).");
+  logToTerminal("VRF", "Phase 1 (1-Hop VRF Exchange): C2 <-> C4 (scores 0.0837 <-> 0.0150 via C1) and C4 <-> C8 (scores 0.0150 <-> 0.0275 via C6).");
   logToTerminal("SUCCESS", "Phase 2 (Election): Node C4 elected as central Top-Level Super-Initiator 👑👑 (Bridge hub connecting West & East).");
   logToTerminal("ZONE", "Phase 3 (Symmetrical Probing): Initiator C4 broadcasts TOP_PROBE(TTL=1) symmetrically to C2 (via C1) and C8 (via C6).");
   logToTerminal("SUCCESS", "Phase 4 (Super-Zone Formed): Top-Level Super-Zone Z_TOP established (Root: C4, Members: [C2, C4, C8]).");
@@ -4296,7 +4296,7 @@ function animateStep14TopProbe(packets, allNodes) {
 
     // 4-Step Canvas Animation Sequence for Step 13:
     // Step A (progress < 0.28): Inward reporting C2 -> C4 (VRF: 0.0837) & C8 -> C4 (VRF: 0.0275)
-    // Step B (0.28 <= progress < 0.56): Outward relay C4 -> C2 ({C4:0.0412, C8:0.0275}) & C4 -> C8 ({C4:0.0412, C2:0.0837})
+    // Step B (0.28 <= progress < 0.56): Outward relay C4 -> C2 ({C4:0.0150, C8:0.0275}) & C4 -> C8 ({C4:0.0150, C2:0.0837})
     // Step C (0.56 <= progress < 0.72): Node 4 flashes golden halo and receives 👑👑 TOP INITIATOR badge
     // Step D (0.72 <= progress <= 1.0): Golden TOP_PROBE pulses spread simultaneously C4 -> C2 and C4 -> C8
 
@@ -4384,7 +4384,7 @@ function animateStep14TopProbe(packets, allNodes) {
       ctx.fillText(statTxt, statusX, statusY);
       ctx.restore();
 
-      // Relay 1: C4 -> C2 via C1 (carrying SCORES: {C4:0.0412, C8:0.0275})
+      // Relay 1: C4 -> C2 via C1 (carrying SCORES: {C4:0.0150, C8:0.0275})
       let x4_2, y4_2;
       const tgt1 = p1 || p2;
       if (subB < 0.5) {
@@ -4399,7 +4399,7 @@ function animateStep14TopProbe(packets, allNodes) {
         y4_2 = tgt1.y + (p2.y - tgt1.y) * e;
       }
 
-      // Relay 2: C4 -> C8 via C6 (carrying SCORES: {C4:0.0412, C2:0.0837})
+      // Relay 2: C4 -> C8 via C6 (carrying SCORES: {C4:0.0150, C2:0.0837})
       let x4_8, y4_8;
       const tgt6 = p6 || p8;
       if (subB < 0.5) {
@@ -4415,8 +4415,8 @@ function animateStep14TopProbe(packets, allNodes) {
       }
 
       // Render outward relay packets
-      drawVrfPacket(ctx, x4_2, y4_2, "#f97316", "SCORES: {C4:0.0412, C8:0.0275}", true);
-      drawVrfPacket(ctx, x4_8, y4_8, "#f97316", "SCORES: {C4:0.0412, C2:0.0837}", false);
+      drawVrfPacket(ctx, x4_2, y4_2, "#f97316", "SCORES: {C4:0.0150, C8:0.0275}", true);
+      drawVrfPacket(ctx, x4_8, y4_8, "#f97316", "SCORES: {C4:0.0150, C2:0.0837}", false);
 
     } else if (progress < 0.72) {
       // ===== STEP C: NODE 4 FLASHES GOLDEN HALO & RECEIVES TOP INITIATOR BADGE =====
@@ -13506,20 +13506,20 @@ function renderOverlayVrfScoreboardHtml(idNum, scoreboard) {
   if (idNum === 2) {
     rows = [
       { id: 2, origin: "Self", score: 0.0837, status: "Base Zone Initiator", isWinner: false },
-      { id: 4, origin: "Direct Neighbor", score: 0.0412, status: "🏆 Elected Top-Level Initiator", isWinner: true },
+      { id: 4, origin: "Direct Neighbor", score: 0.0150, status: "🏆 Elected Top-Level Initiator", isWinner: true },
       { id: 8, origin: "Relayed via C4", score: 0.0275, status: "Base Zone Initiator", isWinner: false }
     ];
   } else if (idNum === 8) {
     rows = [
       { id: 2, origin: "Relayed via C4", score: 0.0837, status: "Base Zone Initiator", isWinner: false },
-      { id: 4, origin: "Direct Neighbor", score: 0.0412, status: "🏆 Elected Top-Level Initiator", isWinner: true },
+      { id: 4, origin: "Direct Neighbor", score: 0.0150, status: "🏆 Elected Top-Level Initiator", isWinner: true },
       { id: 8, origin: "Self", score: 0.0275, status: "Base Zone Initiator", isWinner: false }
     ];
   } else {
     // Node 4 (Central Bridge Hub / Elected Super-Initiator)
     rows = [
       { id: 2, origin: "Direct Neighbor", score: 0.0837, status: "Base Zone Initiator", isWinner: false },
-      { id: 4, origin: "Self", score: 0.0412, status: "🏆 Elected Top-Level Initiator", isWinner: true },
+      { id: 4, origin: "Self", score: 0.0150, status: "🏆 Elected Top-Level Initiator", isWinner: true },
       { id: 8, origin: "Direct Neighbor", score: 0.0275, status: "Base Zone Initiator", isWinner: false }
     ];
   }
@@ -13598,7 +13598,7 @@ function renderOverlayVrfScoreboardHtml(idNum, scoreboard) {
       </div>
       <div class="text-[8.5px] text-slate-500 font-sans italic flex items-center justify-between px-0.5">
         <span>Multi-way VRF dissemination across C2 ↔ C4 ↔ C8 overlay.</span>
-        <span class="font-semibold text-amber-900 font-mono">Consensus: C4 (0.0412)</span>
+        <span class="font-semibold text-amber-900 font-mono">Consensus: C4 (0.0150)</span>
       </div>
     </div>
   `;
