@@ -109,11 +109,19 @@ def test_step16_node4_global_cluster_catalog(client):
     assert c4a["members"] == [4, 5]
     assert c4a["mask"] == [0, 0, 0, 1, 1, 1, 0, 0, 0, 0]
 
+    c4b = next(c for c in catalog if c["cluster_id"] == "4-B")
+    assert c4b["zone"] == 4
+    assert c4b["exemplar"] == 7
+    assert c4b["members"] == [6, 7]
+    assert c4b["mask"] == [0, 0, 0, 0, 0, 0, 0, 1, 1, 1]
+    assert c4b["categories"] == ["Horse", "Ship", "Truck"]
+
     c8c = next(c for c in catalog if c["cluster_id"] == "8-C")
     assert c8c["zone"] == 8
     assert c8c["exemplar"] == 10
     assert c8c["members"] == [10]
     assert c8c["mask"] == [0, 0, 0, 0, 0, 0, 0, 1, 1, 1]
+    assert c8c["categories"] == ["Horse", "Ship", "Truck"]
 
 
 def test_step16_nodes_2_and_8_reported_clusters(client):

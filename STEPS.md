@@ -509,12 +509,12 @@ Where:
 | Cluster ID | Zone | Exemplar Node | Member Clients | 10D Binary Profile Mask $\mathbf{m}_c$ | Dominant Semantic Categories |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **2-A** | Zone 2 | $C_1$ | $\{C_1, C_2\}$ | `[1, 1, 1, 0, 0, 0, 0, 0, 0, 0]` | Airplane, Automobile, Bird |
-| **2-B** | Zone 2 | $C_3$ | $\{C_3\}$ | `[0, 0, 0, 1, 1, 1, 0, 0, 0, 0]` | Deer, Dog, Frog |
-| **4-A** | Zone 4 | $C_5$ | $\{C_4, C_5\}$ | `[0, 0, 0, 1, 1, 1, 0, 0, 0, 0]` | Deer, Dog, Frog |
-| **4-B** | Zone 4 | $C_7$ | $\{C_6, C_7\}$ | `[0, 0, 0, 0, 0, 0, 1, 1, 1, 1]` | Horse, Ship, Truck |
-| **8-A** | Zone 8 | $C_8$ | $\{C_8\}$ | `[0, 0, 0, 1, 1, 1, 0, 0, 0, 0]` | Deer, Dog, Frog |
+| **2-B** | Zone 2 | $C_3$ | $\{C_3\}$ | `[0, 0, 0, 1, 1, 1, 0, 0, 0, 0]` | Cat, Deer, Dog |
+| **4-A** | Zone 4 | $C_5$ | $\{C_4, C_5\}$ | `[0, 0, 0, 1, 1, 1, 0, 0, 0, 0]` | Cat, Deer, Dog |
+| **4-B** | Zone 4 | $C_7$ | $\{C_6, C_7\}$ | `[0, 0, 0, 0, 0, 0, 0, 1, 1, 1]` | Horse, Ship, Truck |
+| **8-A** | Zone 8 | $C_8$ | $\{C_8\}$ | `[0, 0, 0, 1, 1, 1, 0, 0, 0, 0]` | Cat, Deer, Dog |
 | **8-B** | Zone 8 | $C_9$ | $\{C_9\}$ | `[1, 1, 1, 0, 0, 0, 0, 0, 0, 0]` | Airplane, Automobile, Bird |
-| **8-C** | Zone 8 | $C_{10}$ | $\{C_{10}\}$ | `[0, 0, 0, 0, 0, 0, 0, 1, 1, 1]` | Ship, Truck |
+| **8-C** | Zone 8 | $C_{10}$ | $\{C_{10}\}$ | `[0, 0, 0, 0, 0, 0, 0, 1, 1, 1]` | Horse, Ship, Truck |
 
 Total Registered Clusters: **7 Clusters**.
 
@@ -559,10 +559,10 @@ The evaluated pairwise Cosine Similarities between the 7 cluster profile masks:
 | **2-A** | **1.000** | 0.000 | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | **$\mathcal{SC}_1$** | Classes 1, 2, 3 (Aviation & Vehicles) |
 | **2-B** | 0.000 | **1.000** | **1.000** | 0.000 | **1.000** | 0.000 | 0.000 | **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Animals) |
 | **4-A** | 0.000 | **1.000** | **1.000** | 0.000 | **1.000** | 0.000 | 0.000 | **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Animals) |
-| **4-B** | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | 0.000 | **0.866** | **$\mathcal{SC}_3$** | Classes 8, 9, 10 (Heavy Transport & Amphibians) |
+| **4-B** | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | 0.000 | **1.000** | **$\mathcal{SC}_3$** | Classes 8, 9, 10 (Heavy Transport & Amphibians) |
 | **8-A** | 0.000 | **1.000** | **1.000** | 0.000 | **1.000** | 0.000 | 0.000 | **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Animals) |
 | **8-B** | **1.000** | 0.000 | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | **$\mathcal{SC}_1$** | Classes 1, 2, 3 (Aviation & Vehicles) |
-| **8-C** | 0.000 | 0.000 | 0.000 | **0.866** | 0.000 | 0.000 | **1.000** | **$\mathcal{SC}_3$** | Classes 8, 9, 10 (Heavy Transport & Amphibians) |
+| **8-C** | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | 0.000 | **1.000** | **$\mathcal{SC}_3$** | Classes 8, 9, 10 (Heavy Transport & Amphibians) |
 
 ### Global Super-Clusters Specification
 1. **Super-Cluster 1 ($\mathcal{SC}_1$) — Aviation & Vehicles (C1–C3)**:
@@ -576,7 +576,7 @@ The evaluated pairwise Cosine Similarities between the 7 cluster profile masks:
    - **Clusters**: `{"2-B", "4-A", "8-A"}`
    - **Member Clients / Peers**: $\{C_3, C_4, C_5, C_8\}$
    - **Exemplar Nodes**: $\{C_3, C_5, C_8\}$
-   - **Dominant Semantic Features**: Classes 4, 5, 6 (Deer, Dog, Frog)
+   - **Dominant Semantic Features**: Classes 4, 5, 6 (Cat, Deer, Dog)
    - **Visual Accent**: Glowing Amber/Orange (`#fbbf24`)
 
 3. **Super-Cluster 3 ($\mathcal{SC}_3$) — Heavy Transport & Amphibians (C7–C10)**:

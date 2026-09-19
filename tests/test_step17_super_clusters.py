@@ -14,7 +14,7 @@ Verifies:
 5. Pairwise Cosine Similarity values:
    - Diagonals are 1.0
    - sim(2-A, 8-B) == 1.0
-   - sim(4-B, 8-C) == 0.866
+   - sim(4-B, 8-C) == 1.0
    - Orthogonal pairs == 0.0
 6. SemanticDFLEngine().run_meta_clustering_super_clusters_10nodes() returns valid step 17 data.
 7. STEPS.md contains documentation for Step 17 with 7x7 similarity matrix and 3 Global Super-Clusters.
@@ -149,9 +149,9 @@ def test_step17_node4_similarity_matrix_7x7(client):
     assert matrix[idx["4-A"]][idx["8-A"]] == 1.0
     assert matrix[idx["2-B"]][idx["8-A"]] == 1.0
 
-    # 4-B and 8-C have masks [0,0,0,0,0,0,1,1,1,1] and [0,0,0,0,0,0,0,1,1,1] -> 3 / (2 * sqrt(3)) = 0.866
-    assert matrix[idx["4-B"]][idx["8-C"]] == 0.866
-    assert matrix[idx["8-C"]][idx["4-B"]] == 0.866
+    # 4-B and 8-C have identical mask [0,0,0,0,0,0,0,1,1,1] -> similarity 1.0
+    assert matrix[idx["4-B"]][idx["8-C"]] == 1.0
+    assert matrix[idx["8-C"]][idx["4-B"]] == 1.0
 
     # Orthogonal clusters must be 0.0
     assert matrix[idx["2-A"]][idx["4-A"]] == 0.0
