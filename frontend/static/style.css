@@ -131,14 +131,23 @@ body {
   overflow: hidden;
 }
 
-/* Formula Card at Top of Sidebar */
+/* Formula Card at Top of Sidebar - Lock uniform dimensions across all steps (standardized to Step 25) */
 .formula-card,
-.sidebar-card-top {
-  flex: 0 0 auto;
-  min-height: 170px;
+.sidebar-card-top,
+.step-summary-card,
+#formulaCardContainer,
+#sidebarFormulaCard {
+  height: 205px;             /* Exact target height calibrated from Step 25 */
+  min-height: 205px;
+  max-height: 205px;
+  flex: 0 0 205px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  overflow-y: auto;          /* Graceful scroll if text runs long */
+  scrollbar-width: none;     /* Firefox */
+  -ms-overflow-style: none;  /* IE/Edge */
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid var(--border-strong);
   border-left: 4px solid var(--brand-blue);
@@ -146,7 +155,13 @@ body {
   padding: 0.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: border-color 0.2s ease;
-  box-sizing: border-box;
+}
+
+.formula-card::-webkit-scrollbar,
+.sidebar-card-top::-webkit-scrollbar,
+#formulaCardContainer::-webkit-scrollbar,
+#sidebarFormulaCard::-webkit-scrollbar {
+  display: none;             /* Chrome/Safari */
 }
 
 /* Bottom Card: Dataset Classes & Telemetry */
@@ -170,13 +185,16 @@ body {
   overflow-y: auto;
 }
 
-/* Ensure raw LaTeX equations render cleanly without overflow */
+/* Ensure formula display block is vertically balanced without overflow */
+.formula-display,
+.math-container,
 .formula-container,
 #sidebarFormula {
+  min-height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
+  margin: 6px 0;
   padding: 4px 0;
   overflow-x: auto;
   overflow-y: hidden;
