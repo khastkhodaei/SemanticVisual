@@ -7700,25 +7700,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     const pulse = (Math.sin((elapsed / 600) * Math.PI) + 1) / 2;
     const tCycle = elapsed % CYCLE_MS;
 
-    // 2. TIER 3 (Top - Global Super-Peers): Standalone Header Badge & Plane
-    ctx.save();
-    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-    const t3Title = "TIER 3: GLOBAL SUPER-PEERS (OVERLAY PLANE)";
-    const t3W = ctx.measureText(t3Title).width;
-    const t3CenterY = mapY(36);
-    ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
-    ctx.strokeStyle = "#f59e0b";
-    ctx.lineWidth = 1.0;
-    drawRoundedRect(ctx, canvas.width / 2 - t3W / 2 - 8, t3CenterY - 8, t3W + 16, 16, 4);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#f59e0b";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(t3Title, canvas.width / 2, t3CenterY);
-    ctx.restore();
-
-    // 3. TIER 2 (Middle - Intra-Zone Exemplars):
+    // 2. TIER 2 (Middle - Intra-Zone Exemplars):
     // Horizontal rounded capsule across middle with soft rose fill & dashed border
     ctx.save();
     ctx.fillStyle = "rgba(244, 63, 94, 0.08)";
@@ -7729,25 +7711,9 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
     ctx.fill();
     ctx.stroke();
     ctx.setLineDash([]);
-
-    // Oval Hull Title Badge
-    ctx.font = "bold 9px ui-monospace, SFMono-Regular, monospace";
-    const t2Title = "TIER 2: INTRA-ZONE EXEMPLARS (ROSE OVAL HULL)";
-    const t2W = ctx.measureText(t2Title).width;
-    const t2BadgeY = hull.y - 1;
-    ctx.fillStyle = "rgba(15, 23, 42, 0.90)";
-    ctx.strokeStyle = "#f43f5e";
-    ctx.lineWidth = 1.0;
-    drawRoundedRect(ctx, canvas.width / 2 - t2W / 2 - 8, t2BadgeY - 8, t2W + 16, 16, 4);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#fda4af";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(t2Title, canvas.width / 2, t2BadgeY);
     ctx.restore();
 
-    // 4. TIER 1 (Bottom - Base Clients Grouped into 3 Physical Zones Capsules)
+    // 3. TIER 1 (Bottom - Base Clients Grouped into 3 Physical Zones Capsules)
     capsules.forEach((cap) => {
       ctx.save();
       ctx.fillStyle = cap.fill;
@@ -7758,16 +7724,10 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
       ctx.fill();
       ctx.stroke();
       ctx.setLineDash([]);
-
-      ctx.font = "bold 8.5px ui-monospace, SFMono-Regular, monospace";
-      ctx.fillStyle = cap.color;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      ctx.fillText(cap.name, cap.centerX, cap.y + 6);
       ctx.restore();
     });
 
-    // 5. Draw 17 Dashed Hierarchy Links
+    // 4. Draw 17 Dashed Hierarchy Links
     drawFigure3fCanonicalOverlayEdges(ctx, nodePosMap);
 
     // 6. Live Ping-Pong Heartbeat Animation
