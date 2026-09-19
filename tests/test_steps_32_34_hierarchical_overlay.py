@@ -23,13 +23,13 @@ def client():
 
 
 def test_steps_32_33_34_layout_button_label_in_app_js():
-    """Verify loadStep and layout toggle configure 'Hierarchical Overlay (Figure 3(f))' for steps 32-34."""
+    """Verify loadStep and layout toggle configure 'Semantic Overlay Network' for steps 20-34."""
     app_path = Path(__file__).resolve().parent.parent / "frontend" / "static" / "app.js"
     assert app_path.exists()
     content = app_path.read_text(encoding="utf-8")
 
-    # loadStep covers steps 30 to 34
-    assert re.search(r"stepNumber\s*>=\s*30\s*&&\s*stepNumber\s*<=\s*34", content)
+    # loadStep covers steps 20 to 34 without forcing layout reset
+    assert re.search(r"stepNumber\s*>=\s*20", content)
     # updateLayoutButtonLabel covers steps 20 to 34
     assert re.search(r"currentStep\s*>=\s*20\s*&&\s*currentStep\s*<=\s*34", content)
 

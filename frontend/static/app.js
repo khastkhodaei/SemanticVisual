@@ -1551,17 +1551,7 @@ async function loadStep(stepNumber) {
     window.currentStep = currentStep;
     window.currentStepData = currentStepData;
 
-    if (stepNumber >= 30) {
-      // Ensure physical layout is default
-      if (currentLayout === "hierarchical" || currentLayout === "figure3f" || currentLayout === "overlay") {
-        setLayout("physical");
-      }
-      if (stepNumber >= 30 && stepNumber <= 34) {
-        updateLayoutButtonLabel("Semantic Overlay Network");
-      } else {
-        updateLayoutButtonLabel("Logical Top-2 Overlay");
-      }
-    } else if (stepNumber >= 20) {
+    if (stepNumber >= 20) {
       updateLayoutButtonLabel("Semantic Overlay Network");
     }
 
