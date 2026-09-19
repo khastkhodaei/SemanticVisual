@@ -9,6 +9,8 @@ let currentConfig = null;
 let currentStepData = null;
 let cy = null;
 let activeSelectedNodeId = null;
+let currentSelectedNodeId = null;
+window.currentSelectedNodeId = null;
 let activeSelectedNodeData = null;
 let activeAnimationId = null;
 let currentLayout = "physical"; // "physical" | "overlay"
@@ -1062,32 +1064,86 @@ function initCytoscape() {
 
   function handleNodeClick(node) {
     console.log("Clicked node:", node);
-    if (!node) return;
+    if (node === null || node === undefined) return;
 
-    if (node && typeof node.position === "function") {
-      const pos = node.position();
-      node.position({ x: pos.x, y: pos.y });
+    let nid = null;
+    let nodeData = null;
+
+    if (typeof node === "number") {
+      nid = node;
+    } else if (typeof node === "string") {
+      nid = parseInt(node.replace(/\D/g, ""), 10);
+    } else if (typeof node.data === "function") {
+      const d = node.data();
+      const raw = d.node_id_num ?? d.id;
+      nid = typeof raw === "string" ? parseInt(raw.replace(/\D/g, ""), 10) : Number(raw);
+      nodeData = d;
+      if (typeof node.position === "function") {
+        const pos = node.position();
+        node.position({ x: pos.x, y: pos.y });
+      }
+    } else if (typeof node === "object") {
+      const raw = node.node_id_num ?? node.id;
+      nid = typeof raw === "string" ? parseInt(raw.replace(/\D/g, ""), 10) : Number(raw);
+      nodeData = node;
     }
 
-    const nodeData = (typeof node.data === "function") ? node.data() : node;
-    const rawId = nodeData.node_id_num ?? nodeData.id;
-    const nid = typeof rawId === "string" ? parseInt(rawId.replace(/\D/g, ""), 10) : Number(rawId);
+    if (isNaN(nid) || nid === null) return;
 
-    if (activeSelectedNodeId === nid) {
-      hideNodeModal();
-    } else {
-      activeSelectedNodeId = nid;
-      activeSelectedNodeData = nodeData;
-      renderNodeModal(nodeData, currentStepData);
+    // Strict toggle logic: if clicked node is ALREADY active, toggle it OFF (close modal)
+    if (currentSelectedNodeId === nid || activeSelectedNodeId === nid) {
+      closeNodeInspector();
+      return;
+    }
 
-      if (cy) {
-        cy.nodes().removeClass("selected-node");
-        const ele = cy.getElementById(`node_${nid}`) || cy.getElementById(nid);
-        if (ele && ele.length > 0) {
-          ele.addClass("selected-node");
-        }
+    // Otherwise, select the new node and open/update inspector
+    currentSelectedNodeId = nid;
+    activeSelectedNodeId = nid;
+    window.currentSelectedNodeId = nid;
+
+    if (!nodeData || typeof nodeData !== "object" || !nodeData.id) {
+      if (currentStepData && Array.isArray(currentStepData.nodes)) {
+        nodeData = currentStepData.nodes.find(n => n.id === nid) || { id: nid };
+      } else {
+        nodeData = { id: nid };
       }
     }
+    activeSelectedNodeData = nodeData;
+
+    renderNodeModal(nodeData, currentStepData);
+
+    const modal = document.getElementById("nodeInspectorModal") || document.getElementById("nodeModal") || document.getElementById("nodeInfoCard");
+    if (modal) {
+      modal.classList.remove("hidden");
+      modal.style.display = "block";
+      modal.classList.add("active");
+      modal.style.zIndex = "9999";
+    }
+
+    if (cy) {
+      cy.nodes().removeClass("selected-node");
+      const ele = cy.getElementById(`node_${nid}`) || cy.getElementById(nid) || cy.getElementById(String(nid));
+      if (ele && ele.length > 0) {
+        ele.addClass("selected-node");
+      }
+    }
+  }
+
+  function closeNodeInspector() {
+    hideNodeModal();
+  }
+
+  function renderNodeInspector(nodeId) {
+    let nodeData = null;
+    if (typeof nodeId === "object") {
+      nodeData = (typeof nodeId.data === "function") ? nodeId.data() : nodeId;
+    } else if (currentStepData && Array.isArray(currentStepData.nodes)) {
+      const numId = typeof nodeId === "string" ? parseInt(nodeId.replace(/\D/g, ""), 10) : Number(nodeId);
+      nodeData = currentStepData.nodes.find(n => n.id === numId) || { id: numId };
+    } else {
+      nodeData = { id: nodeId };
+    }
+    renderNodeModal(nodeData, currentStepData);
   }
 
   function openNodeModal(node) {
@@ -1099,6 +1155,9 @@ function initCytoscape() {
   }
 
   window.handleNodeClick = handleNodeClick;
+  window.closeNodeInspector = closeNodeInspector;
+  window.renderNodeInspector = renderNodeInspector;
+  window.openNodeInspector = handleNodeClick;
   window.openNodeModal = openNodeModal;
   window.selectNode = selectNode;
 
@@ -1111,14 +1170,14 @@ function initCytoscape() {
   cy.on("tap", (evt) => {
     if (isDragging) return;
     if (evt.target === cy) {
-      hideNodeModal();
+      closeNodeInspector();
     }
   });
 
   // Modal close button event
   const btnCloseModal = document.getElementById("btnCloseModal");
   if (btnCloseModal) {
-    btnCloseModal.addEventListener("click", hideNodeModal);
+    btnCloseModal.addEventListener("click", closeNodeInspector);
   }
 
   // Handle resize & pan for packet overlay canvas
@@ -1130,6 +1189,10 @@ function initCytoscape() {
 
 // 2. Setup Packet Animation Overlay Canvas
 function setupPacketCanvas() {
+  const canvas = document.getElementById("packetCanvas");
+  if (canvas && typeof ensureFigure3fCanvasListeners === "function") {
+    ensureFigure3fCanvasListeners(canvas);
+  }
   window.addEventListener("resize", () => {
     syncPacketCanvasSize();
     fitCytoscapeViewport(45);
@@ -1441,9 +1504,17 @@ function getNodeElement(id) {
 async function loadStep(stepNumber) {
   if (stepNumber < 1 || stepNumber > TOTAL_STEPS) return;
   setNavButtonsDisabled(true);
-  hideNodeModal();
+  closeNodeInspector();
+  currentSelectedNodeId = null;
+  activeSelectedNodeId = null;
+  window.currentSelectedNodeId = null;
   stopCurrentPacketAnimation();
   clearClassFilter();
+
+  const pCanvas = document.getElementById("packetCanvas");
+  if (pCanvas && typeof ensureFigure3fCanvasListeners === "function") {
+    ensureFigure3fCanvasListeners(pCanvas);
+  }
 
   try {
     let data = null;
@@ -7529,18 +7600,100 @@ function renderHierarchicalEdges(ctx, edges, nodePosMap) {
 window.renderHierarchicalEdges = renderHierarchicalEdges;
 
 function showNodeDetailsModal(nodeId) {
-  const nid = typeof nodeId === "object" ? (nodeId.id ?? nodeId) : nodeId;
-  const numId = typeof nid === "string" ? parseInt(nid.replace(/\D/g, ""), 10) : Number(nid);
-  activeSelectedNodeId = null;
-  const ele = cy ? (cy.getElementById(`node_${numId}`) || cy.getElementById(numId)) : null;
-  if (ele && ele.length > 0) {
-    handleNodeClick(ele);
-  } else if (currentStepData && Array.isArray(currentStepData.nodes)) {
-    const nodeObj = currentStepData.nodes.find(n => n.id === numId);
-    if (nodeObj) handleNodeClick(nodeObj);
-  }
+  handleNodeClick(nodeId);
 }
 window.showNodeDetailsModal = showNodeDetailsModal;
+
+function getNodeAtCanvasCoords(e, canvas) {
+  if (!canvas) return null;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / (rect.width || 1);
+  const scaleY = canvas.height / (rect.height || 1);
+  const mx = (e.clientX - rect.left) * scaleX;
+  const my = (e.clientY - rect.top) * scaleY;
+  const isFigure3f = typeof isFigure3fLayout === "function" ? isFigure3fLayout() : false;
+  const baseW = 1080;
+  const offsetX = Math.max(0, (canvas.width - baseW) / 2);
+
+  if (isFigure3f) {
+    if (currentStep > 34) {
+      if (typeof getTop2OverlayCoordinates === "function") {
+        const posMap = getTop2OverlayCoordinates(canvas);
+        for (let id = 1; id <= 10; id++) {
+          const p = posMap[id];
+          if (p && Math.hypot(mx - p.x, my - p.y) <= 28) {
+            return { id, key: `top2_${id}`, renderedX: p.x, renderedY: p.y, x: p.x, y: p.y };
+          }
+        }
+      }
+    } else {
+      if (typeof getFigure3fLayout === "function") {
+        const layout = getFigure3fLayout(canvas);
+        if (layout && layout.nodePosMap) {
+          for (const key of Object.keys(layout.nodePosMap)) {
+            const p = layout.nodePosMap[key];
+            const rHit = p.tier === 3 ? 32 : (p.tier === 2 ? 30 : 28);
+            if (Math.hypot(mx - p.renderedX, my - p.renderedY) <= rHit) {
+              return p;
+            }
+          }
+        }
+      }
+    }
+  } else {
+    for (let id = 1; id <= 10; id++) {
+      const ele = typeof getNodeElement === "function" ? getNodeElement(id) : null;
+      let px, py;
+      if (ele) {
+        const rp = ele.renderedPosition();
+        if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
+          px = rp.x;
+          py = rp.y;
+        }
+      }
+      if (px === undefined && typeof PHYSICAL_LAYOUT_COORDS !== "undefined") {
+        const c = PHYSICAL_LAYOUT_COORDS[id];
+        if (!c) continue;
+        px = c.x + offsetX;
+        py = c.y + 10;
+      }
+      if (px !== undefined && py !== undefined && Math.hypot(mx - px, my - py) <= 30) {
+        return { id, x: px, y: py };
+      }
+    }
+  }
+  return null;
+}
+window.getNodeAtCanvasCoords = getNodeAtCanvasCoords;
+
+function ensureFigure3fCanvasListeners(canvas) {
+  if (!canvas || figure3fCanvasListenersBound) return;
+  figure3fCanvasListenersBound = true;
+
+  canvas.addEventListener("pointermove", (e) => {
+    if (currentStep < 20) {
+      figure3fHoveredVirtualNode = null;
+      canvas.style.cursor = "";
+      return;
+    }
+    const found = getNodeAtCanvasCoords(e, canvas);
+    figure3fHoveredVirtualNode = found;
+    canvas.style.cursor = found ? "pointer" : "";
+  });
+
+  canvas.addEventListener("click", (e) => {
+    if (currentStep < 20) return;
+    const clickedNode = figure3fHoveredVirtualNode || getNodeAtCanvasCoords(e, canvas);
+    if (clickedNode) {
+      logToTerminal("INFO", `[INSPECTOR] Clicked Node ${clickedNode.id}.`);
+      handleNodeClick(clickedNode.id);
+    } else {
+      // Empty canvas backdrop click -> dismiss modal
+      closeNodeInspector();
+    }
+  });
+}
+window.ensureFigure3fCanvasListeners = ensureFigure3fCanvasListeners;
 
 function animateStep20SemanticOverlay(overlayEdges, allNodes) {
   stopCurrentPacketAnimation();
@@ -7551,83 +7704,7 @@ function animateStep20SemanticOverlay(overlayEdges, allNodes) {
   const ctx = canvas.getContext("2d");
 
   // Ensure interactive click & hover listeners on packetCanvas
-  if (!figure3fCanvasListenersBound) {
-    figure3fCanvasListenersBound = true;
-    canvas.addEventListener("pointermove", (e) => {
-      if (currentStep < 20) {
-        figure3fHoveredVirtualNode = null;
-        canvas.style.cursor = "";
-        return;
-      }
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / (rect.width || 1);
-      const scaleY = canvas.height / (rect.height || 1);
-      const mx = (e.clientX - rect.left) * scaleX;
-      const my = (e.clientY - rect.top) * scaleY;
-      const isFigure3f = isFigure3fLayout();
-      const baseW = 1080;
-      const offsetX = Math.max(0, (canvas.width - baseW) / 2);
-
-      if (isFigure3f) {
-        let found = null;
-        if (currentStep > 34) {
-          const posMap = getTop2OverlayCoordinates(canvas);
-          for (let id = 1; id <= 10; id++) {
-            const p = posMap[id];
-            if (p && Math.hypot(mx - p.x, my - p.y) <= 28) {
-              found = { id, key: `top2_${id}`, renderedX: p.x, renderedY: p.y, x: p.x, y: p.y };
-              break;
-            }
-          }
-        } else {
-          const layout = getFigure3fLayout(canvas);
-          for (const key of Object.keys(layout.nodePosMap)) {
-            const p = layout.nodePosMap[key];
-            const rHit = p.tier === 3 ? 32 : (p.tier === 2 ? 30 : 28);
-            if (Math.hypot(mx - p.renderedX, my - p.renderedY) <= rHit) {
-              found = p;
-              break;
-            }
-          }
-        }
-        figure3fHoveredVirtualNode = found;
-        canvas.style.cursor = found ? "pointer" : "";
-      } else {
-        let found = null;
-        for (let id = 1; id <= 10; id++) {
-          const ele = getNodeElement(id);
-          let px, py;
-          if (ele) {
-            const rp = ele.renderedPosition();
-            if (rp && typeof rp.x === "number" && !isNaN(rp.x)) {
-              px = rp.x;
-              py = rp.y;
-            }
-          }
-          if (px === undefined) {
-            const c = PHYSICAL_LAYOUT_COORDS[id];
-            if (!c) continue;
-            px = c.x + offsetX;
-            py = c.y + 10;
-          }
-          if (Math.hypot(mx - px, my - py) <= 30) {
-            found = { id, x: px, y: py };
-            break;
-          }
-        }
-        figure3fHoveredVirtualNode = found;
-        canvas.style.cursor = found ? "pointer" : "";
-      }
-    });
-
-    canvas.addEventListener("click", (e) => {
-      if (currentStep < 20) return;
-      if (figure3fHoveredVirtualNode) {
-        logToTerminal("INFO", `[INSPECTOR] Selected Node ${figure3fHoveredVirtualNode.id}.`);
-        showNodeDetailsModal(figure3fHoveredVirtualNode.id);
-      }
-    });
-  }
+  ensureFigure3fCanvasListeners(canvas);
 
   const startTime = performance.now();
   const CYCLE_MS = 4000; // 4.0s full ping-pong heartbeat loop
@@ -18350,15 +18427,26 @@ window.showNodeModal = showNodeModal;
 window.showFallbackModal = showFallbackModal;
 
 function hideNodeModal() {
-  const card = document.getElementById("nodeInfoCard");
+  const card = document.getElementById("nodeInspectorModal") || document.getElementById("nodeModal") || document.getElementById("nodeInfoCard");
   if (card) {
     card.classList.add("hidden");
-    card.classList.remove("w-96", "sm:w-[440px]");
+    card.classList.remove("w-96", "sm:w-[440px]", "active");
     card.classList.add("w-84");
     card.style.display = "none";
   }
   activeSelectedNodeId = null;
   activeSelectedNodeData = null;
+  currentSelectedNodeId = null;
+  window.currentSelectedNodeId = null;
+
+  // Remove highlight ring from canvas if active
+  if (window.activeNodeHighlight) {
+    window.activeNodeHighlight = null;
+  }
+  if (typeof requestCanvasRedraw === "function") {
+    requestCanvasRedraw();
+  }
+
   if (cy) {
     cy.nodes().removeClass("selected-node");
     if (activeClassFilterId !== null) {
@@ -18374,6 +18462,7 @@ function hideNodeModal() {
     }
   }
 }
+window.hideNodeModal = hideNodeModal;
 
 
 
