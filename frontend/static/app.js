@@ -570,6 +570,11 @@ function initCytoscape() {
       {
         selector: "node",
         style: {
+          "shape": "ellipse",
+          "background-opacity": 1,
+          "underlay-opacity": 0,
+          "underlay-padding": 0,
+          "underlay-shape": "ellipse",
           "label": function(ele) {
             const raw = ele.data("node_id_num") || ele.data("id");
             const clean = String(raw).replace("node_", "").replace("C", "");
@@ -13465,21 +13470,10 @@ function renderCytoscapeGraph(nodes, edges, options = {}) {
   setTimeout(adjustViewport, 60);
   setTimeout(adjustViewport, 250);
 
+  // Fix (closes #32): Disallow translucent rounded-square background underlays/halos behind nodes across all steps.
+  // Nodes render strictly as clean circular elements with their role badges (crowns/stars) and canonical borders.
   if (options.clusterHalos) {
-    nodes.forEach(n => {
-      const cColor = n.cluster_color || "#8b5cf6";
-      const ele = cy.getElementById(`node_${n.id}`);
-      if (ele && ele.length > 0) {
-        ele.style({
-          "underlay-color": cColor,
-          "underlay-padding": 5.5,
-          "underlay-opacity": 0.5,
-          "shadow-blur": 14,
-          "shadow-color": cColor,
-          "shadow-opacity": 0.85
-        });
-      }
-    });
+    // Underlay halos removed to ensure uniform circular node geometry across all 34 steps.
   }
 
   if (options.useZoneColors && !options.useTonalZoneColors) {
