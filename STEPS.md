@@ -331,7 +331,7 @@ Then, each Initiator executes **Affinity Propagation (AP)** clustering with pref
 2. **Zone 4 (Initiator C4) — Members: {C4, C5, C6, C7}**
    - Pairwise Cosine: $\text{Sim}(4, 5) = 1.0$, $\text{Sim}(6, 7) = 0.67$, all cross pairs = $0.0$
    - **Cluster 4-A (Exemplar C4):** {Node 4, Node 5} (100% overlap on classes C4, C5, C6)
-   - **Cluster 4-B (Exemplar C6):** {Node 6, Node 7} (67% overlap on classes C9, C10)
+   - **Cluster 4-B (Exemplar C7):** {Node 6, Node 7} (67% overlap on classes C9, C10)
 
 3. **Zone 8 (Initiator C8) — Members: {C8, C9, C10}**
    - Pairwise Cosine: All non-diagonal similarities $= 0.0$

@@ -8,7 +8,7 @@ Verifies:
    - Zone 8 (Initiator C8): 3x3 matrix with all non-diagonal similarities = 0.0.
 3. Affinity Propagation deterministic clustering partitions:
    - Zone 2: Cluster 2-A {1, 2} (Exemplar C2) & Cluster 2-B {3} (Exemplar C3).
-   - Zone 4: Cluster 4-A {4, 5} (Exemplar C4) & Cluster 4-B {6, 7} (Exemplar C6).
+   - Zone 4: Cluster 4-A {4, 5} (Exemplar C4) & Cluster 4-B {6, 7} (Exemplar C7).
    - Zone 8: 3 orthogonal clusters: Cluster 8-A {8}, Cluster 8-B {9}, Cluster 8-C {10}.
 4. All 10 nodes contain:
    - assigned_cluster_id
@@ -96,13 +96,13 @@ def test_step12_zone4_clustering():
     assert nodes[5]["cluster_exemplar"] == 4
     assert set(nodes[5]["cluster_peers"]) == {4, 5}
 
-    # Nodes 6 & 7 in Cluster 4-B with Exemplar 6
+    # Nodes 6 & 7 in Cluster 4-B with Exemplar 7
     assert nodes[6]["assigned_cluster_id"] == "4-B"
-    assert nodes[6]["cluster_exemplar"] == 6
+    assert nodes[6]["cluster_exemplar"] == 7
     assert set(nodes[6]["cluster_peers"]) == {6, 7}
 
     assert nodes[7]["assigned_cluster_id"] == "4-B"
-    assert nodes[7]["cluster_exemplar"] == 6
+    assert nodes[7]["cluster_exemplar"] == 7
     assert set(nodes[7]["cluster_peers"]) == {6, 7}
 
     # Verify Initiator C4 holds the full 4x4 intra-zone similarity matrix and clusters
