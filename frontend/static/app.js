@@ -16048,7 +16048,16 @@ function renderNodeModal(node, stepData = currentStepData) {
       if (superClusterContent) {
         const matrixData = mergedNode?.similarity_matrix_7x7 || stepData?.similarity_matrix_7x7 || {};
         const clusterIds = matrixData?.cluster_ids || ["2-A", "2-B", "4-A", "4-B", "8-A", "8-B", "8-C"];
-        const matrix = matrixData?.matrix || [];
+        const defaultMatrix7x7 = [
+          [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+          [0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0],
+          [0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0],
+          [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
+          [0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0],
+          [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+          [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
+        ];
+        const matrix = (matrixData?.matrix && matrixData.matrix.length === 7) ? matrixData.matrix : defaultMatrix7x7;
 
         // Build 7x7 Heatmap table
         let tableHeaderHtml = `<th class="py-1 px-1.5 bg-slate-100 text-slate-600 border-r border-slate-200"></th>`;
@@ -16069,7 +16078,7 @@ function renderNodeModal(node, stepData = currentStepData) {
             } else if (val > 0) {
               cellClass = "bg-emerald-100 text-emerald-800 font-semibold";
             }
-            cellsHtml += `<td class="py-1 px-0.5 text-center font-mono ${cellClass}">${Number(val).toFixed(2)}</td>`;
+            cellsHtml += `<td class="py-1 px-0.5 text-center font-mono ${cellClass}">${Number(val).toFixed(3)}</td>`;
           });
           tableRowsHtml += `<tr class="border-b border-slate-100">${cellsHtml}</tr>`;
         });

@@ -556,13 +556,13 @@ The evaluated pairwise Cosine Similarities between the 7 cluster profile masks:
 
 | Cluster | 2-A | 2-B | 4-A | 4-B | 8-A | 8-B | 8-C | Super-Cluster | Dominant Classes |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **2-A** | **1.000** | 0.000 | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | **$\mathcal{SC}_1$** | Classes 1, 2, 3 (Aviation & Vehicles) |
-| **2-B** | 0.000 | **1.000** | **1.000** | 0.000 | **1.000** | 0.000 | 0.000 | **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Animals) |
-| **4-A** | 0.000 | **1.000** | **1.000** | 0.000 | **1.000** | 0.000 | 0.000 | **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Animals) |
-| **4-B** | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | 0.000 | **1.000** | **$\mathcal{SC}_3$** | Classes 8, 9, 10 (Heavy Transport & Amphibians) |
-| **8-A** | 0.000 | **1.000** | **1.000** | 0.000 | **1.000** | 0.000 | 0.000 | **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Animals) |
-| **8-B** | **1.000** | 0.000 | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | **$\mathcal{SC}_1$** | Classes 1, 2, 3 (Aviation & Vehicles) |
-| **8-C** | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | 0.000 | **1.000** | **$\mathcal{SC}_3$** | Classes 8, 9, 10 (Heavy Transport & Amphibians) |
+| **2-A** | **1.000** | 0.000 | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | **$\mathcal{SC}_1$** | Classes 1, 2, 3 (Airplane, Automobile, Bird) |
+| **2-B** | 0.000 | **1.000** | **1.000** | 0.000 | **1.000** | 0.000 | 0.000 | **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Cat, Deer, Dog) |
+| **4-A** | 0.000 | **1.000** | **1.000** | 0.000 | **1.000** | 0.000 | 0.000 | **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Cat, Deer, Dog) |
+| **4-B** | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | 0.000 | **1.000** | **$\mathcal{SC}_3$** | Classes 8, 9, 10 (Horse, Ship, Truck) |
+| **8-A** | 0.000 | **1.000** | **1.000** | 0.000 | **1.000** | 0.000 | 0.000 | **$\mathcal{SC}_2$** | Classes 4, 5, 6 (Cat, Deer, Dog) |
+| **8-B** | **1.000** | 0.000 | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | **$\mathcal{SC}_1$** | Classes 1, 2, 3 (Airplane, Automobile, Bird) |
+| **8-C** | 0.000 | 0.000 | 0.000 | **1.000** | 0.000 | 0.000 | **1.000** | **$\mathcal{SC}_3$** | Classes 8, 9, 10 (Horse, Ship, Truck) |
 
 ### Global Super-Clusters Specification
 1. **Super-Cluster 1 ($\mathcal{SC}_1$) — Aviation & Vehicles (C1–C3)**:
