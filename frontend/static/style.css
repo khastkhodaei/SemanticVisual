@@ -910,3 +910,24 @@ body {
   overflow: hidden !important;
 }
 
+.step-title-wrapper,
+.step-header-banner,
+#stepHeaderInfo {
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  padding: 0 8px !important;
+}
+
+.step-description,
+.step-subtitle,
+#stepDescription {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}

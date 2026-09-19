@@ -1883,7 +1883,12 @@ function updateUIHeaders(data) {
   ].filter(Boolean);
   const stepTag = document.getElementById("stepTag");
   const stepTitle = document.getElementById("stepTitle");
-  const stepDesc = document.getElementById("stepDescription");
+  // Ensure the subtitle element is not injected or rendered
+  const descElem = document.getElementById("stepDescription") || document.querySelector(".step-subtitle");
+  if (descElem) {
+    descElem.textContent = "";
+    descElem.style.display = "none";
+  }
 
   if (step === 1) {
     activeBadges.forEach(badge => {
@@ -1892,7 +1897,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 1 / NETWORK CREATION";
     if (stepTitle) stepTitle.textContent = "Step 1: Network Creation & Non-IID Data Distribution";
-    if (stepDesc) stepDesc.textContent = "10 decentralized edge clients connected via 18 physical ad-hoc links. Each node holds local CIFAR-10 data.";
   } else if (step === 2) {
     activeBadges.forEach(badge => {
       badge.textContent = "Step 2: Local Vectors";
@@ -1900,7 +1904,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 2 / LOCAL TRAINING & VECTORS";
     if (stepTitle) stepTitle.textContent = "Step 2: Local Training & Normalized 10D Vector Generation";
-    if (stepDesc) stepDesc.textContent = "Each client trains on local CIFAR-10 data, outputting a normalized 10-dimensional vector representing class proportions.";
   } else if (step === 3) {
     activeBadges.forEach(badge => {
       badge.textContent = "Step 3: Local VRF";
@@ -1908,7 +1911,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 3 / LOCAL VRF GENERATION";
     if (stepTitle) stepTitle.textContent = "Step 3: Local VRF Score Calculation";
-    if (stepDesc) stepDesc.textContent = "Each peer independently calculates its local VRF score σ_p = VRF(seed_{e-1}) using its private key. Scores are not transmitted or received in this step.";
   } else if (step === 4) {
     activeBadges.forEach(badge => {
       badge.textContent = "Step 4: Initiator Election";
@@ -1916,7 +1918,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 4 / 1-HOP EXCHANGE & INITIATOR ELECTION";
     if (stepTitle) stepTitle.textContent = "Step 4: 1-Hop Neighbor Score Exchange & Initiator Election";
-    if (stepDesc) stepDesc.textContent = "Clients exchange VRF scores with direct 1-hop physical neighbors and elect closed-ball minimums. Nodes 2, 4, and 8 are crowned as Initiators.";
   } else if (step === 5) {
     activeBadges.forEach(badge => {
       badge.textContent = "STEP 5: ZONE PROBE FLOODING (TTL=1)";
@@ -1924,7 +1925,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 5 / ZONE PROBE FLOODING (TTL=1)";
     if (stepTitle) stepTitle.textContent = "Step 5: Zone Creation via PROBE Flooding (TTL = 1)";
-    if (stepDesc) stepDesc.textContent = "Elected Initiators (Nodes 2, 4, and 8) broadcast a PROBE packet with TTL=1 strictly to their 1-hop physical neighbors.";
   } else if (step === 6) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 6: ZONE CREATION & BOUNDARY DISCOVERY";
@@ -1932,7 +1932,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 6 / ZONE FORMATION & BOUNDARY DISCOVERY";
     if (stepTitle) stepTitle.textContent = "Step 6: Official Zone Formation & Inter-Zone Boundary Discovery";
-    if (stepDesc) stepDesc.textContent = "Clients morph into their initiator's zone color. Frontier peers send dual notifications so initiators learn adjacent zones.";
   } else if (step === 7) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 7: INITIATOR P_MIN QUERY";
@@ -1940,7 +1939,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 7 / INITIATOR P_MIN QUERY";
     if (stepTitle) stepTitle.textContent = "Step 7: Initiator P_min Query Request";
-    if (stepDesc) stepDesc.textContent = "Zone Initiators prompt zone members to evaluate the minimum signature length P_min^i needed to retain 80% model quality.";
   } else if (step === 8) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 8: LOCAL BINARY SEARCH & P_MIN REPORTING";
@@ -1948,7 +1946,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 8 / LOCAL BINARY SEARCH & REPORTING";
     if (stepTitle) stepTitle.textContent = "Step 8: Local Binary Search & P_min^i Reporting";
-    if (stepDesc) stepDesc.textContent = "Each client executes local binary search on interval p in [1, 10] on sorted absolute weights to find minimal P_min retaining 80% quality, then reports to zone initiator.";
   } else if (step === 9) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 9: INTER-INITIATOR CONSENSUS EXCHANGE";
@@ -1956,7 +1953,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 9 / INTER-INITIATOR CONSENSUS";
     if (stepTitle) stepTitle.textContent = "Step 9: Inter-Initiator Exchange via Boundary Gateways & Global Consensus";
-    if (stepDesc) stepDesc.textContent = "Initiators relay their zone proposals through boundary nodes C1 and C6 to agree on a unified global P=3.";
   } else if (step === 10) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 10: EXTRACTION ORDER BROADCAST (P=3)";
@@ -1964,7 +1960,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 10 / EXTRACTION ORDER BROADCAST";
     if (stepTitle) stepTitle.textContent = "Step 10: Initiator Extraction Order Broadcast (ORDER_EXTRACT P=3)";
-    if (stepDesc) stepDesc.textContent = "Initiators broadcast the agreed global length P=3 down to all zone peers.";
   } else if (step === 11) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 11: SIGNATURE EXTRACTION & DISPATCH";
@@ -1972,7 +1967,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 11 / SIGNATURE EXTRACTION & DISPATCH";
     if (stepTitle) stepTitle.textContent = "Step 11: Top-P Signature Extraction with Dual Representation";
-    if (stepDesc) stepDesc.textContent = "Peers extract compact unweighted 3-index sets (3 Bytes) to eliminate parameter leakage, while the dashboard renders 10D binary indicator masks.";
   } else if (step === 12) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 12: INTRA-ZONE SEMANTIC CLUSTERING (AP)";
@@ -1980,7 +1974,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 12 / INTRA-ZONE SEMANTIC CLUSTERING";
     if (stepTitle) stepTitle.textContent = "Step 12: Intra-Zone Semantic Clustering (Affinity Propagation)";
-    if (stepDesc) stepDesc.textContent = "Initiators evaluate pairwise Cosine Similarities across member Top-P signatures and run Affinity Propagation to partition peers into semantic clusters.";
   } else if (step === 13) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 13: CLUSTER EXEMPLAR DESIGNATION";
@@ -1988,7 +1981,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 13 / CLUSTER EXEMPLAR DESIGNATION";
     if (stepTitle) stepTitle.textContent = "Step 13: Intra-Zone Cluster Exemplar Designation & Profile Assignment";
-    if (stepDesc) stepDesc.textContent = "Zone initiators assign official cluster exemplars and dispatch representative profile signatures via ORDER_SET_EXEMPLAR.";
   } else if (step === 14) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 14: TOP-LEVEL INITIATOR ELECTION & SUPER-ZONE (C4 👑👑)";
@@ -1996,7 +1988,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 14 / TOP-LEVEL INITIATOR ELECTION & SUPER-ZONE (C4 👑👑)";
     if (stepTitle) stepTitle.textContent = "Step 14: Top-Level Initiator Election & Super-Zone Creation (Figure 3(e))";
-    if (stepDesc) stepDesc.textContent = "Base initiators form a higher-level overlay graph. Initiator C4 wins election and broadcasts symmetrical TOP_PROBE to form the global Super-Zone Z_TOP.";
   } else if (step === 15) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 15: TOP-LEVEL CATALOG QUERY DISPATCH (REQ_CLUSTER_CATALOG)";
@@ -2004,7 +1995,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 15 / TOP-LEVEL CATALOG QUERY DISPATCH";
     if (stepTitle) stepTitle.textContent = "Step 15: Top-Level Catalog Query Dispatch (REQ_CLUSTER_CATALOG)";
-    if (stepDesc) stepDesc.textContent = "Super-Initiator C4 broadcasts REQ_CLUSTER_CATALOG across the super-zone overlay to retrieve cluster metadata from base initiators C2 and C8.";
   } else if (step === 16) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 16: ZONE CATALOG RESPONSE & SIGNATURE INGESTION";
@@ -2012,7 +2002,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 16 / ZONE CATALOG RESPONSE & SIGNATURE INGESTION";
     if (stepTitle) stepTitle.textContent = "Step 16: Zone Catalog Response & Signature Ingestion at C4";
-    if (stepDesc) stepDesc.textContent = "Base initiators transmit exemplar profiles and binary masks inward to Super-Initiator C4, assembling the 7-cluster Global Semantic Registry.";
   } else if (step === 17) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 17: GLOBAL SUPER-CLUSTER FORMATION";
@@ -2020,7 +2009,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 17 / GLOBAL SUPER-CLUSTER FORMATION";
     if (stepTitle) stepTitle.textContent = "Step 17: Inter-Zone Meta-Clustering & Global Super-Cluster Formation";
-    if (stepDesc) stepDesc.textContent = "C4 evaluates pairwise Cosine Similarities across cluster masks to form a 7x7 matrix, partitioning the network into 3 cross-zone Super-Clusters.";
   } else if (step === 18) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 18: SUPER-ZONE DIRECTIVES DISPATCH (ORDER_SET_SUPER_CLUSTERS)";
@@ -2028,7 +2016,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 18 / SUPER-ZONE DIRECTIVES DISPATCH";
     if (stepTitle) stepTitle.textContent = "Step 18: Super-Zone Meta-Cluster & Super-Peer Directives Dispatch";
-    if (stepDesc) stepDesc.textContent = "Top-Level Super-Initiator C4 informs base initiators C2 and C8 of the 3 Global Super-Clusters and designated Super-Peers across the super-zone backbone.";
   } else if (step === 19) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 19: INTRA-ZONE SUPER-PEER & EXEMPLAR BINDING";
@@ -2036,7 +2023,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 19 / INTRA-ZONE BINDINGS";
     if (stepTitle) stepTitle.textContent = "Step 19: Intra-Zone Super-Peer Designation & Exemplar Hierarchical Binding";
-    if (stepDesc) stepDesc.textContent = "Base initiators (C2, C4, C8) notify cluster exemplars of their Super-Peer status and hierarchical bindings strictly across direct 1-hop links.";
   } else if (step === 20) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 20: SEMANTIC OVERLAY NETWORK (SON) FORMATION";
@@ -2044,7 +2030,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 20 / SEMANTIC OVERLAY";
     if (stepTitle) stepTitle.textContent = "Step 20: Semantic Overlay Network (SON) Logical Topology Formation";
-    if (stepDesc) stepDesc.textContent = "Two-tier Semantic Overlay Network (SON) activates 7 logical federation edges across 3 Global Super-Clusters with interactive dual-layout switching.";
   } else if (step === 21) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 21: MODEL WEIGHT PRUNING & SPARSIFICATION (P = 3)";
@@ -2052,7 +2037,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 21 / SPARSE PRUNING";
     if (stepTitle) stepTitle.textContent = "Step 21: Local Model Parameter Pruning & Sparse Weight Extraction (P = 3)";
-    if (stepDesc) stepDesc.textContent = "Clients apply Top-P sparsification (P = 3) via Hadamard product w_i ⊙ m_i, reducing wire payload from 40 Bytes to 15 Bytes (62.5% bandwidth savings).";
   } else if (step === 22) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 22: HIERARCHICAL SEMANTIC PEER DISCOVERY";
@@ -2060,7 +2044,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 22 / PEER DISCOVERY";
     if (stepTitle) stepTitle.textContent = "Step 22: Hierarchical Semantic Peer Search & Discovery Query";
-    if (stepDesc) stepDesc.textContent = "Clients dispatch REQ_PEER_DISCOVERY up the SON hierarchy. Exemplars forward queries over underlay routes to Super-Peers (C1, C5, C10), which resolve authorized Model Exchange Partner Sets per Super-Cluster.";
   } else if (step === 23) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 23: SUPER-PEER SEMANTIC QUERY ROUTING TO EXEMPLARS";
@@ -2068,7 +2051,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 23 / DOWNWARD ROUTING";
     if (stepTitle) stepTitle.textContent = "Step 23: Super-Peer Semantic Query Routing to Cluster Exemplars";
-    if (stepDesc) stepDesc.textContent = "Super-Peers route matching client queries down to Tier-2 Cluster Exemplars.";
   } else if (step === 24) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 24: EXEMPLAR-TO-LEAF QUERY DISPATCH (TIER 2 -> TIER 1)";
@@ -2076,7 +2058,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 24 / LEAF DISPATCH";
     if (stepTitle) stepTitle.textContent = "Step 24: Cluster Exemplar Forwarding to Leaf Members (Tier 2 -> Tier 1)";
-    if (stepDesc) stepDesc.textContent = "Cluster Exemplars complete downward query propagation by dispatching queries and authorized cluster partner sets to base Leaf Members.";
   } else if (step === 25) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 25: LOCAL SEMANTIC COSINE SIMILARITY EVALUATION";
@@ -2084,7 +2065,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 25 / SIMILARITY EVAL";
     if (stepTitle) stepTitle.textContent = "Step 25: Local Semantic Cosine Similarity Evaluation";
-    if (stepDesc) stepDesc.textContent = "Every client node computes the mathematical Cosine Similarity between its local sparse vector and received peer queries.";
   } else if (step === 26) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 26: UPWARD SIMILARITY SCORE REPORTING";
@@ -2092,7 +2072,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 26 / SCORE REPORTING";
     if (stepTitle) stepTitle.textContent = "Step 26: Upward Similarity Score Reporting to Cluster Exemplars";
-    if (stepDesc) stepDesc.textContent = "Clients transmit their computed Cosine Similarity scores up to governing Cluster Exemplars along physical topology paths.";
   } else if (step === 27) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 27: EXEMPLAR SIMILARITY RANKING & UPWARD DISPATCH";
@@ -2100,7 +2079,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 27 / RANK DISPATCH";
     if (stepTitle) stepTitle.textContent = "Step 27: Exemplar Similarity Ranking & Upward Dispatch to Super-Peers";
-    if (stepDesc) stepDesc.textContent = "Exemplars rank candidate nodes per query by descending Cosine Similarity and forward the sorted lists up to Super-Peers (Tier 2 -> Tier 3).";
   } else if (step === 28) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 28: SUPER-PEER CROSS-CLUSTER CONSOLIDATION";
@@ -2108,7 +2086,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 28 / CONSOLIDATION";
     if (stepTitle) stepTitle.textContent = "Step 28: Global Super-Peer Cross-Cluster Similarity Consolidation";
-    if (stepDesc) stepDesc.textContent = "Super-Peers consolidate candidate scores across all intra-cluster branches, establishing authoritative descending similarity orders for every query.";
   } else if (step === 29) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 29: TOP-K PARTNER MATCH DELIVERY (K = 2)";
@@ -2116,7 +2093,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 29 / TOP-K DELIVERY";
     if (stepTitle) stepTitle.textContent = "Step 29: Top-K Partner Match Delivery to Requesting Clients (K = 2)";
-    if (stepDesc) stepDesc.textContent = "Super-Peers dispatch the resolved Top-K partner lists back to requesting clients across physical ad-hoc routes.";
   } else if (step === 30) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 30: P2P MODEL WEIGHT REQUEST DISPATCH";
@@ -2124,7 +2100,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 30 / MODEL REQUEST";
     if (stepTitle) stepTitle.textContent = "Step 30: Pull-Based P2P Model Request Dispatch (REQ_MODEL_WEIGHTS)";
-    if (stepDesc) stepDesc.textContent = "Clients dispatch pull requests across physical routes to request model weights from their Top-2 partners.";
   } else if (step === 31) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 31: SPARSE PARAMETER INGESTION";
@@ -2132,7 +2107,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 31 / BUFFER INGESTION";
     if (stepTitle) stepTitle.textContent = "Step 31: Sparse Parameter Delivery & Local Buffer Ingestion (REP_MODEL_WEIGHTS)";
-    if (stepDesc) stepDesc.textContent = "Clients ingest 15-byte parameter payloads from their Top-2 partners into local memory buffers.";
   } else if (step === 32) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 32: REFERENCE MODEL CONSTRUCTION";
@@ -2140,7 +2114,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 32 / REFERENCE MODEL";
     if (stepTitle) stepTitle.textContent = "Step 32: Reference Model Construction & Similarity Weight Alignment";
-    if (stepDesc) stepDesc.textContent = "Each client calculates similarity-weighted influence coefficients (\alpha_{i, j}) and constructs its local Reference Model vector.";
   } else if (step === 33) {
     activeBadges.forEach(badge => {
       badge.textContent = "ACTIVE PHASE: STEP 33: FEDERATED AGGREGATION & MODEL CONVERGENCE";
@@ -2148,7 +2121,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 33 / MODEL CONVERGENCE";
     if (stepTitle) stepTitle.textContent = "Step 33: Local Model Aggregation (FedAvg) & Convergence Commitment";
-    if (stepDesc) stepDesc.textContent = "Round 1 federated aggregation complete across all 10 nodes with zero raw data leakage.";
   } else if (step === 34) {
     activeBadges.forEach(badge => {
       badge.textContent = "🎉 PROTOCOL COMPLETE: STEP 34: ROUND 1 FINALIZATION & BENCHMARK AUDIT";
@@ -2156,7 +2128,6 @@ function updateUIHeaders(data) {
     });
     if (stepTag) stepTag.textContent = "STEP 34 / SIMULATION COMPLETE";
     if (stepTitle) stepTitle.textContent = "Step 34: Round 1 Finalization, System Benchmarks & Next-Epoch Transition";
-    if (stepDesc) stepDesc.textContent = "Decentralized SemanticDFL round 1 execution successfully verified across all tiers.";
   }
 }
 
