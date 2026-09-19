@@ -2265,7 +2265,7 @@ function renderStep4(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 4: 1-Hop Neighbor Score Exchange & Initiator Election";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
   if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
@@ -2434,9 +2434,9 @@ function renderStep5(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 5: Zone Creation via PROBE Flooding (TTL = 1)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
-  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  if (zoneLegend) zoneLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
   if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
@@ -2594,11 +2594,11 @@ function renderStep6(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 6: Official Zone Formation & Inter-Zone Boundary Discovery (Algorithm 3)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
-  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  if (zoneLegend) zoneLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
-  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
@@ -2791,9 +2791,9 @@ function renderStep7(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 7: Initiator P_min Query Broadcast (REQ_P_MIN, τ = 80%)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
-  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  if (zoneLegend) zoneLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
   if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
@@ -2973,9 +2973,9 @@ function renderStep8(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 8: Reverse P_min Reporting to Zone Initiators (τ = 80%)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
-  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  if (zoneLegend) zoneLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
   if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
@@ -3157,11 +3157,11 @@ function renderStep9(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 9: Multi-Hop Inter-Initiator Exchange via Boundary Peers (Agreed P = 3)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
-  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  if (zoneLegend) zoneLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
-  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
@@ -3381,9 +3381,9 @@ function renderStep10(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 10: Intra-Zone Extraction Order Broadcast (Locked P = 3)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
-  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  if (zoneLegend) zoneLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
   if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
@@ -3559,9 +3559,9 @@ function renderStep11(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 11: Top-P Signature Extraction & Wire Dispatch (P = 3)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
-  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  if (zoneLegend) zoneLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
   if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
@@ -3738,9 +3738,9 @@ function renderStep12(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 12: Intra-Zone Semantic Clustering (Cosine Similarity & AP)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
-  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  if (zoneLegend) zoneLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
   if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
@@ -3795,9 +3795,9 @@ function renderStep13(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 13: Intra-Zone Cluster Exemplar Designation & Member Assignment";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
-  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  if (zoneLegend) zoneLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
   if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
@@ -4066,9 +4066,9 @@ function renderStep14(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 14: Top-Level Initiator Election & Super-Zone Creation (Root: C4 👑👑)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
-  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  if (zoneLegend) zoneLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
   if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
@@ -4701,11 +4701,11 @@ function renderStep15(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 15: Top-Level Catalog Query Dispatch (REQ_CLUSTER_CATALOG from C4 👑👑)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
-  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  if (zoneLegend) zoneLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
-  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
@@ -4965,11 +4965,11 @@ function renderStep16(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 16: Zone Catalog Response & Signature Ingestion at C4 (7 Cluster Masks Ingested)";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
-  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  if (zoneLegend) zoneLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
-  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
@@ -5267,11 +5267,11 @@ function renderStep17(data) {
   if (canvasLabel) canvasLabel.textContent = "Step 17: Inter-Zone Meta-Clustering & 3 Global Super-Clusters Formed";
 
   const leaderLegend = document.getElementById("leaderLegendItem");
-  if (leaderLegend) leaderLegend.classList.remove("hidden");
+  if (leaderLegend) leaderLegend.classList.add("hidden");
   const zoneLegend = document.getElementById("zoneLegendItem");
-  if (zoneLegend) zoneLegend.classList.remove("hidden");
+  if (zoneLegend) zoneLegend.classList.add("hidden");
   const boundaryLegend = document.getElementById("boundaryLegendItem");
-  if (boundaryLegend) boundaryLegend.classList.remove("hidden");
+  if (boundaryLegend) boundaryLegend.classList.add("hidden");
 
   const statLeaders = document.getElementById("statLeaders");
   if (statLeaders) {
