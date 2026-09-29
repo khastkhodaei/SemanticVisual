@@ -1214,36 +1214,11 @@
         </div>
       </div>
 
-      <!-- Stepper Controls & Step Indicator Bar -->
-      <div class="stepper-nav-bar">
-        <div class="flex items-center gap-2">
-          <button id="worked-prev-btn" class="preset-btn flex items-center gap-1 text-xs" onclick="prevWorkedStep()">
-            <span>◀</span><span>Previous</span>
-          </button>
-          <button id="worked-next-btn" class="btn-primary px-3 py-1 text-xs font-mono rounded flex items-center gap-1" onclick="nextWorkedStep()">
-            <span>Next</span><span>▶</span>
-          </button>
-        </div>
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="text-[11px] font-mono text-slate-500 mr-1 hidden sm:inline">Steps:</span>
-          <button id="step-pill-1" class="step-indicator-pill active" onclick="gotoWorkedStep(1)">1. Sort</button>
-          <button id="step-pill-2" class="step-indicator-pill" onclick="gotoWorkedStep(2)">2. Prefix c_P</button>
-          <button id="step-pill-3" class="step-indicator-pill" onclick="gotoWorkedStep(3)">3. cos(P)</button>
-          <button id="step-pill-4" class="step-indicator-pill" onclick="gotoWorkedStep(4)">4. Feasibility</button>
-          <button id="step-pill-5" class="step-indicator-pill" onclick="gotoWorkedStep(5)">5. Binary Search</button>
-          <button id="step-pill-6" class="step-indicator-pill" onclick="gotoWorkedStep(6)">6. Shared P</button>
-          <button id="step-pill-7" class="step-indicator-pill" onclick="gotoWorkedStep(7)">7. Sizing Cost</button>
-        </div>
-        <button id="worked-toggle-all" class="preset-btn text-[11px]" onclick="toggleShowAllWorkedSteps()">
-          <span>Show All</span>
-        </button>
-      </div>
-
-      <!-- Vertical Stepper 7 Step Cards -->
+      <!-- Vertical 7-Step Walkthrough Cards (All Displayed by Default) -->
       <div class="stepper-container space-y-3" id="worked-stepper-cards">
 
         <!-- Step 1 Card -->
-        <div id="worked-step-card-1" class="stepper-step-card active-step">
+        <div id="worked-step-card-1" class="stepper-step-card">
           <div class="stepper-step-header">
             <div class="flex items-center gap-2.5">
               <span class="stepper-badge">1</span>
@@ -1293,7 +1268,7 @@
         </div>
 
         <!-- Step 2 Card -->
-        <div id="worked-step-card-2" class="stepper-step-card" style="display:none;">
+        <div id="worked-step-card-2" class="stepper-step-card">
           <div class="stepper-step-header">
             <div class="flex items-center gap-2.5">
               <span class="stepper-badge">2</span>
@@ -1337,7 +1312,7 @@
         </div>
 
         <!-- Step 3 Card -->
-        <div id="worked-step-card-3" class="stepper-step-card" style="display:none;">
+        <div id="worked-step-card-3" class="stepper-step-card">
           <div class="stepper-step-header">
             <div class="flex items-center gap-2.5">
               <span class="stepper-badge">3</span>
@@ -1381,7 +1356,7 @@
         </div>
 
         <!-- Step 4 Card -->
-        <div id="worked-step-card-4" class="stepper-step-card" style="display:none;">
+        <div id="worked-step-card-4" class="stepper-step-card">
           <div class="stepper-step-header">
             <div class="flex items-center gap-2.5">
               <span class="stepper-badge">4</span>
@@ -1413,7 +1388,7 @@
         </div>
 
         <!-- Step 5 Card -->
-        <div id="worked-step-card-5" class="stepper-step-card" style="display:none;">
+        <div id="worked-step-card-5" class="stepper-step-card">
           <div class="stepper-step-header">
             <div class="flex items-center gap-2.5">
               <span class="stepper-badge">5</span>
@@ -1455,7 +1430,7 @@
         </div>
 
         <!-- Step 6 Card -->
-        <div id="worked-step-card-6" class="stepper-step-card" style="display:none;">
+        <div id="worked-step-card-6" class="stepper-step-card">
           <div class="stepper-step-header">
             <div class="flex items-center gap-2.5">
               <span class="stepper-badge">6</span>
@@ -1484,7 +1459,7 @@
         </div>
 
         <!-- Step 7 Card -->
-        <div id="worked-step-card-7" class="stepper-step-card" style="display:none;">
+        <div id="worked-step-card-7" class="stepper-step-card">
           <div class="stepper-step-header">
             <div class="flex items-center gap-2.5">
               <span class="stepper-badge">7</span>
@@ -2146,7 +2121,7 @@
 
   /* --- TAB 5: WORKED EXAMPLE --- */
   let currentWorkedStep = 1;
-  let showAllWorkedSteps = false;
+  let showAllWorkedSteps = true;
   const fixedWeights = [0.5, -3.0, 0.2, 2.0, -0.1, 1.5, 0.3, -1.0, 0.4, 0.6];
   const fixedTheta = 0.9;
 
