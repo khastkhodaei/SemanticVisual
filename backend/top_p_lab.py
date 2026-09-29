@@ -92,14 +92,13 @@ def run_demo(n=9, M=2000, theta=0.8, q=0.8, beta=0.9, rounds=3, seed=0, p_max=No
                       for j in range(n)] for i in range(n)])
     sparse = np.array([[sparse_cos(sigs[i], sigs[j]) for j in range(n)] for i in range(n)])
     curve = cos_curve(W[0], S[0])
-    step = max(1, M // 200)
     return {
         "M": M, "theta": theta, "q": q, "beta": beta, "n": n, "labels": labels.tolist(),
         "p_mins": p_mins, "global_p": P, "global_p_pct": 100.0 * P / M,
         "cos_at_global_p": [float(cos_curve(W[i], S[i])[P - 1]) for i in range(n)],
         "frac_meeting_theta": float(np.mean([c >= theta for c in
                                              [cos_curve(W[i], S[i])[P - 1] for i in range(n)]])),
-        "curve": {"P": list(range(1, M + 1, step)), "cos": curve[::step].tolist()},
+        "curve": {"P": list(range(1, M + 1)), "cos": curve.tolist()},
         "trace": trace,
         "signature0": {"indices": sigs[0][0][:12].tolist(), "values": np.round(sigs[0][1][:12], 4).tolist(),
                        "nnz": int(len(sigs[0][0]))},
