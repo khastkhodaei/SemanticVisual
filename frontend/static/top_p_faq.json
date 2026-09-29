@@ -110,5 +110,12 @@
     "q": "How is the SON search share of round time computed?",
     "a": "The SON overhead share is defined as: Share = (T_search) / (T_search + T_pull + T_comp) * 100% [Paper §3.4, §5.4]. In the worked example (ResNet-18, 200 Mbps), query search takes ~4.4–5.3 s and pulling+serving K=10 models takes ~38.5 s, giving a search share <= 12.59% [Paper §3.4]. In physical hardware benchmarks, measured SON overhead averages ~8.0% of total round time across all datasets [Paper §5.4, Table 12].",
     "refs": ["[Paper §3.4]", "[Paper §5.4, Table 12]"]
+  },
+  {
+    "id": "how-is-p-calculated-worked-example",
+    "category": "Algorithm",
+    "q": "How exactly is P calculated? (worked example)",
+    "a": "P is calculated through a deterministic 5-step process: (1) sort coordinates by descending importance score |w|, (2) compute prefix sums of energy c_P = sum_{r=1}^P w_{(r)}^2, (3) evaluate directional cosine cos(P) = sqrt(c_P) / ||w||, (4) evaluate feasibility c_P >= θ^2 ||w||^2, and (5) binary search in O(log M) checks to locate P_min. For a full step-by-step trace with real numbers, interactive charts, and consensus calculation, navigate to Tab 5: Worked Example [Simulator, Paper §3.2, App. B.1].",
+    "refs": ["[Simulator]", "[Paper §3.2]", "[Paper App. B.1]"]
   }
 ]

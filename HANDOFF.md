@@ -2,7 +2,7 @@
 
 > **Project Name:** SemanticVisual (SemanticDFL Protocol Simulator & Interactive Visualizer)  
 > **Based on:** ACM 2026 Decentralized Federated Learning with Semantic Clustering & Overlay Networks  
-> **Status:** Production-Ready Simulator (34/34 Protocol Steps Implemented, 274+ Passing Tests)  
+> **Status:** Production-Ready Simulator (34/34 Protocol Steps Implemented, 290+ Passing Tests)  
 > **Last Updated:** September 2026  
 
 ---
@@ -256,7 +256,7 @@ The visualizer dashboard (`frontend/static/app.js` and `index.html`) is structur
 
 ## 8. Test Suite & Verification
 
-The test suite contains **279 test cases** across 45 test files covering all 34 steps, API endpoints, serialization contracts, clustering math, and UI rendering payloads.
+The test suite contains **295 test items** (290 passing, 5 skipped) across 47 test files covering all 34 steps, API endpoints, serialization contracts, clustering math, cost models, worked examples, and UI rendering payloads.
 
 ### Running Tests
 To run the complete test suite:
@@ -334,19 +334,26 @@ pytest tests/test_dual_layout_switcher.py
 
 ---
 
-## 11. Top-P Deep-Dive (add-on)
+## 11. Top-P Deep-Dive & Worked Example Lab (add-on)
 
 ### Purpose
-The **Top-P Deep-Dive** module is a self-contained, additive area within the SemanticVisual application. It implements the exact mathematical formulation of Top-$P$ signature extraction from the SemanticDFL paper (Section 3.2 and Appendix B.1), provides an interactive analytical cost calculator reproducing the ResNet-18 worked example (§3.4, Appendix D), hosts an editable Q&A reference, and details the simulation scope.
+The **Top-P Deep-Dive** module is a self-contained, additive area within the SemanticVisual application. It implements the exact mathematical formulation of Top-$P$ signature extraction from the SemanticDFL paper (Section 3.2 and Appendix B.1), provides an interactive analytical cost calculator reproducing the ResNet-18 worked example (§3.4, Appendix D), hosts an editable Q&A reference, details the simulation scope, and provides a step-by-step concrete worked example with real numbers plugged into every formula.
 
 ### File List
 - `backend/top_p_lab.py`: Standalone algorithmic engine implementing EMA importance scoring ($s = \beta \cdot s_{\text{prev}} + (1-\beta)|w|$), binary search for minimal $P$ ($\cos = \sqrt{c_P} / \|w\|_2$), discrete $(1-q)$ quantile consensus, raw masked signature extraction, and sparse cosine similarity over index intersections.
 - `backend/top_p_costs.py`: Pure mathematical cost model calculating signature bytes, dense bytes, hierarchical discovery query overhead ($15$ signatures), pull + serve model transfers ($2K$ models), and round search share.
 - `backend/top_p_router.py`: Dedicated FastAPI router mounted at `/api/v1/toppaper`.
-- `frontend/static/top_p_lab.html`: Interactive 4-tab user interface (1. Simulation Lab, 2. Cost Model & Sizing, 3. Q&A & Theory, 4. Simulator Scope).
+- `frontend/static/top_p_lab.html`: Interactive 5-tab user interface:
+  1. **Simulation Lab:** Synthetic parameter extraction, binary search trace, quantile consensus, and full vs. sparse cosine ranking heatmap.
+  2. **Cost Model & Sizing:** Interactive parameter sizing calculator with presets (ResNet-18, CIFAR-10, BERT-Base, MobileNetV2), complexity tables, and discovery share metrics.
+  3. **Q&A & Theory:** Searchable, categorized FAQ accordion with provenance tags.
+  4. **Simulator Scope:** Implementation boundaries and mathematical scope clarification.
+  5. **Worked Example:** 7-step vertical stepper walkthrough with concrete substituted numbers, KaTeX formula cards, sorted $|w|$ and $\cos(P)$ charts, and an in-browser pure JS "Try your own 10 weights" sandbox.
+- `frontend/static/top_p_lab.css`: Scoped stylesheet for the Deep-Dive Lab (design tokens, stepper cards, provenance badges, KPI cards).
 - `frontend/static/top_p_faq.json`: Externalized, editable Q&A data source with explicit provenance tags (`[Paper §x]`, `[Derived]`, `[Simulator]`).
 - `tests/test_top_p_lab.py`: Pytest suite for Top-P algorithmic functions and sparse cosine accuracy.
 - `tests/test_top_p_costs.py`: Pytest suite verifying cost calculations against paper worked examples, schema validations, and FAQ integrity.
+- `tests/test_top_p_worked_example.py`: Pytest suite verifying the exact numerical results of the 7-step worked example against `backend.top_p_lab`.
 
 ### Route List
 - `POST /api/v1/toppaper/run`: Executes synthetic parameter extraction, binary search trace, quantile consensus, and full vs. sparse cosine ranking matrices.
@@ -369,6 +376,6 @@ To add or update answers without modifying Python or JavaScript code:
 
 ### How to Run Top-P Tests
 ```bash
-pytest tests/test_top_p_lab.py tests/test_top_p_costs.py
+pytest tests/test_top_p_lab.py tests/test_top_p_costs.py tests/test_top_p_worked_example.py
 ```
 

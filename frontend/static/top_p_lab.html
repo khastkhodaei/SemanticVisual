@@ -67,7 +67,7 @@
       </div>
     </div>
 
-    <!-- Navigation Tabs (4 Labs) -->
+    <!-- Navigation Tabs (5 Labs) -->
     <nav class="hidden md:flex items-center space-x-1.5 text-xs font-mono" role="tablist">
       <button class="tab-btn active" onclick="showTab('tab-sim', this)">
         <span>1.</span><span>Simulation Lab</span>
@@ -80,6 +80,9 @@
       </button>
       <button class="tab-btn" onclick="showTab('tab-scope', this)">
         <span>4.</span><span>Simulator Scope</span>
+      </button>
+      <button class="tab-btn" onclick="showTab('tab-worked', this)">
+        <span>5.</span><span>Worked Example</span>
       </button>
     </nav>
 
@@ -98,6 +101,7 @@
     <button class="tab-btn text-xs" onclick="showTab('tab-cost', this)">2. Cost Model</button>
     <button class="tab-btn text-xs" onclick="showTab('tab-faq', this)">3. Q&amp;A</button>
     <button class="tab-btn text-xs" onclick="showTab('tab-scope', this)">4. Scope</button>
+    <button class="tab-btn text-xs" onclick="showTab('tab-worked', this)">5. Worked Example</button>
   </div>
 
   <main class="top-p-container flex-1 space-y-4">
@@ -397,6 +401,386 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- TAB 5: WORKED EXAMPLE -->
+    <div id="tab-worked" class="tab-content space-y-4">
+      
+      <!-- Narrative Title Card -->
+      <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <span class="tag-sim">Simulator</span>
+              <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-100 text-blue-800">PAPER §3.2 &amp; APP. B.1</span>
+              <h2 class="text-sm font-bold text-slate-900">Step-by-Step Worked Example: Exact Numerical Walkthrough</h2>
+            </div>
+            <p class="text-xs text-slate-600 font-sans mt-1">
+              Complete deterministic walkthrough of Top-$P$ signature calculation with real numbers plugged into every formula. Fixed parameter setting: $M = 10$, $\theta = 0.9$, $\beta = 0$ ($\text{importance} = |w|$), $w = [0.5, -3.0, 0.2, 2.0, -0.1, 1.5, 0.3, -1.0, 0.4, 0.6]$.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stepper Controls & Step Indicator Bar -->
+      <div class="stepper-nav-bar">
+        <div class="flex items-center gap-2">
+          <button id="worked-prev-btn" class="preset-btn flex items-center gap-1 text-xs" onclick="prevWorkedStep()">
+            <span>◀</span><span>Previous</span>
+          </button>
+          <button id="worked-next-btn" class="btn-primary px-3 py-1 text-xs font-mono rounded flex items-center gap-1" onclick="nextWorkedStep()">
+            <span>Next</span><span>▶</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-[11px] font-mono text-slate-500 mr-1 hidden sm:inline">Steps:</span>
+          <button id="step-pill-1" class="step-indicator-pill active" onclick="gotoWorkedStep(1)">1. Sort</button>
+          <button id="step-pill-2" class="step-indicator-pill" onclick="gotoWorkedStep(2)">2. Prefix c_P</button>
+          <button id="step-pill-3" class="step-indicator-pill" onclick="gotoWorkedStep(3)">3. cos(P)</button>
+          <button id="step-pill-4" class="step-indicator-pill" onclick="gotoWorkedStep(4)">4. Feasibility</button>
+          <button id="step-pill-5" class="step-indicator-pill" onclick="gotoWorkedStep(5)">5. Binary Search</button>
+          <button id="step-pill-6" class="step-indicator-pill" onclick="gotoWorkedStep(6)">6. Shared P</button>
+          <button id="step-pill-7" class="step-indicator-pill" onclick="gotoWorkedStep(7)">7. Sizing Cost</button>
+        </div>
+        <button id="worked-toggle-all" class="preset-btn text-[11px]" onclick="toggleShowAllWorkedSteps()">
+          <span>Show All</span>
+        </button>
+      </div>
+
+      <!-- Vertical Stepper 7 Step Cards -->
+      <div class="stepper-container space-y-3" id="worked-stepper-cards">
+
+        <!-- Step 1 Card -->
+        <div id="worked-step-card-1" class="stepper-step-card active-step">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">1</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 1 — Importance Scoring &amp; Descending Sort</h3>
+            </div>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              With $\beta = 0$, parameter importance scores are equal to the raw coordinate magnitudes $s_r = |w_r|$. The indices are sorted in descending order of score:
+            </p>
+            <div class="top-p-formula-card">
+              $$s_r = |w_r|, \qquad I = \operatorname{argsort}(-s)$$
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Rank 1</th><th>Rank 2</th><th>Rank 3</th><th>Rank 4</th><th>Rank 5</th>
+                    <th>Rank 6</th><th>Rank 7</th><th>Rank 8</th><th>Rank 9</th><th>Rank 10</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="font-bold text-left">Sorted |w|</td>
+                    <td><strong>3.0</strong></td><td><strong>2.0</strong></td><td><strong>1.5</strong></td><td><strong>1.0</strong></td><td>0.6</td>
+                    <td>0.5</td><td>0.4</td><td>0.3</td><td>0.2</td><td>0.1</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold text-left">Coordinate</td>
+                    <td>$w_2$</td><td>$w_4$</td><td>$w_6$</td><td>$w_8$</td><td>$w_{10}$</td>
+                    <td>$w_1$</td><td>$w_9$</td><td>$w_7$</td><td>$w_3$</td><td>$w_5$</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold text-left">Original w</td>
+                    <td>−3.0</td><td>2.0</td><td>1.5</td><td>−1.0</td><td>0.6</td>
+                    <td>0.5</td><td>0.4</td><td>0.3</td><td>0.2</td><td>−0.1</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
+              <strong>Sorted order:</strong> 3.0(w2), 2.0(w4), 1.5(w6), 1.0(w8), 0.6(w10), 0.5(w1), 0.4(w9), 0.3(w7), 0.2(w3), 0.1(w5)
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 Card -->
+        <div id="worked-step-card-2" class="stepper-step-card" style="display:none;">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">2</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 2 — Cumulative Energy Prefix Sums c_P</h3>
+            </div>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              Cumulative energy $c_P$ is computed as the running prefix sum of squared sorted components. Total vector energy $\|w\|_2^2 = c_{10} = 17.16$:
+            </p>
+            <div class="top-p-formula-card">
+              $$c_P = \sum_{r=1}^P (w_{(r)})^2, \qquad \|w\|_2^2 = c_M = \sum_{r=1}^{10} w_r^2 = 17.16$$
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Budget P</th>
+                    <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="font-bold text-left">Term $w_{(P)}^2$</td>
+                    <td>$3.0^2=9.00$</td><td>$2.0^2=4.00$</td><td>$1.5^2=2.25$</td><td>$1.0^2=1.00$</td><td>$0.6^2=0.36$</td>
+                    <td>$0.5^2=0.25$</td><td>$0.4^2=0.16$</td><td>$0.3^2=0.09$</td><td>$0.2^2=0.04$</td><td>$0.1^2=0.01$</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold text-left">Prefix $c_P$</td>
+                    <td><strong>9.00</strong></td><td><strong>13.00</strong></td><td><strong>15.25</strong></td><td>16.25</td><td>16.61</td>
+                    <td>16.86</td><td>17.02</td><td>17.11</td><td>17.15</td><td><strong>17.16</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
+              <strong>Prefix sums $c_P$:</strong> 9, 13, 15.25, 16.25, 16.61, 16.86, 17.02, 17.11, 17.15, 17.16; ‖w‖² = 17.16
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3 Card -->
+        <div id="worked-step-card-3" class="stepper-step-card" style="display:none;">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">3</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 3 — Directional Cosine Calculation cos(P)</h3>
+            </div>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              The directional cosine similarity $\cos(w, w^{[P]})$ retained by keeping the top $P$ coordinates is $\sqrt{c_P} / \|w\|_2$:
+            </p>
+            <div class="top-p-formula-card">
+              $$\cos(P) = \frac{\sqrt{c_P}}{\|w\|_2} = \frac{\sqrt{c_P}}{\sqrt{17.16}}, \qquad \text{e.g., at } P=3: \; \cos(3) = \frac{\sqrt{15.25}}{\sqrt{17.16}} = \frac{3.9051}{4.1425} = 0.943$$
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Budget P</th>
+                    <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="font-bold text-left">$\cos(P)$</td>
+                    <td>0.724</td><td>0.870</td><td><strong>0.943</strong></td><td>0.973</td><td>0.984</td>
+                    <td>0.991</td><td>0.996</td><td>0.999</td><td>1.000</td><td>1.000</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold text-left">Retained %</td>
+                    <td>72.4%</td><td>87.0%</td><td>94.3%</td><td>97.3%</td><td>98.4%</td>
+                    <td>99.1%</td><td>99.6%</td><td>99.9%</td><td>100.0%</td><td>100.0%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
+              <strong>Cosine curve:</strong> cos(P) = [0.724, 0.870, 0.943, 0.973, 0.984, 0.991, 0.996, 0.999, 1.000, 1.000]
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4 Card -->
+        <div id="worked-step-card-4" class="stepper-step-card" style="display:none;">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">4</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 4 — Feasibility Test against Target θ = 0.9</h3>
+            </div>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              To satisfy $\cos(w, w^{[P]}) \ge \theta$, we test the algebraic condition $c_P \ge \theta^2 \|w\|_2^2$:
+            </p>
+            <div class="top-p-formula-card">
+              $$c_P \ge \theta^2 \|w\|_2^2 = (0.90)^2 \times 17.16 = 0.81 \times 17.16 = 13.90$$
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="p-2.5 rounded border border-amber-200 bg-amber-50">
+                <span class="font-bold text-amber-900 block text-xs">For P = 2:</span>
+                <span class="text-xs text-amber-800 font-mono">$c_2 = 13.00 < 13.90$ (fails, $\cos(2) = 0.870 < 0.90$)</span>
+              </div>
+              <div class="p-2.5 rounded border border-emerald-200 bg-emerald-50">
+                <span class="font-bold text-emerald-900 block text-xs">For P = 3:</span>
+                <span class="text-xs text-emerald-800 font-mono">$c_3 = 15.25 \ge 13.90$ (passes, $\cos(3) = 0.943 \ge 0.90$) $\to P_{\min} = 3$</span>
+              </div>
+            </div>
+            <p class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
+              💡 <em>Note: with $\theta = 0.8$ the answer would be 2</em> (since $\theta^2 \|w\|^2 = 0.64 \times 17.16 = 10.98$ and $c_2 = 13.00 \ge 10.98$).
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 5 Card -->
+        <div id="worked-step-card-5" class="stepper-step-card" style="display:none;">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">5</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 5 — Discrete Binary Search Trace (Algorithm 1)</h3>
+            </div>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              Algorithm 1 finds $P_{\min}$ in $O(\log_2 M)$ checks over the monotonic prefix sums:
+            </p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Check</th><th>lo</th><th>hi</th><th>mid</th><th>$c_{\text{mid}}$</th><th>$\cos(\text{mid})$</th><th>Feasible ($c_{\text{mid}} \ge 13.90$)</th><th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1</td><td>1</td><td>10</td><td><strong>5</strong></td><td>16.61</td><td>0.984</td>
+                    <td><span class="yes">✓ Yes</span></td><td>$\text{hi} = \text{mid} = 5$</td>
+                  </tr>
+                  <tr>
+                    <td>2</td><td>1</td><td>5</td><td><strong>3</strong></td><td>15.25</td><td>0.943</td>
+                    <td><span class="yes">✓ Yes</span></td><td>$\text{hi} = \text{mid} = 3$</td>
+                  </tr>
+                  <tr>
+                    <td>3</td><td>1</td><td>3</td><td><strong>2</strong></td><td>13.00</td><td>0.870</td>
+                    <td><span class="no">✗ No</span></td><td>$\text{lo} = \text{mid} + 1 = 3$</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
+              <strong>Binary search trace:</strong> (lo=1,hi=10,mid=5 yes) → (1,5,mid=3 yes) → (1,3,mid=2 no) → P_min = 3, in 3 checks.
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 6 Card -->
+        <div id="worked-step-card-6" class="stepper-step-card" style="display:none;">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">6</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 6 — Super-Peer Shared P Consensus (q = 0.8)</h3>
+            </div>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              When five clients in a zone report their minimal budgets $P_{\min} = [3, 2, 4, 3, 6]$, the Super-Peer sets global shared $P$ using quantile $q = 0.8$:
+            </p>
+            <div class="top-p-formula-card">
+              $$\text{sorted } P_{\min} = [2, 3, 3, 4, 6], \qquad k = \lceil q \cdot n \rceil = \lceil 0.8 \times 5 \rceil = 4 \implies P_{\text{global}} = 4$$
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="p-2.5 rounded border border-emerald-200 bg-emerald-50 text-xs text-emerald-800">
+                <strong>4 of 5 clients (80%) satisfy $\theta = 0.9$:</strong><br>
+                Clients requiring $P_{\min} \in \{2, 3, 4\}$ receive a signature with $P=4 \ge P_{\min}$, exceeding their target fidelity $\theta = 0.90$.
+              </div>
+              <div class="p-2.5 rounded border border-amber-200 bg-amber-50 text-xs text-amber-800">
+                <strong>1 client requiring $P_{\min} = 6$:</strong><br>
+                Achieves $\cos(4) = 0.973$ (slightly below its personal $\theta$ demand, bounded by $(1-q)$ consensus to prevent outlier bloat).
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 7 Card -->
+        <div id="worked-step-card-7" class="stepper-step-card" style="display:none;">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">7</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 7 — Signature Wire Sizing Cost &amp; Paper Scale</h3>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="tag-sim">Simulator</span>
+              <span class="tag-derived">Derived</span>
+            </div>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              Each signature entry encodes a 4-byte coordinate index and a 2-byte FP16 parameter value:
+            </p>
+            <div class="top-p-formula-card">
+              $$\text{Payload} = P \times (b_{\text{idx}} + b_{\text{val}}) = 4 \times (4\text{ B} + 2\text{ B}) = 24\text{ bytes vs dense } 10 \times 4\text{ B} = 40\text{ bytes}$$
+            </div>
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
+              <div class="font-bold text-slate-900">Paper-Scale Deep Learning Regime (ResNet-18):</div>
+              <div>• Parameter dimension: $M = 11.7\text{M}$ coordinates (FP32 dense model $\approx 46.8\text{ MB} \approx 47\text{ MB}$)</div>
+              <div>• Top-$P$ signature budget: $P = 10.8\% \times 11.7\text{M} \approx 1.26\text{M}$ entries</div>
+              <div>• Wire signature size: $1.26\text{M} \times 6\text{ bytes} \approx 7.23\text{ MB}$ <span class="tag-derived">Derived</span></div>
+              <div>• Compression saving: <strong>$6.5\times$ payload reduction</strong> ($47\text{ MB} \to 7.23\text{ MB}$) while preserving $\cos \ge 0.80$ directional accuracy.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Interactive Visual Charts for Worked Example -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Chart 1: Sorted |w| Bar Chart -->
+        <div class="paper-panel mb-0">
+          <div class="panel-header">
+            <span class="panel-title"><span>📊</span><span>Sorted Coordinates |w| ($P_{\min}=3$ Highlighted)</span></span>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="worked_bar_chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Cosine Similarity Curve -->
+        <div class="paper-panel mb-0">
+          <div class="panel-header">
+            <span class="panel-title"><span>📈</span><span>Directional Cosine $\cos(P)$ vs Threshold $\theta = 0.9$</span></span>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="worked_cos_chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Sandbox: Try your own 10 weights -->
+      <div class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span>🧪</span><span>Try Your Own 10 Weights (Live In-Browser Recomputation)</span></span>
+          <span class="tag-sim">Pure JS Simulator</span>
+        </div>
+        <div class="space-y-3 text-xs">
+          <p class="text-slate-600">
+            Enter any 10 coordinate weights and a target cosine $\theta$ to recompute steps 1–5 in real time with the exact same algorithm:
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="md:col-span-3">
+              <label>10 Coordinate Weights (comma or space separated)
+                <input id="custom_weights_input" type="text" value="0.5, -3.0, 0.2, 2.0, -0.1, 1.5, 0.3, -1.0, 0.4, 0.6">
+              </label>
+            </div>
+            <div>
+              <label>Target Cosine ($\theta$)
+                <input id="custom_theta_input" type="number" value="0.9" step="0.05" min="0.1" max="1.0">
+              </label>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="btn-primary px-4 py-1.5 rounded text-xs font-mono font-bold flex items-center gap-1.5" onclick="recalcCustomWorkedExample()">
+              <span>⚡</span><span>Recompute Custom Weights</span>
+            </button>
+            <button class="preset-btn text-xs font-mono" onclick="resetWorkedExample()">
+              <span>↺</span><span>Reset to Default</span>
+            </button>
+          </div>
+          <div id="custom_weights_error" class="hidden p-2.5 rounded border border-red-200 bg-red-50 text-red-700 text-xs font-mono"></div>
+          <div id="custom_weights_result" class="hidden p-3 rounded-lg border border-blue-200 bg-blue-50 text-xs space-y-2"></div>
+        </div>
+      </div>
 
     </div>
 
@@ -431,6 +815,7 @@
 
     if (tabId === 'tab-cost' && !$('cost-kpis').innerHTML) { recalcCosts(); }
     if (tabId === 'tab-faq' && !allFaqData.length) { loadFAQ(); }
+    if (tabId === 'tab-worked') { initWorkedExample(); }
     
     // Auto render math on tab switch
     if (window.renderMathInElement) {
@@ -873,6 +1258,361 @@
         throwOnError: false
       });
     }
+  }
+
+  /* --- TAB 5: WORKED EXAMPLE --- */
+  let currentWorkedStep = 1;
+  let showAllWorkedSteps = false;
+  const fixedWeights = [0.5, -3.0, 0.2, 2.0, -0.1, 1.5, 0.3, -1.0, 0.4, 0.6];
+  const fixedTheta = 0.9;
+
+  function updateWorkedStepperUI() {
+    for (let i = 1; i <= 7; i++) {
+      const card = $(`worked-step-card-${i}`);
+      const pill = $(`step-pill-${i}`);
+      if (card) {
+        if (showAllWorkedSteps) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = (i <= currentWorkedStep) ? 'block' : 'none';
+        }
+        card.classList.toggle('active-step', i === currentWorkedStep);
+      }
+      if (pill) {
+        pill.classList.toggle('active', i === currentWorkedStep);
+        pill.classList.toggle('completed', i < currentWorkedStep);
+      }
+    }
+
+    if ($('worked-prev-btn')) {
+      $('worked-prev-btn').disabled = (currentWorkedStep === 1);
+      $('worked-prev-btn').style.opacity = (currentWorkedStep === 1) ? '0.5' : '1';
+    }
+    if ($('worked-next-btn')) {
+      $('worked-next-btn').disabled = (currentWorkedStep === 7);
+      $('worked-next-btn').style.opacity = (currentWorkedStep === 7) ? '0.5' : '1';
+    }
+    if ($('worked-toggle-all')) {
+      $('worked-toggle-all').innerHTML = showAllWorkedSteps ? '<span>Stepper Mode</span>' : '<span>Show All</span>';
+    }
+
+    if (window.renderMathInElement && $('tab-worked')) {
+      renderMathInElement($('tab-worked'), {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+          {left: '\\(', right: '\\)', display: false},
+          {left: '\\[', right: '\\]', display: true}
+        ],
+        throwOnError: false
+      });
+    }
+  }
+
+  function prevWorkedStep() {
+    if (currentWorkedStep > 1) {
+      currentWorkedStep--;
+      updateWorkedStepperUI();
+    }
+  }
+
+  function nextWorkedStep() {
+    if (currentWorkedStep < 7) {
+      currentWorkedStep++;
+      updateWorkedStepperUI();
+      const activeCard = $(`worked-step-card-${currentWorkedStep}`);
+      if (activeCard) {
+        activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }
+
+  function gotoWorkedStep(step) {
+    currentWorkedStep = Math.max(1, Math.min(7, step));
+    updateWorkedStepperUI();
+  }
+
+  function toggleShowAllWorkedSteps() {
+    showAllWorkedSteps = !showAllWorkedSteps;
+    updateWorkedStepperUI();
+  }
+
+  function runWorkedAlgorithm(weights, theta, isCustom = false) {
+    const M = weights.length;
+    const s = weights.map(Math.abs);
+    
+    // Sort indices by descending score with deterministic tie-breaker
+    const indices = weights.map((_, i) => i);
+    indices.sort((a, b) => {
+      const diff = Math.abs(weights[b]) - Math.abs(weights[a]);
+      return diff !== 0 ? diff : a - b;
+    });
+
+    const sortedAbs = indices.map(i => Math.abs(weights[i]));
+    
+    // Prefix sums of squared components
+    let acc = 0;
+    const c = [];
+    for (let i = 0; i < M; i++) {
+      acc += weights[indices[i]] * weights[indices[i]];
+      c.push(acc);
+    }
+    const nu2 = acc;
+    const cosCurve = c.map(val => (nu2 > 0 ? Math.sqrt(val / nu2) : 1.0));
+
+    // Binary search trace for P_min
+    let lo = 1, hi = M;
+    const trace = [];
+    const targetEnergy = theta * theta * nu2;
+    while (lo < hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      const ok = c[mid - 1] >= targetEnergy - 1e-9;
+      trace.push({
+        lo, hi, mid,
+        c_mid: c[mid - 1],
+        cos: cosCurve[mid - 1],
+        feasible: ok
+      });
+      if (ok) {
+        hi = mid;
+      } else {
+        lo = mid + 1;
+      }
+    }
+    const pMin = lo;
+
+    // Render Bar Chart
+    draw('worked_bar_chart', {
+      type: 'bar',
+      data: {
+        labels: indices.map((idx, rank) => `w_${idx + 1} (${sortedAbs[rank].toFixed(1)})`),
+        datasets: [{
+          label: '|w| Magnitude',
+          data: sortedAbs,
+          backgroundColor: sortedAbs.map((_, i) => i < pMin ? '#2563eb' : '#cbd5e1'),
+          borderColor: sortedAbs.map((_, i) => i < pMin ? '#1d4ed8' : '#94a3b8'),
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: `Sorted Magnitudes |w| (Top P_min = ${pMin} in Blue, Remaining ${M - pMin} Zeroed)`,
+            color: '#334155',
+            font: { family: "'Inter', sans-serif", size: 11, weight: '600' }
+          },
+          tooltip: {
+            callbacks: {
+              title: (ctx) => {
+                const rank = ctx[0].dataIndex;
+                const idx = indices[rank];
+                return `Rank ${rank + 1}: w_${idx + 1} (orig w = ${weights[idx].toFixed(2)})`;
+              },
+              label: (ctx) => `Magnitude |w| = ${ctx.parsed.y.toFixed(3)} ${ctx.dataIndex < pMin ? '✓ In Signature' : '✗ Zeroed'}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#64748b', font: { family: "'JetBrains Mono', monospace", size: 10 } },
+            grid: { display: false }
+          },
+          y: {
+            title: { display: true, text: 'Coordinate Magnitude |w|', color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
+            ticks: { color: '#64748b', font: { family: "'JetBrains Mono', monospace", size: 10 } },
+            grid: { color: '#f1f5f9' }
+          }
+        }
+      }
+    });
+
+    // Render Cosine Curve Chart
+    const pointRadii = cosCurve.map((_, i) => (i + 1 === pMin ? 7 : 3));
+    const pointBackgrounds = cosCurve.map((_, i) => (i + 1 === pMin ? '#dc2626' : '#2563eb'));
+
+    draw('worked_cos_chart', {
+      type: 'line',
+      data: {
+        labels: Array.from({ length: M }, (_, i) => i + 1),
+        datasets: [
+          {
+            label: 'cos(P) = sqrt(c_P) / ||w||',
+            data: cosCurve,
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+            fill: true,
+            pointRadius: pointRadii,
+            pointHoverRadius: 8,
+            pointBackgroundColor: pointBackgrounds,
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            borderWidth: 2,
+            tension: 0.15
+          },
+          {
+            label: `Target θ = ${theta.toFixed(2)}`,
+            data: Array(M).fill(theta),
+            borderColor: '#f59e0b',
+            borderDash: [6, 4],
+            pointRadius: 0,
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              font: { family: "'Inter', sans-serif", size: 11, weight: '600' },
+              color: '#334155',
+              boxWidth: 14
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                if (ctx.datasetIndex === 0) {
+                  const p = ctx.parsed.x;
+                  return `P = ${p}: cos = ${ctx.parsed.y.toFixed(3)} ${p === pMin ? '★ P_min target' : ''}`;
+                }
+                return `Target θ = ${theta.toFixed(2)}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: `Signature Budget P (Resolved P_min = ${pMin})`, color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
+            ticks: { color: '#64748b', font: { family: "'JetBrains Mono', monospace", size: 10 } },
+            grid: { color: '#f1f5f9' }
+          },
+          y: {
+            min: Math.max(0, Math.floor(Math.min(...cosCurve, theta) * 10) / 10 - 0.1),
+            max: 1.05,
+            title: { display: true, text: 'Directional Cosine Similarity', color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
+            ticks: { color: '#64748b', font: { family: "'JetBrains Mono', monospace", size: 10 } },
+            grid: { color: '#f1f5f9' }
+          }
+        }
+      }
+    });
+
+    if (isCustom) {
+      $('custom_weights_result').classList.remove('hidden');
+      $('custom_weights_result').innerHTML = `
+        <div class="font-bold text-slate-900 flex items-center justify-between">
+          <span>✓ Recomputation Complete (M = ${M}, θ = ${theta.toFixed(2)})</span>
+          <span class="tag-sim">P_min = ${pMin}</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
+          <div class="p-2 bg-white rounded border border-blue-200">
+            <span class="text-slate-500 block text-[10px]">TOTAL ENERGY ||w||²</span>
+            <strong>${nu2.toFixed(4)}</strong>
+          </div>
+          <div class="p-2 bg-white rounded border border-blue-200">
+            <span class="text-slate-500 block text-[10px]">FEASIBILITY THRESHOLD</span>
+            <strong>${targetEnergy.toFixed(4)}</strong> (θ²‖w‖²)
+          </div>
+          <div class="p-2 bg-white rounded border border-blue-200">
+            <span class="text-slate-500 block text-[10px]">MINIMAL P_min</span>
+            <strong class="text-blue-700 font-bold">${pMin} of ${M} (${((pMin / M) * 100).toFixed(1)}%)</strong>
+          </div>
+          <div class="p-2 bg-white rounded border border-blue-200">
+            <span class="text-slate-500 block text-[10px]">ACHIEVED COSINE</span>
+            <strong class="text-emerald-700 font-bold">${cosCurve[pMin - 1].toFixed(4)}</strong>
+          </div>
+        </div>
+        <div class="pt-1">
+          <strong class="text-slate-800 text-[11px]">Binary Search Trace (${trace.length} checks):</strong>
+          <div class="table-wrap mt-1">
+            <table>
+              <thead><tr><th>Check</th><th>lo</th><th>hi</th><th>mid</th><th>c_mid</th><th>cos(mid)</th><th>Feasible?</th></tr></thead>
+              <tbody>
+                ${trace.map((t, idx) => `
+                  <tr>
+                    <td>${idx + 1}</td><td>${t.lo}</td><td>${t.hi}</td><td><strong>${t.mid}</strong></td>
+                    <td>${t.c_mid.toFixed(3)}</td><td>${t.cos.toFixed(3)}</td>
+                    <td><span class="${t.feasible ? 'yes' : 'no'}">${t.feasible ? '✓ Feasible' : '✗ Below θ'}</span></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  function initWorkedExample() {
+    runWorkedAlgorithm(fixedWeights, fixedTheta, false);
+    updateWorkedStepperUI();
+  }
+
+  function recalcCustomWorkedExample() {
+    const errorEl = $('custom_weights_error');
+    const rawStr = ($('custom_weights_input').value || '').trim();
+    const rawTheta = parseFloat($('custom_theta_input').value);
+
+    errorEl.classList.add('hidden');
+    errorEl.textContent = '';
+    $('custom_weights_result').classList.add('hidden');
+
+    if (!rawStr) {
+      errorEl.textContent = 'Error: Please enter 10 weights separated by commas or spaces.';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    const tokens = rawStr.split(/[,\s]+/).filter(t => t.length > 0);
+    if (tokens.length !== 10) {
+      errorEl.textContent = `Error: Exactly 10 coordinate weights are required. Found ${tokens.length} values.`;
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    const weights = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const num = parseFloat(tokens[i]);
+      if (isNaN(num)) {
+        errorEl.textContent = `Error: Invalid numeric value at position ${i + 1}: "${tokens[i]}".`;
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      weights.push(num);
+    }
+
+    if (isNaN(rawTheta) || rawTheta <= 0 || rawTheta > 1.0) {
+      errorEl.textContent = 'Error: Target cosine θ must be a valid number between 0.1 and 1.0.';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    const totalEnergy = weights.reduce((acc, w) => acc + w * w, 0);
+    if (totalEnergy === 0) {
+      errorEl.textContent = 'Error: Weights cannot be all zeros (total vector magnitude must be > 0).';
+      errorEl.classList.remove('hidden');
+      return;
+    }
+
+    runWorkedAlgorithm(weights, rawTheta, true);
+  }
+
+  function resetWorkedExample() {
+    $('custom_weights_input').value = '0.5, -3.0, 0.2, 2.0, -0.1, 1.5, 0.3, -1.0, 0.4, 0.6';
+    $('custom_theta_input').value = '0.9';
+    $('custom_weights_error').classList.add('hidden');
+    $('custom_weights_result').classList.add('hidden');
+    initWorkedExample();
   }
 
   // Initial startup execution
