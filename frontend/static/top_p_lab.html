@@ -1514,42 +1514,7 @@
         </div>
       </div>
 
-      <!-- Interactive Sandbox: Try your own 10 weights -->
-      <div class="paper-panel">
-        <div class="panel-header">
-          <span class="panel-title"><span>🧪</span><span>Try Your Own 10 Weights (Live In-Browser Recomputation)</span></span>
-          <span class="tag-sim">Pure JS Simulator</span>
-        </div>
-        <div class="space-y-3 text-xs">
-          <p class="text-slate-600">
-            Enter any 10 coordinate weights and a target cosine $\theta$ to recompute steps 1–5 in real time with the exact same algorithm:
-          </p>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div class="md:col-span-3">
-              <label>
-                <span>10 Coordinate Weights (comma or space separated)</span>
-                <input id="custom_weights_input" type="text" value="0.5, -3.0, 0.2, 2.0, -0.1, 1.5, 0.3, -1.0, 0.4, 0.6">
-              </label>
-            </div>
-            <div>
-              <label>
-                <span>Target Cosine (&theta;)</span>
-                <input id="custom_theta_input" type="number" value="0.9" step="0.05" min="0.1" max="1.0">
-              </label>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <button class="btn-primary px-4 py-1.5 rounded text-xs font-mono font-bold flex items-center gap-1.5" onclick="recalcCustomWorkedExample()">
-              <span>⚡</span><span>Recompute Custom Weights</span>
-            </button>
-            <button class="preset-btn text-xs font-mono" onclick="resetWorkedExample()">
-              <span>↺</span><span>Reset to Default</span>
-            </button>
-          </div>
-          <div id="custom_weights_error" class="hidden p-2.5 rounded border border-red-200 bg-red-50 text-red-700 text-xs font-mono"></div>
-          <div id="custom_weights_result" class="hidden p-3 rounded-lg border border-blue-200 bg-blue-50 text-xs space-y-2"></div>
-        </div>
-      </div>
+
 
     </div>
 
@@ -2198,7 +2163,7 @@
     updateWorkedStepperUI();
   }
 
-  function runWorkedAlgorithm(weights, theta, isCustom = false) {
+  function runWorkedAlgorithm(weights, theta) {
     const M = weights.length;
     const s = weights.map(Math.abs);
     
@@ -2368,113 +2333,11 @@
         }
       }
     });
-
-    if (isCustom) {
-      $('custom_weights_result').classList.remove('hidden');
-      $('custom_weights_result').innerHTML = `
-        <div class="font-bold text-slate-900 flex items-center justify-between">
-          <span>✓ Recomputation Complete (M = ${M}, θ = ${theta.toFixed(2)})</span>
-          <span class="tag-sim">P_min = ${pMin}</span>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
-          <div class="p-2 bg-white rounded border border-blue-200">
-            <span class="text-slate-500 block text-[10px]">TOTAL ENERGY ||w||²</span>
-            <strong>${nu2.toFixed(4)}</strong>
-          </div>
-          <div class="p-2 bg-white rounded border border-blue-200">
-            <span class="text-slate-500 block text-[10px]">FEASIBILITY THRESHOLD</span>
-            <strong>${targetEnergy.toFixed(4)}</strong> (θ²‖w‖²)
-          </div>
-          <div class="p-2 bg-white rounded border border-blue-200">
-            <span class="text-slate-500 block text-[10px]">MINIMAL P_min</span>
-            <strong class="text-blue-700 font-bold">${pMin} of ${M} (${((pMin / M) * 100).toFixed(1)}%)</strong>
-          </div>
-          <div class="p-2 bg-white rounded border border-blue-200">
-            <span class="text-slate-500 block text-[10px]">ACHIEVED COSINE</span>
-            <strong class="text-emerald-700 font-bold">${cosCurve[pMin - 1].toFixed(4)}</strong>
-          </div>
-        </div>
-        <div class="pt-1">
-          <strong class="text-slate-800 text-[11px]">Binary Search Trace (${trace.length} checks):</strong>
-          <div class="table-wrap mt-1">
-            <table>
-              <thead><tr><th>Check</th><th>lo</th><th>hi</th><th>mid</th><th>c_mid</th><th>cos(mid)</th><th>Feasible?</th></tr></thead>
-              <tbody>
-                ${trace.map((t, idx) => `
-                  <tr>
-                    <td>${idx + 1}</td><td>${t.lo}</td><td>${t.hi}</td><td><strong>${t.mid}</strong></td>
-                    <td>${t.c_mid.toFixed(3)}</td><td>${t.cos.toFixed(3)}</td>
-                    <td><span class="${t.feasible ? 'yes' : 'no'}">${t.feasible ? '✓ Feasible' : '✗ Below θ'}</span></td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-    }
   }
 
   function initWorkedExample() {
-    runWorkedAlgorithm(fixedWeights, fixedTheta, false);
+    runWorkedAlgorithm(fixedWeights, fixedTheta);
     updateWorkedStepperUI();
-  }
-
-  function recalcCustomWorkedExample() {
-    const errorEl = $('custom_weights_error');
-    const rawStr = ($('custom_weights_input').value || '').trim();
-    const rawTheta = parseFloat($('custom_theta_input').value);
-
-    errorEl.classList.add('hidden');
-    errorEl.textContent = '';
-    $('custom_weights_result').classList.add('hidden');
-
-    if (!rawStr) {
-      errorEl.textContent = 'Error: Please enter 10 weights separated by commas or spaces.';
-      errorEl.classList.remove('hidden');
-      return;
-    }
-
-    const tokens = rawStr.split(/[,\s]+/).filter(t => t.length > 0);
-    if (tokens.length !== 10) {
-      errorEl.textContent = `Error: Exactly 10 coordinate weights are required. Found ${tokens.length} values.`;
-      errorEl.classList.remove('hidden');
-      return;
-    }
-
-    const weights = [];
-    for (let i = 0; i < tokens.length; i++) {
-      const num = parseFloat(tokens[i]);
-      if (isNaN(num)) {
-        errorEl.textContent = `Error: Invalid numeric value at position ${i + 1}: "${tokens[i]}".`;
-        errorEl.classList.remove('hidden');
-        return;
-      }
-      weights.push(num);
-    }
-
-    if (isNaN(rawTheta) || rawTheta <= 0 || rawTheta > 1.0) {
-      errorEl.textContent = 'Error: Target cosine θ must be a valid number between 0.1 and 1.0.';
-      errorEl.classList.remove('hidden');
-      return;
-    }
-
-    const totalEnergy = weights.reduce((acc, w) => acc + w * w, 0);
-    if (totalEnergy === 0) {
-      errorEl.textContent = 'Error: Weights cannot be all zeros (total vector magnitude must be > 0).';
-      errorEl.classList.remove('hidden');
-      return;
-    }
-
-    runWorkedAlgorithm(weights, rawTheta, true);
-  }
-
-  function resetWorkedExample() {
-    $('custom_weights_input').value = '0.5, -3.0, 0.2, 2.0, -0.1, 1.5, 0.3, -1.0, 0.4, 0.6';
-    $('custom_theta_input').value = '0.9';
-    $('custom_weights_error').classList.add('hidden');
-    $('custom_weights_result').classList.add('hidden');
-    initWorkedExample();
   }
 
   // Initial startup execution
