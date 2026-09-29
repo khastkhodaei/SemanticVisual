@@ -393,36 +393,142 @@
       <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
         <div class="flex items-center gap-2">
           <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-emerald-100 text-emerald-800">SIMULATOR SCOPE</span>
-          <h2 class="text-sm font-bold text-slate-900">Simulator Scope &amp; Implementation Boundaries</h2>
+          <h2 class="text-sm font-bold text-slate-900">Weight Distributions &amp; Model Dimension Comparison</h2>
         </div>
         <p class="text-xs text-slate-600 font-sans mt-1">
-          Clarifying what is modeled in this interactive demonstration vs. the complete production protocol.
+          Comparing the pedagogical storyboard simplification against all deep learning model architectures evaluated in the SemanticDFL paper.
         </p>
       </div>
 
       <!-- Scope Content Card -->
       <div class="paper-panel">
         <div class="panel-header">
-          <span class="panel-title"><span>📚</span><span>Pedagogical Storyboard vs. Deep Learning Paper Regime</span></span>
-          <span class="tag-sim">Simulator</span>
+          <span class="panel-title"><span>📚</span><span>Pedagogical Storyboard vs. Deep Learning Paper Architectures</span></span>
+          <span class="tag-paper">Paper §3.2, §3.4, §5.4 &amp; App. D, E</span>
         </div>
-        <div class="space-y-3 text-xs leading-relaxed text-slate-700 font-sans">
-          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
-            <strong class="text-slate-900 block mb-1 text-xs">1. Weight Distributions &amp; Model Dimension:</strong>
-            In the 10-node CIFAR-10 storyboard (Steps 1–34), clients hold normalized 10-dimensional class distribution vectors where $P = 3$ ($30\%$ of dimension) with $\theta = 0.70$ is chosen for intuitive visualization and manual verification.<br>
-            In the Deep-Dive Lab and the real paper regime, models contain $M = 10^6$–$10^8$ weights (e.g. ResNet-18 with $M = 11.7\text{M}$) where $P \approx 10\%–13\%$ achieves $\cos \ge 0.80$.
+        
+        <div class="space-y-4 text-xs leading-relaxed text-slate-700 font-sans">
+          <div class="p-3.5 bg-blue-50/70 border border-blue-200 rounded-lg space-y-2">
+            <strong class="text-blue-950 block text-xs font-bold">1. Pedagogical Storyboard vs. Real Paper Regime:</strong>
+            <p class="text-slate-700">
+              In the <strong>10-node CIFAR-10 storyboard</strong> (Steps 1–34), clients hold normalized 10-dimensional class distribution vectors where $P = 3$ ($30\%$ of dimension) with $\theta = 0.70$ is chosen for intuitive visualization and manual step-by-step verification.
+            </p>
+            <p class="text-slate-700">
+              In the real paper regime and actual deep learning deployments, models contain $M = 10^4$ to $10^8$ weights. Because deep neural networks exhibit heavy-tailed eigenvalue decay, <strong>the required percentage $P/M$ actually drops as model dimension grows</strong>, providing massive payload compression ($5.0\times$ to $7.8\times$ smaller than dense FP32) while achieving target directional cosine $\theta \ge 0.80$.
+            </p>
           </div>
-          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
-            <strong class="text-slate-900 block mb-1 text-xs">2. Synthetic Heavy-Tailed Sampling in the Lab:</strong>
-            The Top-P Extraction simulation tab synthesizes heavy-tailed weights with latent cluster seeds ($W = \text{bases}[c] + 0.35 \cdot \text{noise}$) to reproduce realistic parameter spectra without requiring local GPU training.
+
+          <!-- Comprehensive Model Comparison Table -->
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Domain / Task</th>
+                  <th>Model Architecture</th>
+                  <th>Total Parameters ($M$)</th>
+                  <th>Retained Top-$P$</th>
+                  <th>Sparsity ($P/M$)</th>
+                  <th>Dense Size (FP32)</th>
+                  <th>Top-$P$ Payload ($6P$ B)</th>
+                  <th>Payload Reduction</th>
+                  <th>Target $\theta$</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="bg-slate-50/80 font-medium">
+                  <td><strong>Interactive Storyboard</strong></td>
+                  <td>Class Vector (CIFAR-10)</td>
+                  <td>$10$</td>
+                  <td>$P = 3$</td>
+                  <td>$30.0\%$</td>
+                  <td>$40\text{ B}$</td>
+                  <td>$18\text{ B}$</td>
+                  <td><span class="tag-sim font-bold">$2.2\times$ ($55.0\%$ saved)</span></td>
+                  <td>$0.70$</td>
+                </tr>
+                <tr>
+                  <td><strong>Small Vision (FMNIST / CIFAR-10)</strong></td>
+                  <td>2-Layer CNN (LeNet-style)</td>
+                  <td>$62{,}000$</td>
+                  <td>$P = 7{,}750$</td>
+                  <td>$12.5\%$</td>
+                  <td>$248\text{ KB}$</td>
+                  <td>$46.5\text{ KB}$</td>
+                  <td><span class="text-emerald-700 font-bold">$5.3\times$ ($81.3\%$ saved)</span></td>
+                  <td>$0.80$</td>
+                </tr>
+                <tr>
+                  <td><strong>Edge Vision (CIFAR-100)</strong></td>
+                  <td>MobileNetV2</td>
+                  <td>$3{,}400{,}000$</td>
+                  <td>$P = 380{,}800$</td>
+                  <td>$11.2\%$</td>
+                  <td>$13.6\text{ MB}$</td>
+                  <td>$2.28\text{ MB}$</td>
+                  <td><span class="text-emerald-700 font-bold">$6.0\times$ ($83.2\%$ saved)</span></td>
+                  <td>$0.80$</td>
+                </tr>
+                <tr class="bg-blue-50/40">
+                  <td><strong>Vision Benchmark (Tiny-ImageNet)</strong></td>
+                  <td>ResNet-18 [Paper §3.4]</td>
+                  <td>$11{,}700{,}000$</td>
+                  <td>$P = 1{,}263{,}600$</td>
+                  <td>$10.8\%$</td>
+                  <td>$46.8\text{ MB}$</td>
+                  <td>$7.58\text{ MB}$</td>
+                  <td><span class="text-emerald-700 font-bold">$6.2\times$ ($83.8\%$ saved)</span></td>
+                  <td>$0.80$</td>
+                </tr>
+                <tr>
+                  <td><strong>Audio / Speech (Google-Speech)</strong></td>
+                  <td>ResNet-18 / ConvNet [Paper §3.4]</td>
+                  <td>$11{,}700{,}000$</td>
+                  <td>$P = 1{,}556{,}100$</td>
+                  <td>$13.3\%$</td>
+                  <td>$46.8\text{ MB}$</td>
+                  <td>$9.33\text{ MB}$</td>
+                  <td><span class="text-emerald-700 font-bold">$5.0\times$ ($80.1\%$ saved)</span></td>
+                  <td>$0.80$</td>
+                </tr>
+                <tr>
+                  <td><strong>NLP Classification (20News / AG)</strong></td>
+                  <td>ALBERT-Base</td>
+                  <td>$11{,}700{,}000$</td>
+                  <td>$P = 1{,}170{,}000$</td>
+                  <td>$10.0\%$</td>
+                  <td>$46.8\text{ MB}$</td>
+                  <td>$7.02\text{ MB}$</td>
+                  <td><span class="text-emerald-700 font-bold">$6.7\times$ ($85.0\%$ saved)</span></td>
+                  <td>$0.80$</td>
+                </tr>
+                <tr>
+                  <td><strong>Large NLP (Transformer)</strong></td>
+                  <td>BERT-Base [Paper App. D]</td>
+                  <td>$110{,}000{,}000$</td>
+                  <td>$P = 9{,}350{,}000$</td>
+                  <td>$8.5\%$</td>
+                  <td>$440.0\text{ MB}$</td>
+                  <td>$56.1\text{ MB}$</td>
+                  <td><span class="text-emerald-700 font-bold">$7.8\times$ ($87.3\%$ saved)</span></td>
+                  <td>$0.80$</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
-            <strong class="text-slate-900 block mb-1 text-xs">3. Distributed Topology &amp; VRF Integration:</strong>
-            The complete multi-phase pipeline (VRF leader election, TTL-bounded zone flooding, inter-zone boundary notifications, and Affinity Propagation meta-clustering) is executed step-by-step in the main application storyboard (Steps 3 through 19).
-          </div>
-          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
-            <strong class="text-slate-900 block mb-1 text-xs">4. Out-of-Scope Behaviors:</strong>
-            As defined in the paper [§2.4, §2.5], dynamic node churn and Byzantine adversarial data poisoning are handled via cryptographic VRF seeds and $(1-q)$ quantile bounds; active malicious packet manipulation is excluded from the normal execution simulator.
+
+          <!-- Insight Box -->
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 space-y-1.5">
+            <strong class="text-slate-900 block text-xs">💡 Theoretical Rationale from Paper Appendix B.1:</strong>
+            <p>
+              Each Top-$P$ coordinate requires $6\text{ bytes}$ on the wire ($4\text{ bytes}$ for coordinate index $+ 2\text{ bytes}$ for FP16 value), compared to $4\text{ bytes}$ per parameter in dense FP32.
+              The compression ratio is therefore:
+            </p>
+            <div class="top-p-formula-card">
+              $$\text{Reduction Ratio} = \frac{4 \cdot M}{6 \cdot P} = \frac{2}{3 \cdot (P/M)}$$
+            </div>
+            <p>
+              For example, at $P/M = 10.8\%$ (ResNet-18), $\text{Reduction} = \frac{2}{3 \times 0.108} \approx 6.17\times$ ($83.8\%$ reduction in discovery bytes), allowing the entire 2-Tier SON hierarchical search to execute in $\le 8\%–12.6\%$ of total round communication time.
+            </p>
           </div>
         </div>
       </div>
