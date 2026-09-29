@@ -917,6 +917,7 @@
             borderColor: '#f59e0b',
             borderDash: [6, 4],
             pointRadius: 0,
+            pointHitRadius: 0,
             borderWidth: 2
           }
         ]
@@ -943,7 +944,12 @@
             titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
             bodyFont: { family: "'JetBrains Mono', monospace", size: 11 },
             padding: 8,
-            cornerRadius: 6
+            cornerRadius: 6,
+            filter: (item) => item.datasetIndex === 0,
+            callbacks: {
+              title: (items) => `Signature Coordinates: P = ${items[0].label}`,
+              label: (item) => ` cos(w, w[P]) = ${Number(item.raw).toFixed(4)}`
+            }
           }
         },
         scales: {
@@ -954,9 +960,13 @@
           },
           y: {
             min: 0,
-            max: 1.05,
+            max: 1.0,
             title: { display: true, text: 'Directional Cosine Similarity', color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
-            ticks: { color: '#64748b', font: { family: "'JetBrains Mono', monospace", size: 10 } },
+            ticks: { 
+              color: '#64748b', 
+              font: { family: "'JetBrains Mono', monospace", size: 10 },
+              stepSize: 0.2
+            },
             grid: { color: '#f1f5f9' }
           }
         }
@@ -1479,11 +1489,12 @@
             }
           },
           tooltip: {
+            filter: (item) => item.datasetIndex === 0,
             callbacks: {
               label: (ctx) => {
                 if (ctx.datasetIndex === 0) {
                   const p = ctx.parsed.x;
-                  return `P = ${p}: cos = ${ctx.parsed.y.toFixed(3)} ${p === pMin ? '★ P_min target' : ''}`;
+                  return `P = ${p}: cos = ${ctx.parsed.y.toFixed(4)} ${p === pMin ? '★ P_min target' : ''}`;
                 }
                 return `Target θ = ${theta.toFixed(2)}`;
               }
@@ -1498,7 +1509,7 @@
           },
           y: {
             min: Math.max(0, Math.floor(Math.min(...cosCurve, theta) * 10) / 10 - 0.1),
-            max: 1.05,
+            max: 1.0,
             title: { display: true, text: 'Directional Cosine Similarity', color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
             ticks: { color: '#64748b', font: { family: "'JetBrains Mono', monospace", size: 10 } },
             grid: { color: '#f1f5f9' }
