@@ -72,17 +72,14 @@
       <button class="tab-btn active" onclick="showTab('tab-sim', this)">
         <span>1.</span><span>Simulation Lab</span>
       </button>
-      <button class="tab-btn" onclick="showTab('tab-cost', this)">
-        <span>2.</span><span>Cost Model &amp; Sizing</span>
+      <button class="tab-btn" onclick="showTab('tab-scope', this)">
+        <span>2.</span><span>Paper Models &amp; Savings</span>
       </button>
       <button class="tab-btn" onclick="showTab('tab-faq', this)">
         <span>3.</span><span>Q&amp;A &amp; Theory</span>
       </button>
-      <button class="tab-btn" onclick="showTab('tab-scope', this)">
-        <span>4.</span><span>Paper Models &amp; Savings</span>
-      </button>
       <button class="tab-btn" onclick="showTab('tab-worked', this)">
-        <span>5.</span><span>Worked Example</span>
+        <span>4.</span><span>Worked Example</span>
       </button>
     </nav>
 
@@ -247,147 +244,8 @@
 
     </div>
 
-    <!-- TAB 2: COST MODEL & SIZING CALCULATOR -->
-    <div id="tab-cost" class="tab-content space-y-4">
-      
-      <!-- Header Card -->
-      <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
-        <div class="flex items-center gap-2">
-          <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-100 text-blue-800">PAPER §3.4 &amp; APP. D</span>
-          <h2 class="text-sm font-bold text-slate-900">Cost Model &amp; Mathematical Sizing Calculator</h2>
-        </div>
-        <p class="text-xs text-slate-600 font-sans mt-1">
-          Interactive analytical cost model reproducing the paper's ResNet-18 worked example and scaling metrics across deep models.
-        </p>
-      </div>
-
-      <!-- Presets & Parameters Card -->
-      <div class="paper-panel">
-        <div class="panel-header">
-          <span class="panel-title"><span>🎛️</span><span>Paper Presets &amp; Sizing Parameters</span></span>
-          <span class="text-[11px] text-slate-500 font-mono">Table 4 &amp; §3.4 Benchmarks</span>
-        </div>
-        <div class="flex flex-wrap gap-2 mb-3.5">
-          <button class="preset-btn" onclick="applyPreset(11700000, 10.8, 25.0, 10, 1.03)">ResNet-18 (Tiny-ImageNet P=10.8%) [Paper §3.4]</button>
-          <button class="preset-btn" onclick="applyPreset(11700000, 13.3, 25.0, 10, 1.03)">ResNet-18 (Google-Speech P=13.3%) [Paper §3.4]</button>
-          <button class="preset-btn" onclick="applyPreset(11700000, 10.0, 25.0, 10, 1.03)">ResNet-18 (P=10% baseline) [Paper §3.4]</button>
-          <button class="preset-btn" onclick="applyPreset(11700000, 10.8, 25.0, 10, 1.00)">Strict Baseline (Overhead = 1.00)</button>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <label>Parameters (M)<input id="c_M" type="number" value="11700000" step="100000"></label>
-          <label>Top-P fraction (%)<input id="c_P_pct" type="number" value="10.8" step="0.1" min="0.1" max="100"></label>
-          <label>Bandwidth (MB/s)<input id="c_bw" type="number" value="25.0" step="1" min="1"></label>
-          <label>Partner Pulls (K)<input id="c_K" type="number" value="10" min="1" max="50"></label>
-          <label id="lbl_overhead">Transport overhead factor: 1.00<input id="c_overhead" type="number" value="1.00" step="0.01" min="0.5" max="3.0" oninput="updateOverheadLabel()"></label>
-          <label>Visited Super-Peers<input id="c_sp" type="number" value="7" min="1" max="50"></label>
-          <label>Probed Leaves<input id="c_pl" type="number" value="4" min="1" max="50"></label>
-          <label>Leaf Group Size<input id="c_ls" type="number" value="2" min="1" max="20"></label>
-          <label>Index bytes (b_idx)<input id="c_bidx" type="number" value="4" readonly style="opacity:0.7"></label>
-          <label>Value bytes (b_val)<input id="c_bval" type="number" value="2" readonly style="opacity:0.7"></label>
-        </div>
-        <div class="mt-3.5">
-          <button class="btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shadow-sm" onclick="recalcCosts()">
-            <span>⚡</span><span>Calculate Costs</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Live Cost Outputs Card -->
-      <div class="paper-panel">
-        <div class="panel-header">
-          <span class="panel-title"><span>📈</span><span>Live Cost Model Outputs</span></span>
-          <span class="tag-paper">Paper §3.4</span>
-        </div>
-        <div class="kpis" id="cost-kpis"></div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
-            <div class="font-bold text-xs text-blue-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-              <span>📡</span><span>Hierarchical Discovery Query (15 Signatures)</span>
-            </div>
-            <div id="cost-query-detail" class="text-xs text-slate-700 leading-relaxed font-mono"></div>
-          </div>
-          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
-            <div class="font-bold text-xs text-emerald-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-              <span>📥</span><span>Model Parameter Pull + Serving (20 Transfers)</span>
-            </div>
-            <div id="cost-pull-detail" class="text-xs text-slate-700 leading-relaxed font-mono"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Comparison Table Card -->
-      <div class="paper-panel">
-        <div class="panel-header">
-          <span class="panel-title"><span>⚖️</span><span>Protocol Comparison Table</span></span>
-          <span class="tag-paper">Paper §2.3, §3.4, §5.4</span>
-        </div>
-        <div class="table-wrap">
-          <table id="cost-comparison-table">
-            <thead>
-              <tr>
-                <th>Protocol Architecture</th>
-                <th>Control Traffic Footprint</th>
-                <th>Model Parameter Exchange</th>
-                <th>Network Scalability</th>
-                <th>Provenance</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Complexity Table Card -->
-      <div class="paper-panel">
-        <div class="panel-header">
-          <span class="panel-title"><span>⏱️</span><span>Algorithm Complexity Breakdown</span></span>
-          <span class="tag-paper">Paper App. B.1, Prop. 1–3</span>
-        </div>
-        <div class="table-wrap">
-          <table id="cost-complexity-table">
-            <thead>
-              <tr>
-                <th>Operation</th>
-                <th>Computational Complexity</th>
-                <th>Execution Frequency</th>
-                <th>Provenance</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- TAB 3: Q&A / FAQ -->
-    <div id="tab-faq" class="tab-content space-y-4">
-      
-      <!-- Header Card -->
-      <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
-        <div class="flex items-center gap-2">
-          <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-100 text-blue-800">FAQ &amp; THEORY</span>
-          <h2 class="text-sm font-bold text-slate-900">Top-P Questions &amp; Mathematical Explanations</h2>
-        </div>
-        <p class="text-xs text-slate-600 font-sans mt-1">
-          Complete reference addressing design decisions, proofs, and sizing questions from the SemanticDFL paper. Loaded from editable JSON (<code class="text-blue-700 font-mono text-xs">frontend/static/top_p_faq.json</code>).
-        </p>
-      </div>
-
-      <!-- Filter & Search Card -->
-      <div class="paper-panel">
-        <div class="flex flex-wrap gap-2 mb-2.5">
-          <input id="faq-search" type="text" placeholder="🔍 Search Q&A (e.g. 'binary search', 'quantile', 'privacy', 'ResNet-18')..." class="flex-1 min-w-[240px]" oninput="filterFAQ()">
-        </div>
-        <div class="flex flex-wrap gap-1.5" id="faq-pills"></div>
-      </div>
-
-      <!-- FAQ Accordions Container -->
-      <div id="faq-container" class="space-y-2"></div>
-    </div>
-
-    <!-- TAB 4: PAPER MODELS & SAVINGS -->
-        <!-- TAB 4: PAPER MODELS & SAVINGS (COMPREHENSIVE PAPER COST & SAVINGS REFERENCE) -->
+    <!-- TAB 2: PAPER MODELS & SAVINGS -->
+        <!-- TAB 2: PAPER MODELS & SAVINGS (COMPREHENSIVE PAPER COST & SAVINGS REFERENCE) -->
     <div id="tab-scope" class="tab-content space-y-4">
       
       <!-- Academic Paper Header & Reference Card -->
@@ -466,7 +324,7 @@
             <button class="pill" onclick="switchPaperSection('sec-lifecycle', this)">🔄 10-Stage Protocol &amp; Costs (S1–S9)</button>
             <button class="pill" onclick="switchPaperSection('sec-accuracy', this)">🎯 16-Scenario Accuracy (S11 Tbl 2)</button>
             <button class="pill" onclick="switchPaperSection('sec-convergence', this)">⚡ Speed &amp; Churn (S10 Tbl 3 &amp; 7)</button>
-            <button class="pill opacity-60 hover:opacity-100" onclick="switchPaperSection('sec-theory', this)">📐 Theorems &amp; Proofs (Hidden)</button>
+            
             <button class="pill" onclick="switchPaperSection('sec-caveats', this)">🔍 Caveats &amp; Audit (S13 &amp; S14)</button>
           </div>
           <span class="text-[11px] font-mono text-slate-500">Dogani et al. (ACM 2026)</span>
@@ -1236,97 +1094,7 @@
         </div>
       </div>
 
-            <!-- SECTION 5: THEORETICAL INVARIANTS & FORMAL PROOFS (S11 & S5) [TEMPORARILY HIDDEN] -->
-      <div id="sec-theory" class="paper-section space-y-4">
-        <div class="paper-panel border-dashed border-slate-300 bg-slate-50/50">
-          <div class="panel-header">
-            <div class="flex items-center gap-2">
-              <span class="panel-title text-slate-500"><span>📐</span><span>S11 &amp; S5 — Theoretical Guarantees, Stationarity Rates &amp; Asymptotic Bounds</span></span>
-              <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-amber-100 text-amber-800 border border-amber-300">FEATURE IMPLEMENTED — CURRENTLY HIDDEN</span>
-            </div>
-            <button class="preset-btn text-[11px] flex items-center gap-1" onclick="toggleTheoryProofs(this)">
-              <span>👁️</span><span>Toggle View Proofs</span>
-            </button>
-          </div>
-
-          <p class="text-xs text-slate-600 font-sans">
-            Formal mathematical proofs, stationarity error floor convergence rates ($O(1/\sqrt{T})$ in Theorem 1), graph mis-aggregation bias lower bounds (Theorem 2), selection deviation bounds (Lemma 1), and asymptotic scaling invariants (Propositions 1–3) from the research paper are fully documented in <code class="text-blue-700 font-mono">PAPER_COSTS.md</code> and codebase, but are currently hidden for a streamlined presentation.
-          </p>
-
-          <!-- Hidden Math Formulas Container (Collapsible) -->
-          <div id="theory-proofs-content" style="display: none;" class="space-y-4 text-xs leading-relaxed text-slate-700 font-sans pt-3 border-t border-slate-200 mt-3">
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              
-              <!-- Theorem 1 -->
-              <div class="top-p-formula-card space-y-1">
-                <div class="flex items-center justify-between border-b pb-1">
-                  <strong class="text-blue-900 font-mono">Theorem 1 (Convergence with Error Floor)</strong>
-                  <span class="tag-paper">Paper §4.2, App. C</span>
-                </div>
-                <p class="text-slate-600 text-[11px]">
-                  Under standard nonconvex assumptions and step size $\eta \le 1/(2L_s)$, SemanticDFL converges at rate $O(1/\sqrt{T})$ to a bounded stationary error floor:
-                </p>
-                <div class="font-mono text-blue-900 bg-white p-1.5 rounded border text-[11px] text-center">
-                  $$rac{1}{T} \sum_{t=0}^{T-1} \mathbb{E}\|
-abla F_i(w_i^{(t)})\|^2 \le rac{2(F_i(w_i^{(0)}) - F_i^*)}{\eta T} + rac{2\eta \sigma^2}{K_{	ext{eff}}} + 8\zeta_i^2$$
-                </div>
-                <p class="text-slate-500 text-[10px]">
-                  Where $\zeta_i$ shrinks monotonically as Recall@K $r_t 	o 1$ and reply staleness $\Delta_{\max}$ tightens.
-                </p>
-              </div>
-
-              <!-- Theorem 2 -->
-              <div class="top-p-formula-card space-y-1">
-                <div class="flex items-center justify-between border-b pb-1">
-                  <strong class="text-blue-900 font-mono">Theorem 2 (Irreducible Bias of Graph Mixing)</strong>
-                  <span class="tag-paper">Paper App. A</span>
-                </div>
-                <p class="text-slate-600 text-[11px]">
-                  Static graph mixing (e.g., DPFL/Gossip) suffers from an irreducible personalization bias growing with spectral gap $\lambda_2(L)$ and smoothing weight $\gamma$:
-                </p>
-                <div class="font-mono text-blue-900 bg-white p-1.5 rounded border text-[11px] text-center">
-                  $$rac{1}{|V|} \sum_i \|w_i^\gamma - w_i^*\|^2 \ge c_1 \left( rac{\gamma \lambda_2(L)}{\mu + 4\gamma d_{\max}} ight)^2 \delta^2 - c_2 \epsilon^2$$
-                </div>
-                <p class="text-slate-500 text-[10px]">
-                  Proves that oblivious graph mixing forces unwanted consensus across heterogeneous clusters, justifying SemanticDFL's pull-based top-$K$ semantic routing.
-                </p>
-              </div>
-
-              <!-- Lemma 1 -->
-              <div class="top-p-formula-card space-y-1">
-                <div class="flex items-center justify-between border-b pb-1">
-                  <strong class="text-blue-900 font-mono">Lemma 1 (Selection Deviation under Recall@K)</strong>
-                  <span class="tag-paper">Paper Lemma 1</span>
-                </div>
-                <p class="text-slate-600 text-[11px]">
-                  The gradient surrogate deviation between SON-retrieved set $S_i^{(t)}$ and Oracle set $O_i(w)$ is bounded strictly by recall $r_t$:
-                </p>
-                <div class="font-mono text-blue-900 bg-white p-1.5 rounded border text-[11px] text-center">
-                  $$\|\mu_{S_i^{(t)}}(w) - \mu_{O_i(w)}(w)\| \le 2(1 - r_t) G$$
-                </div>
-              </div>
-
-              <!-- Propositions 1-3 -->
-              <div class="top-p-formula-card space-y-1">
-                <div class="flex items-center justify-between border-b pb-1">
-                  <strong class="text-blue-900 font-mono">Propositions 1, 2, 3 (Asymptotic Scale Bounds)</strong>
-                  <span class="tag-paper">Paper §3.3.3, App. D</span>
-                </div>
-                <ul class="text-[11px] text-slate-600 space-y-1 font-mono">
-                  <li>• <strong>Prop 1 (Control Cost):</strong> Per-node cost is $O(1)$; total network control bytes $C_{	ext{tot}} = O(N)$.</li>
-                  <li>• <strong>Prop 2 (Build Latency):</strong> End-to-end creation time $T_{	ext{build}} = \Theta(\log_{S_Z} N) = O(\log N)$.</li>
-                  <li>• <strong>Prop 3 (Super-Peer Memory):</strong> Stored state $M_{\max} \le H S_Z (S_P + r S_D) = O((S_P+S_D)S_Z \log N)$.</li>
-                </ul>
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      <!-- SECTION 6: SCIENTIFIC CAVEATS & AUDIT CORRECTIONS (S13, S14) -->
+            <!-- SECTION 6: SCIENTIFIC CAVEATS & AUDIT CORRECTIONS (S13, S14) -->
       <div id="sec-caveats" class="paper-section space-y-4">
         <div class="paper-panel">
           <div class="panel-header">
@@ -1401,8 +1169,33 @@ abla F_i(w_i^{(t)})\|^2 \le rac{2(F_i(w_i^{(0)}) - F_i^*)}{\eta T} + rac{2\eta
 
     </div>
 
+    <!-- TAB 3: Q&A / FAQ -->
+    <div id="tab-faq" class="tab-content space-y-4">
+      
+      <!-- Header Card -->
+      <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-100 text-blue-800">FAQ &amp; THEORY</span>
+          <h2 class="text-sm font-bold text-slate-900">Top-P Questions &amp; Mathematical Explanations</h2>
+        </div>
+        <p class="text-xs text-slate-600 font-sans mt-1">
+          Complete reference addressing design decisions, proofs, and sizing questions from the SemanticDFL paper. Loaded from editable JSON (<code class="text-blue-700 font-mono text-xs">frontend/static/top_p_faq.json</code>).
+        </p>
+      </div>
 
-    <!-- TAB 5: WORKED EXAMPLE -->
+      <!-- Filter & Search Card -->
+      <div class="paper-panel">
+        <div class="flex flex-wrap gap-2 mb-2.5">
+          <input id="faq-search" type="text" placeholder="🔍 Search Q&A (e.g. 'binary search', 'quantile', 'privacy', 'ResNet-18')..." class="flex-1 min-w-[240px]" oninput="filterFAQ()">
+        </div>
+        <div class="flex flex-wrap gap-1.5" id="faq-pills"></div>
+      </div>
+
+      <!-- FAQ Accordions Container -->
+      <div id="faq-container" class="space-y-2"></div>
+    </div>
+
+    <!-- TAB 4: WORKED EXAMPLE -->
     <div id="tab-worked" class="tab-content space-y-4">
       
       <!-- Narrative Title Card -->
