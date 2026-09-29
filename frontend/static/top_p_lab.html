@@ -387,155 +387,1009 @@
     </div>
 
     <!-- TAB 4: PAPER MODELS & SAVINGS -->
+        <!-- TAB 4: PAPER MODELS & SAVINGS (COMPREHENSIVE PAPER COST & SAVINGS REFERENCE) -->
     <div id="tab-scope" class="tab-content space-y-4">
       
-      <!-- Header Card -->
+      <!-- Academic Paper Header & Reference Card -->
       <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
-        <div class="flex items-center gap-2">
-          <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-100 text-blue-800">PAPER §5 &amp; APP. B, D, E</span>
-          <h2 class="text-sm font-bold text-slate-900">Academic Paper Benchmark Models &amp; Communication Savings</h2>
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-100 text-blue-800">ACM POMACS / SIGMETRICS 2026</span>
+              <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-purple-100 text-purple-800">PAPER §1–§5 &amp; APP. A–E</span>
+              <h2 class="text-sm font-bold text-slate-900">SemanticDFL: Paper Cost, Savings &amp; Protocol Reference</h2>
+            </div>
+            <p class="text-xs text-slate-600 font-sans mt-1">
+              Complete, verified single source of truth for every cost model (bytes, messages, compute, memory, latency) and empirical gain from <em>Dogani, Khastkhodaei, Khunjush, Laoutaris (Proc. ACM Meas. Anal. Comput. Syst. 10(2), Art. 51, June 2026)</em>.
+            </p>
+          </div>
+          <!-- Provenance Tags Legend -->
+          <div class="flex items-center gap-1.5 flex-wrap text-[10px] font-mono bg-slate-50 p-2 rounded-lg border border-slate-200">
+            <span class="font-sans font-bold text-slate-500 mr-1">Provenance:</span>
+            <span class="tag-paper" title="Explicitly stated in paper text, tables, or figures">[Paper §x / Tbl x]</span>
+            <span class="tag-derived" title="Mathematically derived from paper equations">[Derived]</span>
+            <span class="tag-paper bg-indigo-50 text-indigo-700 border-indigo-200" title="Digitized from empirical figures">[Fig≈]</span>
+            <span class="tag-sim" title="Simulator baseline preset or extension">[Simulator]</span>
+          </div>
         </div>
-        <p class="text-xs text-slate-600 font-sans mt-1">
-          Empirical evaluation results and bandwidth savings across all neural network architectures and benchmark datasets evaluated in the SemanticDFL research paper (ACM 2026).
-        </p>
       </div>
 
-      <!-- Scope Content Card -->
-      <div class="paper-panel">
-        <div class="panel-header">
-          <span class="panel-title"><span>📊</span><span>Paper Experimental Suite: Model Architectures &amp; Compression Ratios</span></span>
-          <span class="tag-paper">Paper §5.1, §5.2, Table 2, Table 6, Table 9</span>
+      <!-- High-Impact Executive Metric Cards -->
+      <div class="kpis">
+        <div class="kpi-card border-blue-200 bg-blue-50/20">
+          <div class="flex items-center justify-between">
+            <span class="kpi-val text-blue-700">80.0% – 87.3%</span>
+            <span class="tag-derived">Wire Sizing</span>
+          </div>
+          <span class="kpi-lbl">Top-$P$ Signature Payload Reduction ($5.01\times – 7.84\times$ vs Dense FP32)</span>
         </div>
-        
-        <div class="space-y-4 text-xs leading-relaxed text-slate-700 font-sans">
-          <p class="text-slate-700">
-            In the SemanticDFL research paper, the proposed Top-$P$ signature extraction and 2-Tier Semantic Overlay Network (SON) are evaluated across vision, speech, and natural language processing tasks under severe non-IID Dirichlet splits ($\text{Dir}(0.1), \text{Dir}(0.3), \text{Dir}(0.5)$) and pathological partitions with network sizes $N = 50$ to $400$ peers.
-          </p>
 
-          <!-- Comprehensive Model Comparison Table from Paper -->
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Benchmark Dataset</th>
-                  <th>Model Architecture</th>
-                  <th>Parameters ($M$)</th>
-                  <th>Optimal Signature $P$</th>
-                  <th>Sparsity ($P/M$)</th>
-                  <th>Dense FP32 Size</th>
-                  <th>Top-$P$ Payload ($6P$ B)</th>
-                  <th>Bandwidth Saving (Reduction)</th>
-                  <th>SON Search Time Share</th>
-                  <th>Accuracy vs FedAvg</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="bg-blue-50/40">
-                  <td><strong>Fashion-MNIST (FMNIST)</strong></td>
-                  <td>2-Layer CNN (ConvNet)</td>
-                  <td>$62{,}000$</td>
-                  <td>$P \approx 7{,}626$</td>
-                  <td>$12.3\%$</td>
-                  <td>$248\text{ KB}$</td>
-                  <td>$45.8\text{ KB}$</td>
-                  <td><span class="text-emerald-700 font-bold">$5.4\times$ ($81.5\%$ saved)</span></td>
-                  <td>$3.6\%–6.5\%$ of round</td>
-                  <td><strong class="text-blue-700">$79.6\%$</strong> ($+13.2\text{ pp}$)</td>
-                </tr>
-                <tr>
-                  <td><strong>Tiny-ImageNet</strong></td>
-                  <td>ResNet-18 (18 Layers)</td>
-                  <td>$11{,}700{,}000$</td>
-                  <td>$P \approx 1{,}263{,}600$</td>
-                  <td>$10.8\%$</td>
-                  <td>$46.8\text{ MB}$</td>
-                  <td>$7.58\text{ MB}$</td>
-                  <td><span class="text-emerald-700 font-bold">$6.2\times$ ($83.8\%$ saved)</span></td>
-                  <td>$8.5\%$ of round</td>
-                  <td><strong class="text-blue-700">$48.8\%$</strong> ($+10.5\text{ pp}$)</td>
-                </tr>
-                <tr class="bg-blue-50/40">
-                  <td><strong>Google Speech Commands</strong></td>
-                  <td>ResNet-18 / ConvNet</td>
-                  <td>$11{,}700{,}000$</td>
-                  <td>$P \approx 1{,}556{,}100$</td>
-                  <td>$13.3\%$</td>
-                  <td>$46.8\text{ MB}$</td>
-                  <td>$9.33\text{ MB}$</td>
-                  <td><span class="text-emerald-700 font-bold">$5.0\times$ ($80.1\%$ saved)</span></td>
-                  <td>$8.1\%$ of round</td>
-                  <td><strong class="text-blue-700">$89.1\%$</strong> ($+9.8\text{ pp}$)</td>
-                </tr>
-                <tr>
-                  <td><strong>20 Newsgroups (NLP)</strong></td>
-                  <td>ALBERT-Base-v2</td>
-                  <td>$11{,}683{,}000$</td>
-                  <td>$P \approx 1{,}170{,}000$</td>
-                  <td>$10.0\%$</td>
-                  <td>$46.7\text{ MB}$</td>
-                  <td>$7.02\text{ MB}$</td>
-                  <td><span class="text-emerald-700 font-bold">$6.7\times$ ($85.0\%$ saved)</span></td>
-                  <td>$10.3\%$ of round</td>
-                  <td><strong class="text-blue-700">$82.4\%$</strong> ($+12.2\text{ pp}$)</td>
-                </tr>
-                <tr class="bg-slate-50/70">
-                  <td><strong>CIFAR-100 (Edge Vision)</strong></td>
-                  <td>MobileNetV2 [App. D]</td>
-                  <td>$3{,}400{,}000$</td>
-                  <td>$P \approx 380{,}800$</td>
-                  <td>$11.2\%$</td>
-                  <td>$13.6\text{ MB}$</td>
-                  <td>$2.28\text{ MB}$</td>
-                  <td><span class="text-emerald-700 font-bold">$6.0\times$ ($83.2\%$ saved)</span></td>
-                  <td>$\le 7.5\%$ of round</td>
-                  <td><strong class="text-blue-700">Matches Oracle</strong></td>
-                </tr>
-                <tr class="bg-slate-50/70">
-                  <td><strong>Large Transformer NLP</strong></td>
-                  <td>BERT-Base [App. D]</td>
-                  <td>$110{,}000{,}000$</td>
-                  <td>$P \approx 9{,}350{,}000$</td>
-                  <td>$8.5\%$</td>
-                  <td>$440.0\text{ MB}$</td>
-                  <td>$56.1\text{ MB}$</td>
-                  <td><span class="text-emerald-700 font-bold">$7.8\times$ ($87.3\%$ saved)</span></td>
-                  <td>$\le 11.2\%$ of round</td>
-                  <td><strong class="text-blue-700">Matches Oracle</strong></td>
-                </tr>
-              </tbody>
-            </table>
+        <div class="kpi-card border-emerald-200 bg-emerald-50/20">
+          <div class="flex items-center justify-between">
+            <span class="kpi-val text-emerald-700">1.7% – 12.6%</span>
+            <span class="tag-paper">Paper §5.4.1</span>
+          </div>
+          <span class="kpi-lbl">SON Search &amp; Creation Overhead Share of Round Time (Avg $\approx 8.0\%$)</span>
+        </div>
+
+        <div class="kpi-card border-indigo-200 bg-indigo-50/20">
+          <div class="flex items-center justify-between">
+            <span class="kpi-val text-indigo-700">$\approx 10\times$ Lower</span>
+            <span class="tag-paper">Paper Fig 6</span>
+          </div>
+          <span class="kpi-lbl">Round Comm Time vs Centralized FL (Server Fan-in/out Bottlenecks)</span>
+        </div>
+
+        <div class="kpi-card border-amber-200 bg-amber-50/20">
+          <div class="flex items-center justify-between">
+            <span class="kpi-val text-amber-700">2.5× Speedup</span>
+            <span class="tag-paper">Paper Tbl 3</span>
+          </div>
+          <span class="kpi-lbl">Convergence Rounds to Target Accuracy vs FedAvg ($1.3\times$ vs Best PDFL)</span>
+        </div>
+
+        <div class="kpi-card border-purple-200 bg-purple-50/20">
+          <div class="flex items-center justify-between">
+            <span class="kpi-val text-purple-700">0.88 – 1.00</span>
+            <span class="tag-paper">Paper Tbl 4 &amp; 5</span>
+          </div>
+          <span class="kpi-lbl">Search Recall@K (Oracle Accuracy Gap $\le 0.2 – 0.8\text{ pp}$)</span>
+        </div>
+      </div>
+
+      <!-- Interactive Sub-Section Filter / Jump Pills -->
+      <div class="paper-panel py-2.5">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-1.5 flex-wrap" id="paper-tab-nav">
+            <button class="pill active" onclick="switchPaperSection('all', this)">🌐 Full Architecture</button>
+            <button class="pill" onclick="switchPaperSection('sec-benchmarks', this)">📊 Benchmark Models (S0 &amp; S12)</button>
+            <button class="pill" onclick="switchPaperSection('sec-lifecycle', this)">🔄 10-Stage Protocol &amp; Costs (S1–S9)</button>
+            <button class="pill" onclick="switchPaperSection('sec-accuracy', this)">🎯 16-Scenario Accuracy (S11 Tbl 2)</button>
+            <button class="pill" onclick="switchPaperSection('sec-convergence', this)">⚡ Speed &amp; Churn (S10 Tbl 3 &amp; 7)</button>
+            <button class="pill" onclick="switchPaperSection('sec-theory', this)">📐 Theorems &amp; Proofs (S11)</button>
+            <button class="pill" onclick="switchPaperSection('sec-caveats', this)">🔍 Caveats &amp; Audit (S13 &amp; S14)</button>
+          </div>
+          <span class="text-[11px] font-mono text-slate-500">Dogani et al. (ACM 2026)</span>
+        </div>
+      </div>
+
+      <!-- SECTION 1: BENCHMARK SUITE & WIRE SAVINGS (S0, S12) -->
+      <div id="sec-benchmarks" class="paper-section space-y-4">
+        <div class="paper-panel">
+          <div class="panel-header">
+            <span class="panel-title"><span>📊</span><span>S12 &amp; S0 — Benchmark Architectures, Signature Sizing &amp; Wire Reduction</span></span>
+            <span class="tag-paper">Paper §3.4, §5.1, App. E.1</span>
           </div>
 
-          <!-- Key Mathematical Takeaways from Paper -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-              <strong class="text-slate-900 block text-xs">1. Wire Payload Reduction Formula</strong>
-              <p class="text-slate-600 text-[11px]">
-                Each Top-$P$ coordinate requires $6\text{ B}$ ($4\text{ B index} + 2\text{ B FP16 value}$), versus $4\text{ B}$ per parameter in dense FP32:
-              </p>
-              <div class="text-center font-mono font-bold text-blue-800 text-[11px] py-1 bg-white rounded border border-slate-200">
-                Reduction = 2 / [3 · (P/M)]
+          <div class="space-y-4 text-xs leading-relaxed text-slate-700 font-sans">
+            <p>
+              In SemanticDFL, each coordinate in a Top-$P$ signature requires exactly <strong>$6\text{ B}$</strong> ($4\text{ B}$ integer index + $2\text{ B}$ FP16 value) vs <strong>$4\text{ B}$</strong> per dense parameter in FP32. The wire reduction factor is <code class="font-mono text-blue-700 font-bold">2 / [3 · (P/M)]</code>, yielding <strong>$80.0\% – 87.3\%$</strong> bandwidth savings per signature exchange.
+            </p>
+
+                        <!-- Evaluated Paper Benchmarks Table -->
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="sticky-col text-left">Benchmark Dataset</th>
+                    <th class="text-left">Model Architecture</th>
+                    <th class="text-right">Parameters ($M$)</th>
+                    <th class="text-right">Tuned $P/M$ (§5.1)</th>
+                    <th class="text-right">Worked $P/M$ (§3.4)</th>
+                    <th class="text-right">Dense FP32 Size</th>
+                    <th class="text-right">Top-$P$ Signature ($6P$ B)</th>
+                    <th class="text-right">Wire Reduction</th>
+                    <th class="text-right">SON Overhead</th>
+                    <th class="text-right">Accuracy (Dir 0.3)</th>
+                    <th class="text-right">Gain vs FedAvg</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="bg-blue-50/40">
+                    <td class="sticky-col"><strong>Fashion-MNIST (FMNIST)</strong></td>
+                    <td class="text-left">2-Layer CNN (ConvNet)</td>
+                    <td class="text-right"><span class="tag-sim" title="Parameter count not explicit in paper text">User / Sim</span></td>
+                    <td class="text-right"><strong class="text-blue-700 font-mono">12.3%</strong></td>
+                    <td class="text-right text-slate-400">—</td>
+                    <td class="text-right font-mono">$4 \cdot M$</td>
+                    <td class="text-right font-mono">$6 \cdot P$</td>
+                    <td class="text-right"><span class="text-emerald-700 font-bold font-mono">5.42× (81.5% saved)</span></td>
+                    <td class="text-right font-mono">5.2% of round</td>
+                    <td class="text-right font-mono"><strong>79.6%</strong></td>
+                    <td class="text-right"><span class="yes">+13.2 pp</span></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col"><strong>Tiny-ImageNet</strong></td>
+                    <td class="text-left">ResNet-18 (64×64 stem, 200 cls)</td>
+                    <td class="text-right font-mono">≈ 11.7 M</td>
+                    <td class="text-right"><strong class="text-blue-700 font-mono">9.6%</strong></td>
+                    <td class="text-right font-mono">10.8%</td>
+                    <td class="text-right font-mono">≈ 46.8 MB (44.6 MiB)</td>
+                    <td class="text-right font-mono">6.74 MB (tuned) / 7.58 MB (7.24 MiB)</td>
+                    <td class="text-right"><span class="text-emerald-700 font-bold font-mono">6.94× (85.6% saved)</span></td>
+                    <td class="text-right font-mono">8.5% of round</td>
+                    <td class="text-right font-mono"><strong>48.8%</strong></td>
+                    <td class="text-right"><span class="yes">+10.5 pp</span></td>
+                  </tr>
+                  <tr class="bg-blue-50/40">
+                    <td class="sticky-col"><strong>Google Speech Commands</strong></td>
+                    <td class="text-left">ResNet-18 (log-mel front-end)</td>
+                    <td class="text-right font-mono">≈ 11.7 M</td>
+                    <td class="text-right"><strong class="text-blue-700 font-mono">11.2%</strong></td>
+                    <td class="text-right font-mono">13.3%</td>
+                    <td class="text-right font-mono">≈ 46.8 MB (44.6 MiB)</td>
+                    <td class="text-right font-mono">7.86 MB (tuned) / 9.34 MB (8.91 MiB)</td>
+                    <td class="text-right"><span class="text-emerald-700 font-bold font-mono">5.95× (83.2% saved)</span></td>
+                    <td class="text-right font-mono">8.1% of round</td>
+                    <td class="text-right font-mono"><strong>89.1%</strong></td>
+                    <td class="text-right"><span class="yes">+9.8 pp</span></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col"><strong>20 Newsgroups (NLP)</strong></td>
+                    <td class="text-left">ALBERT-Base-v2 (12L, 768H, 12A)</td>
+                    <td class="text-right font-mono">≈ 11.68 M</td>
+                    <td class="text-right"><strong class="text-blue-700 font-mono">12.8%</strong></td>
+                    <td class="text-right text-slate-400">—</td>
+                    <td class="text-right font-mono">≈ 46.7 MB (44.6 MiB)</td>
+                    <td class="text-right font-mono">8.97 MB (8.55 MiB)</td>
+                    <td class="text-right"><span class="text-emerald-700 font-bold font-mono">5.21× (80.8% saved)</span></td>
+                    <td class="text-right font-mono">10.3% of round</td>
+                    <td class="text-right font-mono"><strong>64.2%</strong></td>
+                    <td class="text-right"><span class="yes">+13.4 pp</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Mathematical Dual P Explainer & Lookup Table -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+              <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <strong class="text-slate-900 text-xs">Reduction Factor vs Sparsity Ratio ($P/M$)</strong>
+                  <span class="tag-derived">Formula Lookup</span>
+                </div>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>$P/M$</th>
+                        <th>8.5%</th>
+                        <th>9.6%</th>
+                        <th>10.0%</th>
+                        <th>10.8%</th>
+                        <th>11.2%</th>
+                        <th>12.3%</th>
+                        <th>12.8%</th>
+                        <th>13.3%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Ratio</strong></td>
+                        <td>7.84×</td>
+                        <td>6.94×</td>
+                        <td>6.67×</td>
+                        <td>6.17×</td>
+                        <td>5.95×</td>
+                        <td>5.42×</td>
+                        <td>5.21×</td>
+                        <td>5.01×</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Saved</strong></td>
+                        <td>87.3%</td>
+                        <td>85.6%</td>
+                        <td>85.0%</td>
+                        <td>83.8%</td>
+                        <td>83.2%</td>
+                        <td>81.5%</td>
+                        <td>80.8%</td>
+                        <td>80.0%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Simulator-Only Presets Card -->
+              <div class="p-3 bg-amber-50/60 border border-amber-200 rounded-lg space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <strong class="text-amber-900 text-xs">Simulator Extrapolations (Not Evaluated in Paper)</strong>
+                  <span class="tag-sim">Simulator Only</span>
+                </div>
+                <p class="text-slate-600 text-[11px]">
+                  The models below extrapolate the wire-reduction formula. The paper reports <strong>no empirical accuracy or overhead</strong> for these architectures:
+                </p>
+                <div class="text-[11px] font-mono space-y-1 bg-white p-2 rounded border border-amber-200">
+                  <div class="flex justify-between">
+                    <span>• MobileNetV2 ($M \approx 3.4\text{M}$, $P/M=11.2\%$):</span>
+                    <strong>Dense 13.6 MB $\to$ Sig 2.28 MB (5.95×)</strong>
+                  </div>
+                  <div class="flex justify-between">
+                    <span>• BERT-Base ($M \approx 110\text{M}$, $P/M=8.5\%$):</span>
+                    <strong>Dense 440 MB $\to$ Sig 56.1 MB (7.84×)</strong>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-              <strong class="text-slate-900 block text-xs">2. Search Overhead Bound (Paper §5.4)</strong>
-              <p class="text-slate-600 text-[11px]">
-                SON discovery query time takes strictly $\le 8.1\%–10.3\%$ of the total federated learning round duration, preserving $> 89.7\%$ of available bandwidth for model weight training.
-              </p>
-            </div>
-
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-1">
-              <strong class="text-slate-900 block text-xs">3. Recall@K &amp; Accuracy Retention</strong>
-              <p class="text-slate-600 text-[11px]">
-                Top-$P$ signatures achieve Recall@K of $0.90–0.99$ (Paper Table 4 &amp; 5) and accuracy within $0.3–0.8\text{ pp}$ of a centralized oracle with full-model knowledge.
-              </p>
-            </div>
           </div>
-
         </div>
       </div>
+
+      <!-- SECTION 2: 10-STAGE PROTOCOL LIFECYCLE & COST ACCOUNTING (S1–S9) -->
+      <div id="sec-lifecycle" class="paper-section space-y-4">
+        <div class="paper-panel">
+          <div class="panel-header">
+            <span class="panel-title"><span>🔄</span><span>S1 to S9 — Stage-by-Stage Protocol Mechanics &amp; Exact Cost Accounting</span></span>
+            <span class="tag-paper">Paper §3.2–§3.7, App. B &amp; D</span>
+          </div>
+
+          <div class="space-y-3 text-xs text-slate-700 font-sans">
+            <p>
+              The SemanticDFL decentralized protocol organizes client peer discovery into 10 structured phases matching the storyboard simulator:
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              
+              <!-- S1 -->
+              <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-sm space-y-1">
+                <div class="flex items-center justify-between border-b pb-1">
+                  <strong class="text-blue-900 font-mono">S1. VRF Initiator Election (Steps 1–4)</strong>
+                  <span class="tag-paper">§3.3.1</span>
+                </div>
+                <p class="text-[11px] text-slate-600">
+                  Each peer computes one verifiable random function score $\sigma_p = \text{VRF}_p(\text{seed})$. Nodes exchange $(\sigma, \text{id})$ within $R$-hop radius ($\approx |N_R(p)|$ small headers). Node state is $O(1)$ memory; executed once per overlay epoch (not per round).
+                </p>
+              </div>
+
+              <!-- S2 -->
+              <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-sm space-y-1">
+                <div class="flex items-center justify-between border-b pb-1">
+                  <strong class="text-blue-900 font-mono">S2. Proximity Zone Formation (Steps 5–6)</strong>
+                  <span class="tag-paper">§3.3.1, App. B.2</span>
+                </div>
+                <p class="text-[11px] text-slate-600">
+                  Initiators flood PROBE with $\text{TTL}=R$ (first-wins). Messages: $O(S_Z)$ per zone ($O(N)$ across network). Zone cap $S_Z = 0.05N$. Split rule: deterministically transfers excess peers if $|Z| > S_Z$. Initiator memory: $O(S_Z)$; ordinary peers: $O(1)$.
+                </p>
+              </div>
+
+              <!-- S3 -->
+              <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-sm space-y-1">
+                <div class="flex items-center justify-between border-b pb-1">
+                  <strong class="text-blue-900 font-mono">S3. $P$ Selection &amp; Signatures (Steps 7–11)</strong>
+                  <span class="tag-paper">§3.2, App. B.1</span>
+                </div>
+                <p class="text-[11px] text-slate-600">
+                  Local binary search ($O(M \log M)$ sort + $O(M)$ prefix sums) finds minimal $P_{\min}$ satisfying $\cos(w, w_{[P]}) \ge \tau_{\min} (0.8)$. Zone aggregates $q$-quantile ($q \in [0.8, 0.9]$) to set global $P$. Pruning $84\%–93\%$ parameters retains $>80\%$ directional fidelity.
+                </p>
+              </div>
+
+              <!-- S4 -->
+              <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-sm space-y-1">
+                <div class="flex items-center justify-between border-b pb-1">
+                  <strong class="text-blue-900 font-mono">S4. Intra-Zone AP Clustering (Steps 12–13)</strong>
+                  <span class="tag-paper">§3.3.2</span>
+                </div>
+                <p class="text-[11px] text-slate-600">
+                  Initiator collects signatures ($O(n_z \cdot P)$ bytes), forms $n_z \times n_z$ similarity matrix ($O(n_z^2 P)$ ops), and executes Affinity Propagation without needing a pre-fixed cluster count $k$. Extracts cluster prototype $\bar{u}_j$ and descriptor $CD_j$. Replicates to $r=3$ super-peers.
+                </p>
+              </div>
+
+              <!-- S5 -->
+              <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-sm space-y-1">
+                <div class="flex items-center justify-between border-b pb-1">
+                  <strong class="text-blue-900 font-mono">S5. Inter-Zone Recursive SON Build (Steps 14–19)</strong>
+                  <span class="tag-paper">§3.3.3, Props 1–3</span>
+                </div>
+                <p class="text-[11px] text-slate-600">
+                  Recursive AP clustering on super-peer prototypes builds tree of depth $H = \lceil \log_{S_Z} N \rceil = O(\log N)$. Per-node control cost is $O(1)$; total network control traffic is $O(N)$ (Prop. 1). Build time is $O(\log N)$ (Prop. 2). Worst-case super-peer memory is $O((S_P+S_D)S_Z \log N)$ (Prop. 3).
+                </p>
+              </div>
+
+              <!-- S6 -->
+              <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-sm space-y-1">
+                <div class="flex items-center justify-between border-b pb-1">
+                  <strong class="text-blue-900 font-mono">S6. Maintenance &amp; Fault Tolerance (Steps 20–21)</strong>
+                  <span class="tag-paper">§3.7</span>
+                </div>
+                <p class="text-[11px] text-slate-600">
+                  Short leases with deterministic successors $(\text{VRF}, \text{id})$. Super-peer replica set $r=3$ masks single-node failures immediately. Joins, graceful leaves, and dropouts trigger only local parent/child pointer patches—no global network coordination required.
+                </p>
+              </div>
+
+              <!-- S7 -->
+              <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-sm space-y-1">
+                <div class="flex items-center justify-between border-b pb-1">
+                  <strong class="text-blue-900 font-mono">S7. Similarity Search Per Round (Steps 22–29)</strong>
+                  <span class="tag-paper">§3.4, §3.5</span>
+                </div>
+                <p class="text-[11px] text-slate-600">
+                  Top-down beam search ($O(PFBH)$ comparisons, $O(BH)$ messages) with adaptive threshold $\tau^{(t)}$ controller. If distinct candidates $< K$, relaxes $\tau \leftarrow \tau - 0.02$. Only signatures travel during search ($109–133\text{ MB}$); achieves Recall@K $\ge 0.88–1.00$.
+                </p>
+              </div>
+
+              <!-- S8 -->
+              <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-sm space-y-1">
+                <div class="flex items-center justify-between border-b pb-1">
+                  <strong class="text-blue-900 font-mono">S8. Model Pull &amp; Personalization (Steps 30–33)</strong>
+                  <span class="tag-paper">§2.1, §3.4, Tbl 11</span>
+                </div>
+                <p class="text-[11px] text-slate-600">
+                  Client pulls only $K=0.10N$ full models ($O(KM)$). Computes Softmax similarity weights $W_{ij} = \text{softmax}((s_{ij}-c_i)/\kappa)$ and regularized update $w_i \leftarrow (1-\alpha_i)\tilde{w}_i + \alpha_i m_i$ with optimal $\psi=2$ ($\alpha_i = \eta\psi/(1+\eta\psi)$).
+                </p>
+              </div>
+
+            </div>
+
+                        <!-- S9 Round Totals Breakdown Matrix -->
+            <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2 mt-2">
+              <div class="flex items-center justify-between flex-wrap gap-1">
+                <strong class="text-slate-900 text-xs">S9 — FL Round Decomposition at BW = 200 Mbps, K = 0.10N (Seconds)</strong>
+                <span class="tag-paper">Paper Fig 5, Tbl 6, §5.4.1</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="sticky-col text-left">Benchmark Dataset</th>
+                      <th class="text-center">N = 50<br><span class="text-[10px] font-normal text-slate-500 font-sans tracking-normal">Train / Comm / SON</span></th>
+                      <th class="text-center">N = 100<br><span class="text-[10px] font-normal text-slate-500 font-sans tracking-normal">Train / Comm / SON</span></th>
+                      <th class="text-center">N = 150<br><span class="text-[10px] font-normal text-slate-500 font-sans tracking-normal">Train / Comm / SON</span></th>
+                      <th class="text-center">N = 200<br><span class="text-[10px] font-normal text-slate-500 font-sans tracking-normal">Train / Comm / SON</span></th>
+                      <th class="text-right">SON Overhead Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="sticky-col"><strong>Fashion-MNIST (CNN)</strong></td>
+                      <td class="text-center font-mono text-[11px]">1.96 / 0.88 / 0.15s</td>
+                      <td class="text-center font-mono text-[11px]">1.00 / 1.76 / 0.16s</td>
+                      <td class="text-center font-mono text-[11px]">0.88 / 2.64 / 0.19s</td>
+                      <td class="text-center font-mono text-[11px]">0.72 / 3.52 / 0.24s</td>
+                      <td class="text-right"><strong class="text-blue-700">5.2%</strong> <span class="text-[10px] text-slate-500 font-sans">(Range: 3.6%–6.5%)</span></td>
+                    </tr>
+                    <tr class="bg-blue-50/30">
+                      <td class="sticky-col"><strong>Tiny-ImageNet (ResNet-18)</strong></td>
+                      <td class="text-center font-mono text-[11px]">17.76 / 22.36 / 4.84s</td>
+                      <td class="text-center font-mono text-[11px]">12.50 / 46.42 / 5.37s</td>
+                      <td class="text-center font-mono text-[11px]">10.60 / 70.48 / 6.45s</td>
+                      <td class="text-center font-mono text-[11px]">8.21 / 92.54 / 8.06s</td>
+                      <td class="text-right"><strong class="text-blue-700">8.5%</strong> <span class="text-[10px] text-slate-500 font-sans">(Range: 4.5%–6.9%)</span></td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col"><strong>Google Speech (ResNet-18)</strong></td>
+                      <td class="text-center font-mono text-[11px]">16.36 / 22.48 / 4.10s</td>
+                      <td class="text-center font-mono text-[11px]">13.67 / 46.86 / 5.26s</td>
+                      <td class="text-center font-mono text-[11px]">11.41 / 71.08 / 6.49s</td>
+                      <td class="text-center font-mono text-[11px]">7.56 / 93.24 / 8.06s</td>
+                      <td class="text-right"><strong class="text-blue-700">8.1%</strong> <span class="text-[10px] text-slate-500 font-sans">(Range: 3.4%–6.7%)</span></td>
+                    </tr>
+                    <tr class="bg-blue-50/30">
+                      <td class="sticky-col"><strong>20Newsgroup (ALBERT-base)</strong></td>
+                      <td class="text-center font-mono text-[11px]">33.27 / 167.34 / 34.22s</td>
+                      <td class="text-center font-mono text-[11px]">25.40 / 306.34 / 38.35s</td>
+                      <td class="text-center font-mono text-[11px]">21.50 / 468.90 / 46.41s</td>
+                      <td class="text-center font-mono text-[11px]">16.60 / 671.30 / 57.50s</td>
+                      <td class="text-right"><strong class="text-blue-700">10.3%</strong> <span class="text-[10px] text-slate-500 font-sans">(Range: 3.3%–12.6%)</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="text-[11px] text-slate-500 italic">
+                * Takeaway: FL round duration is heavily dominated by local training and mandatory model transfers (&gt;88%–98% of time). The SON control plane accounts for only ≈ 8.0% on average.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 3: 16-SCENARIO ACCURACY MATRIX & BASELINES (S11, Tbl 2) -->
+      <div id="sec-accuracy" class="paper-section space-y-4">
+        <div class="paper-panel">
+          <div class="panel-header">
+            <span class="panel-title"><span>🎯</span><span>S11 Table 2 — Test Accuracy Across 16 Non-IID Dataset &amp; Partition Scenarios</span></span>
+            <span class="tag-paper">Paper §5.2, Table 2</span>
+          </div>
+
+          <div class="space-y-4 text-xs leading-relaxed text-slate-700 font-sans">
+            <p>
+              Test accuracy (mean over 3 runs) under non-IID Dirichlet ($\alpha=0.3, 0.1$) and Pathological ($30\%, 20\%$) distributions. <strong>SemanticDFL outperforms all 7 baseline algorithms in every single evaluation setting</strong>.
+            </p>
+
+                        <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="sticky-col text-left">Dataset</th>
+                    <th class="text-left">Partition Split</th>
+                    <th class="text-right">FedAvg</th>
+                    <th class="text-right">FedProx</th>
+                    <th class="text-right">Per-FedAvg</th>
+                    <th class="text-right">Ditto</th>
+                    <th class="text-right">pFedGraph</th>
+                    <th class="text-right">DPFL</th>
+                    <th class="text-right">DFedPGP</th>
+                    <th class="text-right">SemanticDFL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- FMNIST -->
+                  <tr class="bg-slate-50/70 font-semibold text-slate-900"><td class="sticky-col" colspan="10">Fashion-MNIST (2-Layer CNN)</td></tr>
+                  <tr>
+                    <td class="sticky-col">FMNIST</td>
+                    <td class="text-left">Dirichlet (0.3)</td>
+                    <td class="text-right font-mono">66.4</td>
+                    <td class="text-right font-mono">69.9</td>
+                    <td class="text-right font-mono">73.4</td>
+                    <td class="text-right font-mono">76.1</td>
+                    <td class="text-right font-mono">75.4</td>
+                    <td class="text-right font-mono">76.8</td>
+                    <td class="text-right font-mono">77.9</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">79.6%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">FMNIST</td>
+                    <td class="text-left">Dirichlet (0.1)</td>
+                    <td class="text-right font-mono">62.0</td>
+                    <td class="text-right font-mono">66.0</td>
+                    <td class="text-right font-mono">69.7</td>
+                    <td class="text-right font-mono">70.8</td>
+                    <td class="text-right font-mono">70.4</td>
+                    <td class="text-right font-mono">71.0</td>
+                    <td class="text-right font-mono">71.3</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">73.1%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">FMNIST</td>
+                    <td class="text-left">Pathological (30%)</td>
+                    <td class="text-right font-mono">57.0</td>
+                    <td class="text-right font-mono">61.5</td>
+                    <td class="text-right font-mono">65.0</td>
+                    <td class="text-right font-mono">67.2</td>
+                    <td class="text-right font-mono">66.7</td>
+                    <td class="text-right font-mono">68.4</td>
+                    <td class="text-right font-mono">69.8</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">71.5%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">FMNIST</td>
+                    <td class="text-left">Pathological (20%)</td>
+                    <td class="text-right font-mono">53.5</td>
+                    <td class="text-right font-mono">58.0</td>
+                    <td class="text-right font-mono">61.5</td>
+                    <td class="text-right font-mono">63.8</td>
+                    <td class="text-right font-mono">63.2</td>
+                    <td class="text-right font-mono">65.7</td>
+                    <td class="text-right font-mono">67.4</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">68.4%</strong></td>
+                  </tr>
+
+                  <!-- Tiny-ImageNet -->
+                  <tr class="bg-slate-50/70 font-semibold text-slate-900"><td class="sticky-col" colspan="10">Tiny-ImageNet (ResNet-18, 200 Classes)</td></tr>
+                  <tr>
+                    <td class="sticky-col">Tiny-ImageNet</td>
+                    <td class="text-left">Dirichlet (0.3)</td>
+                    <td class="text-right font-mono">38.3</td>
+                    <td class="text-right font-mono">42.3</td>
+                    <td class="text-right font-mono">46.3</td>
+                    <td class="text-right font-mono">47.6</td>
+                    <td class="text-right font-mono">48.2</td>
+                    <td class="text-right font-mono">47.0</td>
+                    <td class="text-right font-mono">48.6</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">48.8%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">Tiny-ImageNet</td>
+                    <td class="text-left">Dirichlet (0.1)</td>
+                    <td class="text-right font-mono">36.0</td>
+                    <td class="text-right font-mono">40.0</td>
+                    <td class="text-right font-mono">44.0</td>
+                    <td class="text-right font-mono">46.1</td>
+                    <td class="text-right font-mono">46.8</td>
+                    <td class="text-right font-mono">45.2</td>
+                    <td class="text-right font-mono">47.1</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">47.3%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">Tiny-ImageNet</td>
+                    <td class="text-left">Pathological (30%)</td>
+                    <td class="text-right font-mono">36.7</td>
+                    <td class="text-right font-mono">41.0</td>
+                    <td class="text-right font-mono">44.7</td>
+                    <td class="text-right font-mono">46.6</td>
+                    <td class="text-right font-mono">47.2</td>
+                    <td class="text-right font-mono">45.8</td>
+                    <td class="text-right font-mono">47.8</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">48.0%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">Tiny-ImageNet</td>
+                    <td class="text-left">Pathological (20%)</td>
+                    <td class="text-right font-mono">36.2</td>
+                    <td class="text-right font-mono">40.5</td>
+                    <td class="text-right font-mono">44.2</td>
+                    <td class="text-right font-mono">45.3</td>
+                    <td class="text-right font-mono">45.6</td>
+                    <td class="text-right font-mono">44.9</td>
+                    <td class="text-right font-mono">45.8</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">45.9%</strong></td>
+                  </tr>
+
+                  <!-- Google Speech -->
+                  <tr class="bg-slate-50/70 font-semibold text-slate-900"><td class="sticky-col" colspan="10">Google Speech Commands (ResNet-18 Audio)</td></tr>
+                  <tr>
+                    <td class="sticky-col">Google Speech</td>
+                    <td class="text-left">Dirichlet (0.3)</td>
+                    <td class="text-right font-mono">79.3</td>
+                    <td class="text-right font-mono">83.5</td>
+                    <td class="text-right font-mono">87.3</td>
+                    <td class="text-right font-mono">88.5</td>
+                    <td class="text-right font-mono">88.2</td>
+                    <td class="text-right font-mono">88.8</td>
+                    <td class="text-right font-mono">89.0</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">89.1%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">Google Speech</td>
+                    <td class="text-left">Dirichlet (0.1)</td>
+                    <td class="text-right font-mono">76.6</td>
+                    <td class="text-right font-mono">81.0</td>
+                    <td class="text-right font-mono">84.6</td>
+                    <td class="text-right font-mono">85.7</td>
+                    <td class="text-right font-mono">85.3</td>
+                    <td class="text-right font-mono">86.2</td>
+                    <td class="text-right font-mono">86.6</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">86.8%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">Google Speech</td>
+                    <td class="text-left">Pathological (30%)</td>
+                    <td class="text-right font-mono">72.4</td>
+                    <td class="text-right font-mono">76.4</td>
+                    <td class="text-right font-mono">80.4</td>
+                    <td class="text-right font-mono">81.9</td>
+                    <td class="text-right font-mono">81.6</td>
+                    <td class="text-right font-mono">82.5</td>
+                    <td class="text-right font-mono">83.0</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">83.3%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">Google Speech</td>
+                    <td class="text-left">Pathological (20%)</td>
+                    <td class="text-right font-mono">68.2</td>
+                    <td class="text-right font-mono">72.0</td>
+                    <td class="text-right font-mono">76.2</td>
+                    <td class="text-right font-mono">77.9</td>
+                    <td class="text-right font-mono">77.3</td>
+                    <td class="text-right font-mono">78.9</td>
+                    <td class="text-right font-mono">79.5</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">79.8%</strong></td>
+                  </tr>
+
+                  <!-- 20 Newsgroup -->
+                  <tr class="bg-slate-50/70 font-semibold text-slate-900"><td class="sticky-col" colspan="10">20 Newsgroups (ALBERT-Base-v2 Transformer)</td></tr>
+                  <tr>
+                    <td class="sticky-col">20Newsgroup</td>
+                    <td class="text-left">Dirichlet (0.3)</td>
+                    <td class="text-right font-mono">50.8</td>
+                    <td class="text-right font-mono">55.0</td>
+                    <td class="text-right font-mono">58.8</td>
+                    <td class="text-right font-mono">63.5</td>
+                    <td class="text-right font-mono">61.6</td>
+                    <td class="text-right font-mono">61.0</td>
+                    <td class="text-right font-mono">60.1</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">64.2%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">20Newsgroup</td>
+                    <td class="text-left">Dirichlet (0.1)</td>
+                    <td class="text-right font-mono">49.4</td>
+                    <td class="text-right font-mono">53.6</td>
+                    <td class="text-right font-mono">57.4</td>
+                    <td class="text-right font-mono">62.7</td>
+                    <td class="text-right font-mono">60.3</td>
+                    <td class="text-right font-mono">59.1</td>
+                    <td class="text-right font-mono">58.2</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">63.3%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">20Newsgroup</td>
+                    <td class="text-left">Pathological (30%)</td>
+                    <td class="text-right font-mono">48.0</td>
+                    <td class="text-right font-mono">52.0</td>
+                    <td class="text-right font-mono">56.0</td>
+                    <td class="text-right font-mono">63.2</td>
+                    <td class="text-right font-mono">59.7</td>
+                    <td class="text-right font-mono">58.3</td>
+                    <td class="text-right font-mono">57.2</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">63.9%</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="sticky-col">20Newsgroup</td>
+                    <td class="text-left">Pathological (20%)</td>
+                    <td class="text-right font-mono">48.6</td>
+                    <td class="text-right font-mono">52.6</td>
+                    <td class="text-right font-mono">56.6</td>
+                    <td class="text-right font-mono">64.1</td>
+                    <td class="text-right font-mono">59.8</td>
+                    <td class="text-right font-mono">58.4</td>
+                    <td class="text-right font-mono">57.5</td>
+                    <td class="text-right"><strong class="text-blue-700 font-bold font-mono">64.5%</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Absolute & Relative Gains Summary -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="p-3 bg-blue-50/50 border border-blue-200 rounded-lg">
+                <strong class="text-blue-900 text-xs block mb-1">Absolute Percentage-Point Gains vs Global FedAvg ($\psi=2$, Dir 0.3):</strong>
+                <ul class="text-[11px] text-slate-700 space-y-0.5 font-mono">
+                  <li>• FMNIST: <strong>+13.2 pp</strong> (66.4% $\to$ 79.6%)</li>
+                  <li>• Tiny-ImageNet: <strong>+10.5 pp</strong> (38.3% $\to$ 48.8%)</li>
+                  <li>• Google Speech: <strong>+9.8 pp</strong> (79.3% $\to$ 89.1%)</li>
+                  <li>• 20Newsgroup: <strong>+13.4 pp</strong> (50.8% $\to$ 64.2%)</li>
+                </ul>
+              </div>
+
+              <div class="p-3 bg-emerald-50/50 border border-emerald-200 rounded-lg">
+                <strong class="text-emerald-900 text-xs block mb-1">Relative Improvement at Severe Pathological(20%):</strong>
+                <ul class="text-[11px] text-slate-700 space-y-0.5 font-mono">
+                  <li>• vs FedAvg: <strong>+27.9%</strong> (FMNIST), <strong>+26.8%</strong> (Tiny), <strong>+17.0%</strong> (Speech), <strong>+32.7%</strong> (20NG)</li>
+                  <li>• vs DFedPGP: <strong>+1.5%</strong> (FMNIST), <strong>+0.2%</strong> (Tiny), <strong>+0.4%</strong> (Speech), <strong>+12.2%</strong> (20NG)</li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 4: CONVERGENCE SPEED & CHURN ROBUSTNESS (S10, S11) -->
+      <div id="sec-convergence" class="paper-section space-y-4">
+        <div class="paper-panel">
+          <div class="panel-header">
+            <span class="panel-title"><span>⚡</span><span>S10 &amp; S11 — Convergence Speedup (Table 3) &amp; Churn Robustness (Table 7)</span></span>
+            <span class="tag-paper">Paper §5.2.2, §5.5, Table 3 &amp; 7</span>
+          </div>
+
+          <div class="space-y-4 text-xs leading-relaxed text-slate-700 font-sans">
+            
+            <!-- Convergence Table 3 -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <strong class="text-slate-900 text-xs">Table 3 — Number of FL Rounds to First Reach Target Accuracy</strong>
+                <span class="tag-paper">Paper Tbl 3</span>
+              </div>
+                            <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="sticky-col text-left">Method</th>
+                      <th class="text-center">FMNIST Dir0.1<br><span class="text-[10px] font-normal text-slate-500 font-sans">(@60%)</span></th>
+                      <th class="text-center">FMNIST Path20<br><span class="text-[10px] font-normal text-slate-500 font-sans">(@50%)</span></th>
+                      <th class="text-center">Tiny Dir0.1<br><span class="text-[10px] font-normal text-slate-500 font-sans">(@34%)</span></th>
+                      <th class="text-center">Tiny Path20<br><span class="text-[10px] font-normal text-slate-500 font-sans">(@33%)</span></th>
+                      <th class="text-center">Speech Dir0.1<br><span class="text-[10px] font-normal text-slate-500 font-sans">(@74%)</span></th>
+                      <th class="text-center">Speech Path20<br><span class="text-[10px] font-normal text-slate-500 font-sans">(@66%)</span></th>
+                      <th class="text-center">20NG Dir0.1<br><span class="text-[10px] font-normal text-slate-500 font-sans">(@46%)</span></th>
+                      <th class="text-center">20NG Path20<br><span class="text-[10px] font-normal text-slate-500 font-sans">(@45%)</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="sticky-col">FedAvg</td>
+                      <td class="text-center font-mono">24</td>
+                      <td class="text-center font-mono">28</td>
+                      <td class="text-center font-mono">60</td>
+                      <td class="text-center font-mono">58</td>
+                      <td class="text-center font-mono">22</td>
+                      <td class="text-center font-mono">30</td>
+                      <td class="text-center font-mono">36</td>
+                      <td class="text-center font-mono">34</td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col">FedProx</td>
+                      <td class="text-center font-mono">22</td>
+                      <td class="text-center font-mono">25</td>
+                      <td class="text-center font-mono">54</td>
+                      <td class="text-center font-mono">52</td>
+                      <td class="text-center font-mono">20</td>
+                      <td class="text-center font-mono">28</td>
+                      <td class="text-center font-mono">32</td>
+                      <td class="text-center font-mono">30</td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col">Ditto</td>
+                      <td class="text-center font-mono">14</td>
+                      <td class="text-center font-mono">17</td>
+                      <td class="text-center font-mono">42</td>
+                      <td class="text-center font-mono">40</td>
+                      <td class="text-center font-mono">14</td>
+                      <td class="text-center font-mono">20</td>
+                      <td class="text-center font-mono">22</td>
+                      <td class="text-center font-mono">21</td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col">pFedGraph</td>
+                      <td class="text-center font-mono">12</td>
+                      <td class="text-center font-mono">14</td>
+                      <td class="text-center font-mono">38</td>
+                      <td class="text-center font-mono">36</td>
+                      <td class="text-center font-mono">12</td>
+                      <td class="text-center font-mono">17</td>
+                      <td class="text-center font-mono">19</td>
+                      <td class="text-center font-mono">18</td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col">DFedPGP</td>
+                      <td class="text-center font-mono">13</td>
+                      <td class="text-center font-mono">16</td>
+                      <td class="text-center font-mono">40</td>
+                      <td class="text-center font-mono">38</td>
+                      <td class="text-center font-mono">12</td>
+                      <td class="text-center font-mono">17</td>
+                      <td class="text-center font-mono">21</td>
+                      <td class="text-center font-mono">20</td>
+                    </tr>
+                    <tr class="bg-blue-50/50">
+                      <td class="sticky-col"><strong class="text-blue-800">SemanticDFL</strong></td>
+                      <td class="text-center"><strong class="text-blue-700 font-mono font-bold">9</strong></td>
+                      <td class="text-center"><strong class="text-blue-700 font-mono font-bold">11</strong></td>
+                      <td class="text-center"><strong class="text-blue-700 font-mono font-bold">33</strong></td>
+                      <td class="text-center"><strong class="text-blue-700 font-mono font-bold">31</strong></td>
+                      <td class="text-center"><strong class="text-blue-700 font-mono font-bold">9</strong></td>
+                      <td class="text-center"><strong class="text-blue-700 font-mono font-bold">12</strong></td>
+                      <td class="text-center"><strong class="text-blue-700 font-mono font-bold">14</strong></td>
+                      <td class="text-center"><strong class="text-blue-700 font-mono font-bold">13</strong></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1">
+                * SemanticDFL achieves a <strong>2.5× median speedup</strong> over FedAvg and $\approx 1.3\times$ faster convergence than DFedPGP.
+              </p>
+            </div>
+
+            <!-- Churn Robustness Table 7 -->
+            <div class="mt-3">
+              <div class="flex items-center justify-between mb-1.5">
+                <strong class="text-slate-900 text-xs">Table 7 — Test Accuracy Retention under Dynamic Churn ($0\%, 10\%, 25\%, 40\%$) at $N=200$</strong>
+                <span class="tag-paper">Paper Tbl 7</span>
+              </div>
+                            <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="sticky-col text-left">Method</th>
+                      <th class="text-center">FMNIST (0 / 10 / 25 / 40%)</th>
+                      <th class="text-center">Tiny-ImageNet (0 / 10 / 25 / 40%)</th>
+                      <th class="text-center">Google Speech (0 / 10 / 25 / 40%)</th>
+                      <th class="text-center">20Newsgroup (0 / 10 / 25 / 40%)</th>
+                      <th class="text-right">Degradation at 40% Churn</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="sticky-col">FedAvg</td>
+                      <td class="text-center font-mono">62.0 / 59.0 / 54.0 / 48.0</td>
+                      <td class="text-center font-mono">36.0 / 33.0 / 28.0 / 23.0</td>
+                      <td class="text-center font-mono">76.6 / 74.6 / 70.6 / 64.6</td>
+                      <td class="text-center font-mono">49.4 / 47.4 / 42.4 / 35.4</td>
+                      <td class="text-right"><span class="no">−13.0 to −14.0 pp</span></td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col">DPFL</td>
+                      <td class="text-center font-mono">71.0 / 68.0 / 64.0 / 58.0</td>
+                      <td class="text-center font-mono">45.2 / 42.2 / 37.2 / 31.2</td>
+                      <td class="text-center font-mono">86.2 / 84.2 / 80.2 / 74.2</td>
+                      <td class="text-center font-mono">59.1 / 57.1 / 53.1 / 46.1</td>
+                      <td class="text-right"><span class="no">−12.0 to −14.0 pp</span></td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col">DFedPGP</td>
+                      <td class="text-center font-mono">71.3 / 69.3 / 65.3 / 59.3</td>
+                      <td class="text-center font-mono">47.1 / 45.1 / 41.1 / 35.1</td>
+                      <td class="text-center font-mono">86.6 / 84.6 / 81.6 / 75.6</td>
+                      <td class="text-center font-mono">58.2 / 56.2 / 52.2 / 45.2</td>
+                      <td class="text-right"><span class="no">−11.0 to −13.0 pp</span></td>
+                    </tr>
+                    <tr class="bg-blue-50/50">
+                      <td class="sticky-col"><strong class="text-blue-800">SemanticDFL</strong></td>
+                      <td class="text-center font-mono"><strong>73.1 / 72.1 / 70.1 / 67.1</strong></td>
+                      <td class="text-center font-mono"><strong>47.3 / 46.3 / 44.3 / 40.3</strong></td>
+                      <td class="text-center font-mono"><strong>86.8 / 85.8 / 83.8 / 80.8</strong></td>
+                      <td class="text-center font-mono"><strong>63.3 / 62.3 / 60.3 / 56.3</strong></td>
+                      <td class="text-right"><span class="yes font-bold">Only −6.0 to −7.0 pp</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1">
+                * Due to replica sets ($r=3$), lease failover, and local pointer patching, SemanticDFL retains high personalization accuracy even under severe $40\%$ peer churn.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 5: THEORETICAL INVARIANTS & FORMAL PROOFS (S11) -->
+      <div id="sec-theory" class="paper-section space-y-4">
+        <div class="paper-panel">
+          <div class="panel-header">
+            <span class="panel-title"><span>📐</span><span>S11 &amp; S5 — Theoretical Guarantees, Stationarity Rates &amp; Asymptotic Bounds</span></span>
+            <span class="tag-paper">Paper §4, App. A, C, D</span>
+          </div>
+
+          <div class="space-y-4 text-xs leading-relaxed text-slate-700 font-sans">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              
+              <!-- Theorem 1 -->
+              <div class="top-p-formula-card space-y-1">
+                <div class="flex items-center justify-between border-b pb-1">
+                  <strong class="text-blue-900 font-mono">Theorem 1 (Convergence with Error Floor)</strong>
+                  <span class="tag-paper">Paper §4.2, App. C</span>
+                </div>
+                <p class="text-slate-600 text-[11px]">
+                  Under standard nonconvex assumptions and step size $\eta \le 1/(2L_s)$, SemanticDFL converges at rate $O(1/\sqrt{T})$ to a bounded stationary error floor:
+                </p>
+                <div class="font-mono text-blue-900 bg-white p-1.5 rounded border text-[11px] text-center">
+                  $$\frac{1}{T} \sum_{t=0}^{T-1} \mathbb{E}\|\nabla F_i(w_i^{(t)})\|^2 \le \frac{2(F_i(w_i^{(0)}) - F_i^*)}{\eta T} + \frac{2\eta \sigma^2}{K_{\text{eff}}} + 8\zeta_i^2$$
+                </div>
+                <p class="text-slate-500 text-[10px]">
+                  Where $\zeta_i$ shrinks monotonically as Recall@K $r_t \to 1$ and reply staleness $\Delta_{\max}$ tightens.
+                </p>
+              </div>
+
+              <!-- Theorem 2 -->
+              <div class="top-p-formula-card space-y-1">
+                <div class="flex items-center justify-between border-b pb-1">
+                  <strong class="text-blue-900 font-mono">Theorem 2 (Irreducible Bias of Graph Mixing)</strong>
+                  <span class="tag-paper">Paper App. A</span>
+                </div>
+                <p class="text-slate-600 text-[11px]">
+                  Static graph mixing (e.g., DPFL/Gossip) suffers from an irreducible personalization bias growing with spectral gap $\lambda_2(L)$ and smoothing weight $\gamma$:
+                </p>
+                <div class="font-mono text-blue-900 bg-white p-1.5 rounded border text-[11px] text-center">
+                  $$\frac{1}{|V|} \sum_i \|w_i^\gamma - w_i^*\|^2 \ge c_1 \left( \frac{\gamma \lambda_2(L)}{\mu + 4\gamma d_{\max}} \right)^2 \delta^2 - c_2 \epsilon^2$$
+                </div>
+                <p class="text-slate-500 text-[10px]">
+                  Proves that oblivious graph mixing forces unwanted consensus across heterogeneous clusters, justifying SemanticDFL's pull-based top-$K$ semantic routing.
+                </p>
+              </div>
+
+              <!-- Lemma 1 -->
+              <div class="top-p-formula-card space-y-1">
+                <div class="flex items-center justify-between border-b pb-1">
+                  <strong class="text-blue-900 font-mono">Lemma 1 (Selection Deviation under Recall@K)</strong>
+                  <span class="tag-paper">Paper Lemma 1</span>
+                </div>
+                <p class="text-slate-600 text-[11px]">
+                  The gradient surrogate deviation between SON-retrieved set $S_i^{(t)}$ and Oracle set $O_i(w)$ is bounded strictly by recall $r_t$:
+                </p>
+                <div class="font-mono text-blue-900 bg-white p-1.5 rounded border text-[11px] text-center">
+                  $$\|\mu_{S_i^{(t)}}(w) - \mu_{O_i(w)}(w)\| \le 2(1 - r_t) G$$
+                </div>
+              </div>
+
+              <!-- Propositions 1-3 -->
+              <div class="top-p-formula-card space-y-1">
+                <div class="flex items-center justify-between border-b pb-1">
+                  <strong class="text-blue-900 font-mono">Propositions 1, 2, 3 (Asymptotic Scale Bounds)</strong>
+                  <span class="tag-paper">Paper §3.3.3, App. D</span>
+                </div>
+                <ul class="text-[11px] text-slate-600 space-y-1 font-mono">
+                  <li>• <strong>Prop 1 (Control Cost):</strong> Per-node cost is $O(1)$; total network control bytes $C_{\text{tot}} = O(N)$.</li>
+                  <li>• <strong>Prop 2 (Build Latency):</strong> End-to-end creation time $T_{\text{build}} = \Theta(\log_{S_Z} N) = O(\log N)$.</li>
+                  <li>• <strong>Prop 3 (Super-Peer Memory):</strong> Stored state $M_{\max} \le H S_Z (S_P + r S_D) = O((S_P+S_D)S_Z \log N)$.</li>
+                </ul>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 6: SCIENTIFIC CAVEATS & AUDIT CORRECTIONS (S13, S14) -->
+      <div id="sec-caveats" class="paper-section space-y-4">
+        <div class="paper-panel">
+          <div class="panel-header">
+            <span class="panel-title"><span>🔍</span><span>S13 &amp; S14 — Scientific Audit, Caveats &amp; Tab Corrections</span></span>
+            <span class="tag-paper">Paper §2.4, §2.5, §5.1</span>
+          </div>
+
+          <div class="space-y-4 text-xs leading-relaxed text-slate-700 font-sans">
+            
+            <!-- S13 8 Caveats -->
+            <div class="p-3 bg-amber-50/40 border border-amber-200 rounded-lg space-y-2">
+              <strong class="text-amber-900 text-xs block">S13 — Methodological Caveats &amp; Hidden Costs:</strong>
+              <ol class="list-decimal list-inside space-y-1 text-[11px] text-slate-700">
+                <li><strong>Data plane scales linearly with $N$:</strong> Pulling $K = 0.10N$ full models means per-node pull data grows as $O(0.1NM)$. The $O(\log N)$ bound applies strictly to search and tree construction, not to model downloads.</li>
+                <li><strong>Signatures expose raw parameters:</strong> Signatures $u = \text{mask}(w, \text{Top-}P)$ reveal $\approx 10\%$ of actual weights. Differential privacy (DP) and Byzantine robustness are out of scope (honest clients assumed).</li>
+                <li><strong>Local AP Compute:</strong> Sorting $O(M \log M)$ and computing the $n_z \times n_z$ similarity matrix $O(n_z^2 P)$ is amortized but not quantified separately in Fig 5.</li>
+                <li><strong>Dual $P$ Values in Paper:</strong> Section 3.4 uses worked example values ($10.8\%$ and $13.3\%$) while Section 5.1 and App. E.1 use tuned optima ($9.6\%$ and $11.2\%$). Both are accurately presented here.</li>
+              </ol>
+            </div>
+
+            <!-- S14 Corrections Table -->
+            <div>
+              <strong class="text-slate-900 text-xs block mb-1.5">S14 — Corrections to Previous Tab Misconceptions:</strong>
+                            <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="sticky-col text-left">Legacy Tab Claim</th>
+                      <th class="text-left">Scientific Problem / Inaccuracy</th>
+                      <th class="text-right">Verified Paper Value (Dogani et al. 2026)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="sticky-col">20Newsgroup Accuracy 82.4% (+12.2 pp)</td>
+                      <td class="text-left">Hallucination; +12.2 was a <em>relative</em> % gain vs DFedPGP under Patho(20%)</td>
+                      <td class="text-right"><strong class="text-blue-700">64.2%</strong> (Dir 0.3), <strong class="text-emerald-700">+13.4 pp</strong> vs FedAvg</td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col">20Newsgroup $P = 10.0\%$, 6.7×, 7.02 MB</td>
+                      <td class="text-left">Paper's tuned optimal signature cardinality is 12.8%</td>
+                      <td class="text-right"><strong class="text-blue-700">12.8%</strong> $\to$ 8.97 MB (5.21× reduction)</td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col">FMNIST CNN $M = 62{,}000$ params, 45.8 KB</td>
+                      <td class="text-left">Parameter count not stated in paper</td>
+                      <td class="text-right">Mark $M$ as <em>Simulator Preset</em>; tuned $P/M = 12.3\%$</td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col">Search Overhead $\le 8.1\% – 10.3\%$</td>
+                      <td class="text-left">Incomplete range (omitted low/high bounds)</td>
+                      <td class="text-right"><strong class="text-blue-700">1.7% – 12.6%</strong> across all settings (Mean ≈ 8.0%)</td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col">MobileNetV2 / BERT-Base "Matches Oracle [App. D]"</td>
+                      <td class="text-left">App. D contains scaling proofs, not empirical model runs</td>
+                      <td class="text-right">Relabeled as <span class="tag-sim">Simulator-Only Extrapolations</span></td>
+                    </tr>
+                    <tr>
+                      <td class="sticky-col">Tiny 7.58 MB &amp; Speech 9.33 MB listed as paper text</td>
+                      <td class="text-left">Decimal MB vs Binary MiB confusion</td>
+                      <td class="text-right">Show both: 7.58 MB (7.24 MiB) &amp; 9.34 MB (8.91 MiB)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
     </div>
+
 
     <!-- TAB 5: WORKED EXAMPLE -->
     <div id="tab-worked" class="tab-content space-y-4">
@@ -1875,6 +2729,39 @@
   } else {
     initApp();
   }
-  </script>
+  
+  // Filter/Jump helper for Tab 4 sections
+  function switchPaperSection(sectionId, btn) {
+    document.querySelectorAll('#paper-tab-nav .pill').forEach(el => el.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    const sections = document.querySelectorAll('#tab-scope .paper-section');
+    if (sectionId === 'all') {
+      sections.forEach(s => s.style.display = 'block');
+    } else {
+      sections.forEach(s => {
+        if (s.id === sectionId) {
+          s.style.display = 'block';
+        } else {
+          s.style.display = 'none';
+        }
+      });
+    }
+    
+    // Re-trigger KaTeX rendering on visible section
+    if (window.renderMathInElement && $('tab-scope')) {
+      renderMathInElement($('tab-scope'), {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+          {left: '\(', right: '\)', display: false},
+          {left: '\[', right: '\]', display: true}
+        ],
+        throwOnError: false
+      });
+    }
+  }
+
+</script>
 </body>
 </html>

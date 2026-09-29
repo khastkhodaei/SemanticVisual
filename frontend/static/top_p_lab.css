@@ -257,16 +257,78 @@ body.top-p-page {
 .top-p-page .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border-light);
-  border-radius: 0.5rem;
+  border-radius: 0.625rem;
   background: #ffffff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f8fafc;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  margin-bottom: 0.65rem;
+  position: relative;
+  /* Extra bottom padding to prevent scrollbar from clipping or overlapping cell content */
+  padding-bottom: 4px;
+}
+
+/* Sleek Modern Custom Scrollbar for all tables */
+.top-p-page .table-wrap::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.top-p-page .table-wrap::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 0 0 0.625rem 0.625rem;
+}
+
+.top-p-page .table-wrap::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  transition: background 0.15s ease-in-out;
+}
+
+.top-p-page .table-wrap::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .top-p-page table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-family: var(--font-mono);
   font-size: 0.73rem;
+}
+
+/* Sticky first column freeze-pane for rich tables */
+.top-p-page .table-wrap th:first-child,
+.top-p-page .table-wrap td:first-child,
+.top-p-page th.sticky-col,
+.top-p-page td.sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  text-align: left;
+  background: #ffffff;
+  box-shadow: 2px 0 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.top-p-page .table-wrap th:first-child,
+.top-p-page th.sticky-col {
+  background: #f8fafc;
+  z-index: 20;
+}
+
+.top-p-page tr.bg-blue-50\/40 td:first-child,
+.top-p-page tr.bg-blue-50\/30 td:first-child,
+.top-p-page tr.bg-blue-50\/20 td:first-child,
+.top-p-page tr.bg-blue-50\/50 td:first-child {
+  background: #f4f8ff;
+}
+
+.top-p-page tr.bg-slate-50\/50 td:first-child,
+.top-p-page tr.bg-slate-50 td:first-child,
+.top-p-page tr.bg-slate-50\/70 td:first-child {
+  background: #f8fafc;
 }
 
 .top-p-page th {
