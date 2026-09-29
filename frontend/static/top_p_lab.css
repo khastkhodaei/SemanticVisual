@@ -195,6 +195,12 @@ body.top-p-page {
   font-family: var(--font-sans);
 }
 
+.top-p-page label > span:first-child {
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+}
+
 .top-p-page input[type="number"],
 .top-p-page input[type="text"],
 .top-p-page select {
