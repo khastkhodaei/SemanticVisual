@@ -186,8 +186,29 @@
         <p class="text-xs text-slate-600 font-sans mb-3">
           $\cos(\mathbf{w}, \mathbf{w}^{[P]}) = \sqrt{c_P} / \|\mathbf{w}\|_2$, where $c_P$ is the running sum of squares in score order. It is monotonically non-decreasing in $P$, so the minimal $P$ reaching $\theta$ is found in $O(\log M)$ bisection steps.
         </p>
+        <!-- Chart Controls Toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-2.5 mb-2.5 p-2 bg-slate-50/90 rounded-lg border border-slate-200">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">X-Axis Zoom:</span>
+            <button id="btn_zoom_focus" type="button" class="px-2.5 py-1 text-xs font-semibold rounded bg-blue-600 text-white shadow-2xs hover:bg-blue-700 transition-colors">🎯 Focus (1 – 100)</button>
+            <button id="btn_zoom_mid" type="button" class="px-2.5 py-1 text-xs font-medium rounded bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 transition-colors">🔍 Mid (1 – 300)</button>
+            <button id="btn_zoom_full" type="button" class="px-2.5 py-1 text-xs font-medium rounded bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 transition-colors">🌐 Full (1 – M)</button>
+          </div>
+          <div class="flex items-center gap-2 bg-white px-3 py-1 rounded-md border border-slate-200 text-xs shadow-2xs">
+            <span class="text-slate-600 font-medium">Exact Coordinate Inspector:</span>
+            <span class="font-mono text-slate-400 font-bold">P =</span>
+            <input id="inp_p_inspect" type="number" min="1" max="2000" value="34" class="w-16 px-1.5 py-0.5 text-xs font-mono font-bold text-slate-800 bg-slate-50 border border-slate-300 rounded text-center focus:outline-blue-500" />
+            <span id="badge_p_inspect" class="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">cos = 0.8011 (✓ ≥ θ ★ P_min)</span>
+          </div>
+        </div>
+
         <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs">
           <canvas id="curve" aria-label="Cosine retained versus P"></canvas>
+          <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center gap-3">
+            <span class="text-[11px] text-slate-500 font-mono font-semibold">P = 1</span>
+            <input id="slider_p_inspect" type="range" min="1" max="2000" value="34" class="flex-1 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+            <span id="slider_max_label" class="text-[11px] text-slate-500 font-mono font-semibold">P = 2000</span>
+          </div>
         </div>
         <div class="table-wrap mt-3">
           <table id="trace"></table>
@@ -791,6 +812,148 @@
   let charts = {};
   let allFaqData = [];
   let activeCategory = 'All';
+  let windowSimCurve = null;
+  let currentSimZoom = 100;
+
+  function updateSimInspector(p) {
+    if (!windowSimCurve) return;
+    const M = windowSimCurve.P.length;
+    p = Math.max(1, Math.min(M, parseInt(p, 10) || 1));
+    
+    if ($('inp_p_inspect')) $('inp_p_inspect').value = p;
+    if ($('slider_p_inspect')) $('slider_p_inspect').value = p;
+    
+    const cosVal = windowSimCurve.cos[p - 1];
+    const theta = windowSimCurve.theta;
+    const isOk = cosVal >= theta;
+    const isPmin = p === windowSimCurve.P0;
+    
+    const badge = $('badge_p_inspect');
+    if (badge) {
+      if (isOk) {
+        badge.className = 'font-mono text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200';
+        badge.textContent = `cos = ${cosVal.toFixed(4)} (✓ ≥ θ${isPmin ? ' ★ P_min' : ''})`;
+      } else {
+        badge.className = 'font-mono text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200';
+        badge.textContent = `cos = ${cosVal.toFixed(4)} (✗ < θ)`;
+      }
+    }
+  }
+
+  function renderSimCurveChart(zoomLimit) {
+    if (!windowSimCurve) return;
+    currentSimZoom = zoomLimit;
+    
+    const M = windowSimCurve.P.length;
+    const limit = (zoomLimit === 'full') ? M : Math.min(M, zoomLimit);
+    
+    const slicedP = windowSimCurve.P.slice(0, limit);
+    const slicedCos = windowSimCurve.cos.slice(0, limit);
+    const P0 = windowSimCurve.P0;
+    
+    // Highlight P0 point
+    const pointRadii = slicedP.map(p => p === P0 ? 6 : (limit <= 100 ? 2 : 0));
+    const pointColors = slicedP.map(p => p === P0 ? '#dc2626' : '#2563eb');
+    
+    // Update zoom buttons active style
+    const btnFocus = $('btn_zoom_focus');
+    const btnMid = $('btn_zoom_mid');
+    const btnFull = $('btn_zoom_full');
+    
+    const activeClass = 'px-2.5 py-1 text-xs font-semibold rounded bg-blue-600 text-white shadow-2xs hover:bg-blue-700 transition-colors';
+    const inactiveClass = 'px-2.5 py-1 text-xs font-medium rounded bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 transition-colors';
+    
+    if (btnFocus && btnMid && btnFull) {
+      btnFocus.className = zoomLimit === 100 ? activeClass : inactiveClass;
+      btnMid.className = zoomLimit === 300 ? activeClass : inactiveClass;
+      btnFull.className = zoomLimit === 'full' ? activeClass : inactiveClass;
+    }
+    
+    draw('curve', {
+      type: 'line',
+      data: {
+        labels: slicedP,
+        datasets: [
+          {
+            label: 'cos(w, w[P])',
+            data: slicedCos,
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+            fill: true,
+            pointRadius: pointRadii,
+            pointHoverRadius: 7,
+            pointBackgroundColor: pointColors,
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            borderWidth: 2,
+            tension: 0.1
+          },
+          {
+            label: `Target θ = ${windowSimCurve.theta}`,
+            data: slicedP.map(() => windowSimCurve.theta),
+            borderColor: '#f59e0b',
+            borderDash: [6, 4],
+            pointRadius: 0,
+            pointHitRadius: 0,
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              font: { family: "'Inter', sans-serif", size: 11, weight: '600' },
+              color: '#334155',
+              boxWidth: 14
+            }
+          },
+          tooltip: {
+            backgroundColor: '#0f172a',
+            titleColor: '#f8fafc',
+            bodyColor: '#e2e8f0',
+            borderColor: '#334155',
+            borderWidth: 1,
+            titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
+            bodyFont: { family: "'JetBrains Mono', monospace", size: 11 },
+            padding: 8,
+            cornerRadius: 6,
+            filter: (item) => item.datasetIndex === 0,
+            callbacks: {
+              title: (items) => `Signature Coordinates: P = ${items[0].label}`,
+              label: (item) => ` cos(w, w[P]) = ${Number(item.raw).toFixed(4)} ${Number(items[0].label) === P0 ? '(★ P_min)' : ''}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: `Signature Coordinates P (View: 1 to ${limit} | Client 0 P_min = ${P0})`, color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
+            ticks: { 
+              maxTicksLimit: limit <= 100 ? 20 : 12, 
+              color: '#64748b', 
+              font: { family: "'JetBrains Mono', monospace", size: 10 } 
+            },
+            grid: { color: '#f1f5f9' }
+          },
+          y: {
+            min: 0,
+            max: 1.0,
+            title: { display: true, text: 'Directional Cosine Similarity', color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
+            ticks: { 
+              color: '#64748b', 
+              font: { family: "'JetBrains Mono', monospace", size: 10 },
+              stepSize: 0.2
+            },
+            grid: { color: '#f1f5f9' }
+          }
+        }
+      }
+    });
+  }
 
   function draw(id, cfg) {
     if (charts[id]) { charts[id].destroy(); }
@@ -890,88 +1053,28 @@
       </table></div>
     `;
 
-    // Chart 1: Cos vs P Curve
-    const pointRadii = r.curve.P.map(p => p === P0 ? 6 : 0);
-    draw('curve', {
-      type: 'line',
-      data: {
-        labels: r.curve.P,
-        datasets: [
-          {
-            label: 'cos(w, w[P])',
-            data: r.curve.cos,
-            borderColor: '#2563eb',
-            backgroundColor: 'rgba(37, 99, 235, 0.08)',
-            fill: true,
-            pointRadius: pointRadii,
-            pointHoverRadius: 7,
-            pointBackgroundColor: '#2563eb',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 2,
-            borderWidth: 2,
-            tension: 0.1
-          },
-          {
-            label: `Target θ = ${r.theta}`,
-            data: r.curve.P.map(() => r.theta),
-            borderColor: '#f59e0b',
-            borderDash: [6, 4],
-            pointRadius: 0,
-            pointHitRadius: 0,
-            borderWidth: 2
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: false,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              font: { family: "'Inter', sans-serif", size: 11, weight: '600' },
-              color: '#334155',
-              boxWidth: 14
-            }
-          },
-          tooltip: {
-            backgroundColor: '#0f172a',
-            titleColor: '#f8fafc',
-            bodyColor: '#e2e8f0',
-            borderColor: '#334155',
-            borderWidth: 1,
-            titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
-            bodyFont: { family: "'JetBrains Mono', monospace", size: 11 },
-            padding: 8,
-            cornerRadius: 6,
-            filter: (item) => item.datasetIndex === 0,
-            callbacks: {
-              title: (items) => `Signature Coordinates: P = ${items[0].label}`,
-              label: (item) => ` cos(w, w[P]) = ${Number(item.raw).toFixed(4)}`
-            }
-          }
-        },
-        scales: {
-          x: {
-            title: { display: true, text: `Signature Coordinates P (Client 0: P_min = ${P0})`, color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
-            ticks: { maxTicksLimit: 12, color: '#64748b', font: { family: "'JetBrains Mono', monospace", size: 10 } },
-            grid: { color: '#f1f5f9' }
-          },
-          y: {
-            min: 0,
-            max: 1.0,
-            title: { display: true, text: 'Directional Cosine Similarity', color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
-            ticks: { 
-              color: '#64748b', 
-              font: { family: "'JetBrains Mono', monospace", size: 10 },
-              stepSize: 0.2
-            },
-            grid: { color: '#f1f5f9' }
-          }
-        }
-      }
-    });
+    // Chart 1: Cos vs P Curve with interactive zoom & inspector
+    windowSimCurve = {
+      P: r.curve.P,
+      cos: r.curve.cos,
+      theta: r.theta,
+      P0: P0
+    };
+    
+    if ($('slider_p_inspect')) {
+      $('slider_p_inspect').max = r.curve.P.length;
+      $('slider_p_inspect').value = P0;
+    }
+    if ($('inp_p_inspect')) {
+      $('inp_p_inspect').max = r.curve.P.length;
+      $('inp_p_inspect').value = P0;
+    }
+    if ($('slider_max_label')) {
+      $('slider_max_label').textContent = `P = ${r.curve.P.length}`;
+    }
+    
+    updateSimInspector(P0);
+    renderSimCurveChart(currentSimZoom || 100);
 
     // Trace Table
     $('trace').innerHTML = `
@@ -1628,6 +1731,18 @@
 
   // Initial startup execution
   document.addEventListener('DOMContentLoaded', () => {
+    const btnFocus = $('btn_zoom_focus');
+    if (btnFocus) btnFocus.onclick = () => renderSimCurveChart(100);
+    const btnMid = $('btn_zoom_mid');
+    if (btnMid) btnMid.onclick = () => renderSimCurveChart(300);
+    const btnFull = $('btn_zoom_full');
+    if (btnFull) btnFull.onclick = () => renderSimCurveChart('full');
+    
+    const inpP = $('inp_p_inspect');
+    if (inpP) inpP.oninput = (e) => updateSimInspector(e.target.value);
+    const sliderP = $('slider_p_inspect');
+    if (sliderP) sliderP.oninput = (e) => updateSimInspector(e.target.value);
+
     run();
     if (window.renderMathInElement) {
       renderMathInElement(document.body, {
