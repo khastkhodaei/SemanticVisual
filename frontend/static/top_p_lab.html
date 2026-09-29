@@ -203,7 +203,9 @@
         </div>
 
         <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs">
-          <canvas id="curve" aria-label="Cosine retained versus P"></canvas>
+          <div class="h-64 relative w-full">
+            <canvas id="curve" aria-label="Cosine retained versus P"></canvas>
+          </div>
           <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center gap-3">
             <span class="text-[11px] text-slate-500 font-mono font-semibold">P = 1</span>
             <input id="slider_p_inspect" type="range" min="1" max="2000" value="34" class="flex-1 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
@@ -225,7 +227,9 @@
           The shared P is the q-quantile of the clients' P_min values (q between 0.8 and 0.9), so at least a q-fraction of clients meet the target.
         </p>
         <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs">
-          <canvas id="pmins" aria-label="P_min per client"></canvas>
+          <div class="h-64 relative w-full">
+            <canvas id="pmins" aria-label="P_min per client"></canvas>
+          </div>
         </div>
       </div>
 
@@ -1730,7 +1734,7 @@
   }
 
   // Initial startup execution
-  document.addEventListener('DOMContentLoaded', () => {
+  function initApp() {
     const btnFocus = $('btn_zoom_focus');
     if (btnFocus) btnFocus.onclick = () => renderSimCurveChart(100);
     const btnMid = $('btn_zoom_mid');
@@ -1755,10 +1759,13 @@
         throwOnError: false
       });
     }
-  });
+  }
 
-  // Fallback initial trigger
-  run();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+  } else {
+    initApp();
+  }
   </script>
 </body>
 </html>
