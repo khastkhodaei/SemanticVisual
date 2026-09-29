@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Top-P Signature Deep-Dive & Cost Lab — SemanticDFL</title>
+
+  <!-- Scientific Typography Stack: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+          },
+          colors: {
+            paperBg: '#f8fafc',
+            paperCard: '#ffffff',
+            paperBorder: '#e2e8f0',
+            paperText: '#0f172a',
+            paperMuted: '#64748b',
+            brandBlue: '#2563eb',
+            brandSky: '#0284c7',
+            brandAmber: '#f59e0b',
+            brandEmerald: '#059669',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Chart.js (Local Vendor with CDN Fallback) -->
+  <script src="/static/vendor/chart.umd.min.js"></script>
+  <script>window.Chart || document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"><\/script>');</script>
+
+  <!-- KaTeX (Local Vendor & CDN) -->
+  <link rel="stylesheet" href="/static/vendor/katex.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="/static/vendor/katex.min.js"></script>
+  <script>window.katex || document.write('<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"><\/script>');</script>
+  <script src="/static/vendor/auto-render.min.js"></script>
+  <script>window.renderMathInElement || document.write('<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"><\/script>');</script>
+
+  <!-- Custom Academic Stylesheet & Scoped Lab Stylesheet -->
+  <link rel="stylesheet" href="/static/style.css?v=25.0">
+  <link rel="stylesheet" href="/static/top_p_lab.css?v=1.0">
+</head>
+<body class="top-p-page bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans">
+
+  <!-- Top Academic Navigation Header matching Storyboard Simulator -->
+  <header class="paper-header px-6 py-2 flex items-center justify-between flex-shrink-0 z-50">
+    <div class="flex items-center space-x-3">
+      <div class="w-3 h-3 rounded-full bg-blue-600 shadow-sm"></div>
+      <div>
+        <h1 class="font-extrabold text-sm tracking-tight text-slate-900 flex items-center gap-2">
+          <span>TOP-P DEEP-DIVE &amp; COST LAB</span>
+          <span class="text-[10px] font-semibold font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">ACM 2026</span>
+        </h1>
+        <p class="text-[11px] text-slate-500 font-sans">Mathematical Foundations, Parameter Sizing &amp; Complexity Analysis</p>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs (4 Labs) -->
+    <nav class="hidden md:flex items-center space-x-1.5 text-xs font-mono" role="tablist">
+      <button class="tab-btn active" onclick="showTab('tab-sim', this)">
+        <span>1.</span><span>Simulation Lab</span>
+      </button>
+      <button class="tab-btn" onclick="showTab('tab-cost', this)">
+        <span>2.</span><span>Cost Model &amp; Sizing</span>
+      </button>
+      <button class="tab-btn" onclick="showTab('tab-faq', this)">
+        <span>3.</span><span>Q&amp;A &amp; Theory</span>
+      </button>
+      <button class="tab-btn" onclick="showTab('tab-scope', this)">
+        <span>4.</span><span>Simulator Scope</span>
+      </button>
+    </nav>
+
+    <!-- Return Link to Storyboard Simulator -->
+    <div class="flex items-center space-x-2 text-xs font-mono">
+      <a href="/" class="px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 flex items-center gap-1.5 transition-colors" title="Return to Storyboard Simulator">
+        <span>←</span>
+        <span>Back to Storyboard</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Mobile Tab Switcher -->
+  <div class="md:hidden px-6 pt-3 pb-1 flex flex-wrap gap-1.5 bg-white border-b border-slate-200">
+    <button class="tab-btn active text-xs" onclick="showTab('tab-sim', this)">1. Simulation Lab</button>
+    <button class="tab-btn text-xs" onclick="showTab('tab-cost', this)">2. Cost Model</button>
+    <button class="tab-btn text-xs" onclick="showTab('tab-faq', this)">3. Q&amp;A</button>
+    <button class="tab-btn text-xs" onclick="showTab('tab-scope', this)">4. Scope</button>
+  </div>
+
+  <main class="top-p-container flex-1 space-y-4">
+
+    <!-- TAB 1: SIMULATION LAB -->
+    <div id="tab-sim" class="tab-content active space-y-4">
+      
+      <!-- Narrative Title Card -->
+      <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-100 text-blue-800">PAPER §3.2 &amp; APP. B.1</span>
+              <h2 class="text-sm font-bold text-slate-900">Top-P Signature Extraction Simulator</h2>
+            </div>
+            <p class="text-xs text-slate-600 font-sans mt-1">
+              Each client retains only the top $P$ most important coordinates of its model, zeroes the rest, and shares that sparse vector. Simulate binary search for $P_{\min}$, evaluate quantile consensus, and inspect sparse cosine accuracy.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parameter Controls Card -->
+      <div class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span>⚙️</span><span>Simulation Parameters</span></span>
+          <span class="text-[11px] text-slate-500 font-mono">Algorithm 1 Configuration</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          <label>Clients (n)<input id="n" type="number" value="9" min="3" max="60"></label>
+          <label>Model size (M)<input id="M" type="number" value="2000" min="50" max="20000"></label>
+          <label>Target cosine (θ)<input id="theta" type="number" value="0.8" step="0.05" min="0.1" max="1"></label>
+          <label>Quantile (q)<input id="q" type="number" value="0.8" step="0.05" min="0.5" max="1"></label>
+          <label>EMA smoothing (β)<input id="beta" type="number" value="0.9" step="0.05" min="0" max="0.99"></label>
+          <label>Rounds<input id="rounds" type="number" value="3" min="1" max="20"></label>
+          <label>Seed<input id="seed" type="number" value="0"></label>
+        </div>
+        <div class="mt-3.5 flex items-center gap-3">
+          <button id="run" class="btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shadow-sm">
+            <span>▶</span><span>Run Extraction</span>
+          </button>
+          <span id="msg" class="no text-xs"></span>
+        </div>
+      </div>
+
+      <!-- Execution Log Panel -->
+      <div class="paper-card overflow-hidden flex flex-col border-slate-300 shadow-sm">
+        <div class="bg-slate-800 px-4 py-1.5 flex items-center justify-between text-xs font-mono text-slate-300 flex-shrink-0">
+          <span class="flex items-center gap-2">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>EXECUTION LOG &amp; QUANTILE CONSENSUS TRACE</span>
+          </span>
+          <span class="text-[10px] text-slate-400 font-mono">LIVE TRACE</span>
+        </div>
+        <div id="simLog" class="terminal-window p-3 space-y-1 text-xs">
+          <div class="text-slate-400">[SYSTEM] Top-P extraction simulator initialized. Click 'Run Extraction' to execute.</div>
+        </div>
+      </div>
+
+      <!-- Section 1: Importance Score and Signature -->
+      <div class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span>📐</span><span>1. Importance Score and Signature</span></span>
+          <span class="tag-paper">Paper §3.2</span>
+        </div>
+        <div class="top-p-formula-card">
+          <div class="text-center font-mono py-1">
+            $$s_r^{(t)} = \beta \cdot s_r^{(t-1)} + (1 - \beta) \cdot |w_r^{(t)}|, \quad I = \operatorname{argtop}_P(s)$$
+            $$\mathbf{u} = \operatorname{mask}(\mathbf{w}, I) \quad (\text{raw masked coordinates outside } I \text{ set to } 0)$$
+          </div>
+        </div>
+        <div class="kpis" id="kpis"></div>
+        <div id="sig"></div>
+      </div>
+
+      <!-- Section 2: Binary Search -->
+      <div class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span>🔍</span><span>2. Choosing P for One Client (Binary Search)</span></span>
+          <span class="tag-paper">Paper App. B.1</span>
+        </div>
+        <p class="text-xs text-slate-600 font-sans mb-3">
+          $\cos(\mathbf{w}, \mathbf{w}^{[P]}) = \sqrt{c_P} / \|\mathbf{w}\|_2$, where $c_P$ is the running sum of squares in score order. It is monotonically non-decreasing in $P$, so the minimal $P$ reaching $\theta$ is found in $O(\log M)$ bisection steps.
+        </p>
+        <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs">
+          <canvas id="curve" aria-label="Cosine retained versus P"></canvas>
+        </div>
+        <div class="table-wrap mt-3">
+          <table id="trace"></table>
+        </div>
+      </div>
+
+      <!-- Section 3: Quantile Consensus -->
+      <div class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span>📊</span><span>3. Network-Wide P from Quantile Consensus</span></span>
+          <span class="tag-paper">Paper §3.2</span>
+        </div>
+        <p class="text-xs text-slate-600 font-sans mb-3">
+          The shared P is the q-quantile of the clients' P_min values (q between 0.8 and 0.9), so at least a q-fraction of clients meet the target.
+        </p>
+        <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs">
+          <canvas id="pmins" aria-label="P_min per client"></canvas>
+        </div>
+      </div>
+
+      <!-- Section 4: Sparse Cosine Similarity Matrix -->
+      <div class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span>🧮</span><span>4. Does the Sparse Cosine Still Rank Peers Correctly?</span></span>
+          <span class="tag-paper">Paper §5.4</span>
+        </div>
+        <p class="text-xs text-slate-600 font-sans mb-3" id="errline"></p>
+        <div class="table-wrap">
+          <table id="mat"></table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: COST MODEL & SIZING CALCULATOR -->
+    <div id="tab-cost" class="tab-content space-y-4">
+      
+      <!-- Header Card -->
+      <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-100 text-blue-800">PAPER §3.4 &amp; APP. D</span>
+          <h2 class="text-sm font-bold text-slate-900">Cost Model &amp; Mathematical Sizing Calculator</h2>
+        </div>
+        <p class="text-xs text-slate-600 font-sans mt-1">
+          Interactive analytical cost model reproducing the paper's ResNet-18 worked example and scaling metrics across deep models.
+        </p>
+      </div>
+
+      <!-- Presets & Parameters Card -->
+      <div class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span>🎛️</span><span>Paper Presets &amp; Sizing Parameters</span></span>
+          <span class="text-[11px] text-slate-500 font-mono">Table 4 &amp; §3.4 Benchmarks</span>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-3.5">
+          <button class="preset-btn" onclick="applyPreset(11700000, 10.8, 25.0, 10, 1.03)">ResNet-18 (Tiny-ImageNet P=10.8%) [Paper §3.4]</button>
+          <button class="preset-btn" onclick="applyPreset(11700000, 13.3, 25.0, 10, 1.03)">ResNet-18 (Google-Speech P=13.3%) [Paper §3.4]</button>
+          <button class="preset-btn" onclick="applyPreset(11700000, 10.0, 25.0, 10, 1.03)">ResNet-18 (P=10% baseline) [Paper §3.4]</button>
+          <button class="preset-btn" onclick="applyPreset(11700000, 10.8, 25.0, 10, 1.00)">Strict Baseline (Overhead = 1.00)</button>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <label>Parameters (M)<input id="c_M" type="number" value="11700000" step="100000"></label>
+          <label>Top-P fraction (%)<input id="c_P_pct" type="number" value="10.8" step="0.1" min="0.1" max="100"></label>
+          <label>Bandwidth (MB/s)<input id="c_bw" type="number" value="25.0" step="1" min="1"></label>
+          <label>Partner Pulls (K)<input id="c_K" type="number" value="10" min="1" max="50"></label>
+          <label id="lbl_overhead">Transport overhead factor: 1.00<input id="c_overhead" type="number" value="1.00" step="0.01" min="0.5" max="3.0" oninput="updateOverheadLabel()"></label>
+          <label>Visited Super-Peers<input id="c_sp" type="number" value="7" min="1" max="50"></label>
+          <label>Probed Leaves<input id="c_pl" type="number" value="4" min="1" max="50"></label>
+          <label>Leaf Group Size<input id="c_ls" type="number" value="2" min="1" max="20"></label>
+          <label>Index bytes (b_idx)<input id="c_bidx" type="number" value="4" readonly style="opacity:0.7"></label>
+          <label>Value bytes (b_val)<input id="c_bval" type="number" value="2" readonly style="opacity:0.7"></label>
+        </div>
+        <div class="mt-3.5">
+          <button class="btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shadow-sm" onclick="recalcCosts()">
+            <span>⚡</span><span>Calculate Costs</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Cost Outputs Card -->
+      <div class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span>📈</span><span>Live Cost Model Outputs</span></span>
+          <span class="tag-paper">Paper §3.4</span>
+        </div>
+        <div class="kpis" id="cost-kpis"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
+            <div class="font-bold text-xs text-blue-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <span>📡</span><span>Hierarchical Discovery Query (15 Signatures)</span>
+            </div>
+            <div id="cost-query-detail" class="text-xs text-slate-700 leading-relaxed font-mono"></div>
+          </div>
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
+            <div class="font-bold text-xs text-emerald-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <span>📥</span><span>Model Parameter Pull + Serving (20 Transfers)</span>
+            </div>
+            <div id="cost-pull-detail" class="text-xs text-slate-700 leading-relaxed font-mono"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparison Table Card -->
+      <div class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span>⚖️</span><span>Protocol Comparison Table</span></span>
+          <span class="tag-paper">Paper §2.3, §3.4, §5.4</span>
+        </div>
+        <div class="table-wrap">
+          <table id="cost-comparison-table">
+            <thead>
+              <tr>
+                <th>Protocol Architecture</th>
+                <th>Control Traffic Footprint</th>
+                <th>Model Parameter Exchange</th>
+                <th>Network Scalability</th>
+                <th>Provenance</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Complexity Table Card -->
+      <div class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span>⏱️</span><span>Algorithm Complexity Breakdown</span></span>
+          <span class="tag-paper">Paper App. B.1, Prop. 1–3</span>
+        </div>
+        <div class="table-wrap">
+          <table id="cost-complexity-table">
+            <thead>
+              <tr>
+                <th>Operation</th>
+                <th>Computational Complexity</th>
+                <th>Execution Frequency</th>
+                <th>Provenance</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 3: Q&A / FAQ -->
+    <div id="tab-faq" class="tab-content space-y-4">
+      
+      <!-- Header Card -->
+      <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-100 text-blue-800">FAQ &amp; THEORY</span>
+          <h2 class="text-sm font-bold text-slate-900">Top-P Questions &amp; Mathematical Explanations</h2>
+        </div>
+        <p class="text-xs text-slate-600 font-sans mt-1">
+          Complete reference addressing design decisions, proofs, and sizing questions from the SemanticDFL paper. Loaded from editable JSON (<code class="text-blue-700 font-mono text-xs">frontend/static/top_p_faq.json</code>).
+        </p>
+      </div>
+
+      <!-- Filter & Search Card -->
+      <div class="paper-panel">
+        <div class="flex flex-wrap gap-2 mb-2.5">
+          <input id="faq-search" type="text" placeholder="🔍 Search Q&A (e.g. 'binary search', 'quantile', 'privacy', 'ResNet-18')..." class="flex-1 min-w-[240px]" oninput="filterFAQ()">
+        </div>
+        <div class="flex flex-wrap gap-1.5" id="faq-pills"></div>
+      </div>
+
+      <!-- FAQ Accordions Container -->
+      <div id="faq-container" class="space-y-2"></div>
+    </div>
+
+    <!-- TAB 4: SIMULATOR SCOPE -->
+    <div id="tab-scope" class="tab-content space-y-4">
+      
+      <!-- Header Card -->
+      <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-emerald-100 text-emerald-800">SIMULATOR SCOPE</span>
+          <h2 class="text-sm font-bold text-slate-900">Simulator Scope &amp; Implementation Boundaries</h2>
+        </div>
+        <p class="text-xs text-slate-600 font-sans mt-1">
+          Clarifying what is modeled in this interactive demonstration vs. the complete production protocol.
+        </p>
+      </div>
+
+      <!-- Scope Content Card -->
+      <div class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span>📚</span><span>Pedagogical Storyboard vs. Deep Learning Paper Regime</span></span>
+          <span class="tag-sim">Simulator</span>
+        </div>
+        <div class="space-y-3 text-xs leading-relaxed text-slate-700 font-sans">
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
+            <strong class="text-slate-900 block mb-1 text-xs">1. Weight Distributions &amp; Model Dimension:</strong>
+            In the 10-node CIFAR-10 storyboard (Steps 1–34), clients hold normalized 10-dimensional class distribution vectors where $P = 3$ ($30\%$ of dimension) with $\theta = 0.70$ is chosen for intuitive visualization and manual verification.<br>
+            In the Deep-Dive Lab and the real paper regime, models contain $M = 10^6$–$10^8$ weights (e.g. ResNet-18 with $M = 11.7\text{M}$) where $P \approx 10\%–13\%$ achieves $\cos \ge 0.80$.
+          </div>
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
+            <strong class="text-slate-900 block mb-1 text-xs">2. Synthetic Heavy-Tailed Sampling in the Lab:</strong>
+            The Top-P Extraction simulation tab synthesizes heavy-tailed weights with latent cluster seeds ($W = \text{bases}[c] + 0.35 \cdot \text{noise}$) to reproduce realistic parameter spectra without requiring local GPU training.
+          </div>
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
+            <strong class="text-slate-900 block mb-1 text-xs">3. Distributed Topology &amp; VRF Integration:</strong>
+            The complete multi-phase pipeline (VRF leader election, TTL-bounded zone flooding, inter-zone boundary notifications, and Affinity Propagation meta-clustering) is executed step-by-step in the main application storyboard (Steps 3 through 19).
+          </div>
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg">
+            <strong class="text-slate-900 block mb-1 text-xs">4. Out-of-Scope Behaviors:</strong>
+            As defined in the paper [§2.4, §2.5], dynamic node churn and Byzantine adversarial data poisoning are handled via cryptographic VRF seeds and $(1-q)$ quantile bounds; active malicious packet manipulation is excluded from the normal execution simulator.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+  const $ = id => document.getElementById(id);
+  let charts = {};
+  let allFaqData = [];
+  let activeCategory = 'All';
+
+  function draw(id, cfg) {
+    if (charts[id]) { charts[id].destroy(); }
+    charts[id] = new Chart($(id), cfg);
+  }
+  
+  function kb(b) {
+    return b >= 1024 * 1024 ? (b / (1024 * 1024)).toFixed(2) + ' MB' : b >= 1024 ? (b / 1024).toFixed(1) + ' KB' : b + ' B';
+  }
+
+  function showTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    $(tabId).classList.add('active');
+    
+    // Activate all buttons targeting this tabId (desktop + mobile)
+    document.querySelectorAll('.tab-btn').forEach(el => {
+      if (el.getAttribute('onclick') && el.getAttribute('onclick').includes(tabId)) {
+        el.classList.add('active');
+      }
+    });
+
+    if (tabId === 'tab-cost' && !$('cost-kpis').innerHTML) { recalcCosts(); }
+    if (tabId === 'tab-faq' && !allFaqData.length) { loadFAQ(); }
+    
+    // Auto render math on tab switch
+    if (window.renderMathInElement) {
+      renderMathInElement($(tabId), {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+          {left: '\\(', right: '\\)', display: false},
+          {left: '\\[', right: '\\]', display: true}
+        ],
+        throwOnError: false
+      });
+    }
+  }
+
+  /* --- TAB 1: SIMULATION LAB --- */
+  async function run() {
+    $('msg').textContent = '';
+    const body = {};
+    for (const k of ['n', 'M', 'theta', 'q', 'beta', 'rounds', 'seed']) body[k] = +$(k).value;
+    let r;
+    try {
+      const res = await fetch('/api/v1/toppaper/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+      r = await res.json();
+    } catch (e) {
+      $('msg').textContent = e.message;
+      return;
+    }
+
+    const P0 = r.p_mins[0];
+
+    // Execution Log Panel Output
+    if ($('simLog')) {
+      $('simLog').innerHTML = `
+        <div class="flex items-center gap-2"><span class="font-mono text-blue-400 font-bold">[SYSTEM]</span> <span class="text-slate-200">Client 0: binary search finished in ${r.trace.length} steps → P_min = ${P0}</span></div>
+        <div class="flex items-center gap-2"><span class="font-mono text-amber-400 font-bold">[CONSENSUS]</span> <span class="text-slate-200">Shared P = ${r.global_p} (q = ${body.q || 0.8} quantile of P_min) — ${(r.frac_meeting_theta * 100).toFixed(0)}% of clients meet θ</span></div>
+        <div class="flex items-center gap-2"><span class="font-mono text-emerald-400 font-bold">[PAYLOAD]</span> <span class="text-slate-200">Payload per signature: ${kb(r.payload.signature_bytes)} vs ${kb(r.payload.dense_fp32_bytes)} dense (${r.payload.ratio.toFixed(1)}× smaller)</span></div>
+      `;
+    }
+
+    // KPIs
+    $('kpis').innerHTML = `
+      <div class="kpi-card">
+        <span class="kpi-val">${r.global_p}</span>
+        <span class="kpi-lbl">Shared P (${r.global_p_pct.toFixed(1)}% of M)</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-val text-emerald-600">${(r.frac_meeting_theta * 100).toFixed(0)}%</span>
+        <span class="kpi-lbl">Clients with cos ≥ θ at this P</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-val text-blue-700">${r.payload.ratio.toFixed(1)}×</span>
+        <span class="kpi-lbl">Smaller than dense FP32 (${kb(r.payload.signature_bytes)} vs ${kb(r.payload.dense_fp32_bytes)})</span>
+      </div>
+    `;
+
+    // Signature snippet
+    const s = r.signature0;
+    $('sig').innerHTML = `
+      <div class="table-wrap mt-3"><table>
+        <thead>
+          <tr><th>Client 0 signature (first ${s.indices.length} of ${s.nnz})</th>${s.indices.map(i => `<th>idx ${i}</th>`).join('')}</tr>
+        </thead>
+        <tbody>
+          <tr><td>value</td>${s.values.map(v => `<td>${v.toFixed(3)}</td>`).join('')}</tr>
+        </tbody>
+      </table></div>
+    `;
+
+    // Chart 1: Cos vs P Curve
+    const pointRadii = r.curve.P.map(p => p === P0 ? 6 : 0);
+    draw('curve', {
+      type: 'line',
+      data: {
+        labels: r.curve.P,
+        datasets: [
+          {
+            label: 'cos(w, w[P])',
+            data: r.curve.cos,
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+            fill: true,
+            pointRadius: pointRadii,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#2563eb',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            borderWidth: 2,
+            tension: 0.1
+          },
+          {
+            label: `Target θ = ${r.theta}`,
+            data: r.curve.P.map(() => r.theta),
+            borderColor: '#f59e0b',
+            borderDash: [6, 4],
+            pointRadius: 0,
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              font: { family: "'Inter', sans-serif", size: 11, weight: '600' },
+              color: '#334155',
+              boxWidth: 14
+            }
+          },
+          tooltip: {
+            backgroundColor: '#0f172a',
+            titleColor: '#f8fafc',
+            bodyColor: '#e2e8f0',
+            borderColor: '#334155',
+            borderWidth: 1,
+            titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
+            bodyFont: { family: "'JetBrains Mono', monospace", size: 11 },
+            padding: 8,
+            cornerRadius: 6
+          }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: `Signature Coordinates P (Client 0: P_min = ${P0})`, color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
+            ticks: { maxTicksLimit: 12, color: '#64748b', font: { family: "'JetBrains Mono', monospace", size: 10 } },
+            grid: { color: '#f1f5f9' }
+          },
+          y: {
+            min: 0,
+            max: 1.05,
+            title: { display: true, text: 'Directional Cosine Similarity', color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
+            ticks: { color: '#64748b', font: { family: "'JetBrains Mono', monospace", size: 10 } },
+            grid: { color: '#f1f5f9' }
+          }
+        }
+      }
+    });
+
+    // Trace Table
+    $('trace').innerHTML = `
+      <thead>
+        <tr><th>Step</th><th>lo</th><th>hi</th><th>mid</th><th>cos(mid)</th><th>Feasibility Status</th></tr>
+      </thead>
+      <tbody>
+        ${r.trace.map((t, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${t.lo}</td>
+            <td>${t.hi}</td>
+            <td><strong>${t.mid}</strong></td>
+            <td>${t.cos.toFixed(4)}</td>
+            <td><span class="${t.feasible ? 'yes' : 'no'}">${t.feasible ? '✓ Feasible (hi=mid)' : '✗ Below θ (lo=mid+1)'}</span></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    `;
+
+    // Chart 2: P_mins per client
+    draw('pmins', {
+      type: 'bar',
+      data: {
+        labels: r.p_mins.map((_, i) => 'Client ' + i),
+        datasets: [{
+          label: 'P_min',
+          data: r.p_mins,
+          backgroundColor: r.p_mins.map(p => p <= r.global_p ? '#2563eb' : '#f59e0b'),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          title: {
+            display: true,
+            text: `Network Consensus Shared P = ${r.global_p} (Amber bars require P > shared P)`,
+            color: '#475569',
+            font: { family: "'Inter', sans-serif", size: 12, weight: '600' }
+          },
+          tooltip: {
+            backgroundColor: '#0f172a',
+            titleColor: '#f8fafc',
+            bodyColor: '#e2e8f0',
+            borderColor: '#334155',
+            borderWidth: 1,
+            titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
+            bodyFont: { family: "'JetBrains Mono', monospace", size: 11 },
+            padding: 8,
+            cornerRadius: 6
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#64748b', font: { family: "'JetBrains Mono', monospace", size: 10 } },
+            grid: { display: false }
+          },
+          y: {
+            title: { display: true, text: 'Required P_min', color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
+            ticks: { color: '#64748b', font: { family: "'JetBrains Mono', monospace", size: 10 } },
+            grid: { color: '#f1f5f9' }
+          }
+        }
+      }
+    });
+
+    // Similarity Matrix with Cluster Outlines and Heat Tint
+    $('errline').textContent = `Mean absolute difference between full-model cosine and signature cosine: ${r.mean_abs_err.toFixed(4)}. Cells show sparse cosine (full cosine in parens); clients belong to latent clusters ${JSON.stringify(r.labels)}.`;
+
+    const labels = r.labels || [];
+    let matHtml = '<thead><tr><th>Client</th>' + r.sparse_cos.map((_, j) => `<th>C${j}</th>`).join('') + '</tr></thead><tbody>';
+    
+    for (let i = 0; i < r.sparse_cos.length; i++) {
+      matHtml += `<tr><td style="font-weight:700; text-align:left;">C${i}</td>`;
+      for (let j = 0; j < r.sparse_cos[i].length; j++) {
+        const sVal = r.sparse_cos[i][j];
+        const fVal = r.full_cos[i][j];
+        
+        // Heat Tint calculation
+        const tint = Math.max(0, Math.min(0.35, sVal * 0.35));
+        const bgColor = sVal > 0.05 ? `rgba(37, 99, 235, ${tint.toFixed(3)})` : 'transparent';
+        
+        // Cluster Block Border Outline
+        let borderStyle = '';
+        if (labels.length > 0 && labels[i] !== undefined && labels[j] !== undefined && labels[i] === labels[j]) {
+          const isTop = (i === 0 || labels[i - 1] !== labels[i]);
+          const isBottom = (i === labels.length - 1 || labels[i + 1] !== labels[i]);
+          const isLeft = (j === 0 || labels[j - 1] !== labels[j]);
+          const isRight = (j === labels.length - 1 || labels[j + 1] !== labels[j]);
+          
+          if (isTop) borderStyle += 'border-top: 2px solid #2563eb; ';
+          if (isBottom) borderStyle += 'border-bottom: 2px solid #2563eb; ';
+          if (isLeft) borderStyle += 'border-left: 2px solid #2563eb; ';
+          if (isRight) borderStyle += 'border-right: 2px solid #2563eb; ';
+        }
+
+        matHtml += `<td style="background-color:${bgColor}; ${borderStyle}">${sVal.toFixed(2)} <span class="text-slate-400 font-normal">(${fVal.toFixed(2)})</span></td>`;
+      }
+      matHtml += '</tr>';
+    }
+    matHtml += '</tbody>';
+    $('mat').innerHTML = matHtml;
+
+    // Trigger KaTeX math rendering on updated DOM
+    if (window.renderMathInElement) {
+      renderMathInElement($('tab-sim'), {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+          {left: '\\(', right: '\\)', display: false},
+          {left: '\\[', right: '\\]', display: true}
+        ],
+        throwOnError: false
+      });
+    }
+  }
+  $('run').onclick = run;
+
+  /* --- TAB 2: COST MODEL --- */
+  function updateOverheadLabel() {
+    const val = +$('c_overhead').value;
+    const inputEl = $('c_overhead');
+    if (Math.abs(val - 1.03) < 0.005) {
+      $('lbl_overhead').innerHTML = `Transport overhead factor: 1.03 <span class="tag-derived" style="font-size:0.65rem;">[Derived: paper 38.5 s ÷ 37.4 s]</span>`;
+    } else {
+      $('lbl_overhead').innerHTML = `Transport overhead factor: ${val.toFixed(2)}`;
+    }
+    $('lbl_overhead').appendChild(inputEl);
+  }
+
+  function applyPreset(m, p, bw, k, overhead = 1.03) {
+    $('c_M').value = m;
+    $('c_P_pct').value = p;
+    $('c_bw').value = bw;
+    $('c_K').value = k;
+    $('c_overhead').value = overhead.toFixed(2);
+    updateOverheadLabel();
+    recalcCosts();
+  }
+
+  async function recalcCosts() {
+    const req = {
+      M: +$('c_M').value,
+      P_pct: +$('c_P_pct').value,
+      b_idx: +$('c_bidx').value,
+      b_val: +$('c_bval').value,
+      bw_mb_s: +$('c_bw').value,
+      K: +$('c_K').value,
+      visited_superpeers: +$('c_sp').value,
+      probed_leaves: +$('c_pl').value,
+      leaf_size: +$('c_ls').value,
+      overhead_factor: +$('c_overhead').value
+    };
+
+    try {
+      const res = await fetch('/api/v1/toppaper/costs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req)
+      });
+      if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+      const d = await res.json();
+
+      $('cost-kpis').innerHTML = `
+        <div class="kpi-card">
+          <span class="kpi-val">${d.signature_mb.toFixed(2)} MB</span>
+          <span class="kpi-lbl">Signature Size S_sig (Top-${d.P_pct.toFixed(1)}%) <span class="tag-paper">Paper §3.4</span></span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-val text-slate-700">${d.dense_mb.toFixed(1)} MB</span>
+          <span class="kpi-lbl">Dense FP32 Model Size <span class="tag-paper">Paper §3.4</span></span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-val text-emerald-600">${d.compression_ratio.toFixed(1)}×</span>
+          <span class="kpi-lbl">Compression vs Dense Model</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-val text-amber-600">${d.search_share_pct.toFixed(1)}% <span class="tag-derived" style="font-size:0.65rem;">Derived</span></span>
+          <span class="kpi-lbl">Query (${d.query_cost.seconds.toFixed(2)}s) ÷ Round (${d.effective_round_seconds.toFixed(1)}s)</span>
+        </div>
+      `;
+
+      $('cost-query-detail').innerHTML = `
+        <div>• Total Signatures Exchanged: <strong>${d.query_cost.num_signatures} signatures</strong></div>
+        <div>• Total Control Wire Data: <strong>${d.query_cost.mb.toFixed(1)} MB</strong></div>
+        <div>• Discovery Query Latency: <strong>${d.query_cost.seconds.toFixed(2)} seconds</strong> (at ${d.bandwidth_mb_s} MB/s)</div>
+      `;
+
+      $('cost-pull-detail').innerHTML = `
+        <div>• Model Pulls: <strong>K = ${d.pull_cost.K} downloads + ${d.pull_cost.K} uploads</strong> (20 transfers)</div>
+        <div>• Total Model Traffic: <strong>${d.pull_cost.mb.toFixed(1)} MB</strong></div>
+        <div>• Transfer Time: <strong>${d.pull_cost.seconds.toFixed(1)} s</strong> (Strict baseline: ${(d.pull_cost.mb / d.bandwidth_mb_s).toFixed(1)} s | Reference: <strong>38.5 s</strong> <span class="tag-paper">Paper §3.4</span>)</div>
+      `;
+
+      const tbodyComp = $('cost-comparison-table').querySelector('tbody');
+      tbodyComp.innerHTML = d.comparison_table.map(row => `
+        <tr>
+          <td style="font-weight:700; text-align:left;">${row.protocol}</td>
+          <td>${row.control_traffic}</td>
+          <td>${row.model_traffic}</td>
+          <td>${row.scaling}</td>
+          <td><span class="tag-paper">${row.provenance}</span></td>
+        </tr>
+      `).join('');
+
+      const tbodyCmplx = $('cost-complexity-table').querySelector('tbody');
+      tbodyCmplx.innerHTML = d.complexity_table.map(row => `
+        <tr>
+          <td style="font-weight:700; text-align:left;">${row.operation}</td>
+          <td><code>${row.complexity}</code></td>
+          <td>${row.frequency}</td>
+          <td><span class="${row.provenance.includes('Derived') ? 'tag-derived' : 'tag-paper'}">${row.provenance}</span></td>
+        </tr>
+      `).join('');
+
+    } catch (e) {
+      console.error('Failed to compute costs:', e);
+    }
+  }
+
+  /* --- TAB 3: Q&A / FAQ --- */
+  async function loadFAQ() {
+    try {
+      const res = await fetch('/static/top_p_faq.json');
+      if (!res.ok) throw new Error('Failed to load top_p_faq.json');
+      allFaqData = await res.json();
+
+      const categories = ['All', ...new Set(allFaqData.map(item => item.category))];
+      $('faq-pills').innerHTML = categories.map(c => `
+        <button class="pill ${c === activeCategory ? 'active' : ''}" onclick="setFaqCategory('${c}')">${c}</button>
+      `).join('');
+
+      renderFAQ();
+    } catch (e) {
+      $('faq-container').innerHTML = `<p class="no">Error loading Q&A: ${e.message}</p>`;
+    }
+  }
+
+  function setFaqCategory(cat) {
+    activeCategory = cat;
+    document.querySelectorAll('#faq-pills .pill').forEach(p => {
+      p.classList.toggle('active', p.textContent === cat);
+    });
+    renderFAQ();
+  }
+
+  function filterFAQ() {
+    renderFAQ();
+  }
+
+  function renderFAQ() {
+    const qStr = ($('faq-search').value || '').toLowerCase().trim();
+    const filtered = allFaqData.filter(item => {
+      const matchCat = activeCategory === 'All' || item.category === activeCategory;
+      const matchText = !qStr || item.q.toLowerCase().includes(qStr) || item.a.toLowerCase().includes(qStr);
+      return matchCat && matchText;
+    });
+
+    if (!filtered.length) {
+      $('faq-container').innerHTML = '<div class="paper-card p-4 text-center text-xs text-slate-500 font-mono">No matching Q&A entries found.</div>';
+      return;
+    }
+
+    $('faq-container').innerHTML = filtered.map(item => `
+      <div class="faq-item">
+        <div class="faq-q" onclick="const a = this.nextElementSibling; a.style.display = a.style.display === 'none' ? 'block' : 'none';">
+          <span class="flex items-center gap-2">
+            <span class="text-blue-600 font-mono">Q:</span>
+            <span>${item.q}</span>
+          </span>
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            ${item.refs.map(r => `<span class="${r.includes('Simulator') ? 'tag-sim' : r.includes('Derived') ? 'tag-derived' : 'tag-paper'}">${r.replace(/\[|\]/g, '')}</span>`).join('')}
+            <span class="text-slate-400 text-xs ml-1">▾</span>
+          </div>
+        </div>
+        <div class="faq-a" style="display:block;">
+          ${item.a}
+        </div>
+      </div>
+    `).join('');
+
+    if (window.renderMathInElement) {
+      renderMathInElement($('faq-container'), {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+          {left: '\\(', right: '\\)', display: false},
+          {left: '\\[', right: '\\]', display: true}
+        ],
+        throwOnError: false
+      });
+    }
+  }
+
+  // Initial startup execution
+  document.addEventListener('DOMContentLoaded', () => {
+    run();
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+          {left: '\\(', right: '\\)', display: false},
+          {left: '\\[', right: '\\]', display: true}
+        ],
+        throwOnError: false
+      });
+    }
+  });
+
+  // Fallback initial trigger
+  run();
+  </script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+[
+  {
+    "id": "why-not-full-models",
+    "category": "Motivation",
+    "q": "Why not compare full models directly?",
+    "a": "Full-model pairwise comparison incurs Θ(M) time and Θ(M) network bytes per peer evaluation [Paper §2.3]. For modern neural networks with millions of parameters (e.g., ResNet-18 with M = 11.7M parameters, ~47 MB FP32), evaluating candidate peers across a decentralized network would cause massive network congestion (Θ(n · M) control traffic) [Paper §2.3]. Comparing Top-P compact signatures reduces pairwise comparison cost to O(P) operations over sparse index intersections [Paper §3.2].",
+    "refs": ["[Paper §2.3]", "[Paper §3.2]"]
+  },
+  {
+    "id": "why-magnitude-importance",
+    "category": "Signatures",
+    "q": "Why use parameter magnitude for importance scoring?",
+    "a": "Parameters with large absolute values |w_r| carry the primary directional energy of the local model update and determine the principal semantic hyperplane [Paper §3.2]. Neural network weights exhibit heavy-tailed distributions where a small fraction (10–15%) of coordinates account for over 80–90% of the total vector magnitude [Paper §3.2, App. B.1].",
+    "refs": ["[Paper §3.2]", "[Paper App. B.1]"]
+  },
+  {
+    "id": "why-cosine-masked",
+    "category": "Signatures",
+    "q": "Why evaluate cosine similarity on raw masked vectors without normalization?",
+    "a": "SemanticDFL defines the signature u as the raw masked vector u = mask(w, I), keeping exact coordinate values on selected indices without artificially re-normalizing them beforehand [Paper §3.2]. During peer comparison, the cosine similarity is computed strictly over the index intersection I_i ∩ I_j: cos(u_i, u_j) = (u_i[I_i ∩ I_j] · u_j[I_i ∩ I_j]) / (||u_i||_2 · ||u_j||_2) [Paper §3.2]. This can be merged in O(P) time by traversing sorted indices [Paper §3.2].",
+    "refs": ["[Paper §3.2]"]
+  },
+  {
+    "id": "what-does-beta-ema-do",
+    "category": "Signatures",
+    "q": "What does the smoothing parameter β (EMA) do?",
+    "a": "Parameter importance is updated across training rounds using Exponential Moving Average (EMA): s_r^(t) = β · s_r^(t-1) + (1 - β) · |w_r^(t)| [Paper §3.2]. Setting β ∈ [0.8, 0.95] dampens stochastic mini-batch noise and prevents high-frequency thrashing of selected index sets across consecutive federated learning rounds [Paper §3.2]. Setting β = 0 evaluates raw instantaneous magnitude [Paper §3.2].",
+    "refs": ["[Paper §3.2]"]
+  },
+  {
+    "id": "how-is-p-chosen-binary-search",
+    "category": "Algorithm",
+    "q": "How is P_min chosen and why does binary search work?",
+    "a": "Because Top-P candidate coordinate sets are strictly nested by descending importance score, the cumulative energy c_P = sum_{r=1}^P (w_{(r)})^2 is strictly monotonically non-decreasing in P [Paper §3.2, App. B.1]. The retained directional cosine cos(w, w^[P]) = sqrt(c_P) / ||w||_2 increases monotonically toward 1.0 [Paper App. B.1]. Therefore, Algorithm 1 executes a discrete binary search in O(log M) feasibility checks to find the minimal integer P_min satisfying cos(w, w^[P]) >= θ [Paper App. B.1].",
+    "refs": ["[Paper §3.2]", "[Paper App. B.1]"]
+  },
+  {
+    "id": "why-one-global-p-and-quantile",
+    "category": "Consensus",
+    "q": "Why enforce a single global P and why use a quantile consensus?",
+    "a": "A uniform global P ensures fixed-size signature payloads (O(P · (b_idx + b_val))) across all network packets, deterministic memory allocations on Super-Peers, and symmetric dot-product bounds [Paper §3.2, §3.3]. The network sets global P = min(Quantile_q({P_min^i}), P_max) with q in [0.8, 0.9] so that at least a q-fraction of clients strictly satisfy their target semantic fidelity θ while capping bandwidth overhead [Paper §3.2].",
+    "refs": ["[Paper §3.2]"]
+  },
+  {
+    "id": "quantile-notation-q-vs-1-minus-q",
+    "category": "Consensus",
+    "q": "What is the relationship between the q-quantile and the (1-q) Byzantine tolerance notation?",
+    "a": "They represent the exact same mathematical threshold [Derived]. When framed in terms of Byzantine/Sybil adversary fraction q = 0.20, the system requires consensus across the honest (1 - q) = 0.80 fraction of nodes [Paper §3.2]. In quantile statistics, taking the (1 - 0.20) quantile equals evaluating the 0.80 (80th percentile) value of sorted local P_min reports [Paper §3.2].",
+    "refs": ["[Paper §3.2]", "[Derived]"]
+  },
+  {
+    "id": "what-if-p-too-small-or-large",
+    "category": "Cost model",
+    "q": "What happens if P is too small or too large?",
+    "a": "If P is too small (e.g. P << P_min), signature overlap collapses, causing false-negative similarity estimations and routing to suboptimal training partners [Paper App. E.1]. If P is unnecessarily large (e.g. P > 25%), signature transmission overhead approaches full model size without meaningful semantic ranking improvements [Paper §5.4]. Paper ablation shows ±1 percentage point around optimal P costs only ~0.6 pp median accuracy, confirming a robust operating plateau [Paper App. E.1, Table 4].",
+    "refs": ["[Paper §5.4]", "[Paper App. E.1, Table 4]"]
+  },
+  {
+    "id": "cost-to-build-and-send-signature",
+    "category": "Cost model",
+    "q": "What does one signature cost to construct and transmit?",
+    "a": "Signature construction requires O(M log M) time for sorting and O(M) memory for prefix sums, which is amortized by refreshing indices only once every T_ref rounds [Paper App. B.1]. Between refresh epochs, extracting updated values on fixed indices takes only O(P) time [Derived]. Transmission payload is P · (b_idx + b_val) = 6P bytes (4-byte index + 2-byte FP16 value) [Paper §3.2]. For ResNet-18 at P = 10.8%, this is ~7.24 MB vs ~47 MB for the full dense model (~6.5x compression) [Paper §3.4].",
+    "refs": ["[Paper §3.2]", "[Paper §3.4]", "[Paper App. B.1]", "[Derived]"]
+  },
+  {
+    "id": "building-son-cost-and-amortization",
+    "category": "Overhead",
+    "q": "What does constructing the SON cost, and is it paid every round?",
+    "a": "Constructing the 2-Tier SON overlay involves local zone probing (O(S_Z) messages, O(R) latency), signature aggregation (O(n_z · P) bytes), and intra-zone Affinity Propagation (O(n_z^2 · P)) [Paper §3.3, §4.3, App. D]. Total network build time is Θ(log N) with O(1) per-node control traffic (Proposition 1 & 2) [Paper §4.3]. This topology construction is amortized over multiple federated learning rounds (epoch period T_ref) and is not repeated on every individual gradient step [Paper §3.3].",
+    "refs": ["[Paper §3.3]", "[Paper §4.3]", "[Paper App. D]"]
+  },
+  {
+    "id": "scaling-with-network-size-n",
+    "category": "Overhead",
+    "q": "How does SemanticDFL cost scale with network size N?",
+    "a": "Due to the 2-Tier hierarchical structure, overlay tree depth scales as H = O(log N) with constant zone size S_Z [Paper §4.3]. Super-Peer routing memory is bounded by M_max <= H · S_Z · (S_P + r · S_D) = O((S_P + S_D) · S_Z · log N) (Proposition 3), which requires only a few megabytes and avoids caching full models [Paper §4.3]. Discovery queries require O(P · F · B · H) signature comparisons and O(B · H) messages, avoiding global O(N) broadcasts [Paper §3.4].",
+    "refs": ["[Paper §3.4]", "[Paper §4.3]"]
+  },
+  {
+    "id": "signature-vs-topk-gradient-sparsification",
+    "category": "Architecture",
+    "q": "How does Top-P signature extraction differ from Top-K gradient sparsification?",
+    "a": "In standard Top-K gradient sparsification (e.g. DGC, Deep Gradient Compression), sparse vectors are directly averaged into global weights, requiring error-feedback accumulation buffers [Derived]. In SemanticDFL, Top-P signatures are strictly a routing mechanism used to discover semantically aligned peers across the overlay network [Paper §3.2, §3.4]. Once the top K matching peers are identified, full model weights are pulled for similarity-weighted FedAvg aggregation [Paper §3.4].",
+    "refs": ["[Paper §3.2]", "[Paper §3.4]", "[Derived]"]
+  },
+  {
+    "id": "does-approximation-hurt-accuracy",
+    "category": "Accuracy",
+    "q": "Does approximate Top-P matching degrade final federated model accuracy?",
+    "a": "No. Empirical evaluations across vision (FMNIST, Tiny-ImageNet), speech (Google-Speech), and NLP (20Newsgroup, ALBERT) show that SON-retrieved peer matching achieves accuracy within 0.3–0.8 percentage points of a centralized oracle with full-model knowledge [Paper App. E.1, Table 4]. Retrieval Recall@K ranges from 0.88 to 1.00 [Paper §5.4, Table 6].",
+    "refs": ["[Paper §5.4, Table 6]", "[Paper App. E.1, Table 4]"]
+  },
+  {
+    "id": "privacy-and-data-leakage",
+    "category": "Security",
+    "q": "Are Top-P signatures private and what are the security guarantees?",
+    "a": "Signatures do not contain raw training samples; they expose only sparse parameter indices and magnitudes over authenticated and encrypted overlay links [Paper §2.4, §2.5]. While significantly more private than sharing data or raw activations, the protocol does not provide formal differential privacy guarantees on coordinate indices [Paper §2.4, §2.5]. Churn and Byzantine attacks are mitigated through VRF deterministic leader election and (1-q) quantile consensus [Paper §3.1, §3.2].",
+    "refs": ["[Paper §2.4]", "[Paper §2.5]", "[Paper §3.1]"]
+  },
+  {
+    "id": "storyboard-vs-paper-regime",
+    "category": "Simulator",
+    "q": "Why does the 10-node storyboard use P = 3 of 10 while the paper uses ~10% of millions of parameters?",
+    "a": "The 10-node storyboard is a pedagogical discrete state machine designed to demonstrate all 34 protocol stages deterministically on CIFAR-10 class vectors (M = 10 classes) [Simulator]. Setting P = 3 corresponds to selecting the top 3 dominant classes (30% of dimension) with θ = 0.70 for transparent visual inspection [Simulator]. The paper's real-world regime applies this exact same mathematical algorithm to deep neural networks with M = 10^6–10^8 parameters where P is typically 10–13% [Paper §3.4].",
+    "refs": ["[Simulator]", "[Paper §3.4]"]
+  },
+  {
+    "id": "how-is-son-share-computed",
+    "category": "Overhead",
+    "q": "How is the SON search share of round time computed?",
+    "a": "The SON overhead share is defined as: Share = (T_search) / (T_search + T_pull + T_comp) * 100% [Paper §3.4, §5.4]. In the worked example (ResNet-18, 200 Mbps), query search takes ~4.4–5.3 s and pulling+serving K=10 models takes ~38.5 s, giving a search share <= 12.59% [Paper §3.4]. In physical hardware benchmarks, measured SON overhead averages ~8.0% of total round time across all datasets [Paper §5.4, Table 12].",
+    "refs": ["[Paper §3.4]", "[Paper §5.4, Table 12]"]
+  }
+]

@@ -1,0 +1,414 @@
+/* ==========================================================================
+   SemanticDFL Top-P Signature Deep-Dive & Cost Lab Stylesheet
+   Academic Paper Theme matching Storyboard Simulator (ACM 2026)
+   All selectors strictly scoped under body.top-p-page
+   ========================================================================== */
+
+/* Allow smooth scrolling for full documentation pages */
+html:has(body.top-p-page),
+body.top-p-page {
+  height: auto !important;
+  min-height: 100vh !important;
+  max-height: none !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+/* Main Container Constraints */
+.top-p-page .top-p-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 3.5rem;
+}
+
+/* Header & Tabs */
+.top-p-page header.paper-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-light);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.top-p-page .tab-btn {
+  background: #ffffff;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all 0.15s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.top-p-page .tab-btn:hover {
+  background: var(--bg-card-subtle);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.top-p-page .tab-btn.active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: var(--brand-blue);
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* Tab Panels Animation */
+.top-p-page .tab-content {
+  display: none;
+}
+.top-p-page .tab-content.active {
+  display: block;
+  animation: topPFadeIn 0.15s ease-in-out;
+}
+@keyframes topPFadeIn {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cards & Sections */
+.top-p-page .paper-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 0.75rem;
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+}
+
+.top-p-page .panel-header {
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 0.65rem;
+  margin-bottom: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.top-p-page .panel-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Provenance Badges */
+.top-p-page .tag-paper {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.12rem 0.45rem;
+  border-radius: 0.375rem;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.top-p-page .tag-derived {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.12rem 0.45rem;
+  border-radius: 0.375rem;
+  background: #fefce8;
+  color: #a16207;
+  border: 1px solid #fef08a;
+}
+
+.top-p-page .tag-sim {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.12rem 0.45rem;
+  border-radius: 0.375rem;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+/* Stat & KPI Cards */
+.top-p-page .kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.top-p-page .kpi-card {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 0.625rem;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+.top-p-page .kpi-val {
+  font-family: var(--font-mono);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--brand-blue);
+  line-height: 1.2;
+}
+
+.top-p-page .kpi-lbl {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  margin-top: 0.25rem;
+}
+
+/* Input Form Controls */
+.top-p-page label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+}
+
+.top-p-page input[type="number"],
+.top-p-page input[type="text"],
+.top-p-page select {
+  background: #ffffff;
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: all 0.15s ease-in-out;
+}
+
+.top-p-page input:focus,
+.top-p-page select:focus {
+  outline: none;
+  border-color: var(--brand-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+/* Preset Action Chips */
+.top-p-page .preset-btn {
+  background: #ffffff;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.top-p-page .preset-btn:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+/* Math Containers & Formula Cards */
+.top-p-page .top-p-formula-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid var(--border-strong);
+  border-left: 4px solid var(--brand-blue);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0 0.85rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.top-p-page .katex-display {
+  margin: 0.35rem 0 !important;
+  font-size: 0.92rem;
+}
+
+/* Scientific Table Styles */
+.top-p-page .table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-light);
+  border-radius: 0.5rem;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.top-p-page table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.73rem;
+}
+
+.top-p-page th {
+  background: #f8fafc;
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border-strong);
+  padding: 0.45rem 0.7rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.top-p-page th:first-child,
+.top-p-page td:first-child {
+  text-align: left;
+}
+
+.top-p-page td {
+  border-bottom: 1px solid var(--border-light);
+  padding: 0.45rem 0.7rem;
+  color: var(--text-primary);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.top-p-page tr:last-child td {
+  border-bottom: none;
+}
+
+.top-p-page .yes {
+  color: #047857;
+  background: #ecfdf5;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.25rem;
+  border: 1px solid #a7f3d0;
+  display: inline-block;
+}
+
+.top-p-page .no {
+  color: #b45309;
+  background: #fffbeb;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.25rem;
+  border: 1px solid #fef08a;
+  display: inline-block;
+}
+
+/* Similarity Matrix Formatting */
+.top-p-page #mat td {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-align: center;
+  padding: 0.4rem 0.5rem;
+  transition: transform 0.1s ease;
+}
+
+.top-p-page #mat th {
+  text-align: center;
+  padding: 0.4rem 0.5rem;
+}
+
+/* FAQ Accordion */
+.top-p-page .faq-item {
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 0.625rem;
+  margin-bottom: 0.6rem;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.15s;
+}
+
+.top-p-page .faq-item:hover {
+  border-color: var(--border-strong);
+}
+
+.top-p-page .faq-q {
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fcfdfe;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.top-p-page .faq-q:hover {
+  color: var(--brand-blue);
+  background: #f8fafc;
+}
+
+.top-p-page .faq-a {
+  padding: 0.85rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.65;
+  border-top: 1px solid var(--border-light);
+  background: #ffffff;
+}
+
+.top-p-page .pill {
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  border: 1px solid var(--border-light);
+  background: #ffffff;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.top-p-page .pill:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  background: var(--bg-card-subtle);
+}
+
+.top-p-page .pill.active {
+  background: #eff6ff;
+  color: var(--brand-blue);
+  border-color: #93c5fd;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* Accessibility & Motion */
+@media (prefers-reduced-motion: reduce) {
+  .top-p-page * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
