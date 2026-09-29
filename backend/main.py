@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from backend.engine import SemanticDFLEngine, load_step1_data
+from backend.top_p_router import router as top_p_router
 from backend.config import TOTAL_NODES, CANONICAL_EDGES, NODE_DATA_DISTRIBUTIONS
 from backend.storyboard_10nodes import (
     get_10node_config,
@@ -87,6 +88,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(top_p_router)
 
 # Global in-memory session store
 session_store = SessionStore()
