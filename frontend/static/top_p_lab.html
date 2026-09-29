@@ -466,7 +466,7 @@
             <button class="pill" onclick="switchPaperSection('sec-lifecycle', this)">🔄 10-Stage Protocol &amp; Costs (S1–S9)</button>
             <button class="pill" onclick="switchPaperSection('sec-accuracy', this)">🎯 16-Scenario Accuracy (S11 Tbl 2)</button>
             <button class="pill" onclick="switchPaperSection('sec-convergence', this)">⚡ Speed &amp; Churn (S10 Tbl 3 &amp; 7)</button>
-            <button class="pill" onclick="switchPaperSection('sec-theory', this)">📐 Theorems &amp; Proofs (S11)</button>
+            <button class="pill opacity-60 hover:opacity-100" onclick="switchPaperSection('sec-theory', this)">📐 Theorems &amp; Proofs (Hidden)</button>
             <button class="pill" onclick="switchPaperSection('sec-caveats', this)">🔍 Caveats &amp; Audit (S13 &amp; S14)</button>
           </div>
           <span class="text-[11px] font-mono text-slate-500">Dogani et al. (ACM 2026)</span>
@@ -1236,15 +1236,25 @@
         </div>
       </div>
 
-      <!-- SECTION 5: THEORETICAL INVARIANTS & FORMAL PROOFS (S11) -->
+            <!-- SECTION 5: THEORETICAL INVARIANTS & FORMAL PROOFS (S11 & S5) [TEMPORARILY HIDDEN] -->
       <div id="sec-theory" class="paper-section space-y-4">
-        <div class="paper-panel">
+        <div class="paper-panel border-dashed border-slate-300 bg-slate-50/50">
           <div class="panel-header">
-            <span class="panel-title"><span>📐</span><span>S11 &amp; S5 — Theoretical Guarantees, Stationarity Rates &amp; Asymptotic Bounds</span></span>
-            <span class="tag-paper">Paper §4, App. A, C, D</span>
+            <div class="flex items-center gap-2">
+              <span class="panel-title text-slate-500"><span>📐</span><span>S11 &amp; S5 — Theoretical Guarantees, Stationarity Rates &amp; Asymptotic Bounds</span></span>
+              <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-amber-100 text-amber-800 border border-amber-300">FEATURE IMPLEMENTED — CURRENTLY HIDDEN</span>
+            </div>
+            <button class="preset-btn text-[11px] flex items-center gap-1" onclick="toggleTheoryProofs(this)">
+              <span>👁️</span><span>Toggle View Proofs</span>
+            </button>
           </div>
 
-          <div class="space-y-4 text-xs leading-relaxed text-slate-700 font-sans">
+          <p class="text-xs text-slate-600 font-sans">
+            Formal mathematical proofs, stationarity error floor convergence rates ($O(1/\sqrt{T})$ in Theorem 1), graph mis-aggregation bias lower bounds (Theorem 2), selection deviation bounds (Lemma 1), and asymptotic scaling invariants (Propositions 1–3) from the research paper are fully documented in <code class="text-blue-700 font-mono">PAPER_COSTS.md</code> and codebase, but are currently hidden for a streamlined presentation.
+          </p>
+
+          <!-- Hidden Math Formulas Container (Collapsible) -->
+          <div id="theory-proofs-content" style="display: none;" class="space-y-4 text-xs leading-relaxed text-slate-700 font-sans pt-3 border-t border-slate-200 mt-3">
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               
@@ -1258,10 +1268,11 @@
                   Under standard nonconvex assumptions and step size $\eta \le 1/(2L_s)$, SemanticDFL converges at rate $O(1/\sqrt{T})$ to a bounded stationary error floor:
                 </p>
                 <div class="font-mono text-blue-900 bg-white p-1.5 rounded border text-[11px] text-center">
-                  $$\frac{1}{T} \sum_{t=0}^{T-1} \mathbb{E}\|\nabla F_i(w_i^{(t)})\|^2 \le \frac{2(F_i(w_i^{(0)}) - F_i^*)}{\eta T} + \frac{2\eta \sigma^2}{K_{\text{eff}}} + 8\zeta_i^2$$
+                  $$rac{1}{T} \sum_{t=0}^{T-1} \mathbb{E}\|
+abla F_i(w_i^{(t)})\|^2 \le rac{2(F_i(w_i^{(0)}) - F_i^*)}{\eta T} + rac{2\eta \sigma^2}{K_{	ext{eff}}} + 8\zeta_i^2$$
                 </div>
                 <p class="text-slate-500 text-[10px]">
-                  Where $\zeta_i$ shrinks monotonically as Recall@K $r_t \to 1$ and reply staleness $\Delta_{\max}$ tightens.
+                  Where $\zeta_i$ shrinks monotonically as Recall@K $r_t 	o 1$ and reply staleness $\Delta_{\max}$ tightens.
                 </p>
               </div>
 
@@ -1275,7 +1286,7 @@
                   Static graph mixing (e.g., DPFL/Gossip) suffers from an irreducible personalization bias growing with spectral gap $\lambda_2(L)$ and smoothing weight $\gamma$:
                 </p>
                 <div class="font-mono text-blue-900 bg-white p-1.5 rounded border text-[11px] text-center">
-                  $$\frac{1}{|V|} \sum_i \|w_i^\gamma - w_i^*\|^2 \ge c_1 \left( \frac{\gamma \lambda_2(L)}{\mu + 4\gamma d_{\max}} \right)^2 \delta^2 - c_2 \epsilon^2$$
+                  $$rac{1}{|V|} \sum_i \|w_i^\gamma - w_i^*\|^2 \ge c_1 \left( rac{\gamma \lambda_2(L)}{\mu + 4\gamma d_{\max}} ight)^2 \delta^2 - c_2 \epsilon^2$$
                 </div>
                 <p class="text-slate-500 text-[10px]">
                   Proves that oblivious graph mixing forces unwanted consensus across heterogeneous clusters, justifying SemanticDFL's pull-based top-$K$ semantic routing.
@@ -1303,8 +1314,8 @@
                   <span class="tag-paper">Paper §3.3.3, App. D</span>
                 </div>
                 <ul class="text-[11px] text-slate-600 space-y-1 font-mono">
-                  <li>• <strong>Prop 1 (Control Cost):</strong> Per-node cost is $O(1)$; total network control bytes $C_{\text{tot}} = O(N)$.</li>
-                  <li>• <strong>Prop 2 (Build Latency):</strong> End-to-end creation time $T_{\text{build}} = \Theta(\log_{S_Z} N) = O(\log N)$.</li>
+                  <li>• <strong>Prop 1 (Control Cost):</strong> Per-node cost is $O(1)$; total network control bytes $C_{	ext{tot}} = O(N)$.</li>
+                  <li>• <strong>Prop 2 (Build Latency):</strong> End-to-end creation time $T_{	ext{build}} = \Theta(\log_{S_Z} N) = O(\log N)$.</li>
                   <li>• <strong>Prop 3 (Super-Peer Memory):</strong> Stored state $M_{\max} \le H S_Z (S_P + r S_D) = O((S_P+S_D)S_Z \log N)$.</li>
                 </ul>
               </div>
@@ -2759,6 +2770,31 @@
         ],
         throwOnError: false
       });
+    }
+  }
+
+
+  // Toggle visibility of theoretical proofs
+  function toggleTheoryProofs(btn) {
+    const el = document.getElementById('theory-proofs-content');
+    if (!el) return;
+    if (el.style.display === 'none' || !el.style.display) {
+      el.style.display = 'block';
+      if (btn) btn.innerHTML = '<span>🙈</span><span>Hide Proofs</span>';
+      if (window.renderMathInElement) {
+        renderMathInElement(el, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\(', right: '\)', display: false},
+            {left: '\[', right: '\]', display: true}
+          ],
+          throwOnError: false
+        });
+      }
+    } else {
+      el.style.display = 'none';
+      if (btn) btn.innerHTML = '<span>👁️</span><span>Toggle View Proofs</span>';
     }
   }
 
