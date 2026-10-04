@@ -2,7 +2,7 @@
 
 > **Project Name:** SemanticVisual (SemanticDFL Protocol Simulator & Interactive Visualizer)  
 > **Based on:** ACM 2026 Decentralized Federated Learning with Semantic Clustering & Overlay Networks  
-> **Status:** Production-Ready Simulator (34/34 Protocol Steps Implemented, 306 Passing Tests)  
+> **Status:** Production-Ready Simulator (34/34 Protocol Steps Implemented, 309 Passing Tests)  
 > **Last Updated:** October 2026  
 
 ---
@@ -99,6 +99,7 @@ SemanticVisual/
 │   ├── test_dual_layout_switcher.py# Tests for Physical vs Overlay layout toggle
 │   ├── test_phase1.py ... test_phase4.py # Phase-based integration tests
 │   ├── test_step1_*.py ... test_step34_*.py # Step-by-step unit tests (34 distinct step test files)
+│   ├── test_top_p_cnn_ui.py        # Contract tests for Top-P CNN weights endpoint & UI slices
 │   ├── test_top_p_costs.py         # Cost model analytical verification tests
 │   ├── test_top_p_lab.py           # Top-P algorithmic & cosine similarity tests
 │   ├── test_top_p_worked_example.py# Step-by-step numerical verification tests
@@ -278,7 +279,7 @@ The visualizer dashboard (`frontend/static/app.js` and `index.html`) is structur
 
 ## 8. Test Suite & Verification
 
-The test suite contains **311 test items** (306 passing, 5 skipped) across 48 test files covering all 34 steps, API endpoints, serialization contracts, clustering math, cost models, worked examples, CIFAR-10 CNN flattening, and UI rendering payloads.
+The test suite contains **314 test items** (309 passing, 5 skipped) across 49 test files covering all 34 steps, API endpoints, serialization contracts, clustering math, cost models, worked examples, CIFAR-10 CNN flattening, and UI rendering payloads.
 
 ### Running Tests
 To run the complete test suite:
@@ -290,6 +291,9 @@ To run tests for a specific step or module:
 ```bash
 # Run CIFAR-10 CNN, flattening & serialization tests
 pytest tests/test_cifar_cnn.py
+
+# Run Top-P CNN UI & weights endpoint tests
+pytest tests/test_top_p_cnn_ui.py
 
 # Run tests for Step 4 (Initiator Election)
 pytest tests/test_step4_election.py
@@ -370,20 +374,22 @@ The **Top-P Deep-Dive** module is a self-contained, additive area within the Sem
 ### File List
 - `backend/top_p_lab.py`: Standalone algorithmic engine implementing EMA importance scoring ($s = \beta \cdot s_{\text{prev}} + (1-\beta)|w|$), binary search for minimal $P$ ($\cos = \sqrt{c_P} / \|w\|_2$), discrete $(1-q)$ quantile consensus, raw masked signature extraction, and sparse cosine similarity over index intersections.
 - `backend/top_p_costs.py`: Pure mathematical cost model calculating signature bytes, dense bytes, hierarchical discovery query overhead ($15$ signatures), pull + serve model transfers ($2K$ models), and round search share.
-- `backend/top_p_router.py`: Dedicated FastAPI router mounted at `/api/v1/toppaper`.
+- `backend/top_p_router.py`: Dedicated FastAPI router mounted at `/api/v1/toppaper` (includes `GET /cnn-weights` inspector endpoint).
 - `frontend/static/top_p_lab.html`: Interactive 5-tab user interface:
   1. **Simulation Lab:** Synthetic parameter extraction, binary search trace, quantile consensus, and full vs. sparse cosine ranking heatmap.
-  2. **Cost Model & Sizing:** Interactive parameter sizing calculator with presets (ResNet-18, CIFAR-10, BERT-Base, MobileNetV2), complexity tables, and discovery share metrics.
-  3. **Q&A & Theory:** Searchable, categorized FAQ accordion with provenance tags.
-  4. **Simulator Scope:** Implementation boundaries and mathematical scope clarification.
-  5. **Worked Example:** 7-step vertical stepper walkthrough with concrete substituted numbers, KaTeX formula cards, sorted $|w|$ and $\cos(P)$ charts, and an in-browser pure JS "Try your own 10 weights" sandbox.
+  2. **Top-P CNN:** Real CIFAR-10 model parameter inspector introspecting the true $M = 2,156,490$ parameter vector, dual-slice view (Head / Tail), top-magnitude parameters, and layer breakdown.
+  3. **Paper Models & Savings:** Comprehensive paper cost, savings, and 16-scenario non-IID benchmark accuracy reference.
+  4. **Q&A & Theory:** Searchable, categorized FAQ accordion with provenance tags.
+  5. **Worked Example:** 7-step vertical stepper walkthrough with concrete substituted numbers, KaTeX formula cards, sorted $|w|$ and $\cos(P)$ charts.
 - `frontend/static/top_p_lab.css`: Scoped stylesheet for the Deep-Dive Lab (design tokens, stepper cards, provenance badges, KPI cards).
 - `frontend/static/top_p_faq.json`: Externalized, editable Q&A data source with explicit provenance tags (`[Paper §x]`, `[Derived]`, `[Simulator]`).
 - `tests/test_top_p_lab.py`: Pytest suite for Top-P algorithmic functions and sparse cosine accuracy.
 - `tests/test_top_p_costs.py`: Pytest suite verifying cost calculations against paper worked examples, schema validations, and FAQ integrity.
 - `tests/test_top_p_worked_example.py`: Pytest suite verifying the exact numerical results of the 7-step worked example against `backend.top_p_lab`.
+- `tests/test_top_p_cnn_ui.py`: Pytest suite verifying `GET /api/v1/toppaper/cnn-weights` contract, slice boundaries, and layer mapping.
 
 ### Route List
+- `GET /api/v1/toppaper/cnn-weights`: Returns true flattened model parameters (Head, Tail, Top-K magnitude) and layer slice boundaries from `output/models/cifar10_flat_parameters.pt`.
 - `POST /api/v1/toppaper/run`: Executes synthetic parameter extraction, binary search trace, quantile consensus, and full vs. sparse cosine ranking matrices.
 - `POST /api/v1/toppaper/costs`: Computes communication wire sizes (in MiB reported as MB), transfer latencies at specified bandwidths, compression ratios, protocol comparison tables, and complexity breakdowns.
 

@@ -72,14 +72,17 @@
       <button class="tab-btn active" onclick="showTab('tab-sim', this)">
         <span>1.</span><span>Simulation Lab</span>
       </button>
+      <button class="tab-btn" onclick="showTab('tab-cnn', this)">
+        <span>2.</span><span>Top-P CNN</span>
+      </button>
       <button class="tab-btn" onclick="showTab('tab-scope', this)">
-        <span>2.</span><span>Paper Models &amp; Savings</span>
+        <span>3.</span><span>Paper Models &amp; Savings</span>
       </button>
       <button class="tab-btn" onclick="showTab('tab-faq', this)">
-        <span>3.</span><span>Q&amp;A &amp; Theory</span>
+        <span>4.</span><span>Q&amp;A &amp; Theory</span>
       </button>
       <button class="tab-btn" onclick="showTab('tab-worked', this)">
-        <span>4.</span><span>Worked Example</span>
+        <span>5.</span><span>Worked Example</span>
       </button>
     </nav>
 
@@ -95,9 +98,9 @@
   <!-- Mobile Tab Switcher -->
   <div class="md:hidden px-6 pt-3 pb-1 flex flex-wrap gap-1.5 bg-white border-b border-slate-200">
     <button class="tab-btn active text-xs" onclick="showTab('tab-sim', this)">1. Simulation Lab</button>
-    <button class="tab-btn text-xs" onclick="showTab('tab-cost', this)">2. Cost Model</button>
-    <button class="tab-btn text-xs" onclick="showTab('tab-faq', this)">3. Q&amp;A</button>
-    <button class="tab-btn text-xs" onclick="showTab('tab-scope', this)">4. Paper Models</button>
+    <button class="tab-btn text-xs" onclick="showTab('tab-cnn', this)">2. Top-P CNN</button>
+    <button class="tab-btn text-xs" onclick="showTab('tab-scope', this)">3. Paper Models</button>
+    <button class="tab-btn text-xs" onclick="showTab('tab-faq', this)">4. Q&amp;A</button>
     <button class="tab-btn text-xs" onclick="showTab('tab-worked', this)">5. Worked Example</button>
   </div>
 
@@ -244,8 +247,189 @@
 
     </div>
 
-    <!-- TAB 2: PAPER MODELS & SAVINGS -->
-        <!-- TAB 2: PAPER MODELS & SAVINGS (COMPREHENSIVE PAPER COST & SAVINGS REFERENCE) -->
+    <!-- TAB 2: TOP-P CNN PARAMETER INSPECTOR -->
+    <div id="tab-cnn" class="tab-content space-y-4">
+      
+      <!-- Narrative Title Card -->
+      <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-emerald-100 text-emerald-800">REAL CIFAR-10 MODEL INSPECTOR</span>
+              <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-100 text-blue-800">PAPER §5.1 BENCHMARK</span>
+              <h2 class="text-sm font-bold text-slate-900">Top-P CNN — Real-World Flattened Parameter Vector Inspector</h2>
+            </div>
+            <p class="text-xs text-slate-600 font-sans mt-1">
+              Directly introspects and slices the authentic flattened parameter vector ($M = 2,156,490$ parameters) from <code class="font-mono text-blue-700 font-bold">output/models/cifar10_flat_parameters.pt</code>. Maps every individual weight coordinate to its canonical origin layer (<code class="font-mono">conv1</code>, <code class="font-mono">conv2</code>, <code class="font-mono">fc1</code>, <code class="font-mono">fc2</code>) with zero approximation.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="loadCnnWeights()" class="btn-primary px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shadow-sm">
+              <span>⚡</span><span>Reload Model Parameters</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telemetry HUD KPI Cards -->
+      <div class="kpis" id="cnn-telemetry-kpis">
+        <div class="kpi-card border-blue-200 bg-blue-50/20">
+          <div class="flex items-center justify-between">
+            <span class="kpi-val text-blue-700" id="cnn-kpi-total">2,156,490</span>
+            <span class="tag-paper">Paper §5.1</span>
+          </div>
+          <span class="kpi-lbl">Total Flattened Parameters ($M = 2.15\text{ M}$ FP32 ~8.63 MB)</span>
+        </div>
+
+        <div class="kpi-card border-emerald-200 bg-emerald-50/20">
+          <div class="flex items-center justify-between">
+            <span class="kpi-val text-emerald-700" id="cnn-kpi-norm">12.8724</span>
+            <span class="tag-derived">$\|W\|_2$ Norm</span>
+          </div>
+          <span class="kpi-lbl">Euclidean Weight Magnitude for Directional Cosine Projection</span>
+        </div>
+
+        <div class="kpi-card border-purple-200 bg-purple-50/20">
+          <div class="flex items-center justify-between">
+            <span class="kpi-val text-purple-700">2-Conv + 2-FC</span>
+            <span class="tag-paper">CIFAR-10</span>
+          </div>
+          <span class="kpi-lbl">Topology: $3\text{ch} \to 32\text{ch} \to 64\text{ch} \to 512\text{fc} \to 10\text{logits}$</span>
+        </div>
+
+        <div class="kpi-card border-amber-200 bg-amber-50/20">
+          <div class="flex items-center justify-between">
+            <span class="kpi-val text-amber-700 text-xs font-mono truncate" id="cnn-kpi-artifact">cifar10_flat_parameters.pt</span>
+            <span class="tag-paper bg-emerald-50 text-emerald-700 border-emerald-200">Loaded</span>
+          </div>
+          <span class="kpi-lbl">Artifact State: Canonical Order Slices Verified</span>
+        </div>
+      </div>
+
+      <!-- Layer Breakdown & Continuous Index Map -->
+      <div class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title"><span>🗺️</span><span>Layer Distribution &amp; 1D Parameter Slice Map</span></span>
+          <span class="text-[11px] font-mono text-slate-500">Continuous Slices $[0, 2156490)$</span>
+        </div>
+        <p class="text-xs text-slate-600 font-sans mb-3">
+          Every parameter in the 1D flat tensor is indexed consecutively according to the canonical layer sequence from the paper's mathematical formulation:
+        </p>
+        <!-- Segmented Visual Progress Bar -->
+        <div class="w-full h-5 rounded-md overflow-hidden flex border border-slate-300 shadow-inner mb-3" id="cnn-layer-bar">
+          <!-- Populated dynamically via JS -->
+        </div>
+        <!-- Layer Details Table -->
+        <div class="table-wrap">
+          <table id="cnn-layer-table">
+            <thead>
+              <tr>
+                <th class="sticky-col text-left">Layer Name</th>
+                <th class="text-left">Tensor Shape</th>
+                <th class="text-right">Parameter Count</th>
+                <th class="text-center">Global Slice $[start, end)$</th>
+                <th class="text-right">Share of Model</th>
+              </tr>
+            </thead>
+            <tbody id="cnn-layer-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Interactive Slice Controls Toolbar -->
+      <div class="paper-panel py-2.5">
+        <div class="flex items-center justify-between flex-wrap gap-2.5">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">Display Mode:</span>
+            <button id="cnn-filter-all" type="button" class="pill active" onclick="switchCnnView('all', this)">🌐 All Slices (Head + Tail + Top-K)</button>
+            <button id="cnn-filter-head" type="button" class="pill" onclick="switchCnnView('head', this)">◀ First 15 (Head / Conv1)</button>
+            <button id="cnn-filter-tail" type="button" class="pill" onclick="switchCnnView('tail', this)">▶ Last 15 (Tail / FC2)</button>
+            <button id="cnn-filter-top" type="button" class="pill" onclick="switchCnnView('top', this)">⭐ Top 20 Magnitude</button>
+          </div>
+          <div class="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-md border border-slate-200 text-xs">
+            <label class="flex items-center gap-1">
+              <span class="text-slate-600 font-mono text-[11px]">Head:</span>
+              <input id="cnn-inp-head" type="number" min="5" max="100" value="15" class="w-12 px-1 py-0.5 text-xs font-mono text-center bg-white border border-slate-300 rounded" onchange="loadCnnWeights()" />
+            </label>
+            <label class="flex items-center gap-1">
+              <span class="text-slate-600 font-mono text-[11px]">Tail:</span>
+              <input id="cnn-inp-tail" type="number" min="5" max="100" value="15" class="w-12 px-1 py-0.5 text-xs font-mono text-center bg-white border border-slate-300 rounded" onchange="loadCnnWeights()" />
+            </label>
+            <label class="flex items-center gap-1">
+              <span class="text-slate-600 font-mono text-[11px]">Top-K:</span>
+              <input id="cnn-inp-topk" type="number" min="5" max="100" value="20" class="w-12 px-1 py-0.5 text-xs font-mono text-center bg-white border border-slate-300 rounded" onchange="loadCnnWeights()" />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- DUAL SLICE VIEW: HEAD & TAIL -->
+      <div id="cnn-sec-dualslice" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        
+        <!-- Head Panel (First Parameters) -->
+        <div class="paper-panel">
+          <div class="panel-header">
+            <span class="panel-title text-blue-900"><span>◀</span><span>First Parameters (Head Slice — Conv1)</span></span>
+            <span class="tag-paper bg-blue-50 text-blue-700 border-blue-200" id="cnn-head-badge">Indices #0 to #14</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mb-2.5">
+            Initial convolutional filters capturing low-level spatial edges and color contrasts in the CIFAR-10 input image.
+          </p>
+          <div id="cnn-head-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <!-- Dynamically populated tiles -->
+          </div>
+        </div>
+
+        <!-- Tail Panel (Last Parameters) -->
+        <div class="paper-panel">
+          <div class="panel-header">
+            <span class="panel-title text-purple-900"><span>▶</span><span>Last Parameters (Tail Slice — FC2)</span></span>
+            <span class="tag-paper bg-purple-50 text-purple-700 border-purple-200" id="cnn-tail-badge">Indices #2156475 to #2156489</span>
+          </div>
+          <p class="text-[11px] text-slate-500 mb-2.5">
+            Final linear classification head and bias coordinates mapping dense representations to the 10 CIFAR-10 class logits.
+          </p>
+          <div id="cnn-tail-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <!-- Dynamically populated tiles -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TOP ABSOLUTE MAGNITUDE PANEL -->
+      <div id="cnn-sec-topmagnitude" class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title text-amber-900"><span>⭐</span><span>Top Absolute Magnitude Parameters (Highest Importance)</span></span>
+          <span class="tag-paper bg-amber-50 text-amber-800 border-amber-200" id="cnn-top-badge">Top 20 Coordinates</span>
+        </div>
+        <p class="text-xs text-slate-600 font-sans mb-3">
+          These coordinates possess the highest absolute numerical values in the network and are the prime candidates selected by the Top-$P$ signature algorithm ($I = \operatorname{argtop}_P(s)$):
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="sticky-col text-left">Rank</th>
+                <th class="text-left">Global Flat Index</th>
+                <th class="text-left">Origin Layer</th>
+                <th class="text-right">Float32 Value</th>
+                <th class="text-right">Absolute Magnitude $|w_i|$</th>
+                <th class="text-center">Relative Strength</th>
+              </tr>
+            </thead>
+            <tbody id="cnn-top-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 3: PAPER MODELS & SAVINGS -->
+    <!-- TAB 3: PAPER MODELS & SAVINGS (COMPREHENSIVE PAPER COST & SAVINGS REFERENCE) -->
     <div id="tab-scope" class="tab-content space-y-4">
       
       <!-- Academic Paper Header & Reference Card -->
@@ -1689,6 +1873,7 @@
       }
     });
 
+    if (tabId === 'tab-cnn' && !cnnWeightsData) { loadCnnWeights(); }
     if (tabId === 'tab-cost' && !$('cost-kpis').innerHTML) { recalcCosts(); }
     if (tabId === 'tab-faq' && !allFaqData.length) { loadFAQ(); }
     if (tabId === 'tab-worked') { initWorkedExample(); }
@@ -2428,6 +2613,197 @@
     } else {
       el.style.display = 'none';
       if (btn) btn.innerHTML = '<span>👁️</span><span>Toggle View Proofs</span>';
+    }
+  }
+
+  /* --- TAB 2: TOP-P CNN PARAMETER INSPECTOR --- */
+  let cnnWeightsData = null;
+
+  const LAYER_COLOR_MAP = {
+    'conv1.weight': { bg: 'bg-sky-50', text: 'text-sky-800', border: 'border-sky-300', hex: '#0284c7' },
+    'conv1.bias':   { bg: 'bg-cyan-50', text: 'text-cyan-800', border: 'border-cyan-300', hex: '#06b6d4' },
+    'conv2.weight': { bg: 'bg-indigo-50', text: 'text-indigo-800', border: 'border-indigo-300', hex: '#6366f1' },
+    'conv2.bias':   { bg: 'bg-violet-50', text: 'text-violet-800', border: 'border-violet-300', hex: '#8b5cf6' },
+    'fc1.weight':   { bg: 'bg-purple-50', text: 'text-purple-800', border: 'border-purple-300', hex: '#a855f7' },
+    'fc1.bias':     { bg: 'bg-fuchsia-50', text: 'text-fuchsia-800', border: 'border-fuchsia-300', hex: '#d946ef' },
+    'fc2.weight':   { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-300', hex: '#f59e0b' },
+    'fc2.bias':     { bg: 'bg-rose-50', text: 'text-rose-800', border: 'border-rose-300', hex: '#f43f5e' },
+  };
+
+  function getLayerStyle(layer) {
+    return LAYER_COLOR_MAP[layer] || { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-300', hex: '#64748b' };
+  }
+
+  async function loadCnnWeights() {
+    const head = parseInt($('cnn-inp-head')?.value || '15', 10);
+    const tail = parseInt($('cnn-inp-tail')?.value || '15', 10);
+    const top_k = parseInt($('cnn-inp-topk')?.value || '20', 10);
+
+    try {
+      const res = await fetch(`/api/v1/toppaper/cnn-weights?head=${head}&tail=${tail}&top_k=${top_k}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      const data = await res.json();
+      cnnWeightsData = data;
+      renderCnnInspector(data);
+    } catch (err) {
+      console.error('Failed to fetch CNN weights:', err);
+    }
+  }
+
+  function renderCnnInspector(data) {
+    if (!data) return;
+
+    // 1. Update KPIs
+    if ($('cnn-kpi-total')) $('cnn-kpi-total').textContent = data.total_parameters.toLocaleString();
+    if ($('cnn-kpi-norm')) $('cnn-kpi-norm').textContent = data.l2_norm.toFixed(4);
+    if ($('cnn-head-badge')) $('cnn-head-badge').textContent = `Indices #0 to #${data.slices.head.length - 1}`;
+    if ($('cnn-tail-badge')) $('cnn-tail-badge').textContent = `Indices #${data.total_parameters - data.slices.tail.length} to #${data.total_parameters - 1}`;
+    if ($('cnn-top-badge')) $('cnn-top-badge').textContent = `Top ${data.slices.top_magnitude.length} Magnitude Coordinates`;
+
+    // 2. Render Layer Progress Bar & Table
+    const layerBar = $('cnn-layer-bar');
+    const layerTbody = $('cnn-layer-tbody');
+    if (layerBar && data.layer_distribution_summary) {
+      layerBar.innerHTML = '';
+      data.layer_distribution_summary.forEach(l => {
+        const style = getLayerStyle(l.layer);
+        const segment = document.createElement('div');
+        segment.style.width = `${Math.max(0.5, l.percentage)}%`;
+        segment.style.backgroundColor = style.hex;
+        segment.title = `${l.layer}: ${l.count.toLocaleString()} parameters (${l.percentage}%)`;
+        layerBar.appendChild(segment);
+      });
+    }
+
+    if (layerTbody && data.layer_distribution_summary) {
+      layerTbody.innerHTML = data.layer_distribution_summary.map(l => {
+        const style = getLayerStyle(l.layer);
+        return `
+          <tr>
+            <td class="sticky-col">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono ${style.bg} ${style.text} border ${style.border}">
+                ${l.layer}
+              </span>
+            </td>
+            <td class="text-left font-mono text-[11px] text-slate-600">[${l.shape ? l.shape.join(', ') : '—'}]</td>
+            <td class="text-right font-mono font-semibold">${l.count.toLocaleString()}</td>
+            <td class="text-center font-mono text-[11px] text-slate-500">[${l.start.toLocaleString()}, ${l.end.toLocaleString()})</td>
+            <td class="text-right font-mono font-bold text-slate-800">${l.percentage}%</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Find max absolute value for normalization of magnitude bars
+    const maxValHead = Math.max(...data.slices.head.map(x => x.abs_value), 0.001);
+    const maxValTail = Math.max(...data.slices.tail.map(x => x.abs_value), 0.001);
+    const maxValTop = Math.max(...data.slices.top_magnitude.map(x => x.abs_value), 0.001);
+
+    // 3. Render Head Tiles
+    const headGrid = $('cnn-head-grid');
+    if (headGrid) {
+      headGrid.innerHTML = data.slices.head.map(item => {
+        const style = getLayerStyle(item.layer);
+        const isPos = item.value >= 0;
+        const pct = Math.min(100, Math.round((item.abs_value / maxValHead) * 100));
+        const barColor = isPos ? 'bg-emerald-500' : 'bg-rose-500';
+        return `
+          <div class="p-2.5 bg-white border border-slate-200 rounded-lg shadow-2xs space-y-1.5 transition-all hover:border-blue-400">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-[10px] font-bold text-slate-500">#${String(item.index).padStart(7, '0')}</span>
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-bold font-mono ${style.bg} ${style.text} border ${style.border}">${item.layer}</span>
+            </div>
+            <div class="flex items-baseline justify-between font-mono">
+              <span class="text-xs font-extrabold ${isPos ? 'text-emerald-700' : 'text-rose-700'}">
+                ${item.value >= 0 ? '+' : ''}${item.value.toFixed(6)}
+              </span>
+              <span class="text-[10px] text-slate-400 font-sans">|w| = ${item.abs_value.toFixed(6)}</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+              <div class="${barColor} h-1 rounded-full" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 4. Render Tail Tiles
+    const tailGrid = $('cnn-tail-grid');
+    if (tailGrid) {
+      tailGrid.innerHTML = data.slices.tail.map(item => {
+        const style = getLayerStyle(item.layer);
+        const isPos = item.value >= 0;
+        const pct = Math.min(100, Math.round((item.abs_value / maxValTail) * 100));
+        const barColor = isPos ? 'bg-emerald-500' : 'bg-rose-500';
+        return `
+          <div class="p-2.5 bg-white border border-slate-200 rounded-lg shadow-2xs space-y-1.5 transition-all hover:border-purple-400">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-[10px] font-bold text-slate-500">#${item.index.toLocaleString()}</span>
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-bold font-mono ${style.bg} ${style.text} border ${style.border}">${item.layer}</span>
+            </div>
+            <div class="flex items-baseline justify-between font-mono">
+              <span class="text-xs font-extrabold ${isPos ? 'text-emerald-700' : 'text-rose-700'}">
+                ${item.value >= 0 ? '+' : ''}${item.value.toFixed(6)}
+              </span>
+              <span class="text-[10px] text-slate-400 font-sans">|w| = ${item.abs_value.toFixed(6)}</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+              <div class="${barColor} h-1 rounded-full" style="width: ${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 5. Render Top Magnitude Table
+    const topTbody = $('cnn-top-tbody');
+    if (topTbody) {
+      topTbody.innerHTML = data.slices.top_magnitude.map((item, idx) => {
+        const style = getLayerStyle(item.layer);
+        const isPos = item.value >= 0;
+        const pct = Math.min(100, Math.round((item.abs_value / maxValTop) * 100));
+        const barColor = isPos ? 'bg-emerald-500' : 'bg-rose-500';
+        return `
+          <tr>
+            <td class="sticky-col font-mono font-bold text-slate-700">#${idx + 1}</td>
+            <td class="text-left font-mono font-semibold text-blue-800">#${item.index.toLocaleString()}</td>
+            <td class="text-left">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono ${style.bg} ${style.text} border ${style.border}">
+                ${item.layer}
+              </span>
+            </td>
+            <td class="text-right font-mono font-extrabold ${isPos ? 'text-emerald-700' : 'text-rose-700'}">
+              ${item.value >= 0 ? '+' : ''}${item.value.toFixed(6)}
+            </td>
+            <td class="text-right font-mono font-bold text-slate-900">${item.abs_value.toFixed(6)}</td>
+            <td class="text-center">
+              <div class="w-24 mx-auto bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div class="${barColor} h-1.5 rounded-full" style="width: ${pct}%"></div>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  function switchCnnView(mode, btn) {
+    document.querySelectorAll('#tab-cnn .pill').forEach(el => el.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    const dualSec = $('cnn-sec-dualslice');
+    const topSec = $('cnn-sec-topmagnitude');
+    if (!dualSec || !topSec) return;
+
+    if (mode === 'all') {
+      dualSec.style.display = 'grid';
+      topSec.style.display = 'block';
+    } else if (mode === 'head' || mode === 'tail') {
+      dualSec.style.display = 'grid';
+      topSec.style.display = 'none';
+    } else if (mode === 'top') {
+      dualSec.style.display = 'none';
+      topSec.style.display = 'block';
     }
   }
 
