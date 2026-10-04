@@ -11,7 +11,9 @@ from backend.models.flattening import (
     CANONICAL_LAYER_ORDER,
     flatten_parameters,
     load_flat_parameters_artifact,
+    save_flat_parameters_artifact,
 )
+from backend.training.train_cifar import TrainingConfig, train_cifar_model
 
 router = APIRouter(prefix="/api/v1/toppaper", tags=["top-p-lab"])
 
@@ -27,6 +29,17 @@ class TopPRequest(BaseModel):
     p_max: int | None = None
 
 
+class CnnTrainingRequest(BaseModel):
+    epochs: int = Field(5, ge=1, le=100, description="Number of training epochs")
+    batch_size: int = Field(64, ge=8, le=512, description="Mini-batch size")
+    learning_rate: float = Field(0.01, gt=0.0, le=1.0, description="Learning rate")
+    momentum: float = Field(0.9, ge=0.0, le=0.99, description="SGD momentum")
+    weight_decay: float = Field(1e-4, ge=0.0, le=0.1, description="Weight decay")
+    seed: int = Field(42, description="Random seed for reproducibility")
+    synthetic: bool = Field(False, description="Use synthetic dataset for fast execution")
+    synthetic_samples: int = Field(512, ge=64, le=5000, description="Synthetic samples count")
+
+
 @router.post("/run")
 def run(req: TopPRequest):
     return run_demo(req.n, req.M, req.theta, req.q, req.beta, req.rounds, req.seed, req.p_max)
@@ -35,6 +48,46 @@ def run(req: TopPRequest):
 @router.post("/costs")
 def calculate_costs(req: CostModelRequest):
     return compute_cost_model(req)
+
+
+@router.post("/train-cnn")
+def train_cnn(req: CnnTrainingRequest) -> Dict[str, Any]:
+    """Train CIFAR-10 CNN and persist checkpoint + flattened parameter artifact bundle."""
+    config = TrainingConfig(
+        epochs=req.epochs,
+        batch_size=req.batch_size,
+        learning_rate=req.learning_rate,
+        momentum=req.momentum,
+        weight_decay=req.weight_decay,
+        seed=req.seed,
+        synthetic=req.synthetic,
+        synthetic_samples=req.synthetic_samples,
+        output_dir="output/models",
+    )
+
+    # 1. Run model training
+    model, result = train_cifar_model(config)
+
+    # 2. Extract and persist deterministic flat parameter artifact
+    flat_tensor, metadata = flatten_parameters(model)
+    flat_path = Path("output/models/cifar10_flat_parameters.pt")
+    save_flat_parameters_artifact(
+        flat_tensor=flat_tensor,
+        metadata=metadata,
+        output_path=flat_path,
+        source_checkpoint=result.checkpoint_path,
+    )
+
+    return {
+        "final_train_loss": result.final_train_loss,
+        "final_train_accuracy": result.final_train_accuracy,
+        "final_test_loss": result.final_test_loss,
+        "final_test_accuracy": result.final_test_accuracy,
+        "duration_seconds": round(result.duration_seconds, 2),
+        "epoch_history": result.epoch_history,
+        "checkpoint_path": result.checkpoint_path,
+        "metadata_path": result.metadata_path,
+    }
 
 
 def _get_layer_for_index(idx: int, layer_slices: Dict[str, Any]) -> str:

@@ -2,7 +2,7 @@
 
 > **Project Name:** SemanticVisual (SemanticDFL Protocol Simulator & Interactive Visualizer)  
 > **Based on:** ACM 2026 Decentralized Federated Learning with Semantic Clustering & Overlay Networks  
-> **Status:** Production-Ready Simulator (34/34 Protocol Steps Implemented, 309 Passing Tests)  
+> **Status:** Production-Ready Simulator (34/34 Protocol Steps Implemented, 311 Passing Tests)  
 > **Last Updated:** October 2026  
 
 ---
@@ -99,6 +99,7 @@ SemanticVisual/
 │   ├── test_dual_layout_switcher.py# Tests for Physical vs Overlay layout toggle
 │   ├── test_phase1.py ... test_phase4.py # Phase-based integration tests
 │   ├── test_step1_*.py ... test_step34_*.py # Step-by-step unit tests (34 distinct step test files)
+│   ├── test_top_p_cnn_training_api.py # Integration tests for interactive CNN training endpoint
 │   ├── test_top_p_cnn_ui.py        # Contract tests for Top-P CNN weights endpoint & UI slices
 │   ├── test_top_p_costs.py         # Cost model analytical verification tests
 │   ├── test_top_p_lab.py           # Top-P algorithmic & cosine similarity tests

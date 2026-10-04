@@ -263,10 +263,71 @@
               Directly introspects and slices the authentic flattened parameter vector ($M = 2,156,490$ parameters) from <code class="font-mono text-blue-700 font-bold">output/models/cifar10_flat_parameters.pt</code>. Maps every individual weight coordinate to its canonical origin layer (<code class="font-mono">conv1</code>, <code class="font-mono">conv2</code>, <code class="font-mono">fc1</code>, <code class="font-mono">fc2</code>) with zero approximation.
             </p>
           </div>
+        </div>
+      </div>
+
+      <!-- Interactive CIFAR-10 CNN Training Controller Panel -->
+      <div class="paper-panel border-blue-200 bg-gradient-to-r from-blue-50/40 to-slate-50">
+        <div class="panel-header border-b border-blue-100 pb-2">
           <div class="flex items-center gap-2">
-            <button onclick="loadCnnWeights()" class="btn-primary px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shadow-sm">
-              <span>⚡</span><span>Reload Model Parameters</span>
+            <span class="text-base">🚀</span>
+            <span class="panel-title text-blue-950">CIFAR-10 CNN Training Controller</span>
+            <span class="tag-paper bg-blue-100 text-blue-800 border-blue-300">PyTorch SGD</span>
+          </div>
+          <!-- Quick Presets -->
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-[10px] font-mono font-bold text-slate-500">Presets:</span>
+            <button type="button" class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 shadow-2xs" onclick="applyTrainingPreset('mock')">⚡ Quick Mock (1s)</button>
+            <button type="button" class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-blue-600 text-white hover:bg-blue-700 shadow-2xs" onclick="applyTrainingPreset('paper')">🎯 Paper Default (5 Ep)</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-3 text-xs">
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] font-medium text-slate-600">Epochs:</span>
+            <input id="train-epochs" type="number" min="1" max="100" value="5" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] font-medium text-slate-600">Batch Size:</span>
+            <input id="train-batch" type="number" min="8" max="512" value="64" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] font-medium text-slate-600">Learning Rate:</span>
+            <input id="train-lr" type="number" step="0.005" min="0.0001" max="1.0" value="0.01" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] font-medium text-slate-600">Momentum:</span>
+            <input id="train-momentum" type="number" step="0.05" min="0.0" max="0.99" value="0.9" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] font-medium text-slate-600">Weight Decay:</span>
+            <input id="train-decay" type="number" step="0.0001" min="0.0" max="0.1" value="0.0001" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] font-medium text-slate-600">Random Seed:</span>
+            <input id="train-seed" type="number" value="42" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] font-medium text-slate-600">Data Source:</span>
+            <select id="train-synthetic" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500">
+              <option value="false">CIFAR-10 (Full)</option>
+              <option value="true" selected>Synthetic (~1s)</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="mt-3 flex items-center justify-between flex-wrap gap-3 pt-2 border-t border-slate-200/70">
+          <div class="flex items-center gap-2">
+            <button id="btn-train-cnn" type="button" onclick="startCnnTraining()" class="btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shadow-sm">
+              <span>▶</span><span>Start Model Training</span>
             </button>
+            <button onclick="loadCnnWeights()" class="px-3 py-1.5 text-xs font-mono font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 flex items-center gap-1 shadow-2xs">
+              <span>⚡</span><span>Reload Weights</span>
+            </button>
+          </div>
+          <!-- Live Status & Results Banner -->
+          <div id="train-status-banner" class="flex-1 text-right text-xs font-mono">
+            <span class="text-slate-500">Ready to train or inspect. Click 'Start Model Training'.</span>
           </div>
         </div>
       </div>
@@ -2618,6 +2679,94 @@
 
   /* --- TAB 2: TOP-P CNN PARAMETER INSPECTOR --- */
   let cnnWeightsData = null;
+
+  function applyTrainingPreset(type) {
+    if (type === 'mock') {
+      if ($('train-epochs')) $('train-epochs').value = 1;
+      if ($('train-batch')) $('train-batch').value = 32;
+      if ($('train-lr')) $('train-lr').value = 0.01;
+      if ($('train-momentum')) $('train-momentum').value = 0.9;
+      if ($('train-decay')) $('train-decay').value = 0.0001;
+      if ($('train-seed')) $('train-seed').value = 42;
+      if ($('train-synthetic')) $('train-synthetic').value = 'true';
+    } else if (type === 'paper') {
+      if ($('train-epochs')) $('train-epochs').value = 5;
+      if ($('train-batch')) $('train-batch').value = 64;
+      if ($('train-lr')) $('train-lr').value = 0.01;
+      if ($('train-momentum')) $('train-momentum').value = 0.9;
+      if ($('train-decay')) $('train-decay').value = 0.0001;
+      if ($('train-seed')) $('train-seed').value = 42;
+      if ($('train-synthetic')) $('train-synthetic').value = 'false';
+    }
+  }
+
+  async function startCnnTraining() {
+    const btn = $('btn-train-cnn');
+    const statusBanner = $('train-status-banner');
+
+    const epochs = parseInt($('train-epochs')?.value || '5', 10);
+    const batch_size = parseInt($('train-batch')?.value || '64', 10);
+    const learning_rate = parseFloat($('train-lr')?.value || '0.01');
+    const momentum = parseFloat($('train-momentum')?.value || '0.9');
+    const weight_decay = parseFloat($('train-decay')?.value || '0.0001');
+    const seed = parseInt($('train-seed')?.value || '42', 10);
+    const synthetic = $('train-synthetic')?.value === 'true';
+
+    const payload = {
+      epochs,
+      batch_size,
+      learning_rate,
+      momentum,
+      weight_decay,
+      seed,
+      synthetic,
+      synthetic_samples: synthetic ? 512 : 50000,
+    };
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span><span>Training (${epochs} epochs)...</span>`;
+    }
+    if (statusBanner) {
+      statusBanner.innerHTML = `<span class="text-blue-600 font-bold animate-pulse">⚡ Training in progress on ${synthetic ? 'synthetic dataset' : 'CIFAR-10'}...</span>`;
+    }
+
+    try {
+      const res = await fetch('/api/v1/toppaper/train-cnn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`HTTP ${res.status}: ${errText}`);
+      }
+
+      const data = await res.json();
+      if (statusBanner) {
+        statusBanner.innerHTML = `
+          <span class="text-emerald-700 font-bold">
+            ✓ Training Complete (${data.duration_seconds}s) | Train Acc: <strong>${data.final_train_accuracy}%</strong> | Test Acc: <strong>${data.final_test_accuracy}%</strong> | Loss: <strong>${data.final_train_loss}</strong>
+          </span>
+        `;
+      }
+
+      // Automatically reload model parameter inspection slices
+      await loadCnnWeights();
+
+    } catch (err) {
+      console.error('Training failed:', err);
+      if (statusBanner) {
+        statusBanner.innerHTML = `<span class="text-rose-600 font-bold">❌ Training Error: ${err.message}</span>`;
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>▶</span><span>Start Model Training</span>`;
+      }
+    }
+  }
 
   const LAYER_COLOR_MAP = {
     'conv1.weight': { bg: 'bg-sky-50', text: 'text-sky-800', border: 'border-sky-300', hex: '#0284c7' },
