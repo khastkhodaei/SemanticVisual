@@ -1,0 +1,157 @@
+{
+  "model_name": "CIFAR10CNN",
+  "checkpoint_filename": "cifar10_cnn_checkpoint.pt",
+  "num_parameters": 2156490,
+  "topology": {
+    "model_type": "CIFAR10CNN",
+    "in_channels": 3,
+    "num_classes": 10,
+    "conv1": {
+      "in_channels": 3,
+      "out_channels": 32,
+      "kernel_size": 5,
+      "padding": 2,
+      "activation": "ReLU",
+      "pool": "MaxPool2d(2, 2)"
+    },
+    "conv2": {
+      "in_channels": 32,
+      "out_channels": 64,
+      "kernel_size": 5,
+      "padding": 2,
+      "activation": "ReLU",
+      "pool": "MaxPool2d(2, 2)"
+    },
+    "fc1": {
+      "in_features": 4096,
+      "out_features": 512,
+      "activation": "ReLU"
+    },
+    "dropout_rate": 0.0,
+    "fc2": {
+      "in_features": 512,
+      "out_features": 10
+    },
+    "total_parameters": 2156490
+  },
+  "classes": {
+    "0": "airplane",
+    "1": "automobile",
+    "2": "bird",
+    "3": "cat",
+    "4": "deer",
+    "5": "dog",
+    "6": "frog",
+    "7": "horse",
+    "8": "ship",
+    "9": "truck"
+  },
+  "dataset": "CIFAR-10",
+  "num_classes": 10,
+  "class_mapping": {
+    "0": "airplane",
+    "1": "automobile",
+    "2": "bird",
+    "3": "cat",
+    "4": "deer",
+    "5": "dog",
+    "6": "frog",
+    "7": "horse",
+    "8": "ship",
+    "9": "truck"
+  },
+  "hyperparameters": {
+    "epochs": 10,
+    "batch_size": 64,
+    "learning_rate": 0.01,
+    "momentum": 0.9,
+    "weight_decay": 0.0001,
+    "optimizer": "SGD",
+    "seed": 42,
+    "is_synthetic": false
+  },
+  "metrics": {
+    "final_train_loss": 0.6712,
+    "final_train_accuracy": 76.73,
+    "final_test_loss": 0.7036,
+    "final_test_accuracy": 76.11,
+    "training_duration_seconds": 602.51
+  },
+  "epoch_history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.6187,
+      "train_accuracy": 41.05,
+      "test_loss": 1.3176,
+      "test_accuracy": 52.83
+    },
+    {
+      "epoch": 2,
+      "train_loss": 1.2123,
+      "train_accuracy": 56.39,
+      "test_loss": 1.1085,
+      "test_accuracy": 60.9
+    },
+    {
+      "epoch": 3,
+      "train_loss": 1.0367,
+      "train_accuracy": 63.32,
+      "test_loss": 0.9623,
+      "test_accuracy": 66.95
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.9449,
+      "train_accuracy": 67.03,
+      "test_loss": 0.8814,
+      "test_accuracy": 69.65
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.8622,
+      "train_accuracy": 69.84,
+      "test_loss": 0.8048,
+      "test_accuracy": 72.31
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.8158,
+      "train_accuracy": 71.8,
+      "test_loss": 0.7523,
+      "test_accuracy": 74.24
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.7744,
+      "train_accuracy": 73.03,
+      "test_loss": 0.728,
+      "test_accuracy": 75.25
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.7288,
+      "train_accuracy": 74.61,
+      "test_loss": 0.7284,
+      "test_accuracy": 75.78
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.6998,
+      "train_accuracy": 75.57,
+      "test_loss": 0.6837,
+      "test_accuracy": 77.13
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.6712,
+      "train_accuracy": 76.73,
+      "test_loss": 0.7036,
+      "test_accuracy": 76.11
+    }
+  ],
+  "execution": {
+    "device": "cpu",
+    "torch_version": "2.14.0+cpu",
+    "timestamp_utc": "2026-10-04T10:34:38.878293+00:00"
+  }
+}
