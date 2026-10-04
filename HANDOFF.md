@@ -2,8 +2,8 @@
 
 > **Project Name:** SemanticVisual (SemanticDFL Protocol Simulator & Interactive Visualizer)  
 > **Based on:** ACM 2026 Decentralized Federated Learning with Semantic Clustering & Overlay Networks  
-> **Status:** Production-Ready Simulator (34/34 Protocol Steps Implemented, 290+ Passing Tests)  
-> **Last Updated:** September 2026  
+> **Status:** Production-Ready Simulator (34/34 Protocol Steps Implemented, 306 Passing Tests)  
+> **Last Updated:** October 2026  
 
 ---
 
@@ -66,20 +66,42 @@ SemanticVisual/
 │   ├── engine.py                   # SemanticDFLEngine core algorithmic simulator (AP, VRF, FedAvg, RGG)
 │   ├── main.py                     # FastAPI application, REST endpoints, and static file mount
 │   ├── scenario_data.json          # Pre-computed step data & node distribution metadata
-│   └── storyboard_10nodes.py       # Deterministic 34-step state machine for the 10-node CIFAR-10 storyboard
+│   ├── storyboard_10nodes.py       # Deterministic 34-step state machine for the 10-node CIFAR-10 storyboard
+│   ├── top_p_costs.py              # Pure cost model and parameter sizing calculator
+│   ├── top_p_lab.py                # Standalone algorithmic engine for Top-P signature math
+│   ├── top_p_router.py             # FastAPI router for Top-P Deep-Dive endpoints
+│   ├── models/
+│   │   ├── __init__.py             # Model package exports
+│   │   ├── cifar_cnn.py            # Clean PyTorch CIFAR10CNN (2-Conv, 2-FC, 2.15M params)
+│   │   └── flattening.py           # Pure deterministic parameter flattening & reconstruction
+│   └── training/
+│       ├── __init__.py             # Training package exports
+│       └── train_cifar.py          # CIFAR-10 training & evaluation pipeline and CLI
 ├── frontend/
 │   ├── static/
 │   │   ├── app.js                  # Frontend UI state machine, Cytoscape controllers, packet animations
 │   │   ├── index.html              # Interactive simulation dashboard layout
 │   │   ├── style.css               # Design tokens, cyber/academic styling, custom Cytoscape styles
+│   │   ├── top_p_faq.json          # Externalized, editable Q&A data source with provenance tags
+│   │   ├── top_p_lab.css           # Scoped stylesheet for Top-P Deep-Dive Lab
+│   │   ├── top_p_lab.html          # Interactive 5-tab Deep-Dive Lab user interface
 │   │   └── vendor/                 # Local offline assets (Cytoscape, Dagre, Chart.js, KaTeX)
 │   └── templates/
 │       └── index.html              # Production template entrypoint
+├── output/
+│   └── models/
+│       ├── cifar10_cnn_checkpoint.pt   # Serialized PyTorch state dictionary checkpoint
+│       ├── cifar10_flat_parameters.pt  # Serialized 1D flat parameter tensor (2,156,490 float32)
+│       └── model_metadata.json         # Comprehensive topology, metrics, & hyperparameter metadata
 ├── tests/
 │   ├── __init__.py
+│   ├── test_cifar_cnn.py           # Unit tests for CIFAR10CNN, flattening, and training pipeline
 │   ├── test_dual_layout_switcher.py# Tests for Physical vs Overlay layout toggle
 │   ├── test_phase1.py ... test_phase4.py # Phase-based integration tests
 │   ├── test_step1_*.py ... test_step34_*.py # Step-by-step unit tests (34 distinct step test files)
+│   ├── test_top_p_costs.py         # Cost model analytical verification tests
+│   ├── test_top_p_lab.py           # Top-P algorithmic & cosine similarity tests
+│   ├── test_top_p_worked_example.py# Step-by-step numerical verification tests
 │   └── test_ui_rendering.py        # Backend contract tests for UI rendering payloads
 ├── requirements.txt                # Python package dependencies
 ├── STEPS.md                        # Exhaustive specification of the 34-step protocol
@@ -256,7 +278,7 @@ The visualizer dashboard (`frontend/static/app.js` and `index.html`) is structur
 
 ## 8. Test Suite & Verification
 
-The test suite contains **295 test items** (290 passing, 5 skipped) across 47 test files covering all 34 steps, API endpoints, serialization contracts, clustering math, cost models, worked examples, and UI rendering payloads.
+The test suite contains **311 test items** (306 passing, 5 skipped) across 48 test files covering all 34 steps, API endpoints, serialization contracts, clustering math, cost models, worked examples, CIFAR-10 CNN flattening, and UI rendering payloads.
 
 ### Running Tests
 To run the complete test suite:
@@ -266,6 +288,9 @@ pytest
 
 To run tests for a specific step or module:
 ```bash
+# Run CIFAR-10 CNN, flattening & serialization tests
+pytest tests/test_cifar_cnn.py
+
 # Run tests for Step 4 (Initiator Election)
 pytest tests/test_step4_election.py
 
@@ -274,6 +299,9 @@ pytest tests/test_step20_overlay_topology.py
 
 # Run tests for Step 33 (FedAvg Convergence)
 pytest tests/test_step33_fedavg_convergence.py
+
+# Run Top-P Deep-Dive tests
+pytest tests/test_top_p_lab.py tests/test_top_p_costs.py tests/test_top_p_worked_example.py
 
 # Run Dual Layout Switcher tests
 pytest tests/test_dual_layout_switcher.py
@@ -377,5 +405,56 @@ To add or update answers without modifying Python or JavaScript code:
 ### How to Run Top-P Tests
 ```bash
 pytest tests/test_top_p_lab.py tests/test_top_p_costs.py tests/test_top_p_worked_example.py
+```
+
+---
+
+## 12. CIFAR-10 CNN & Parameter Flattening Pipeline
+
+### Architectural Specification
+The model architecture implements the exact 2-stage Convolutional Neural Network specified in **Section 5.1 ("Experimental Setup — Datasets and Models")** of the SemanticDFL research paper:
+
+| Layer / Block | Component Specification | Output Shape | Parameters |
+|:---|:---|:---|:---|
+| **Input** | RGB 10-Class Image | `(B, 3, 32, 32)` | $0$ |
+| **Conv Block 1** | `Conv2d(3, 32, kernel_size=5, padding=2)` $\to$ `ReLU()` $\to$ `MaxPool2d(2, 2)` | `(B, 32, 16, 16)` | $2,432$ ($2,400$ wt + $32$ bias) |
+| **Conv Block 2** | `Conv2d(32, 64, kernel_size=5, padding=2)` $\to$ `ReLU()` $\to$ `MaxPool2d(2, 2)` | `(B, 64, 8, 8)` | $51,264$ ($51,200$ wt + $64$ bias) |
+| **Flatten** | Spatial feature vector concatenation | `(B, 4096)` | $0$ |
+| **Dense FC1** | `Linear(4096, 512)` $\to$ `ReLU()` $\to$ `Dropout(p=0.0)` | `(B, 512)` | $2,097,664$ ($2,097,152$ wt + $512$ bias) |
+| **Dense FC2 (Head)** | `Linear(512, 10)` | `(B, 10)` | $5,130$ ($5,120$ wt + $10$ bias) |
+| **Total Model** | **2 Convolutional + 2 Fully Connected Layers** | **Logits (B, 10)** | **2,156,490 (~8.63 MB FP32)** |
+
+### Parameter Flattening & Mathematical Invariants
+The flattening utility ([`backend/models/flattening.py`](file:///d:/Dev/SemanticVisual/backend/models/flattening.py)) provides pure, deterministic vector transformation routines:
+1. **Canonical Parameter Order:** Parameters are strictly ordered layer-by-layer matching the theoretical model formulation:
+   $$\mathbf{w} = \big[ \mathbf{w}_{\text{conv1}}, \mathbf{b}_{\text{conv1}}, \mathbf{w}_{\text{conv2}}, \mathbf{b}_{\text{conv2}}, \mathbf{w}_{\text{fc1}}, \mathbf{b}_{\text{fc1}}, \mathbf{w}_{\text{fc2}}, \mathbf{b}_{\text{fc2}} \big] \in \mathbb{R}^{2156490}$$
+2. **Slice Index Mapping:** Returns explicit `{start_idx, end_idx, shape, numel}` descriptors per tensor slice, enabling exact, lossless bidirectional unflattening ([`unflatten_parameters`](file:///d:/Dev/SemanticVisual/backend/models/flattening.py#L98)).
+3. **$L_2$ Norm Computation:** Automatically calculates $\|W\|_2 = \sqrt{\sum_i w_i^2}$ required for directional cosine similarity and Top-$P$ thresholding.
+4. **Side-Effect Free:** Extracts parameters via `.detach().cpu().to(torch.float32)` without mutating computational graphs or in-flight gradients.
+
+### Serialized Artifact Bundle (`output/models/`)
+Executing training and flattening produces a reproducible artifact bundle:
+- **`output/models/cifar10_cnn_checkpoint.pt`**: PyTorch checkpoint containing the model `state_dict`, configuration parameters, and layer topology.
+- **`output/models/cifar10_flat_parameters.pt`**: 1D contiguous parameter tensor (`torch.float32`, shape `(2156490,)`) bundled with layer slices and $L_2$ norm.
+- **`output/models/model_metadata.json`**: JSON metadata file containing:
+  - Final training & validation accuracy and loss metrics.
+  - Complete hyperparameter specification (learning rate $0.01$, batch size $64$, SGD momentum $0.9$, weight decay $10^{-4}$).
+  - Canonical CIFAR-10 class-to-index mapping (`0: airplane` ... `9: truck`).
+  - UTC execution timestamp and PyTorch runtime version.
+
+### CLI Usage & Reproducibility
+
+```bash
+# 1. Train model on CIFAR-10 (standard paper parameters)
+python -m backend.training.train_cifar --epochs 5 --batch-size 64 --lr 0.01 --output-dir output/models
+
+# 2. Fast deterministic synthetic training run (for isolated CI/CD verification)
+python -m backend.training.train_cifar --epochs 5 --batch-size 64 --lr 0.01 --synthetic --synthetic-samples 1024
+
+# 3. Export flattened 1D parameter vector artifact
+python -m backend.models.flattening --checkpoint output/models/cifar10_cnn_checkpoint.pt --output output/models/cifar10_flat_parameters.pt
+
+# 4. Run automated CIFAR-10 test suite
+pytest tests/test_cifar_cnn.py -v
 ```
 
