@@ -28,6 +28,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 from backend.models.cifar_cnn import CIFAR10CNN, CIFAR10_CLASSES
+from backend.models.flattening import flatten_parameters, save_flat_parameters_artifact
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,6 +41,7 @@ logger = logging.getLogger("CIFAR10Trainer")
 class TrainingConfig:
     """Configuration hyperparameter dataclass for CIFAR-10 training."""
 
+    rounds: int = 1
     epochs: int = 5
     batch_size: int = 64
     learning_rate: float = 0.01
@@ -47,6 +49,7 @@ class TrainingConfig:
     weight_decay: float = 1e-4
     seed: int = 42
     output_dir: str = "output/models"
+    checkpoint_dir: str = "output/models/rounds"
     data_dir: str = "data"
     synthetic: bool = False
     synthetic_samples: int = 512
@@ -62,10 +65,12 @@ class TrainingResult:
     final_train_accuracy: float
     final_test_loss: float
     final_test_accuracy: float
-    epoch_history: List[Dict[str, float]] = field(default_factory=list)
+    epoch_history: List[Dict[str, Any]] = field(default_factory=list)
+    round_history: List[Dict[str, Any]] = field(default_factory=list)
     checkpoint_path: str = ""
     metadata_path: str = ""
     duration_seconds: float = 0.0
+
 
 
 def set_seed(seed: int = 42) -> None:
@@ -301,38 +306,89 @@ def train_cifar_model(config: Optional[TrainingConfig] = None) -> Tuple[CIFAR10C
 
     out_dir = Path(config.output_dir).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
+    rounds_dir = Path(config.checkpoint_dir).resolve()
+    rounds_dir.mkdir(parents=True, exist_ok=True)
     checkpoint_file = out_dir / config.checkpoint_name
 
-    epoch_history: List[Dict[str, float]] = []
+    epoch_history: List[Dict[str, Any]] = []
+    round_history: List[Dict[str, Any]] = []
     start_time = datetime.now(timezone.utc)
 
     logger.info(
-        "Starting training for %d epochs (batch_size=%d, lr=%.4f)...",
+        "Starting training for %d rounds x %d epochs (batch_size=%d, lr=%.4f)...",
+        config.rounds,
         config.epochs,
         config.batch_size,
         config.learning_rate,
     )
 
-    for epoch in range(1, config.epochs + 1):
-        train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
-        test_loss, test_acc = evaluate_model(model, test_loader, criterion, device)
+    for round_idx in range(1, config.rounds + 1):
+        logger.info("=== Starting Round [%d/%d] ===", round_idx, config.rounds)
+        for epoch in range(1, config.epochs + 1):
+            global_epoch = (round_idx - 1) * config.epochs + epoch
+            train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
+            test_loss, test_acc = evaluate_model(model, test_loader, criterion, device)
 
-        epoch_stats = {
-            "epoch": epoch,
-            "train_loss": round(train_loss, 4),
-            "train_accuracy": round(train_acc, 2),
-            "test_loss": round(test_loss, 4),
-            "test_accuracy": round(test_acc, 2),
+            epoch_stats = {
+                "round": round_idx,
+                "epoch": epoch,
+                "global_epoch": global_epoch,
+                "train_loss": round(train_loss, 4),
+                "train_accuracy": round(train_acc, 2),
+                "test_loss": round(test_loss, 4),
+                "test_accuracy": round(test_acc, 2),
+            }
+            epoch_history.append(epoch_stats)
+            logger.info(
+                "Round [%d/%d] Epoch [%d/%d] (Global %d) | Train Loss: %.4f, Train Acc: %.2f%% | Test Loss: %.4f, Test Acc: %.2f%%",
+                round_idx,
+                config.rounds,
+                epoch,
+                config.epochs,
+                global_epoch,
+                train_loss,
+                train_acc,
+                test_loss,
+                test_acc,
+            )
+
+        # End of round: save round-specific checkpoint and flat parameter tensor
+        round_train_loss = epoch_history[-1]["train_loss"] if epoch_history else 0.0
+        round_train_acc = epoch_history[-1]["train_accuracy"] if epoch_history else 0.0
+        round_test_loss = epoch_history[-1]["test_loss"] if epoch_history else 0.0
+        round_test_acc = epoch_history[-1]["test_accuracy"] if epoch_history else 0.0
+
+        round_ckpt_path = rounds_dir / f"cifar10_cnn_round_{round_idx}.pt"
+        round_flat_path = rounds_dir / f"cifar10_flat_round_{round_idx}.pt"
+
+        # Save round weights
+        torch.save(model.state_dict(), round_ckpt_path)
+
+        # Flatten and save round flat parameters
+        flat_tensor, flat_meta = flatten_parameters(model)
+        save_flat_parameters_artifact(
+            flat_tensor=flat_tensor,
+            metadata=flat_meta,
+            output_path=round_flat_path,
+            source_checkpoint=str(round_ckpt_path),
+        )
+
+        round_stats = {
+            "round": round_idx,
+            "train_loss": round_train_loss,
+            "train_accuracy": round_train_acc,
+            "test_loss": round_test_loss,
+            "test_accuracy": round_test_acc,
+            "checkpoint_path": str(round_ckpt_path),
+            "flat_parameters_path": str(round_flat_path),
         }
-        epoch_history.append(epoch_stats)
+        round_history.append(round_stats)
         logger.info(
-            "Epoch [%d/%d] | Train Loss: %.4f, Train Acc: %.2f%% | Test Loss: %.4f, Test Acc: %.2f%%",
-            epoch,
-            config.epochs,
-            train_loss,
-            train_acc,
-            test_loss,
-            test_acc,
+            "Round [%d/%d] Complete | Saved Checkpoint: %s | Flat Parameters: %s",
+            round_idx,
+            config.rounds,
+            round_ckpt_path.name,
+            round_flat_path.name,
         )
 
     end_time = datetime.now(timezone.utc)
@@ -349,7 +405,10 @@ def train_cifar_model(config: Optional[TrainingConfig] = None) -> Tuple[CIFAR10C
         "num_classes": 10,
         "class_mapping": CIFAR10_CLASSES,
         "hyperparameters": {
+            "rounds": config.rounds,
             "epochs": config.epochs,
+            "epochs_per_round": config.epochs,
+            "total_epochs": config.rounds * config.epochs,
             "batch_size": config.batch_size,
             "learning_rate": config.learning_rate,
             "momentum": config.momentum,
@@ -365,6 +424,7 @@ def train_cifar_model(config: Optional[TrainingConfig] = None) -> Tuple[CIFAR10C
             "final_test_accuracy": final_test_acc,
             "training_duration_seconds": round(duration, 2),
         },
+        "round_history": round_history,
         "epoch_history": epoch_history,
         "execution": {
             "device": str(device),
@@ -373,10 +433,10 @@ def train_cifar_model(config: Optional[TrainingConfig] = None) -> Tuple[CIFAR10C
         },
     }
 
-    # Save artifacts
+    # Save canonical final artifacts
     saved_ckpt, saved_meta = model.save_checkpoint(checkpoint_file, metadata=metadata_payload)
-    logger.info("Saved model checkpoint: %s", saved_ckpt)
-    logger.info("Saved metadata bundle: %s", saved_meta)
+    logger.info("Saved canonical model checkpoint: %s", saved_ckpt)
+    logger.info("Saved canonical metadata bundle: %s", saved_meta)
 
     result = TrainingResult(
         final_train_loss=final_train_loss,
@@ -384,6 +444,7 @@ def train_cifar_model(config: Optional[TrainingConfig] = None) -> Tuple[CIFAR10C
         final_test_loss=final_test_loss,
         final_test_accuracy=final_test_acc,
         epoch_history=epoch_history,
+        round_history=round_history,
         checkpoint_path=str(saved_ckpt),
         metadata_path=str(saved_meta),
         duration_seconds=duration,
@@ -395,19 +456,22 @@ def train_cifar_model(config: Optional[TrainingConfig] = None) -> Tuple[CIFAR10C
 def parse_args() -> TrainingConfig:
     """Parse command-line arguments into a TrainingConfig instance."""
     parser = argparse.ArgumentParser(description="Train CIFAR-10 CNN for SemanticDFL")
-    parser.add_argument("--epochs", type=int, default=5, help="Number of training epochs")
+    parser.add_argument("--rounds", type=int, default=1, help="Number of sequential training rounds")
+    parser.add_argument("--epochs", type=int, default=5, help="Number of local training epochs per round")
     parser.add_argument("--batch-size", type=int, default=64, help="Mini-batch size (paper default: 64)")
     parser.add_argument("--lr", type=float, default=0.01, help="Learning rate (paper default: 0.01)")
     parser.add_argument("--momentum", type=float, default=0.9, help="SGD momentum")
     parser.add_argument("--weight-decay", type=float, default=1e-4, help="Weight decay")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
     parser.add_argument("--output-dir", type=str, default="output/models", help="Output artifact directory")
+    parser.add_argument("--checkpoint-dir", type=str, default="output/models/rounds", help="Per-round checkpoint directory")
     parser.add_argument("--data-dir", type=str, default="data", help="CIFAR-10 raw dataset directory")
     parser.add_argument("--synthetic", action="store_true", help="Use synthetic dataset for fast verification")
     parser.add_argument("--synthetic-samples", type=int, default=512, help="Number of synthetic samples if --synthetic")
 
     args = parser.parse_args()
     return TrainingConfig(
+        rounds=args.rounds,
         epochs=args.epochs,
         batch_size=args.batch_size,
         learning_rate=args.lr,
@@ -415,6 +479,7 @@ def parse_args() -> TrainingConfig:
         weight_decay=args.weight_decay,
         seed=args.seed,
         output_dir=args.output_dir,
+        checkpoint_dir=args.checkpoint_dir,
         data_dir=args.data_dir,
         synthetic=args.synthetic,
         synthetic_samples=args.synthetic_samples,
@@ -424,3 +489,4 @@ def parse_args() -> TrainingConfig:
 if __name__ == "__main__":
     cfg = parse_args()
     train_cifar_model(cfg)
+

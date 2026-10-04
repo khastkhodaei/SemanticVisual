@@ -282,9 +282,13 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-3 text-xs">
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mt-3 text-xs">
           <label class="flex flex-col gap-1">
-            <span class="text-[11px] font-medium text-slate-600">Epochs:</span>
+            <span class="text-[11px] font-medium text-slate-600" title="Number of sequential training rounds">Rounds (r):</span>
+            <input id="train-rounds" type="number" min="1" max="50" value="1" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] font-medium text-slate-600" title="Local epochs per round">Epochs (E):</span>
             <input id="train-epochs" type="number" min="1" max="100" value="5" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" />
           </label>
           <label class="flex flex-col gap-1">
@@ -2682,6 +2686,7 @@
 
   function applyTrainingPreset(type) {
     if (type === 'mock') {
+      if ($('train-rounds')) $('train-rounds').value = 1;
       if ($('train-epochs')) $('train-epochs').value = 1;
       if ($('train-batch')) $('train-batch').value = 32;
       if ($('train-lr')) $('train-lr').value = 0.01;
@@ -2690,6 +2695,7 @@
       if ($('train-seed')) $('train-seed').value = 42;
       if ($('train-synthetic')) $('train-synthetic').value = 'true';
     } else if (type === 'paper') {
+      if ($('train-rounds')) $('train-rounds').value = 1;
       if ($('train-epochs')) $('train-epochs').value = 5;
       if ($('train-batch')) $('train-batch').value = 64;
       if ($('train-lr')) $('train-lr').value = 0.01;
@@ -2704,6 +2710,7 @@
     const btn = $('btn-train-cnn');
     const statusBanner = $('train-status-banner');
 
+    const rounds = parseInt($('train-rounds')?.value || '1', 10);
     const epochs = parseInt($('train-epochs')?.value || '5', 10);
     const batch_size = parseInt($('train-batch')?.value || '64', 10);
     const learning_rate = parseFloat($('train-lr')?.value || '0.01');
@@ -2713,6 +2720,7 @@
     const synthetic = $('train-synthetic')?.value === 'true';
 
     const payload = {
+      rounds,
       epochs,
       batch_size,
       learning_rate,
@@ -2725,10 +2733,10 @@
 
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span><span>Training (${epochs} epochs)...</span>`;
+      btn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span><span>Training (${rounds}r × ${epochs}e)...</span>`;
     }
     if (statusBanner) {
-      statusBanner.innerHTML = `<span class="text-blue-600 font-bold animate-pulse">⚡ Training in progress on ${synthetic ? 'synthetic dataset' : 'CIFAR-10'}...</span>`;
+      statusBanner.innerHTML = `<span class="text-blue-600 font-bold animate-pulse">⚡ Training in progress (${rounds} round${rounds > 1 ? 's' : ''}, ${epochs} epochs/round) on ${synthetic ? 'synthetic dataset' : 'CIFAR-10'}...</span>`;
     }
 
     try {
@@ -2744,10 +2752,11 @@
       }
 
       const data = await res.json();
+      const totalEpochs = rounds * epochs;
       if (statusBanner) {
         statusBanner.innerHTML = `
           <span class="text-emerald-700 font-bold">
-            ✓ Training Complete (${data.duration_seconds}s) | Train Acc: <strong>${data.final_train_accuracy}%</strong> | Test Acc: <strong>${data.final_test_accuracy}%</strong> | Loss: <strong>${data.final_train_loss}</strong>
+            ✓ ${rounds} Round${rounds > 1 ? 's' : ''} (${totalEpochs} Total Epochs) Completed in ${data.duration_seconds}s | Train Acc: <strong>${data.final_train_accuracy}%</strong> | Test Acc: <strong>${data.final_test_accuracy}%</strong> | Loss: <strong>${data.final_train_loss}</strong>
           </span>
         `;
       }

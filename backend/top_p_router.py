@@ -30,7 +30,8 @@ class TopPRequest(BaseModel):
 
 
 class CnnTrainingRequest(BaseModel):
-    epochs: int = Field(5, ge=1, le=100, description="Number of training epochs")
+    rounds: int = Field(1, ge=1, le=50, description="Number of sequential training rounds")
+    epochs: int = Field(5, ge=1, le=100, description="Local epochs per round")
     batch_size: int = Field(64, ge=8, le=512, description="Mini-batch size")
     learning_rate: float = Field(0.01, gt=0.0, le=1.0, description="Learning rate")
     momentum: float = Field(0.9, ge=0.0, le=0.99, description="SGD momentum")
@@ -54,6 +55,7 @@ def calculate_costs(req: CostModelRequest):
 def train_cnn(req: CnnTrainingRequest) -> Dict[str, Any]:
     """Train CIFAR-10 CNN and persist checkpoint + flattened parameter artifact bundle."""
     config = TrainingConfig(
+        rounds=req.rounds,
         epochs=req.epochs,
         batch_size=req.batch_size,
         learning_rate=req.learning_rate,
@@ -63,6 +65,7 @@ def train_cnn(req: CnnTrainingRequest) -> Dict[str, Any]:
         synthetic=req.synthetic,
         synthetic_samples=req.synthetic_samples,
         output_dir="output/models",
+        checkpoint_dir="output/models/rounds",
     )
 
     # 1. Run model training
@@ -84,10 +87,12 @@ def train_cnn(req: CnnTrainingRequest) -> Dict[str, Any]:
         "final_test_loss": result.final_test_loss,
         "final_test_accuracy": result.final_test_accuracy,
         "duration_seconds": round(result.duration_seconds, 2),
+        "round_history": result.round_history,
         "epoch_history": result.epoch_history,
         "checkpoint_path": result.checkpoint_path,
         "metadata_path": result.metadata_path,
     }
+
 
 
 def _get_layer_for_index(idx: int, layer_slices: Dict[str, Any]) -> str:
