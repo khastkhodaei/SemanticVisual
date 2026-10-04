@@ -277,8 +277,9 @@
           <!-- Quick Presets -->
           <div class="flex items-center gap-1.5 flex-wrap">
             <span class="text-[10px] font-mono font-bold text-slate-500">Presets:</span>
-            <button type="button" class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 shadow-2xs" onclick="applyTrainingPreset('mock')">⚡ Quick Mock (1s)</button>
-            <button type="button" class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-blue-600 text-white hover:bg-blue-700 shadow-2xs" onclick="applyTrainingPreset('paper')">🎯 Paper Default (5 Ep)</button>
+            <button type="button" class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 shadow-2xs cursor-pointer" onclick="applyTrainingPreset('mock')">⚡ Quick Mock (1s)</button>
+            <button type="button" class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-blue-600 text-white hover:bg-blue-700 shadow-2xs cursor-pointer" onclick="applyTrainingPreset('paper')">🎯 Paper Default (§5.1)</button>
+            <button type="button" class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-slate-100 text-slate-600 border border-slate-300 hover:bg-slate-200 shadow-2xs cursor-pointer" onclick="applyTrainingPreset('reset')">↺ Reset</button>
           </div>
         </div>
 
@@ -2685,16 +2686,28 @@
   let cnnWeightsData = null;
 
   function applyTrainingPreset(type) {
+    let presetName = '';
     if (type === 'mock') {
       if ($('train-rounds')) $('train-rounds').value = 1;
       if ($('train-epochs')) $('train-epochs').value = 1;
-      if ($('train-batch')) $('train-batch').value = 32;
+      if ($('train-batch')) $('train-batch').value = 64;
       if ($('train-lr')) $('train-lr').value = 0.01;
       if ($('train-momentum')) $('train-momentum').value = 0.9;
       if ($('train-decay')) $('train-decay').value = 0.0001;
       if ($('train-seed')) $('train-seed').value = 42;
       if ($('train-synthetic')) $('train-synthetic').value = 'true';
+      presetName = '⚡ Quick Mock (1s)';
     } else if (type === 'paper') {
+      if ($('train-rounds')) $('train-rounds').value = 3;
+      if ($('train-epochs')) $('train-epochs').value = 1;
+      if ($('train-batch')) $('train-batch').value = 64;
+      if ($('train-lr')) $('train-lr').value = 0.01;
+      if ($('train-momentum')) $('train-momentum').value = 0.9;
+      if ($('train-decay')) $('train-decay').value = 0.0001;
+      if ($('train-seed')) $('train-seed').value = 42;
+      if ($('train-synthetic')) $('train-synthetic').value = 'false';
+      presetName = '🎯 Paper Default (§5.1)';
+    } else if (type === 'reset') {
       if ($('train-rounds')) $('train-rounds').value = 1;
       if ($('train-epochs')) $('train-epochs').value = 5;
       if ($('train-batch')) $('train-batch').value = 64;
@@ -2702,8 +2715,24 @@
       if ($('train-momentum')) $('train-momentum').value = 0.9;
       if ($('train-decay')) $('train-decay').value = 0.0001;
       if ($('train-seed')) $('train-seed').value = 42;
-      if ($('train-synthetic')) $('train-synthetic').value = 'false';
+      if ($('train-synthetic')) $('train-synthetic').value = 'true';
+      presetName = '↺ Default Configuration';
     }
+
+    const banner = $('train-status-banner');
+    if (banner) {
+      banner.innerHTML = `<span class="text-blue-700 font-medium">📋 Loaded <strong>${presetName}</strong> preset. Review values below and click 'Start Model Training'.</span>`;
+    }
+
+    // Visual feedback highlight on input fields
+    const inputIds = ['train-rounds', 'train-epochs', 'train-batch', 'train-lr', 'train-momentum', 'train-decay', 'train-seed', 'train-synthetic'];
+    inputIds.forEach(id => {
+      const el = $(id);
+      if (el) {
+        el.classList.add('ring-2', 'ring-blue-400', 'bg-blue-50/50');
+        setTimeout(() => el.classList.remove('ring-2', 'ring-blue-400', 'bg-blue-50/50'), 600);
+      }
+    });
   }
 
   async function startCnnTraining() {

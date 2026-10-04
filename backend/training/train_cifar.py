@@ -362,7 +362,23 @@ def train_cifar_model(config: Optional[TrainingConfig] = None) -> Tuple[CIFAR10C
         round_flat_path = rounds_dir / f"cifar10_flat_round_{round_idx}.pt"
 
         # Save round weights
-        torch.save(model.state_dict(), round_ckpt_path)
+        temp_round_ckpt = round_ckpt_path.with_name(f"{round_ckpt_path.stem}_tmp_{random.randint(10000, 99999)}{round_ckpt_path.suffix}")
+        try:
+            torch.save(model.state_dict(), temp_round_ckpt)
+            if round_ckpt_path.exists():
+                try:
+                    round_ckpt_path.unlink()
+                except Exception:
+                    pass
+            temp_round_ckpt.replace(round_ckpt_path)
+        except Exception:
+            if temp_round_ckpt.exists():
+                try:
+                    temp_round_ckpt.unlink()
+                except Exception:
+                    pass
+            torch.save(model.state_dict(), round_ckpt_path)
+
 
         # Flatten and save round flat parameters
         flat_tensor, flat_meta = flatten_parameters(model)

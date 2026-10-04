@@ -2,8 +2,9 @@
 
 > **Project Name:** SemanticVisual (SemanticDFL Protocol Simulator & Interactive Visualizer)  
 > **Based on:** ACM 2026 Decentralized Federated Learning with Semantic Clustering & Overlay Networks  
-> **Status:** Production-Ready Simulator (34/34 Protocol Steps Implemented, 312 Passing Tests)  
+> **Status:** Production-Ready Simulator (34/34 Protocol Steps Implemented, 313 Passing Tests)  
 > **Last Updated:** October 2026  
+
 
 ---
 

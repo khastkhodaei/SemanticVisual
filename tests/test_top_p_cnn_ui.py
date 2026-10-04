@@ -80,3 +80,39 @@ class TestTopPCNNWeightsEndpoint:
         # top_k > 500
         res = client.get("/api/v1/toppaper/cnn-weights?top_k=9999")
         assert res.status_code == 422
+
+
+class TestTopPCNNTrainingUIPresets:
+    """Tests verifying training UI HTML controls, input bindings, and preset definitions."""
+
+    def test_training_controller_html_structure_and_presets(self):
+        """Verify top_p_lab.html contains training controller input IDs, preset buttons, and handlers."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+
+        # Verify exact element IDs exist in HTML
+        required_input_ids = [
+            'id="train-rounds"',
+            'id="train-epochs"',
+            'id="train-batch"',
+            'id="train-lr"',
+            'id="train-momentum"',
+            'id="train-decay"',
+            'id="train-seed"',
+            'id="train-synthetic"',
+            'id="btn-train-cnn"',
+            'id="train-status-banner"',
+        ]
+        for input_id in required_input_ids:
+            assert input_id in html_content, f"Missing required input ID {input_id} in top_p_lab.html"
+
+        # Verify preset buttons in HTML
+        assert "applyTrainingPreset('mock')" in html_content
+        assert "applyTrainingPreset('paper')" in html_content
+        assert "applyTrainingPreset('reset')" in html_content
+
+        # Verify JS function definition and preset values
+        assert "function applyTrainingPreset(type)" in html_content
+        assert "Paper Default (§5.1)" in html_content
+

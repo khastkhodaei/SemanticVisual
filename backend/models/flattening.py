@@ -17,10 +17,12 @@ from datetime import datetime, timezone
 import json
 import logging
 from pathlib import Path
+import random
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
+
 
 from backend.models.cifar_cnn import CIFAR10CNN
 
@@ -180,9 +182,26 @@ def save_flat_parameters_artifact(
         },
     }
 
-    torch.save(payload, out_file)
+    temp_file = out_file.with_name(f"{out_file.stem}_tmp_{random.randint(10000, 99999)}{out_file.suffix}")
+    try:
+        torch.save(payload, temp_file)
+        if out_file.exists():
+            try:
+                out_file.unlink()
+            except Exception:
+                pass
+        temp_file.replace(out_file)
+    except Exception:
+        if temp_file.exists():
+            try:
+                temp_file.unlink()
+            except Exception:
+                pass
+        torch.save(payload, out_file)
+
     logger.info("Saved flattened parameter artifact: %s (%d elements)", out_file, flat_tensor.numel())
     return out_file
+
 
 
 def load_flat_parameters_artifact(

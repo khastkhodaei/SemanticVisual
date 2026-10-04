@@ -61,62 +61,68 @@
     "9": "truck"
   },
   "hyperparameters": {
-    "epochs": 5,
-    "batch_size": 64,
+    "rounds": 2,
+    "epochs": 1,
+    "epochs_per_round": 1,
+    "total_epochs": 2,
+    "batch_size": 32,
     "learning_rate": 0.01,
     "momentum": 0.9,
     "weight_decay": 0.0001,
     "optimizer": "SGD",
     "seed": 42,
-    "is_synthetic": false
+    "is_synthetic": true
   },
   "metrics": {
-    "final_train_loss": 0.8622,
-    "final_train_accuracy": 69.84,
-    "final_test_loss": 0.8048,
-    "final_test_accuracy": 72.31,
-    "training_duration_seconds": 308.22
+    "final_train_loss": 2.2921,
+    "final_train_accuracy": 10.94,
+    "final_test_loss": 2.3265,
+    "final_test_accuracy": 10.94,
+    "training_duration_seconds": 0.35
   },
+  "round_history": [
+    {
+      "round": 1,
+      "train_loss": 2.3143,
+      "train_accuracy": 6.25,
+      "test_loss": 2.3124,
+      "test_accuracy": 10.94,
+      "checkpoint_path": "D:\\Dev\\SemanticVisual\\output\\models\\rounds\\cifar10_cnn_round_1.pt",
+      "flat_parameters_path": "D:\\Dev\\SemanticVisual\\output\\models\\rounds\\cifar10_flat_round_1.pt"
+    },
+    {
+      "round": 2,
+      "train_loss": 2.2921,
+      "train_accuracy": 10.94,
+      "test_loss": 2.3265,
+      "test_accuracy": 10.94,
+      "checkpoint_path": "D:\\Dev\\SemanticVisual\\output\\models\\rounds\\cifar10_cnn_round_2.pt",
+      "flat_parameters_path": "D:\\Dev\\SemanticVisual\\output\\models\\rounds\\cifar10_flat_round_2.pt"
+    }
+  ],
   "epoch_history": [
     {
+      "round": 1,
       "epoch": 1,
-      "train_loss": 1.6187,
-      "train_accuracy": 41.05,
-      "test_loss": 1.3176,
-      "test_accuracy": 52.83
+      "global_epoch": 1,
+      "train_loss": 2.3143,
+      "train_accuracy": 6.25,
+      "test_loss": 2.3124,
+      "test_accuracy": 10.94
     },
     {
-      "epoch": 2,
-      "train_loss": 1.2123,
-      "train_accuracy": 56.39,
-      "test_loss": 1.1085,
-      "test_accuracy": 60.9
-    },
-    {
-      "epoch": 3,
-      "train_loss": 1.0367,
-      "train_accuracy": 63.32,
-      "test_loss": 0.9623,
-      "test_accuracy": 66.95
-    },
-    {
-      "epoch": 4,
-      "train_loss": 0.9449,
-      "train_accuracy": 67.03,
-      "test_loss": 0.8814,
-      "test_accuracy": 69.65
-    },
-    {
-      "epoch": 5,
-      "train_loss": 0.8622,
-      "train_accuracy": 69.84,
-      "test_loss": 0.8048,
-      "test_accuracy": 72.31
+      "round": 2,
+      "epoch": 1,
+      "global_epoch": 2,
+      "train_loss": 2.2921,
+      "train_accuracy": 10.94,
+      "test_loss": 2.3265,
+      "test_accuracy": 10.94
     }
   ],
   "execution": {
     "device": "cpu",
     "torch_version": "2.14.0+cpu",
-    "timestamp_utc": "2026-10-04T13:15:15.232676+00:00"
+    "timestamp_utc": "2026-10-04T13:42:17.930489+00:00"
   }
 }

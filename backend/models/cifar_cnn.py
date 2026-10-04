@@ -15,10 +15,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import random
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
+
 
 
 # Canonical CIFAR-10 Class Map (10 classes)
@@ -247,7 +249,24 @@ class CIFAR10CNN(nn.Module):
             },
             "total_parameters": self.count_parameters(),
         }
-        torch.save(checkpoint_payload, ckpt_path)
+        temp_ckpt = ckpt_path.with_name(f"{ckpt_path.stem}_tmp_{random.randint(10000, 99999)}{ckpt_path.suffix}")
+
+        try:
+            torch.save(checkpoint_payload, temp_ckpt)
+            if ckpt_path.exists():
+                try:
+                    ckpt_path.unlink()
+                except Exception:
+                    pass
+            temp_ckpt.replace(ckpt_path)
+        except Exception:
+            if temp_ckpt.exists():
+                try:
+                    temp_ckpt.unlink()
+                except Exception:
+                    pass
+            torch.save(checkpoint_payload, ckpt_path)
+
 
         # Prepare and save JSON metadata
         meta_path = ckpt_path.parent / "model_metadata.json"
