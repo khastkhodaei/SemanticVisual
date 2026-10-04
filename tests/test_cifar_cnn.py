@@ -1,4 +1,4 @@
-"""Automated Test Suite for CIFAR-10 CNN Model and Training Pipeline.
+"""Automated Test Suite for CIFAR-10 CNN Model, Flattening, and Training Pipeline.
 
 Tests:
 1. Shape contract: Input (B, 3, 32, 32) -> Output (B, 10) across diverse batch sizes.
@@ -7,7 +7,11 @@ Tests:
 4. Deterministic training: Same seed yields identical model weights and metrics.
 5. Serialization & Round-Trip: Checkpoint saved to disk and reloaded with 0.0 error.
 6. Metadata verification: Checks all required fields in model_metadata.json.
-7. CLI & Config parsing: Validates arguments handling.
+7. Flattening & Unflattening:
+   - Shape & length: (2156490,) flat float32 tensor.
+   - Exact round-trip parameter parity (0.0 discrepancy).
+   - Equivalence of forward pass outputs on fresh model after unflattening.
+   - Artifact file integrity (output/models/cifar10_flat_parameters.pt).
 """
 
 import json
@@ -18,6 +22,15 @@ import torch
 import torch.nn as nn
 
 from backend.models.cifar_cnn import CIFAR10CNN, CIFAR10_CLASSES
+from backend.models.flattening import (
+    CANONICAL_LAYER_ORDER,
+    EXPECTED_PARAMETER_COUNT,
+    export_checkpoint_to_flat_artifact,
+    flatten_parameters,
+    load_flat_parameters_artifact,
+    save_flat_parameters_artifact,
+    unflatten_parameters,
+)
 from backend.training.train_cifar import (
     TrainingConfig,
     evaluate_model,
@@ -56,7 +69,7 @@ class TestCIFAR10CNNModel:
     def test_invalid_input_shapes_raise_error(self):
         """Verify invalid input dimensions or channel counts raise ValueError."""
         model = CIFAR10CNN()
-        
+
         # 3D tensor instead of 4D
         with pytest.raises(ValueError, match="Expected 4D input tensor"):
             model(torch.randn(3, 32, 32))
@@ -94,7 +107,7 @@ class TestCIFAR10CNNModel:
         assert summary["conv1"]["out_channels"] == 32
         assert summary["conv2"]["out_channels"] == 64
         assert summary["fc1"]["out_features"] == 512
-        assert summary["total_parameters"] > 0
+        assert summary["total_parameters"] == EXPECTED_PARAMETER_COUNT
         assert summary["total_parameters"] == model.count_parameters()
 
 
@@ -105,7 +118,7 @@ class TestSerializationAndReload:
         """Verify saved checkpoint weights reload with zero numerical discrepancy."""
         with tempfile.TemporaryDirectory() as tmpdir:
             ckpt_file = Path(tmpdir) / "test_model.pt"
-            
+
             # 1. Initialize and mutate weights
             model_orig = CIFAR10CNN()
             with torch.no_grad():
@@ -156,6 +169,101 @@ class TestSerializationAndReload:
             assert "classes" in data
             assert len(data["classes"]) == 10
             assert data["classes"]["0"] == "airplane" or data["classes"][0] == "airplane"
+
+
+class TestParameterFlattening:
+    """Unit tests for deterministic parameter flattening and unflattening routines."""
+
+    def test_flat_parameters_shape_and_length(self):
+        """Assert flat parameter tensor shape is exactly (2156490,) and float32."""
+        model = CIFAR10CNN()
+        flat_tensor, metadata = flatten_parameters(model)
+
+        assert flat_tensor.dim() == 1
+        assert flat_tensor.shape == (EXPECTED_PARAMETER_COUNT,)
+        assert flat_tensor.shape == (2156490,)
+        assert flat_tensor.dtype == torch.float32
+        assert metadata["num_parameters"] == EXPECTED_PARAMETER_COUNT
+        assert metadata["l2_norm"] > 0.0
+        assert len(metadata["layer_slices"]) == len(CANONICAL_LAYER_ORDER)
+
+        # Validate slice continuity: start_idx of layer i+1 == end_idx of layer i
+        prev_end = 0
+        for layer_name in CANONICAL_LAYER_ORDER:
+            assert layer_name in metadata["layer_slices"]
+            info = metadata["layer_slices"][layer_name]
+            assert info["start_idx"] == prev_end
+            assert info["end_idx"] == info["start_idx"] + info["numel"]
+            prev_end = info["end_idx"]
+        assert prev_end == EXPECTED_PARAMETER_COUNT
+
+    def test_flatten_unflatten_roundtrip(self):
+        """Verify flattening, loading into fresh model, and running forward yields exact parity."""
+        # 1. Instantiate source model with mutated weights
+        model_source = CIFAR10CNN()
+        with torch.no_grad():
+            for p in model_source.parameters():
+                p.add_(torch.randn_like(p) * 0.2)
+
+        # 2. Flatten parameters
+        flat_tensor, metadata = flatten_parameters(model_source)
+
+        # 3. Instantiate target model (with different initial weights)
+        model_target = CIFAR10CNN()
+
+        # Verify target has different initial parameters
+        assert not torch.equal(
+            list(model_source.parameters())[0], list(model_target.parameters())[0]
+        )
+
+        # 4. Unflatten parameters into target model
+        unflatten_parameters(flat_tensor, metadata["layer_slices"], model_target)
+
+        # 5. Check exact parameter equality across every layer
+        for (k1, v1), (k2, v2) in zip(
+            model_source.state_dict().items(), model_target.state_dict().items()
+        ):
+            assert k1 == k2
+            assert torch.equal(v1, v2), f"Numerical mismatch in layer {k1}"
+
+        # 6. Check forward inference output parity
+        test_input = torch.randn(16, 3, 32, 32)
+        model_source.eval()
+        model_target.eval()
+        with torch.no_grad():
+            out_source = model_source(test_input)
+            out_target = model_target(test_input)
+
+        assert torch.allclose(out_source, out_target, atol=1e-7)
+
+    def test_flat_artifact_file_integrity(self):
+        """Assert output/models/cifar10_flat_parameters.pt exists and has valid schema."""
+        artifact_path = Path("output/models/cifar10_flat_parameters.pt")
+        assert artifact_path.exists(), "Artifact file output/models/cifar10_flat_parameters.pt does not exist."
+
+        flat_tensor, metadata = load_flat_parameters_artifact(artifact_path)
+        assert flat_tensor.shape == (2156490,)
+        assert flat_tensor.dtype == torch.float32
+        assert metadata["num_parameters"] == 2156490
+        assert metadata["l2_norm"] > 0.0
+        assert "layer_slices" in metadata
+        assert len(metadata["layer_slices"]) == 8
+        assert "metadata" in metadata
+        assert metadata["metadata"]["model_name"] == "CIFAR10CNN"
+
+    def test_unflatten_invalid_dimensions_raise_error(self):
+        """Verify invalid flat tensor sizes or malformed slices raise errors."""
+        model = CIFAR10CNN()
+        _, metadata = flatten_parameters(model)
+
+        # 2D tensor instead of 1D
+        with pytest.raises(ValueError, match="Expected 1D flat tensor"):
+            unflatten_parameters(torch.randn(10, 10), metadata["layer_slices"], model)
+
+        # Tensor too short
+        short_tensor = torch.randn(100)
+        with pytest.raises(ValueError, match="exceeds tensor length"):
+            unflatten_parameters(short_tensor, metadata["layer_slices"], model)
 
 
 class TestTrainingPipeline:
