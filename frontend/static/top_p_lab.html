@@ -2720,7 +2720,7 @@
       weight_decay,
       seed,
       synthetic,
-      synthetic_samples: synthetic ? 512 : 50000,
+      ...(synthetic ? { synthetic_samples: 512 } : {}),
     };
 
     if (btn) {
