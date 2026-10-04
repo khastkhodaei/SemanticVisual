@@ -71,24 +71,24 @@
     "is_synthetic": true
   },
   "metrics": {
-    "final_train_loss": 2.3143,
-    "final_train_accuracy": 6.25,
-    "final_test_loss": 2.3124,
-    "final_test_accuracy": 10.94,
-    "training_duration_seconds": 0.09
+    "final_train_loss": 2.3139,
+    "final_train_accuracy": 9.77,
+    "final_test_loss": 2.3196,
+    "final_test_accuracy": 7.81,
+    "training_duration_seconds": 0.46
   },
   "epoch_history": [
     {
       "epoch": 1,
-      "train_loss": 2.3143,
-      "train_accuracy": 6.25,
-      "test_loss": 2.3124,
-      "test_accuracy": 10.94
+      "train_loss": 2.3139,
+      "train_accuracy": 9.77,
+      "test_loss": 2.3196,
+      "test_accuracy": 7.81
     }
   ],
   "execution": {
     "device": "cpu",
     "torch_version": "2.14.0+cpu",
-    "timestamp_utc": "2026-10-04T11:58:24.135778+00:00"
+    "timestamp_utc": "2026-10-04T11:59:38.501210+00:00"
   }
 }
