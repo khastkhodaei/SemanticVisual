@@ -10,6 +10,12 @@ from backend.models.tiny_imagenet_resnet import (
     TinyImageNetResNet18,
     TINY_IMAGENET_NUM_CLASSES,
 )
+from backend.models.speech_resnet import (
+    AudioToLogMelSpectrogram,
+    SpeechResNet18,
+    SPEECH_COMMANDS_CLASSES,
+    EXPECTED_SPEECH_PARAMETER_COUNT,
+)
 from backend.models.flattening import (
     CANONICAL_LAYER_ORDER,
     EXPECTED_PARAMETER_COUNT,
@@ -28,6 +34,10 @@ __all__ = [
     "EXPECTED_FMNIST_PARAMETER_COUNT",
     "TinyImageNetResNet18",
     "TINY_IMAGENET_NUM_CLASSES",
+    "SpeechResNet18",
+    "SPEECH_COMMANDS_CLASSES",
+    "AudioToLogMelSpectrogram",
+    "EXPECTED_SPEECH_PARAMETER_COUNT",
     "CANONICAL_LAYER_ORDER",
     "EXPECTED_PARAMETER_COUNT",
     "flatten_parameters",
