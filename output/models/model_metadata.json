@@ -61,43 +61,39 @@
     "9": "truck"
   },
   "hyperparameters": {
-    "rounds": 2,
+    "rounds": 1,
     "epochs": 1,
     "epochs_per_round": 1,
-    "total_epochs": 2,
+    "total_epochs": 1,
     "batch_size": 32,
     "learning_rate": 0.01,
     "momentum": 0.9,
     "weight_decay": 0.0001,
     "optimizer": "SGD",
     "seed": 42,
-    "is_synthetic": true
+    "is_synthetic": true,
+    "distribution": "pathological_20",
+    "target_classes": [
+      0,
+      1
+    ]
   },
   "metrics": {
-    "final_train_loss": 2.2921,
-    "final_train_accuracy": 10.94,
-    "final_test_loss": 2.3265,
-    "final_test_accuracy": 10.94,
-    "training_duration_seconds": 132.36
+    "final_train_loss": 2.1209,
+    "final_train_accuracy": 31.25,
+    "final_test_loss": 1.4421,
+    "final_test_accuracy": 53.12,
+    "training_duration_seconds": 6.99
   },
   "round_history": [
     {
       "round": 1,
-      "train_loss": 2.3143,
-      "train_accuracy": 6.25,
-      "test_loss": 2.3124,
-      "test_accuracy": 10.94,
+      "train_loss": 2.1209,
+      "train_accuracy": 31.25,
+      "test_loss": 1.4421,
+      "test_accuracy": 53.12,
       "checkpoint_path": "D:\\Dev\\SemanticVisual\\output\\models\\rounds\\cifar10_cnn_round_1.pt",
       "flat_parameters_path": "D:\\Dev\\SemanticVisual\\output\\models\\rounds\\cifar10_flat_round_1.pt"
-    },
-    {
-      "round": 2,
-      "train_loss": 2.2921,
-      "train_accuracy": 10.94,
-      "test_loss": 2.3265,
-      "test_accuracy": 10.94,
-      "checkpoint_path": "D:\\Dev\\SemanticVisual\\output\\models\\rounds\\cifar10_cnn_round_2.pt",
-      "flat_parameters_path": "D:\\Dev\\SemanticVisual\\output\\models\\rounds\\cifar10_flat_round_2.pt"
     }
   ],
   "epoch_history": [
@@ -105,24 +101,15 @@
       "round": 1,
       "epoch": 1,
       "global_epoch": 1,
-      "train_loss": 2.3143,
-      "train_accuracy": 6.25,
-      "test_loss": 2.3124,
-      "test_accuracy": 10.94
-    },
-    {
-      "round": 2,
-      "epoch": 1,
-      "global_epoch": 2,
-      "train_loss": 2.2921,
-      "train_accuracy": 10.94,
-      "test_loss": 2.3265,
-      "test_accuracy": 10.94
+      "train_loss": 2.1209,
+      "train_accuracy": 31.25,
+      "test_loss": 1.4421,
+      "test_accuracy": 53.12
     }
   ],
   "execution": {
     "device": "cpu",
     "torch_version": "2.14.0+cpu",
-    "timestamp_utc": "2026-10-05T09:00:28.391799+00:00"
+    "timestamp_utc": "2026-10-05T12:33:47.271297+00:00"
   }
 }

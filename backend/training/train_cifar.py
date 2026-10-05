@@ -57,6 +57,8 @@ class TrainingConfig:
     data_dir: str = "data"
     synthetic: bool = False
     synthetic_samples: int = 512
+    distribution: str = "full"
+    target_classes: Optional[List[int]] = None
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     checkpoint_name: str = "cifar10_cnn_checkpoint.pt"
 
@@ -110,11 +112,21 @@ def get_dataloaders(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
         # Create deterministic synthetic tensors
         gen = torch.Generator().manual_seed(config.seed)
         train_x = torch.randn(config.synthetic_samples, 3, 32, 32, generator=gen)
-        train_y = torch.randint(0, 10, (config.synthetic_samples,), generator=gen)
-        
         test_samples = max(64, config.synthetic_samples // 4)
         test_x = torch.randn(test_samples, 3, 32, 32, generator=gen)
-        test_y = torch.randint(0, 10, (test_samples,), generator=gen)
+
+        if config.distribution == "pathological_20":
+            target_classes = list(config.target_classes) if (config.target_classes is not None and len(config.target_classes) > 0) else [0, 1]
+            config.target_classes = target_classes
+            logger.info("Applying 20% Pathological Label Skew with classes: %s", target_classes)
+            target_tensor = torch.tensor(target_classes, dtype=torch.long)
+            train_idx = torch.randint(0, len(target_classes), (config.synthetic_samples,), generator=gen)
+            train_y = target_tensor[train_idx]
+            test_idx = torch.randint(0, len(target_classes), (test_samples,), generator=gen)
+            test_y = target_tensor[test_idx]
+        else:
+            train_y = torch.randint(0, 10, (config.synthetic_samples,), generator=gen)
+            test_y = torch.randint(0, 10, (test_samples,), generator=gen)
 
         train_dataset = TensorDataset(train_x, train_y)
         test_dataset = TensorDataset(test_x, test_y)
@@ -167,6 +179,18 @@ def get_dataloaders(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
             transform=test_transform,
         )
 
+        if config.distribution == "pathological_20":
+            target_classes = list(config.target_classes) if (config.target_classes is not None and len(config.target_classes) > 0) else [0, 1]
+            config.target_classes = target_classes
+            logger.info("Applying 20% Pathological Label Skew with classes: %s", target_classes)
+            train_targets = train_dataset.targets if hasattr(train_dataset, "targets") else [y for _, y in train_dataset]
+            train_indices = [i for i, label in enumerate(train_targets) if int(label) in target_classes]
+            train_dataset = torch.utils.data.Subset(train_dataset, train_indices)
+
+            test_targets = test_dataset.targets if hasattr(test_dataset, "targets") else [y for _, y in test_dataset]
+            test_indices = [i for i, label in enumerate(test_targets) if int(label) in target_classes]
+            test_dataset = torch.utils.data.Subset(test_dataset, test_indices)
+
         train_loader = DataLoader(
             train_dataset,
             batch_size=config.batch_size,
@@ -191,9 +215,21 @@ def get_dataloaders(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
         # Fallback to synthetic
         gen = torch.Generator().manual_seed(config.seed)
         train_x = torch.randn(config.synthetic_samples, 3, 32, 32, generator=gen)
-        train_y = torch.randint(0, 10, (config.synthetic_samples,), generator=gen)
-        test_x = torch.randn(max(64, config.synthetic_samples // 4), 3, 32, 32, generator=gen)
-        test_y = torch.randint(0, 10, (max(64, config.synthetic_samples // 4),), generator=gen)
+        test_samples = max(64, config.synthetic_samples // 4)
+        test_x = torch.randn(test_samples, 3, 32, 32, generator=gen)
+
+        if config.distribution == "pathological_20":
+            target_classes = list(config.target_classes) if (config.target_classes is not None and len(config.target_classes) > 0) else [0, 1]
+            config.target_classes = target_classes
+            logger.info("Applying 20% Pathological Label Skew with classes: %s", target_classes)
+            target_tensor = torch.tensor(target_classes, dtype=torch.long)
+            train_idx = torch.randint(0, len(target_classes), (config.synthetic_samples,), generator=gen)
+            train_y = target_tensor[train_idx]
+            test_idx = torch.randint(0, len(target_classes), (test_samples,), generator=gen)
+            test_y = target_tensor[test_idx]
+        else:
+            train_y = torch.randint(0, 10, (config.synthetic_samples,), generator=gen)
+            test_y = torch.randint(0, 10, (test_samples,), generator=gen)
 
         train_loader = DataLoader(TensorDataset(train_x, train_y), batch_size=config.batch_size, shuffle=True)
         test_loader = DataLoader(TensorDataset(test_x, test_y), batch_size=config.batch_size, shuffle=False)
@@ -322,12 +358,14 @@ def compute_and_save_importance_cache(
 
     # Rank each round with deterministic index tie-break (stable descending argsort)
     round_ranks: List[torch.Tensor] = []
-    round_rank_of_index: List[Dict[int, int]] = []
+    round_rank_of_index: List[torch.Tensor] = []
     for st in ema_scores:
         sorted_indices = torch.argsort(-st, stable=True)
         round_ranks.append(sorted_indices)
-        rank_of_idx = {int(sorted_indices[r].item()): r + 1 for r in range(total_params)}
-        round_rank_of_index.append(rank_of_idx)
+        # Vectorized inverse permutation: rank_tensor[global_index] = 1-based rank
+        rank_tensor = torch.empty(total_params, dtype=torch.int64)
+        rank_tensor[sorted_indices] = torch.arange(1, total_params + 1, dtype=torch.int64)
+        round_rank_of_index.append(rank_tensor)
 
     rounds_data: List[Dict[str, Any]] = []
     effective_top_k = min(top_k, total_params)
@@ -343,8 +381,8 @@ def compute_and_save_importance_cache(
             if t_idx == 0:
                 rank_delta = None
             else:
-                prev_rank = round_rank_of_index[t_idx - 1].get(global_idx)
-                rank_delta = None if prev_rank is None else (prev_rank - rank)
+                prev_rank = int(round_rank_of_index[t_idx - 1][global_idx].item())
+                rank_delta = prev_rank - rank
 
             raw_val = float(wt[global_idx].item())
             score_val = float(st[global_idx].item())
@@ -693,6 +731,8 @@ def train_cifar_model(config: Optional[TrainingConfig] = None) -> Tuple[CIFAR10C
             "optimizer": "SGD",
             "seed": config.seed,
             "is_synthetic": config.synthetic,
+            "distribution": config.distribution,
+            "target_classes": config.target_classes,
         },
         "metrics": {
             "final_train_loss": final_train_loss,
@@ -745,6 +785,7 @@ def parse_args() -> TrainingConfig:
     parser.add_argument("--data-dir", type=str, default="data", help="CIFAR-10 raw dataset directory")
     parser.add_argument("--synthetic", action="store_true", help="Use synthetic dataset for fast verification")
     parser.add_argument("--synthetic-samples", type=int, default=512, help="Number of synthetic samples if --synthetic")
+    parser.add_argument("--distribution", type=str, default="full", choices=["full", "pathological_20"], help="Data distribution: 'full' or 'pathological_20'")
 
     args = parser.parse_args()
     return TrainingConfig(
@@ -760,6 +801,7 @@ def parse_args() -> TrainingConfig:
         data_dir=args.data_dir,
         synthetic=args.synthetic,
         synthetic_samples=args.synthetic_samples,
+        distribution=args.distribution,
     )
 
 

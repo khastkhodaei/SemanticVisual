@@ -42,6 +42,14 @@ class CnnTrainingRequest(BaseModel):
     seed: int = Field(42, description="Random seed for reproducibility")
     synthetic: bool = Field(False, description="Use synthetic dataset for fast execution")
     synthetic_samples: int = Field(512, ge=64, le=5000, description="Synthetic samples count")
+    distribution: str = Field("full", description="Data distribution: 'full' (10 classes IID) or 'pathological_20' (2 classes / 20% non-IID as in Paper §5.1)")
+
+    @field_validator("distribution")
+    @classmethod
+    def validate_distribution(cls, v: str) -> str:
+        if v not in ("full", "pathological_20"):
+            raise ValueError(f"Invalid distribution '{v}'. Must be 'full' or 'pathological_20'.")
+        return v
 
     @field_validator("weight_decay")
     @classmethod
@@ -77,6 +85,7 @@ def train_cnn(req: CnnTrainingRequest) -> Dict[str, Any]:
         seed=req.seed,
         synthetic=req.synthetic,
         synthetic_samples=req.synthetic_samples,
+        distribution=req.distribution,
         output_dir="output/models",
         checkpoint_dir="output/models/rounds",
     )
@@ -104,6 +113,8 @@ def train_cnn(req: CnnTrainingRequest) -> Dict[str, Any]:
         "epoch_history": result.epoch_history,
         "checkpoint_path": result.checkpoint_path,
         "metadata_path": result.metadata_path,
+        "distribution": config.distribution,
+        "target_classes": config.target_classes,
     }
 
 

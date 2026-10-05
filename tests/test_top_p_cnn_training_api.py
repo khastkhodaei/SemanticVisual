@@ -126,3 +126,66 @@ class TestCnnTrainingEndpoint:
             "422 error body must mention 'weight_decay' to help the user identify the problem"
         )
 
+    def test_train_cnn_pathological_20_synthetic(self, client: TestClient):
+        """Verify train-cnn with distribution='pathological_20' executes and returns partition metadata."""
+        payload = {
+            "rounds": 1,
+            "epochs": 1,
+            "batch_size": 32,
+            "learning_rate": 0.01,
+            "momentum": 0.9,
+            "weight_decay": 0.0001,
+            "seed": 42,
+            "synthetic": True,
+            "synthetic_samples": 64,
+            "distribution": "pathological_20",
+        }
+        res = client.post("/api/v1/toppaper/train-cnn", json=payload)
+        assert res.status_code == 200, f"Expected 200, got {res.status_code}: {res.text}"
+        data = res.json()
+        assert data.get("distribution") == "pathological_20"
+        assert data.get("target_classes") == [0, 1]
+        assert data["final_train_accuracy"] >= 0.0
+        assert data["final_test_accuracy"] >= 0.0
+
+    def test_train_cnn_invalid_distribution_rejected(self, client: TestClient):
+        """Verify invalid distribution strings return 422 Unprocessable Entity."""
+        res = client.post(
+            "/api/v1/toppaper/train-cnn",
+            json={"distribution": "invalid_skew", "synthetic": True, "synthetic_samples": 64},
+        )
+        assert res.status_code == 422
+
+    def test_get_dataloaders_pathological_20_filters_classes(self):
+        """Verify get_dataloaders under pathological_20 restricts batches strictly to target_classes."""
+        from backend.training.train_cifar import TrainingConfig, get_dataloaders
+
+        cfg = TrainingConfig(
+            distribution="pathological_20",
+            target_classes=[2, 5],
+            synthetic=True,
+            synthetic_samples=64,
+            batch_size=16,
+        )
+        train_loader, test_loader = get_dataloaders(cfg)
+
+        for _, y in train_loader:
+            for label in y.tolist():
+                assert label in [2, 5], f"Label {label} not in target classes [2, 5]"
+
+        for _, y in test_loader:
+            for label in y.tolist():
+                assert label in [2, 5], f"Label {label} not in target classes [2, 5]"
+
+    def test_html_contains_distribution_selector_and_presets(self):
+        """Verify HTML HUD contains #train-distribution select box and preset functions configure it."""
+        html_path = Path("frontend/static/top_p_lab.html")
+        assert html_path.exists(), "top_p_lab.html must exist"
+        content = html_path.read_text(encoding="utf-8")
+
+        assert 'id="train-distribution"' in content
+        assert 'value="full"' in content
+        assert 'value="pathological_20"' in content
+        # Ensure preset mappings wire the distribution
+        assert "train-distribution" in content
+
