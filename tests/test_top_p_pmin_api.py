@@ -129,6 +129,24 @@ class TestPminAlgorithm1Math:
             assert d["total_checks"] == len(trace)
             prev_p = p_min
 
+    def test_trace_cosine_7_decimal_places_and_action_text(self, client: TestClient) -> None:
+        """Verify cos_mid in trace and achieved_cosine are computed with 7 decimals and action text formats both."""
+        w = torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], dtype=torch.float32)
+        _make_flat_artifact(w, self.rounds_dir / "cifar10_flat_round_1.pt")
+
+        res = client.get("/api/v1/toppaper/binary-search-pmin?theta=0.8&beta=0.9&round_num=1")
+        assert res.status_code == 200
+        data = res.json()
+        trace = data["trace"]
+        assert len(trace) > 0
+
+        for t in trace:
+            # Check cos_mid has float precision
+            assert isinstance(t["cos_mid"], float)
+            assert "cos=" in t["action"]
+            # Action string should have 7 decimal places format: e.g. 0.8000000
+            assert "0.8000000" in t["action"]
+
 
 class TestPminUIAndDocs:
     """Verify HTML elements and JavaScript state handlers for Step 3."""
@@ -144,3 +162,19 @@ class TestPminUIAndDocs:
         assert 'id="btn-run-pmin-search"' in html
         assert 'id="table-pmin-trace"' in html
         assert "function runPminBinarySearch" in html
+
+    def test_html_trace_table_column_widths_and_no_wrap(self) -> None:
+        """Trace table headers and cells must contain proper min-width and whitespace-nowrap classes."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+
+        assert "min-w-[70px]" in html
+        assert "min-w-[170px]" in html
+        assert "min-w-[120px]" in html
+        assert "min-w-[150px]" in html
+        assert "min-w-[130px]" in html
+        assert "min-w-[110px]" in html
+        assert "min-w-[360px]" in html
+        assert "whitespace-nowrap" in html
+        assert ".toFixed(7)" in html

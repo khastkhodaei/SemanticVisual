@@ -811,17 +811,17 @@
               </div>
               <span id="pmin-trace-count" class="tag-paper text-[10px] font-mono">0 iterations</span>
             </div>
-            <div class="max-h-[380px] overflow-y-auto">
-              <table id="table-pmin-trace" class="w-full text-left text-xs table-fixed">
+            <div class="max-h-[380px] overflow-x-auto overflow-y-auto">
+              <table id="table-pmin-trace" class="w-full text-left text-xs min-w-[1110px]">
                 <thead class="sticky top-0 bg-slate-100/90 backdrop-blur-xs border-b border-slate-200 text-[11px] text-slate-600 font-semibold">
                   <tr>
-                    <th class="py-2.5 px-3 text-left w-16">Check #</th>
-                    <th class="py-2.5 px-3 text-left w-44">Search Range [lo .. hi]</th>
-                    <th class="py-2.5 px-3 text-right w-28">Evaluated mid</th>
-                    <th class="py-2.5 px-3 text-right w-32">Accum. Energy c_mid</th>
-                    <th class="py-2.5 px-3 text-right w-28">Achieved Cosine</th>
-                    <th class="py-2.5 px-3 text-center w-28">Feasible? (&ge; &theta;)</th>
-                    <th class="py-2.5 px-3 text-left">Next Action / Contraction</th>
+                    <th class="py-2.5 px-3 text-left whitespace-nowrap min-w-[70px] w-[70px]">Check #</th>
+                    <th class="py-2.5 px-3 text-left whitespace-nowrap min-w-[170px] w-[170px]">Search Range [lo .. hi]</th>
+                    <th class="py-2.5 px-3 text-right whitespace-nowrap min-w-[120px] w-[120px]">Evaluated mid</th>
+                    <th class="py-2.5 px-3 text-right whitespace-nowrap min-w-[150px] w-[150px]">Accum. Energy c_mid</th>
+                    <th class="py-2.5 px-3 text-right whitespace-nowrap min-w-[130px] w-[130px]">Achieved Cosine</th>
+                    <th class="py-2.5 px-3 text-center whitespace-nowrap min-w-[110px] w-[110px]">Feasible? (&ge; &theta;)</th>
+                    <th class="py-2.5 px-3 text-left whitespace-nowrap min-w-[360px]">Next Action / Contraction</th>
                   </tr>
                 </thead>
                 <tbody id="pmin-trace-tbody">
@@ -3913,7 +3913,7 @@
       if ($('kpi-pmin-total')) $('kpi-pmin-total').textContent = data.total_parameters.toLocaleString();
       if ($('kpi-pmin-retained')) $('kpi-pmin-retained').textContent = `${data.retained_percentage.toFixed(2)}% Retained Coordinates`;
       if ($('kpi-pmin-sparsity')) $('kpi-pmin-sparsity').textContent = `${data.sparsity_percentage.toFixed(2)}% Pruned / Zeroed`;
-      if ($('kpi-pmin-cosine')) $('kpi-pmin-cosine').textContent = data.achieved_cosine.toFixed(6);
+      if ($('kpi-pmin-cosine')) $('kpi-pmin-cosine').textContent = data.achieved_cosine.toFixed(7);
       if ($('kpi-pmin-target')) $('kpi-pmin-target').textContent = data.theta.toFixed(2);
       if ($('kpi-pmin-checks')) $('kpi-pmin-checks').textContent = data.total_checks;
       if ($('kpi-pmin-log2')) $('kpi-pmin-log2').textContent = `⌈log₂ ${data.total_parameters.toLocaleString()}⌉ = ${Math.ceil(Math.log2(Math.max(1, data.total_parameters)))}`;
@@ -3930,31 +3930,32 @@
             : 'bg-amber-50 text-amber-700 border-amber-200';
           const badgeText = t.feasible ? '✓ Feasible' : '✗ Below θ';
           const rowBg = isFinal ? 'bg-indigo-50/50 font-medium' : 'hover:bg-slate-50';
+          const cosVal = (t.cos_mid !== undefined ? t.cos_mid : t.cos);
 
           return `
             <tr class="border-b border-slate-100 transition-colors ${rowBg}">
-              <td class="py-2 px-3 font-mono font-bold text-slate-800">
+              <td class="py-2.5 px-3 font-mono font-bold text-slate-800 whitespace-nowrap min-w-[70px] w-[70px]">
                 #${t.step}
                 ${isFinal ? '<span class="ml-1 text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-600 text-white">FINAL</span>' : ''}
               </td>
-              <td class="py-2 px-3 font-mono text-slate-600">
+              <td class="py-2.5 px-3 font-mono text-slate-600 whitespace-nowrap min-w-[170px] w-[170px]">
                 [${t.lo.toLocaleString()} .. ${t.hi.toLocaleString()}]
               </td>
-              <td class="py-2 px-3 text-right font-mono font-bold ${isFinal ? 'text-indigo-700 text-sm' : 'text-slate-900'}">
+              <td class="py-2.5 px-3 text-right font-mono font-bold whitespace-nowrap min-w-[120px] w-[120px] ${isFinal ? 'text-indigo-700 text-sm' : 'text-slate-900'}">
                 ${t.mid.toLocaleString()}
               </td>
-              <td class="py-2 px-3 text-right font-mono text-slate-600">
+              <td class="py-2.5 px-3 text-right font-mono text-slate-600 whitespace-nowrap min-w-[150px] w-[150px]">
                 ${t.c_mid.toFixed(4)}
               </td>
-              <td class="py-2 px-3 text-right font-mono font-bold ${t.feasible ? 'text-emerald-700' : 'text-rose-700'}">
-                ${t.cos_mid.toFixed(6)}
+              <td class="py-2.5 px-3 text-right font-mono font-bold whitespace-nowrap min-w-[130px] w-[130px] ${t.feasible ? 'text-emerald-700' : 'text-rose-700'}">
+                ${cosVal.toFixed(7)}
               </td>
-              <td class="py-2 px-3 text-center">
+              <td class="py-2.5 px-3 text-center whitespace-nowrap min-w-[110px] w-[110px]">
                 <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono border ${badgeClass}">
                   ${badgeText}
                 </span>
               </td>
-              <td class="py-2 px-3 font-sans text-slate-600 text-[11px] truncate" title="${t.action}">
+              <td class="py-2.5 px-3 font-sans text-slate-700 text-xs whitespace-nowrap min-w-[360px]" title="${t.action}">
                 ${t.action}
               </td>
             </tr>

@@ -673,27 +673,29 @@ def get_binary_search_pmin(
         cos_mid = min(1.0, cos_mid)
 
         if ok:
-            action = f"Feasible (cos={cos_mid:.6f} ≥ {theta:.2f}): tighten upper bound hi = {mid}"
+            action = f"Feasible (cos={cos_mid:.7f} ≥ {theta:.7f}): tighten upper bound hi = {mid}"
             trace.append({
                 "step": step_num,
                 "lo": lo,
                 "hi": hi,
                 "mid": mid,
                 "c_mid": round(c_mid, 6),
-                "cos_mid": round(cos_mid, 6),
+                "cos_mid": round(cos_mid, 7),
+                "cos": round(cos_mid, 7),
                 "feasible": True,
                 "action": action,
             })
             hi = mid
         else:
-            action = f"Below θ (cos={cos_mid:.6f} < {theta:.2f}): advance lower bound lo = {mid + 1}"
+            action = f"Below θ (cos={cos_mid:.7f} < {theta:.7f}): advance lower bound lo = {mid + 1}"
             trace.append({
                 "step": step_num,
                 "lo": lo,
                 "hi": hi,
                 "mid": mid,
                 "c_mid": round(c_mid, 6),
-                "cos_mid": round(cos_mid, 6),
+                "cos_mid": round(cos_mid, 7),
+                "cos": round(cos_mid, 7),
                 "feasible": False,
                 "action": action,
             })
@@ -715,7 +717,7 @@ def get_binary_search_pmin(
         "beta": beta,
         "round_num": target_round,
         "p_min": p_min,
-        "achieved_cosine": round(achieved_cosine, 6),
+        "achieved_cosine": round(achieved_cosine, 7),
         "sparsity_percentage": sparsity_percentage,
         "retained_percentage": retained_percentage,
         "nu_sq": round(nu_sq, 6),
