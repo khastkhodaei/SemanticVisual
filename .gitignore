@@ -52,3 +52,7 @@ htmlcov/
 
 # Datasets
 data/
+
+# Generated model weights, training checkpoints and caches
+output/
+*.log
