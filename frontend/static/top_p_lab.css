@@ -324,6 +324,13 @@ body.top-p-page {
   z-index: 20;
 }
 
+/* Multi-Round Comparison Table Layout: Disable sticky first column to eliminate clipping and overlap */
+.top-p-page #importance-table-wrap th:first-child,
+.top-p-page #importance-table-wrap td:first-child {
+  position: static !important;
+  box-shadow: none !important;
+}
+
 .top-p-page tr.bg-blue-50\/40 td:first-child,
 .top-p-page tr.bg-blue-50\/30 td:first-child,
 .top-p-page tr.bg-blue-50\/20 td:first-child,

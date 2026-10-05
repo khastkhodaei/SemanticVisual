@@ -488,6 +488,10 @@
           <div class="text-[11px] text-slate-600 font-sans leading-normal">
             <strong class="text-slate-800">Smoothing Factor $\beta \in [0.0, 0.99]$:</strong> Balances historical memory retention against latest round magnitude adaptation. Coordinates with identical scores are sorted with deterministic index tie-breaking to guarantee absolute consensus across all distributed nodes.
           </div>
+          <div class="mt-2 text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded p-2 flex items-start gap-1.5 font-sans">
+            <span class="text-blue-600 font-bold">ℹ️ Precision Note:</span>
+            <span>All EMA evaluations, tensor calculations, and ranking argsorts are performed with full floating-point precision (FP32/FP64). Values in this table are formatted to 6 decimal places strictly for visual clarity.</span>
+          </div>
         </div>
 
         <!-- Controls Bar -->
@@ -536,8 +540,8 @@
         </div>
 
         <!-- Side-by-Side Multi-Round Comparison Table -->
-        <div id="importance-table-wrap" class="table-wrap hidden">
-          <div id="importance-rounds-container" class="flex gap-4 overflow-x-auto pb-2">
+        <div id="importance-table-wrap" class="table-wrap hidden p-3 overflow-x-auto">
+          <div id="importance-rounds-container" class="flex gap-5 min-w-max pb-1 items-start">
             <!-- Dynamically populated round columns -->
           </div>
         </div>
@@ -3166,24 +3170,24 @@
 
             return `
               <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
-                <td class="py-1.5 px-2.5 font-mono font-bold text-slate-700 whitespace-nowrap">
+                <td class="py-2 px-2.5 font-mono font-bold text-slate-700 whitespace-nowrap min-w-[110px] w-[110px]">
                   #${item.rank.toLocaleString()} ${deltaBadge}
                 </td>
-                <td class="py-1.5 px-2 whitespace-nowrap">
+                <td class="py-2 px-2 whitespace-nowrap min-w-[130px] w-[130px]">
                   <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${style.bg} ${style.text} border ${style.border}">
                     ${item.layer_name}
                   </span>
                 </td>
-                <td class="py-1.5 px-2 font-mono text-slate-600 whitespace-nowrap">
+                <td class="py-2 px-2 font-mono text-slate-600 whitespace-nowrap min-w-[95px] w-[95px]">
                   #${item.global_index.toLocaleString()}
                 </td>
-                <td class="py-1.5 px-2 text-right font-mono font-bold text-indigo-700 whitespace-nowrap">
+                <td class="py-2 px-2 text-right font-mono font-bold text-indigo-700 whitespace-nowrap min-w-[100px] w-[100px]">
                   ${item.score.toFixed(6)}
                 </td>
-                <td class="py-1.5 px-2 text-right font-mono font-bold ${isPos ? 'text-emerald-700' : 'text-rose-700'} whitespace-nowrap">
+                <td class="py-2 px-2 text-right font-mono font-bold ${isPos ? 'text-emerald-700' : 'text-rose-700'} whitespace-nowrap min-w-[100px] w-[100px]">
                   ${isPos ? '+' : ''}${item.value.toFixed(6)}
                 </td>
-                <td class="py-1.5 px-2.5 text-right font-mono font-semibold text-slate-900 whitespace-nowrap">
+                <td class="py-2 px-2.5 text-right font-mono font-semibold text-slate-900 whitespace-nowrap min-w-[95px] w-[95px]">
                   ${item.abs_value.toFixed(6)}
                 </td>
               </tr>
@@ -3191,7 +3195,7 @@
           }).join('');
 
           return `
-            <div class="flex-1 min-w-[560px] bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden flex flex-col">
+            <div class="flex-shrink-0 w-[630px] bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden flex flex-col">
               <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full ${rd.round === 1 ? 'bg-slate-400' : 'bg-indigo-600'}"></span>
@@ -3200,16 +3204,16 @@
                 </div>
                 <span class="tag-paper text-[10px] font-mono">${rd.items.length} items</span>
               </div>
-              <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs">
+              <div class="w-full">
+                <table class="w-full text-left text-xs table-fixed">
                   <thead>
                     <tr class="border-b border-slate-200 bg-slate-50/60 text-[11px] text-slate-500 font-semibold">
-                      <th class="py-2 px-2.5 text-left">Rank</th>
-                      <th class="py-2 px-2 text-left">Layer</th>
-                      <th class="py-2 px-2 text-left">Global Index</th>
-                      <th class="py-2 px-2 text-right">Score ($s_r$)</th>
-                      <th class="py-2 px-2 text-right">Value ($w_r$)</th>
-                      <th class="py-2 px-2.5 text-right">|w|</th>
+                      <th class="py-2 px-2.5 text-left min-w-[110px] w-[110px]">Rank</th>
+                      <th class="py-2 px-2 text-left min-w-[130px] w-[130px]">Layer</th>
+                      <th class="py-2 px-2 text-left min-w-[95px] w-[95px]">Global Index</th>
+                      <th class="py-2 px-2 text-right min-w-[100px] w-[100px]">Score ($s_r$)</th>
+                      <th class="py-2 px-2 text-right min-w-[100px] w-[100px]">Value ($w_r$)</th>
+                      <th class="py-2 px-2.5 text-right min-w-[95px] w-[95px]">|w|</th>
                     </tr>
                   </thead>
                   <tbody>

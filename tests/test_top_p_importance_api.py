@@ -269,6 +269,14 @@ class TestRoundImportanceSchema:
             "Missing JS function computeImportanceScores in top_p_lab.html"
         )
 
+    def test_html_contains_precision_note(self) -> None:
+        """The HTML must contain the floating-point precision note in importance-panel."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+        assert "Precision Note" in html
+        assert "All EMA evaluations, tensor calculations, and ranking argsorts are performed with full floating-point precision" in html
+
 
 # ---------------------------------------------------------------------------
 # Tests: Pre-Computed Importance Cache & Dual Action Controls
