@@ -691,6 +691,148 @@
         </div>
       </div>
 
+      <!-- STEP 3: MINIMAL SIGNATURE BUDGET SEARCH (P_MIN) PANEL -->
+      <div id="pmin-panel" class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title text-indigo-900"><span>⚡</span><span>Step 3: Minimal Signature Budget Search — $P_{\min}$ (Algorithm 1 Trace)</span></span>
+          <span class="tag-paper bg-indigo-50 text-indigo-800 border-indigo-200">Paper §3.2 &amp; App. B</span>
+        </div>
+
+        <!-- Math & Theory Card -->
+        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg mb-3">
+          <div class="text-xs font-bold text-slate-800 mb-1 flex items-center justify-between">
+            <span>📐 Mathematical Foundation: Exact Binary Search for $P_{\min}$</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">Algorithm 1 (Page 29)</span>
+          </div>
+          <p class="text-xs text-slate-600 font-sans leading-relaxed mb-2">
+            Given a target directional cosine threshold $\theta \in (0, 1]$, each client seeks the minimum coordinate budget $P_{\min}$ such that the sparsified model achieves at least $\theta$ directional fidelity with the original model:
+          </p>
+          <div class="bg-white border border-slate-200 rounded p-2.5 text-center text-xs font-mono text-slate-800 shadow-2xs overflow-x-auto my-2">
+            $$\text{Find } \min P \in [1, M] \quad \text{s.t.} \quad \cos\left(w, w^{[P]}\right) \ge \theta \iff c_P \ge \theta^2 \cdot \nu^2$$
+          </div>
+          <p class="text-xs text-slate-600 font-sans leading-relaxed mb-1.5">
+            Because coordinates are sorted descending by importance, the prefix sum array $c_P$ is monotonically non-decreasing. This monotonicity strictly guarantees that binary search locates the global minimum budget $P_{\min}$ in exactly <strong class="text-indigo-700">$\lceil \log_2 M \rceil \approx 22$</strong> checks (out of $2,156,490$ parameters) without exhaustive scanning!
+          </p>
+          <div class="text-[11px] text-slate-500 bg-white border border-slate-200 rounded p-2 flex items-start gap-1.5 font-sans mt-2">
+            <span class="text-blue-600 font-bold">ℹ️ Logarithmic Convergence:</span>
+            <span>At each iteration step $k$, feasibility is evaluated in $\mathcal{O}(1)$ time against precomputed energy $c_{\text{mid}}$. The search interval is halved at every check ($[lo .. hi] \to \text{half}$), converging exponentially to optimal $P_{\min}$.</span>
+          </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3 p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+          <div class="flex items-center gap-3 flex-wrap">
+            <div class="flex items-center gap-1.5">
+              <label for="inp-pmin-theta" class="text-xs font-bold text-slate-700 font-sans">Target Cosine (&theta;):</label>
+              <input id="inp-pmin-theta" type="number" value="0.80" min="0.10" max="1.00" step="0.05" class="w-20 px-2 py-1 text-xs font-mono font-bold bg-white border border-slate-300 rounded shadow-2xs text-center focus:outline-hidden focus:border-indigo-500">
+            </div>
+
+            <!-- Target Presets -->
+            <div class="flex items-center gap-1">
+              <button type="button" onclick="setPminThetaPreset(0.80)" class="px-2 py-1 text-[11px] font-mono font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-100 shadow-2xs" title="Standard SemanticDFL target fidelity">
+                🎯 Paper (0.80)
+              </button>
+              <button type="button" onclick="setPminThetaPreset(0.90)" class="px-2 py-1 text-[11px] font-mono font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-100 shadow-2xs" title="High-fidelity threshold">
+                🔬 High (0.90)
+              </button>
+              <button type="button" onclick="setPminThetaPreset(0.70)" class="px-2 py-1 text-[11px] font-mono font-semibold text-slate-600 bg-white border border-slate-200 rounded hover:bg-slate-100 shadow-2xs" title="Aggressive sparsification">
+                ⚡ Sparse (0.70)
+              </button>
+            </div>
+
+            <!-- Round Selector -->
+            <div class="flex items-center gap-1.5">
+              <label for="sel-pmin-round" class="text-xs font-bold text-slate-700 font-sans">Round:</label>
+              <select id="sel-pmin-round" class="px-2 py-1 text-xs font-mono font-semibold bg-white border border-slate-300 rounded shadow-2xs focus:outline-hidden focus:border-indigo-500">
+                <option value="1">Round 1</option>
+              </select>
+            </div>
+
+            <!-- Action Button -->
+            <button id="btn-run-pmin-search" type="button" onclick="runPminBinarySearch()" class="btn-paper bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 shadow-2xs">
+              <span>🔍</span><span>Run Binary Search for P_min</span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span id="pmin-status-pill" class="text-[11px] font-mono px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-600 rounded">Status: Ready</span>
+          </div>
+        </div>
+
+        <!-- Empty State Banner -->
+        <div id="pmin-empty-state" class="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-lg text-slate-500 font-sans text-xs">
+          <div class="text-2xl mb-2">🔍</div>
+          <div class="font-semibold text-slate-700 text-sm mb-1">Binary Search Not Executed</div>
+          <div>Select a target cosine &theta; and click "Run Binary Search for P_min" to trace Algorithm 1 convergence.</div>
+        </div>
+
+        <!-- Results Container -->
+        <div id="pmin-results-container" class="hidden space-y-4">
+          <!-- Telemetry KPI Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-2xs">
+              <div class="text-[11px] font-semibold text-slate-500 font-sans">Minimal Budget (P_min)</div>
+              <div class="flex items-baseline gap-1 mt-1">
+                <span id="kpi-pmin-budget" class="text-lg font-mono font-bold text-indigo-700">—</span>
+                <span class="text-xs font-mono text-slate-400">/ <span id="kpi-pmin-total">—</span></span>
+              </div>
+              <div id="kpi-pmin-retained" class="text-[10px] text-indigo-500 font-mono mt-0.5">—% Retained Coordinates</div>
+            </div>
+
+            <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-2xs">
+              <div class="text-[11px] font-semibold text-slate-500 font-sans">Sparsification Gain</div>
+              <div id="kpi-pmin-sparsity" class="text-lg font-mono font-bold text-emerald-600 mt-1">—</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">Parameters Zeroed / Pruned</div>
+            </div>
+
+            <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-2xs">
+              <div class="text-[11px] font-semibold text-slate-500 font-sans">Achieved Cosine</div>
+              <div id="kpi-pmin-cosine" class="text-lg font-mono font-bold text-slate-900 mt-1">—</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">Target &theta; = <span id="kpi-pmin-target">0.80</span></div>
+            </div>
+
+            <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-2xs">
+              <div class="text-[11px] font-semibold text-slate-500 font-sans">Search Complexity</div>
+              <div class="flex items-baseline gap-1 mt-1">
+                <span id="kpi-pmin-checks" class="text-lg font-mono font-bold text-blue-700">—</span>
+                <span class="text-xs font-sans text-slate-500">iterations</span>
+              </div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">Optimal bound: <span id="kpi-pmin-log2">⌈log₂ M⌉</span></div>
+            </div>
+          </div>
+
+          <!-- Binary Search Trace Table -->
+          <div class="bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden">
+            <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                <span class="text-xs font-bold text-slate-800">Algorithm 1 Step-by-Step Iteration Trace</span>
+                <span class="text-[10px] text-slate-500 font-mono">(Paper Appendix B / Page 29)</span>
+              </div>
+              <span id="pmin-trace-count" class="tag-paper text-[10px] font-mono">0 iterations</span>
+            </div>
+            <div class="max-h-[380px] overflow-y-auto">
+              <table id="table-pmin-trace" class="w-full text-left text-xs table-fixed">
+                <thead class="sticky top-0 bg-slate-100/90 backdrop-blur-xs border-b border-slate-200 text-[11px] text-slate-600 font-semibold">
+                  <tr>
+                    <th class="py-2.5 px-3 text-left w-16">Check #</th>
+                    <th class="py-2.5 px-3 text-left w-44">Search Range [lo .. hi]</th>
+                    <th class="py-2.5 px-3 text-right w-28">Evaluated mid</th>
+                    <th class="py-2.5 px-3 text-right w-32">Accum. Energy c_mid</th>
+                    <th class="py-2.5 px-3 text-right w-28">Achieved Cosine</th>
+                    <th class="py-2.5 px-3 text-center w-28">Feasible? (&ge; &theta;)</th>
+                    <th class="py-2.5 px-3 text-left">Next Action / Contraction</th>
+                  </tr>
+                </thead>
+                <tbody id="pmin-trace-tbody">
+                  <!-- Dynamically populated trace rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- TOP ABSOLUTE MAGNITUDE PANEL -->
       <div id="cnn-sec-topmagnitude" class="paper-panel">
         <div class="panel-header">
@@ -2170,6 +2312,7 @@
       if (!cnnWeightsData) { loadCnnWeights(); }
       if (!currentImportanceData) { loadImportanceScores(0); }
       if (!currentEnergyData) { loadEnergyDistribution(false); }
+      if (!currentPminData) { runPminBinarySearch(); }
     }
     if (tabId === 'tab-cost' && !$('cost-kpis').innerHTML) { recalcCosts(); }
     if (tabId === 'tab-faq' && !allFaqData.length) { loadFAQ(); }
@@ -3413,6 +3556,7 @@
     const topSec = $('cnn-sec-topmagnitude');
     const importanceSec = $('importance-panel');
     const energySec = $('energy-panel');
+    const pminSec = $('pmin-panel');
     if (!dualSec || !topSec) return;
 
     if (mode === 'all') {
@@ -3420,16 +3564,19 @@
       topSec.style.display = 'block';
       if (importanceSec) importanceSec.style.display = 'block';
       if (energySec) energySec.style.display = 'block';
+      if (pminSec) pminSec.style.display = 'block';
     } else if (mode === 'head' || mode === 'tail') {
       dualSec.style.display = 'grid';
       topSec.style.display = 'none';
       if (importanceSec) importanceSec.style.display = 'none';
       if (energySec) energySec.style.display = 'none';
+      if (pminSec) pminSec.style.display = 'none';
     } else if (mode === 'top') {
       dualSec.style.display = 'none';
       topSec.style.display = 'block';
       if (importanceSec) importanceSec.style.display = 'block';
       if (energySec) energySec.style.display = 'block';
+      if (pminSec) pminSec.style.display = 'block';
     }
   }
 
@@ -3686,6 +3833,158 @@
         }
       }
     });
+  }
+
+  /* --- STEP 3: MINIMAL SIGNATURE BUDGET SEARCH ($P_{\min}$) --- */
+  let currentPminData = null;
+
+  function setPminThetaPreset(val) {
+    const inp = $('inp-pmin-theta');
+    if (inp) {
+      inp.value = val.toFixed(2);
+    }
+    runPminBinarySearch();
+  }
+
+  async function runPminBinarySearch() {
+    const btn = $('btn-run-pmin-search');
+    const thetaInp = $('inp-pmin-theta');
+    const theta = thetaInp ? parseFloat(thetaInp.value) || 0.8 : 0.8;
+
+    const roundSel = $('sel-pmin-round');
+    const roundNum = roundSel ? parseInt(roundSel.value, 10) || 1 : 1;
+
+    const betaInp = $('inp-importance-beta');
+    const beta = betaInp ? parseFloat(betaInp.value) || 0.9 : 0.9;
+
+    const statusPill = $('pmin-status-pill');
+    if (statusPill) {
+      statusPill.textContent = 'Searching...';
+      statusPill.className = 'text-[11px] font-mono px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-700 rounded';
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<span>⏳</span><span>Executing Algorithm 1...</span>`;
+    }
+
+    try {
+      const url = `/api/v1/toppaper/binary-search-pmin?theta=${encodeURIComponent(theta)}&beta=${encodeURIComponent(beta)}&round_num=${encodeURIComponent(roundNum)}&tolerance=1`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Server returned HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      currentPminData = data;
+
+      const emptyBanner = $('pmin-empty-state');
+      const resultsContainer = $('pmin-results-container');
+
+      if (!data.has_data || data.total_parameters === 0) {
+        if (emptyBanner) emptyBanner.classList.remove('hidden');
+        if (resultsContainer) resultsContainer.classList.add('hidden');
+        if (statusPill) {
+          statusPill.textContent = 'No Checkpoints';
+          statusPill.className = 'text-[11px] font-mono px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-500 rounded';
+        }
+        return;
+      }
+
+      if (emptyBanner) emptyBanner.classList.add('hidden');
+      if (resultsContainer) resultsContainer.classList.remove('hidden');
+
+      if (statusPill) {
+        statusPill.textContent = `✓ Resolved in ${data.total_checks} iterations`;
+        statusPill.className = 'text-[11px] font-mono px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded font-semibold';
+      }
+
+      // Update Round Selector options if available_rounds is present
+      if (roundSel && data.available_rounds && data.available_rounds.length > 0) {
+        const currentVal = roundSel.value;
+        const optsHtml = data.available_rounds.map(r => `<option value="${r}">Round ${r}</option>`).join('');
+        if (roundSel.innerHTML !== optsHtml) {
+          roundSel.innerHTML = optsHtml;
+          roundSel.value = currentVal || data.round_num;
+        }
+      }
+
+      // 1. Update KPIs
+      if ($('kpi-pmin-budget')) $('kpi-pmin-budget').textContent = data.p_min.toLocaleString();
+      if ($('kpi-pmin-total')) $('kpi-pmin-total').textContent = data.total_parameters.toLocaleString();
+      if ($('kpi-pmin-retained')) $('kpi-pmin-retained').textContent = `${data.retained_percentage.toFixed(2)}% Retained Coordinates`;
+      if ($('kpi-pmin-sparsity')) $('kpi-pmin-sparsity').textContent = `${data.sparsity_percentage.toFixed(2)}% Pruned / Zeroed`;
+      if ($('kpi-pmin-cosine')) $('kpi-pmin-cosine').textContent = data.achieved_cosine.toFixed(6);
+      if ($('kpi-pmin-target')) $('kpi-pmin-target').textContent = data.theta.toFixed(2);
+      if ($('kpi-pmin-checks')) $('kpi-pmin-checks').textContent = data.total_checks;
+      if ($('kpi-pmin-log2')) $('kpi-pmin-log2').textContent = `⌈log₂ ${data.total_parameters.toLocaleString()}⌉ = ${Math.ceil(Math.log2(Math.max(1, data.total_parameters)))}`;
+      if ($('pmin-trace-count')) $('pmin-trace-count').textContent = `${data.total_checks} iterations`;
+
+      // 2. Render Trace Table
+      const tbody = $('pmin-trace-tbody');
+      if (tbody) {
+        const trace = data.trace || [];
+        tbody.innerHTML = trace.map((t, idx) => {
+          const isFinal = (idx === trace.length - 1);
+          const badgeClass = t.feasible
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+            : 'bg-amber-50 text-amber-700 border-amber-200';
+          const badgeText = t.feasible ? '✓ Feasible' : '✗ Below θ';
+          const rowBg = isFinal ? 'bg-indigo-50/50 font-medium' : 'hover:bg-slate-50';
+
+          return `
+            <tr class="border-b border-slate-100 transition-colors ${rowBg}">
+              <td class="py-2 px-3 font-mono font-bold text-slate-800">
+                #${t.step}
+                ${isFinal ? '<span class="ml-1 text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-600 text-white">FINAL</span>' : ''}
+              </td>
+              <td class="py-2 px-3 font-mono text-slate-600">
+                [${t.lo.toLocaleString()} .. ${t.hi.toLocaleString()}]
+              </td>
+              <td class="py-2 px-3 text-right font-mono font-bold ${isFinal ? 'text-indigo-700 text-sm' : 'text-slate-900'}">
+                ${t.mid.toLocaleString()}
+              </td>
+              <td class="py-2 px-3 text-right font-mono text-slate-600">
+                ${t.c_mid.toFixed(4)}
+              </td>
+              <td class="py-2 px-3 text-right font-mono font-bold ${t.feasible ? 'text-emerald-700' : 'text-rose-700'}">
+                ${t.cos_mid.toFixed(6)}
+              </td>
+              <td class="py-2 px-3 text-center">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono border ${badgeClass}">
+                  ${badgeText}
+                </span>
+              </td>
+              <td class="py-2 px-3 font-sans text-slate-600 text-[11px] truncate" title="${t.action}">
+                ${t.action}
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      if (window.renderMathInElement && $('pmin-panel')) {
+        renderMathInElement($('pmin-panel'), {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
+          ],
+          throwOnError: false
+        });
+      }
+    } catch (err) {
+      console.error('Failed to run P_min binary search:', err);
+      if (statusPill) {
+        statusPill.textContent = 'Search Error';
+        statusPill.className = 'text-[11px] font-mono px-2 py-0.5 bg-rose-50 border border-rose-200 text-rose-700 rounded';
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>🔍</span><span>Run Binary Search for P_min</span>`;
+      }
+    }
   }
 
 </script>

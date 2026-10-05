@@ -531,3 +531,198 @@ def get_energy_distribution(
         "rounds": rounds_data,
         "source": "dynamic_recomputed",
     }
+
+
+@router.get("/binary-search-pmin")
+def get_binary_search_pmin(
+    theta: float = Query(0.8, gt=0.0, le=1.0, description="Target cosine similarity threshold"),
+    beta: float = Query(0.9, ge=0.0, le=0.99, description="EMA smoothing factor"),
+    round_num: int = Query(1, ge=1, description="Round to inspect (defaults to 1 or latest)"),
+    tolerance: int = Query(1, ge=1, description="Binary search termination tolerance eps_P"),
+    force_recompute: bool = Query(False, description="Force dynamic recalculation"),
+) -> Dict[str, Any]:
+    """Execute Algorithm 1 (Appendix B / Page 29) binary search for minimal coordinate budget P_min.
+
+    Finds min P in [1, M] such that cos(w, w^[P]) >= theta <=> c_P >= theta^2 * ||w||_2^2.
+    Returns step-by-step iteration trace, achieved cosine, sparsity gain, and logarithmic complexity.
+    """
+    import backend.top_p_router as _self_module
+    rounds_dir: Path = _self_module.ROUNDS_DIR
+
+    import re as _re
+    import math as _math
+
+    # 1. Discover round files
+    round_files: List[tuple] = []
+    if rounds_dir.exists():
+        for f in rounds_dir.iterdir():
+            m = _re.match(r"cifar10_flat_round_(\d+)\.pt$", f.name)
+            if m:
+                round_files.append((int(m.group(1)), f))
+    round_files.sort(key=lambda x: x[0])
+
+    fallback_file: Optional[Path] = None
+    if not round_files:
+        canonical_flat = rounds_dir / "cifar10_flat_parameters.pt"
+        if canonical_flat.exists():
+            fallback_file = canonical_flat
+        else:
+            return {
+                "has_data": False,
+                "total_parameters": 0,
+                "theta": theta,
+                "beta": beta,
+                "round_num": round_num,
+                "p_min": 0,
+                "achieved_cosine": 0.0,
+                "sparsity_percentage": 0.0,
+                "retained_percentage": 0.0,
+                "nu_sq": 0.0,
+                "nu": 0.0,
+                "c_pmin": 0.0,
+                "total_checks": 0,
+                "trace": [],
+                "available_rounds": [],
+                "source": "empty",
+            }
+
+    # 2. Select target round and chain EMA scores
+    available_rounds = [r[0] for r in round_files] if round_files else [1]
+    if round_files:
+        effective_idx = min(len(round_files) - 1, max(0, round_num - 1))
+        target_round = round_files[effective_idx][0]
+
+        ema_score: Optional[torch.Tensor] = None
+        target_w: Optional[torch.Tensor] = None
+        for i in range(effective_idx + 1):
+            wt, _ = load_flat_parameters_artifact(round_files[i][1])
+            wt = wt.float()
+            abs_w = torch.abs(wt)
+            if ema_score is None:
+                ema_score = abs_w.clone()
+            else:
+                ema_score = beta * ema_score + (1.0 - beta) * abs_w
+            if i == effective_idx:
+                target_w = wt
+    else:
+        target_round = 1
+        target_w, _ = load_flat_parameters_artifact(fallback_file)  # type: ignore[arg-type]
+        target_w = target_w.float()
+        ema_score = torch.abs(target_w)
+
+    total_params = int(target_w.numel())
+    if total_params == 0:
+        return {
+            "has_data": False,
+            "total_parameters": 0,
+            "theta": theta,
+            "beta": beta,
+            "round_num": target_round,
+            "p_min": 0,
+            "achieved_cosine": 0.0,
+            "sparsity_percentage": 0.0,
+            "retained_percentage": 0.0,
+            "nu_sq": 0.0,
+            "nu": 0.0,
+            "c_pmin": 0.0,
+            "total_checks": 0,
+            "trace": [],
+            "available_rounds": available_rounds,
+            "source": "empty",
+        }
+
+    # 3. Sort coordinates descending by score s
+    sorted_indices = torch.argsort(-ema_score, stable=True)
+    w_sorted_sq = (target_w[sorted_indices]) ** 2
+    c_prefix = torch.cumsum(w_sorted_sq, dim=0)
+    nu_sq = float(c_prefix[-1].item())
+    nu = _math.sqrt(max(0.0, nu_sq))
+
+    if nu_sq == 0.0:
+        return {
+            "has_data": True,
+            "total_parameters": total_params,
+            "theta": theta,
+            "beta": beta,
+            "round_num": target_round,
+            "p_min": 1,
+            "achieved_cosine": 1.0,
+            "sparsity_percentage": round((1.0 - 1.0 / total_params) * 100.0, 4),
+            "retained_percentage": round((1.0 / total_params) * 100.0, 4),
+            "nu_sq": 0.0,
+            "nu": 0.0,
+            "c_pmin": 0.0,
+            "total_checks": 0,
+            "trace": [],
+            "available_rounds": available_rounds,
+            "source": "dynamic_recomputed",
+        }
+
+    # 4. Binary Search Loop (Algorithm 1)
+    threshold_energy = (theta ** 2) * nu_sq - 1e-9
+    lo = 1
+    hi = total_params
+    trace: List[Dict[str, Any]] = []
+    step_num = 1
+
+    while (hi - lo) >= tolerance:
+        mid = (lo + hi) // 2
+        c_mid = float(c_prefix[mid - 1].item())
+        ok = (c_mid >= threshold_energy)
+        cos_mid = _math.sqrt(max(0.0, c_mid)) / max(1e-12, nu) if nu > 0 else 0.0
+        cos_mid = min(1.0, cos_mid)
+
+        if ok:
+            action = f"Feasible (cos={cos_mid:.6f} ≥ {theta:.2f}): tighten upper bound hi = {mid}"
+            trace.append({
+                "step": step_num,
+                "lo": lo,
+                "hi": hi,
+                "mid": mid,
+                "c_mid": round(c_mid, 6),
+                "cos_mid": round(cos_mid, 6),
+                "feasible": True,
+                "action": action,
+            })
+            hi = mid
+        else:
+            action = f"Below θ (cos={cos_mid:.6f} < {theta:.2f}): advance lower bound lo = {mid + 1}"
+            trace.append({
+                "step": step_num,
+                "lo": lo,
+                "hi": hi,
+                "mid": mid,
+                "c_mid": round(c_mid, 6),
+                "cos_mid": round(cos_mid, 6),
+                "feasible": False,
+                "action": action,
+            })
+            lo = mid + 1
+        step_num += 1
+
+    p_min = hi
+    c_pmin = float(c_prefix[p_min - 1].item())
+    achieved_cosine = _math.sqrt(max(0.0, c_pmin)) / max(1e-12, nu) if nu > 0 else 1.0
+    achieved_cosine = min(1.0, achieved_cosine)
+
+    sparsity_percentage = round((1.0 - (p_min / total_params)) * 100.0, 4)
+    retained_percentage = round((p_min / total_params) * 100.0, 4)
+
+    return {
+        "has_data": True,
+        "total_parameters": total_params,
+        "theta": theta,
+        "beta": beta,
+        "round_num": target_round,
+        "p_min": p_min,
+        "achieved_cosine": round(achieved_cosine, 6),
+        "sparsity_percentage": sparsity_percentage,
+        "retained_percentage": retained_percentage,
+        "nu_sq": round(nu_sq, 6),
+        "nu": round(nu, 6),
+        "c_pmin": round(c_pmin, 6),
+        "total_checks": len(trace),
+        "trace": trace,
+        "available_rounds": available_rounds,
+        "source": "dynamic_recomputed",
+    }
