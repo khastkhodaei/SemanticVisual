@@ -492,6 +492,28 @@
             <span class="text-blue-600 font-bold">ℹ️ Precision Note:</span>
             <span>All EMA evaluations, tensor calculations, and ranking argsorts are performed with full floating-point precision (FP32/FP64). Values in this table are formatted to 6 decimal places strictly for visual clarity.</span>
           </div>
+
+          <!-- Formal Sorting Complexity Note (Appendix B / Page 29) -->
+          <div class="mt-2 text-[11px] text-slate-600 bg-indigo-50/60 border border-indigo-200/60 rounded p-2.5 flex flex-col gap-1 font-sans">
+            <div class="flex items-center gap-1.5 font-bold text-indigo-900">
+              <span>⏱️</span><span>Sorting Complexity &amp; Amortization Analysis (Appendix B, Page 29)</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 my-1 text-[11px]">
+              <div class="p-1.5 bg-white/90 border border-indigo-100 rounded">
+                <span class="font-bold text-indigo-950">Time Complexity:</span>
+                <span class="font-mono text-indigo-700 font-semibold">$\mathcal{O}(M \log M)$</span>
+                <span class="text-slate-500">per full sorting pass over $M$ parameters.</span>
+              </div>
+              <div class="p-1.5 bg-white/90 border border-indigo-100 rounded">
+                <span class="font-bold text-indigo-950">Memory Complexity:</span>
+                <span class="font-mono text-indigo-700 font-semibold">$\mathcal{O}(M)$</span>
+                <span class="text-slate-500">auxiliary storage for coordinate permutation vector $J$.</span>
+              </div>
+            </div>
+            <p class="text-slate-600 leading-relaxed">
+              <strong class="text-slate-800">Amortization Across Rounds ($T_{\text{ref}}$):</strong> Because coordinate salience distributions evolve smoothly under decentralized momentum, coordinate importance orders shift slowly. Sorting can be amortized by re-ranking only once every $T_{\text{ref}} > 1$ communication rounds, reducing empirical sorting computational overhead to near zero.
+            </p>
+          </div>
         </div>
 
         <!-- Controls Bar -->
@@ -543,6 +565,128 @@
         <div id="importance-table-wrap" class="table-wrap hidden p-3 overflow-x-auto">
           <div id="importance-rounds-container" class="flex gap-5 min-w-max pb-1 items-start">
             <!-- Dynamically populated round columns -->
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2: ENERGY DISTRIBUTION & PREFIX SUMS PANEL -->
+      <div id="energy-panel" class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title text-indigo-900"><span>⚡</span><span>Step 2: Energy Distribution &amp; Cumulative Prefix Sums — $c_P$</span></span>
+          <span class="tag-paper bg-indigo-50 text-indigo-800 border-indigo-200">Paper §3.2 &amp; App. B</span>
+        </div>
+
+        <!-- Math & Theory Card -->
+        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg mb-3">
+          <div class="text-xs font-bold text-slate-800 mb-1 flex items-center justify-between">
+            <span>📐 Mathematical Foundation: Energy Concentration &amp; $\mathcal{O}(1)$ Directional Cosine</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">Theorem / Equation (3)</span>
+          </div>
+          <p class="text-xs text-slate-600 font-sans leading-relaxed mb-2">
+            In Top-$P$ coordinate selection, coordinates are sorted descending by importance $s^{(t)}$ into permutation vector $J$. The accumulated squared energy $c_P$ and total energy $\nu^2$ are defined as:
+          </p>
+          <div class="bg-white border border-slate-200 rounded p-2.5 text-center text-xs font-mono text-slate-800 shadow-2xs overflow-x-auto my-2">
+            $$\cos\left(w, w^{[P]}\right) = \frac{\langle w, w^{[P]} \rangle}{\|w\|_2 \|w^{[P]}\|_2} = \frac{\sqrt{c_P}}{\nu} \quad \text{where } c_P = \sum_{m=1}^P (w_{J_m})^2 \text{ and } \nu^2 = \|w\|_2^2$$
+          </div>
+          <p class="text-xs text-slate-600 font-sans leading-relaxed mb-1.5">
+            Because coordinates are orthogonal, $\langle w, w^{[P]} \rangle = \|w^{[P]}\|_2^2 = c_P$. Once the 1D prefix sum array $c_P$ is evaluated in a single pass ($\mathcal{O}(M)$), computing the directional cosine similarity $\cos(w, w^{[P]})$ for <strong>any</strong> budget $P$ costs strictly <strong class="text-indigo-700">$\mathcal{O}(1)$</strong> time with zero inner products needed.
+          </p>
+          <div class="text-[11px] text-slate-500 bg-white border border-slate-200 rounded p-2 flex items-start gap-1.5 font-sans mt-2">
+            <span class="text-amber-600 font-bold">💡 Invariant:</span>
+            <span>Since $(w_{J_m})^2 \ge 0$, both $c_P$ and $\cos(P)$ are strictly non-decreasing with $P$. At full budget $P = M$, $c_M = \nu^2$ and $\cos(M) = 1.000000$ identically.</span>
+          </div>
+        </div>
+
+        <!-- Action Bar & Controls -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3 p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+          <div class="flex items-center gap-2">
+            <button id="btn-compute-energy" type="button" onclick="loadEnergyDistribution(false)" class="btn-paper bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-2xs">
+              <span>⚡</span><span>Compute / Load Energy Distribution</span>
+            </button>
+            <button id="btn-recompute-energy" type="button" onclick="loadEnergyDistribution(true)" class="btn-paper bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-semibold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-2xs">
+              <span>🔄</span><span>Force Recompute</span>
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500 font-sans">Bound EMA Factor:</span>
+            <span id="energy-beta-pill" class="text-xs font-mono font-bold px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-full">β = 0.90</span>
+            <span id="energy-source-pill" class="text-[11px] font-mono px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-600 rounded">Status: Idle</span>
+          </div>
+        </div>
+
+        <!-- Empty State Banner -->
+        <div id="energy-empty-state" class="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-lg text-slate-500 font-sans text-xs">
+          <div class="text-2xl mb-2">⚡</div>
+          <div class="font-semibold text-slate-700 text-sm mb-1">Energy Distribution Not Loaded</div>
+          <div>Click "Compute / Load Energy Distribution" above to calculate cumulative prefix sums and directional cosine curves.</div>
+        </div>
+
+        <!-- Results Container -->
+        <div id="energy-results-container" class="hidden space-y-4">
+          <!-- Round Selector Tabs -->
+          <div class="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto" id="energy-round-tabs">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- KPI Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-2xs">
+              <div class="text-[11px] font-semibold text-slate-500 font-sans">Total Energy (||w||²)</div>
+              <div id="kpi-total-energy" class="text-lg font-mono font-bold text-slate-900 mt-1">—</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">ν² = c_M</div>
+            </div>
+            <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-2xs">
+              <div class="text-[11px] font-semibold text-slate-500 font-sans">ℓ₂ Euclidean Norm (ν)</div>
+              <div id="kpi-l2-norm" class="text-lg font-mono font-bold text-indigo-600 mt-1">—</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">ν = √ν²</div>
+            </div>
+            <div class="p-3 bg-white border border-slate-200 rounded-lg shadow-2xs">
+              <div class="text-[11px] font-semibold text-slate-500 font-sans">Top 1% Energy Share</div>
+              <div id="kpi-top1pct-energy" class="text-lg font-mono font-bold text-emerald-600 mt-1">—</div>
+              <div class="text-[10px] text-slate-400 font-mono mt-0.5">Retained at P = 0.01 · M</div>
+            </div>
+          </div>
+
+          <!-- Interactive Chart & Milestones Table Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+            <!-- Interactive Cumulative Energy & Cosine Chart -->
+            <div class="bg-white border border-slate-200 rounded-lg p-3.5 shadow-2xs">
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <span>📈</span><span>Cumulative Directional Cosine Curve cos(P)</span>
+                </div>
+                <span class="text-[10px] font-mono text-slate-500">cos(P) = √c_P / ν</span>
+              </div>
+              <div class="relative h-[280px] w-full">
+                <canvas id="chart-energy-curve"></canvas>
+              </div>
+              <div class="text-[11px] text-slate-500 text-center font-sans mt-2">
+                Horizontal axis: Parameter count P (Downsampled scale) · Vertical axis: Directional Cosine cos(P)
+              </div>
+            </div>
+
+            <!-- Milestones Table -->
+            <div class="bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden">
+              <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800">🎯 Key Budget Milestones (P vs. c_P vs. Cosine)</span>
+                <span id="energy-milestones-count" class="tag-paper text-[10px] font-mono">0 checkpoints</span>
+              </div>
+              <div class="max-h-[300px] overflow-y-auto">
+                <table class="w-full text-left text-xs">
+                  <thead class="sticky top-0 bg-slate-100/90 backdrop-blur-xs border-b border-slate-200">
+                    <tr class="text-[11px] text-slate-600 font-semibold">
+                      <th class="py-2 px-3 text-left">Budget P</th>
+                      <th class="py-2 px-2 text-right">Energy (c_P)</th>
+                      <th class="py-2 px-2 text-right">Retained Energy %</th>
+                      <th class="py-2 px-3 text-right">Directional Cosine</th>
+                    </tr>
+                  </thead>
+                  <tbody id="energy-milestones-tbody">
+                    <!-- Dynamically populated -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2025,6 +2169,7 @@
     if (tabId === 'tab-cnn') {
       if (!cnnWeightsData) { loadCnnWeights(); }
       if (!currentImportanceData) { loadImportanceScores(0); }
+      if (!currentEnergyData) { loadEnergyDistribution(false); }
     }
     if (tabId === 'tab-cost' && !$('cost-kpis').innerHTML) { recalcCosts(); }
     if (tabId === 'tab-faq' && !allFaqData.length) { loadFAQ(); }
@@ -3267,21 +3412,280 @@
     const dualSec = $('cnn-sec-dualslice');
     const topSec = $('cnn-sec-topmagnitude');
     const importanceSec = $('importance-panel');
+    const energySec = $('energy-panel');
     if (!dualSec || !topSec) return;
 
     if (mode === 'all') {
       dualSec.style.display = 'grid';
       topSec.style.display = 'block';
       if (importanceSec) importanceSec.style.display = 'block';
+      if (energySec) energySec.style.display = 'block';
     } else if (mode === 'head' || mode === 'tail') {
       dualSec.style.display = 'grid';
       topSec.style.display = 'none';
       if (importanceSec) importanceSec.style.display = 'none';
+      if (energySec) energySec.style.display = 'none';
     } else if (mode === 'top') {
       dualSec.style.display = 'none';
       topSec.style.display = 'block';
       if (importanceSec) importanceSec.style.display = 'block';
+      if (energySec) energySec.style.display = 'block';
     }
+  }
+
+  /* --- STEP 2: ENERGY DISTRIBUTION & PREFIX SUMS ($c_P$) --- */
+  let currentEnergyData = null;
+  let currentEnergyRound = 1;
+  let energyChartInstance = null;
+
+  async function loadEnergyDistribution(forceRecompute = false) {
+    const btnCompute = $('btn-compute-energy');
+    const btnRecompute = $('btn-recompute-energy');
+    const betaInput = $('inp-importance-beta');
+    const beta = betaInput ? parseFloat(betaInput.value) || 0.9 : 0.9;
+
+    const betaPill = $('energy-beta-pill');
+    if (betaPill) {
+      betaPill.textContent = `β = ${beta.toFixed(2)}`;
+    }
+    const sourcePill = $('energy-source-pill');
+    if (sourcePill) {
+      sourcePill.textContent = 'Status: Computing...';
+      sourcePill.className = 'text-[11px] font-mono px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-700 rounded';
+    }
+
+    if (btnCompute) {
+      btnCompute.disabled = true;
+      btnCompute.innerHTML = `<span>⏳</span><span>Calculating Prefix Sums...</span>`;
+    }
+    if (btnRecompute) btnRecompute.disabled = true;
+
+    try {
+      const url = `/api/v1/toppaper/energy-distribution?beta=${encodeURIComponent(beta)}&force_recompute=${forceRecompute}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Server returned HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      currentEnergyData = data;
+
+      const emptyBanner = $('energy-empty-state');
+      const resultsContainer = $('energy-results-container');
+
+      if (!data.has_data || !data.rounds || data.rounds.length === 0) {
+        if (emptyBanner) emptyBanner.classList.remove('hidden');
+        if (resultsContainer) resultsContainer.classList.add('hidden');
+        if (sourcePill) {
+          sourcePill.textContent = 'No Checkpoints Found';
+          sourcePill.className = 'text-[11px] font-mono px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-500 rounded';
+        }
+        return;
+      }
+
+      if (emptyBanner) emptyBanner.classList.add('hidden');
+      if (resultsContainer) resultsContainer.classList.remove('hidden');
+
+      if (sourcePill) {
+        sourcePill.textContent = data.source === 'cached_beta_0.9' ? '⚡ Precomputed Cache (β = 0.9)' : `🔄 Dynamically Recomputed (β = ${data.beta})`;
+        sourcePill.className = data.source === 'cached_beta_0.9'
+          ? 'text-[11px] font-mono px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded'
+          : 'text-[11px] font-mono px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 rounded';
+      }
+
+      renderEnergyRoundTabs(data.rounds);
+      renderEnergyRound(data.rounds[0].round);
+
+      if (window.renderMathInElement && $('energy-panel')) {
+        renderMathInElement($('energy-panel'), {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
+          ],
+          throwOnError: false
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load energy distribution:', err);
+      if (sourcePill) {
+        sourcePill.textContent = 'Computation Error';
+        sourcePill.className = 'text-[11px] font-mono px-2 py-0.5 bg-rose-50 border border-rose-200 text-rose-700 rounded';
+      }
+    } finally {
+      if (btnCompute) {
+        btnCompute.disabled = false;
+        btnCompute.innerHTML = `<span>⚡</span><span>Compute / Load Energy Distribution</span>`;
+      }
+      if (btnRecompute) btnRecompute.disabled = false;
+    }
+  }
+
+  function renderEnergyRoundTabs(rounds) {
+    const tabsContainer = $('energy-round-tabs');
+    if (!tabsContainer) return;
+    tabsContainer.innerHTML = rounds.map(r => `
+      <button type="button" onclick="renderEnergyRound(${r.round})" class="energy-round-tab px-3 py-1 text-xs font-mono font-bold rounded-lg border transition-colors ${r.round === currentEnergyRound ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}">
+        Round ${r.round}
+      </button>
+    `).join('');
+  }
+
+  function renderEnergyRound(roundNum) {
+    currentEnergyRound = roundNum;
+    if (!currentEnergyData || !currentEnergyData.rounds) return;
+    const roundData = currentEnergyData.rounds.find(r => r.round === roundNum) || currentEnergyData.rounds[0];
+    if (!roundData) return;
+
+    // Update active tab buttons
+    document.querySelectorAll('.energy-round-tab').forEach((btn, idx) => {
+      if (currentEnergyData.rounds[idx] && currentEnergyData.rounds[idx].round === roundNum) {
+        btn.className = 'energy-round-tab px-3 py-1 text-xs font-mono font-bold rounded-lg border bg-indigo-600 text-white border-indigo-600 shadow-2xs';
+      } else {
+        btn.className = 'energy-round-tab px-3 py-1 text-xs font-mono font-bold rounded-lg border bg-white text-slate-700 border-slate-200 hover:bg-slate-50';
+      }
+    });
+
+    // Update KPIs
+    const kpiEnergy = $('kpi-total-energy');
+    const kpiNorm = $('kpi-l2-norm');
+    const kpiTop1 = $('kpi-top1pct-energy');
+    const totalEnergyVal = roundData.total_energy !== undefined ? roundData.total_energy : (roundData.nu_sq !== undefined ? roundData.nu_sq : 0);
+    const l2NormVal = roundData.l2_norm !== undefined ? roundData.l2_norm : (roundData.nu !== undefined ? roundData.nu : 0);
+    const top1pctVal = roundData.top_1pct_energy_pct !== undefined ? roundData.top_1pct_energy_pct : 0;
+
+    if (kpiEnergy) kpiEnergy.textContent = totalEnergyVal.toFixed(4);
+    if (kpiNorm) kpiNorm.textContent = l2NormVal.toFixed(4);
+    if (kpiTop1) kpiTop1.textContent = `${top1pctVal.toFixed(2)}%`;
+
+    // Update Milestones Table
+    const countBadge = $('energy-milestones-count');
+    const milestones = roundData.milestones || [];
+    if (countBadge) countBadge.textContent = `${milestones.length} checkpoints`;
+
+    const tbody = $('energy-milestones-tbody');
+    if (tbody) {
+      tbody.innerHTML = milestones.map(m => `
+        <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+          <td class="py-2 px-3 font-mono font-bold text-slate-800">
+            ${m.p.toLocaleString()} ${m.p === currentEnergyData.total_parameters ? '<span class="text-[10px] text-indigo-600 font-semibold">(M)</span>' : ''}
+          </td>
+          <td class="py-2 px-2 text-right font-mono text-slate-600">${m.c_p.toFixed(4)}</td>
+          <td class="py-2 px-2 text-right font-mono font-semibold text-emerald-600">${m.energy_pct.toFixed(2)}%</td>
+          <td class="py-2 px-3 text-right font-mono font-bold text-indigo-700">${m.cosine.toFixed(6)}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Draw Cumulative Curve Chart
+    const curvePoints = roundData.curve_data || roundData.curve || [];
+    renderEnergyChart(curvePoints, roundNum);
+  }
+
+  function renderEnergyChart(curvePoints, roundNum) {
+    const canvas = $('chart-energy-curve');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const labels = curvePoints.map(pt => pt.p.toLocaleString());
+    const cosineData = curvePoints.map(pt => pt.cosine);
+    const energyData = curvePoints.map(pt => pt.energy_pct / 100.0);
+
+    if (energyChartInstance) {
+      energyChartInstance.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    energyChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: `cos(w, w^[P]) (Round ${roundNum})`,
+            data: cosineData,
+            borderColor: '#4f46e5',
+            backgroundColor: 'rgba(79, 70, 229, 0.08)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.25,
+            pointRadius: curvePoints.length > 30 ? 2 : 4,
+            pointHoverRadius: 6,
+          },
+          {
+            label: `Energy Ratio c_P / ν²`,
+            data: energyData,
+            borderColor: '#10b981',
+            borderWidth: 1.5,
+            borderDash: [4, 4],
+            fill: false,
+            tension: 0.25,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Budget P (Selected Coordinates)',
+              color: '#64748b',
+              font: { size: 10, family: "'Inter', sans-serif" },
+            },
+            ticks: {
+              maxTicksLimit: 10,
+              color: '#64748b',
+              font: { size: 9, family: "'JetBrains Mono', monospace" },
+            },
+            grid: { color: 'rgba(226, 232, 240, 0.6)' },
+          },
+          y: {
+            min: 0,
+            max: 1.05,
+            title: {
+              display: true,
+              text: 'Similarity / Energy Ratio',
+              color: '#64748b',
+              font: { size: 10, family: "'Inter', sans-serif" },
+            },
+            ticks: {
+              stepSize: 0.2,
+              color: '#64748b',
+              font: { size: 9, family: "'JetBrains Mono', monospace" },
+            },
+            grid: { color: 'rgba(226, 232, 240, 0.6)' },
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              boxWidth: 12,
+              font: { size: 11, family: "'Inter', sans-serif" },
+            }
+          },
+          tooltip: {
+            callbacks: {
+              title: (items) => `Budget P = ${items[0].label}`,
+              label: (item) => {
+                if (item.datasetIndex === 0) {
+                  return ` Directional Cosine: ${item.parsed.y.toFixed(6)}`;
+                } else {
+                  return ` Energy Retained: ${(item.parsed.y * 100).toFixed(2)}%`;
+                }
+              }
+            }
+          }
+        }
+      }
+    });
   }
 
 </script>

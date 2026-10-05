@@ -78,7 +78,7 @@
     "final_train_accuracy": 10.94,
     "final_test_loss": 2.3265,
     "final_test_accuracy": 10.94,
-    "training_duration_seconds": 119.36
+    "training_duration_seconds": 132.36
   },
   "round_history": [
     {
@@ -123,6 +123,6 @@
   "execution": {
     "device": "cpu",
     "torch_version": "2.14.0+cpu",
-    "timestamp_utc": "2026-10-05T07:30:54.539599+00:00"
+    "timestamp_utc": "2026-10-05T09:00:28.391799+00:00"
   }
 }

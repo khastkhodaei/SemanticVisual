@@ -393,6 +393,139 @@ def compute_and_save_importance_cache(
     return cache_path
 
 
+def compute_and_save_energy_cache(
+    rounds_dir: Path,
+    beta: float = 0.9,
+) -> Optional[Path]:
+    """Compute and persist the cumulative energy distribution and prefix sums cache for beta=0.9."""
+    import re
+    import math
+
+    round_files: List[Tuple[int, Path]] = []
+    if rounds_dir.exists():
+        for f in rounds_dir.iterdir():
+            m = re.match(r"cifar10_flat_round_(\d+)\.pt$", f.name)
+            if m:
+                round_files.append((int(m.group(1)), f))
+    round_files.sort(key=lambda x: x[0])
+    if not round_files:
+        return None
+
+    round_tensors: List[torch.Tensor] = []
+    for _, fpath in round_files:
+        ft, _ = load_flat_parameters_artifact(fpath)
+        round_tensors.append(ft.float())
+
+    total_params = int(round_tensors[0].numel())
+
+    # Chain EMA scores
+    ema_scores: List[torch.Tensor] = []
+    prev_score: Optional[torch.Tensor] = None
+    for wt in round_tensors:
+        abs_wt = torch.abs(wt)
+        if prev_score is None:
+            st = abs_wt.clone()
+        else:
+            st = beta * prev_score + (1.0 - beta) * abs_wt
+        ema_scores.append(st)
+        prev_score = st
+
+    candidate_p = [1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, total_params]
+    sampled_p = sorted(list({p for p in candidate_p if 1 <= p <= total_params} | {1, total_params}))
+
+    if total_params <= 60:
+        curve_p_indices = list(range(1, total_params + 1))
+    else:
+        raw_p = np.unique(np.geomspace(1, total_params, num=min(60, total_params)).astype(int))
+        curve_p_indices = sorted(list({int(p) for p in raw_p if 1 <= p <= total_params} | {1, total_params}))
+
+    p_1pct = max(1, int(round(0.01 * total_params)))
+    rounds_data: List[Dict[str, Any]] = []
+
+    for t_idx, (round_num, _) in enumerate(round_files):
+        st = ema_scores[t_idx]
+        wt = round_tensors[t_idx]
+        sorted_indices = torch.argsort(-st, stable=True)
+        w_sorted_sq = (wt[sorted_indices]) ** 2
+        c_prefix = torch.cumsum(w_sorted_sq, dim=0)
+        nu_sq = float(c_prefix[-1].item())
+        nu = math.sqrt(max(0.0, nu_sq))
+
+        c_1pct = float(c_prefix[p_1pct - 1].item())
+        top_1pct_energy_pct = (c_1pct / max(1e-12, nu_sq)) * 100.0
+
+        milestones = []
+        for p in sampled_p:
+            if p == total_params:
+                c_p = nu_sq
+                ep = 100.0
+                cos_val = 1.0
+            else:
+                c_p = float(c_prefix[p - 1].item())
+                ep = (c_p / max(1e-12, nu_sq)) * 100.0
+                cos_val = math.sqrt(max(0.0, c_p)) / max(1e-12, nu) if nu > 0 else 0.0
+                cos_val = min(1.0, cos_val)
+            milestones.append({
+                "p": p,
+                "c_p": round(c_p, 6),
+                "energy_pct": round(ep, 4),
+                "cosine": round(cos_val, 6),
+            })
+
+        curve_points = []
+        for p in curve_p_indices:
+            if p == total_params:
+                c_p = nu_sq
+                ep = 100.0
+                cos_val = 1.0
+            else:
+                c_p = float(c_prefix[p - 1].item())
+                ep = (c_p / max(1e-12, nu_sq)) * 100.0
+                cos_val = math.sqrt(max(0.0, c_p)) / max(1e-12, nu) if nu > 0 else 0.0
+                cos_val = min(1.0, cos_val)
+            curve_points.append({
+                "p": p,
+                "c_p": round(c_p, 6),
+                "energy_pct": round(ep, 4),
+                "cosine": round(cos_val, 6),
+            })
+
+        rounds_data.append({
+            "round": round_num,
+            "nu_sq": round(nu_sq, 6),
+            "total_energy": round(nu_sq, 6),
+            "nu": round(nu, 6),
+            "l2_norm": round(nu, 6),
+            "top_1pct_energy_pct": round(top_1pct_energy_pct, 4),
+            "milestones": milestones,
+            "curve": curve_points,
+            "curve_data": curve_points,
+        })
+
+    cache_payload = {
+        "has_data": True,
+        "total_rounds": len(round_files),
+        "beta": beta,
+        "total_parameters": total_params,
+        "rounds": rounds_data,
+        "source": "cached_beta_0.9",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    cache_path = rounds_dir / "cifar10_energy_cache_beta09.pt"
+    torch.save(cache_payload, cache_path)
+
+    json_path = rounds_dir / "cifar10_energy_cache_beta09.json"
+    try:
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(cache_payload, f, indent=2)
+    except Exception as e:
+        logger.warning("Could not write energy json cache: %s", e)
+
+    logger.info("Persisted energy distribution cache (beta=%.2f) to %s", beta, cache_path.name)
+    return cache_path
+
+
 def train_cifar_model(config: Optional[TrainingConfig] = None) -> Tuple[CIFAR10CNN, TrainingResult]:
     """Train CIFAR-10 CNN and persist model weights + metadata artifact bundle.
 
@@ -528,6 +661,12 @@ def train_cifar_model(config: Optional[TrainingConfig] = None) -> Tuple[CIFAR10C
             compute_and_save_importance_cache(rounds_dir=rounds_dir, beta=0.9, top_k=1000)
         except Exception as cache_err:
             logger.warning("Could not persist round importance cache: %s", cache_err)
+
+        # Compute and persist energy distribution cache (beta=0.9)
+        try:
+            compute_and_save_energy_cache(rounds_dir=rounds_dir, beta=0.9)
+        except Exception as cache_err:
+            logger.warning("Could not persist round energy cache: %s", cache_err)
 
     end_time = datetime.now(timezone.utc)
     duration = (end_time - start_time).total_seconds()
