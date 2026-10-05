@@ -17,6 +17,9 @@ from backend.training.train_cifar import TrainingConfig, train_cifar_model
 
 router = APIRouter(prefix="/api/v1/toppaper", tags=["top-p-lab"])
 
+# Module-level path constant — overridable via monkeypatch in tests
+ROUNDS_DIR: Path = Path("output/models/rounds")
+
 
 class TopPRequest(BaseModel):
     n: int = Field(9, ge=3, le=60)
@@ -210,4 +213,132 @@ def get_cnn_weights(
             "checkpoint_exists": ckpt_path.exists(),
             "flat_artifact_exists": flat_path.exists(),
         },
+    }
+
+
+@router.get("/round-importance")
+def get_round_importance(
+    beta: float = Query(0.9, ge=0.0, le=0.99, description="EMA smoothing factor β ∈ [0, 0.99]"),
+    top_k: int = Query(20, ge=5, le=500, description="Items per page (rank slice size)"),
+    offset: int = Query(0, ge=0, description="Pagination offset — rank start (0-indexed)"),
+) -> Dict[str, Any]:
+    """Compute multi-round EMA importance scores and return side-by-side comparison data.
+
+    For each saved round flat-parameter artifact the EMA chain is:
+        s^(1) = |w^(1)|
+        s^(t) = β · s^(t-1) + (1 - β) · |w^(t)|   for t > 1
+
+    Items within each round are sorted descending by score; ties are broken by
+    ascending global index (deterministic). The rank_delta field tracks movement
+    relative to the previous round (positive = moved up, negative = moved down,
+    None for round 1 which has no predecessor).
+    """
+    import backend.top_p_router as _self_module  # resolve monkeypatched ROUNDS_DIR at call time
+    rounds_dir: Path = _self_module.ROUNDS_DIR
+
+    # ── 1. Discover round artifacts in ascending round order ────────────────
+    import re as _re
+    round_files: List[tuple] = []  # (round_number, Path)
+    if rounds_dir.exists():
+        for f in rounds_dir.iterdir():
+            m = _re.match(r"cifar10_flat_round_(\d+)\.pt$", f.name)
+            if m:
+                round_files.append((int(m.group(1)), f))
+    round_files.sort(key=lambda x: x[0])
+
+    # ── 2. Empty-state graceful response ────────────────────────────────────
+    if not round_files:
+        return {
+            "has_data": False,
+            "total_rounds": 0,
+            "beta": beta,
+            "offset": offset,
+            "top_k": top_k,
+            "total_parameters": 0,
+            "rounds": [],
+            "rounds_data": [],
+        }
+
+    # ── 3. Load all round tensors & metadata once ───────────────────────────
+    round_tensors: List[torch.Tensor] = []
+    all_layer_slices: Dict[str, Any] = {}
+    for _, fpath in round_files:
+        ft, meta = load_flat_parameters_artifact(fpath)
+        round_tensors.append(ft.float())
+        if not all_layer_slices:
+            all_layer_slices = meta.get("layer_slices", {})
+
+    total_params = int(round_tensors[0].numel())
+
+    # ── 4. Chain EMA scores ─────────────────────────────────────────────────
+    ema_scores: List[torch.Tensor] = []
+    prev_score: Optional[torch.Tensor] = None
+    for wt in round_tensors:
+        abs_wt = torch.abs(wt)
+        if prev_score is None:
+            st = abs_wt.clone()
+        else:
+            st = beta * prev_score + (1.0 - beta) * abs_wt
+        ema_scores.append(st)
+        prev_score = st
+
+    # ── 5. Rank each round: descending score, ties broken by ascending index ─
+    #   argsort(-score) with stable sort = ascending index tie-break
+    round_ranks: List[torch.Tensor] = []  # rank_order[i] = global_index at rank i
+    round_rank_of_index: List[Dict[int, int]] = []  # index → rank (1-based)
+    for st in ema_scores:
+        # stable sort on negated scores → ties go to lower index first
+        sorted_indices = torch.argsort(-st, stable=True)
+        round_ranks.append(sorted_indices)
+        rank_of_idx = {int(sorted_indices[r].item()): r + 1 for r in range(total_params)}
+        round_rank_of_index.append(rank_of_idx)
+
+    # ── 6. Build paginated per-round items ──────────────────────────────────
+    rounds_data: List[Dict[str, Any]] = []
+    for t_idx, (round_num, _) in enumerate(round_files):
+        sorted_indices = round_ranks[t_idx]
+        st = ema_scores[t_idx]
+        wt = round_tensors[t_idx]
+
+        page_start = min(offset, total_params)
+        page_end = min(offset + top_k, total_params)
+        page_indices = sorted_indices[page_start:page_end]
+
+        items: List[Dict[str, Any]] = []
+        for rank_pos, global_idx_t in enumerate(page_indices):
+            global_idx = int(global_idx_t.item())
+            rank = page_start + rank_pos + 1  # 1-based rank
+
+            # rank_delta: positive = improved rank (moved up), None for round 1
+            if t_idx == 0:
+                rank_delta = None
+            else:
+                prev_rank = round_rank_of_index[t_idx - 1].get(global_idx)
+                rank_delta = None if prev_rank is None else (prev_rank - rank)
+
+            raw_val = float(wt[global_idx].item())
+            score_val = float(st[global_idx].item())
+            layer_name = _get_layer_for_index(global_idx, all_layer_slices)
+
+            items.append({
+                "rank": rank,
+                "rank_delta": rank_delta,
+                "global_index": global_idx,
+                "layer_name": layer_name,
+                "score": round(score_val, 6),
+                "value": round(raw_val, 6),
+                "abs_value": round(abs(raw_val), 6),
+            })
+
+        rounds_data.append({"round": round_num, "items": items})
+
+    return {
+        "has_data": True,
+        "total_rounds": len(round_files),
+        "beta": beta,
+        "offset": offset,
+        "top_k": top_k,
+        "total_parameters": total_params,
+        "rounds": rounds_data,
+        "rounds_data": rounds_data,
     }

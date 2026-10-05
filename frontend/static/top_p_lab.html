@@ -464,6 +464,78 @@
 
       </div>
 
+      <!-- STEP 1: MULTI-ROUND IMPORTANCE SCORES & COORDINATE RANKING PANEL -->
+      <div id="importance-panel" class="paper-panel">
+        <div class="panel-header">
+          <span class="panel-title text-indigo-900"><span>⚡</span><span>Step 1: Multi-Round Importance Scores &amp; Coordinate Ranking (EMA Smoothing)</span></span>
+          <span class="tag-paper bg-indigo-50 text-indigo-700 border-indigo-200" id="importance-rounds-badge">Multi-Round EMA</span>
+        </div>
+
+        <!-- Math & Formula Card -->
+        <div class="mb-4 p-3.5 bg-gradient-to-r from-indigo-50/70 via-slate-50 to-blue-50/70 border border-indigo-100 rounded-lg shadow-2xs">
+          <div class="flex items-center gap-1.5 text-xs font-bold text-indigo-950 mb-1">
+            <span>📐</span><span>Mathematical Formulation: Multi-Round Exponential Moving Average (EMA)</span>
+          </div>
+          <p class="text-xs text-slate-700 font-sans leading-relaxed mb-2">
+            In decentralized federated topologies, transient noise from local client stochastic gradient steps can destabilize single-round coordinate rankings. The multi-round importance score $s_{i,r}^{(t)}$ smooths coordinate salience across rounds:
+          </p>
+          <div class="py-2 px-3 bg-white/95 border border-indigo-200/80 rounded-md font-mono text-center text-sm text-indigo-950 shadow-inner mb-2 overflow-x-auto">
+            $$s_{i,r}^{(t)} = \beta \cdot s_{i,r}^{(t-1)} + (1 - \beta) \cdot |w_{i,r}^{(t)}| \quad \text{with } s_{i,r}^{(1)} = |w_{i,r}^{(1)}|$$
+          </div>
+          <div class="text-[11px] text-slate-600 font-sans leading-normal">
+            <strong class="text-slate-800">Smoothing Factor $\beta \in [0.0, 0.99]$:</strong> Balances historical memory retention against latest round magnitude adaptation. Coordinates with identical scores are sorted with deterministic index tie-breaking to guarantee absolute consensus across all distributed nodes.
+          </div>
+        </div>
+
+        <!-- Controls Bar -->
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3.5 flex-wrap">
+            <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+              <span>EMA Factor ($\beta$):</span>
+              <input id="inp-importance-beta" type="number" step="0.05" min="0.0" max="0.99" value="0.9" class="w-20 px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500 shadow-2xs" />
+            </label>
+            <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+              <span>Page Size:</span>
+              <select id="sel-importance-page-size" onchange="computeImportanceScores(0)" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500 shadow-2xs">
+                <option value="20" selected>20 items</option>
+                <option value="50">50 items</option>
+                <option value="100">100 items</option>
+              </select>
+            </label>
+            <button id="btn-compute-importance" type="button" onclick="computeImportanceScores(0)" class="btn-primary px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shadow-sm">
+              <span>⚡</span><span>Compute Importance Scores</span>
+            </button>
+          </div>
+
+          <!-- Pagination Controls -->
+          <div class="flex items-center gap-2">
+            <button id="btn-importance-prev" type="button" onclick="navigateImportancePage(-1)" class="px-3 py-1 text-xs font-mono font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs" disabled>
+              ◀ Previous
+            </button>
+            <span id="importance-page-info" class="text-xs font-mono font-bold text-slate-700 px-2.5 py-1 bg-white border border-slate-200 rounded shadow-2xs">
+              Ranks 1–20
+            </span>
+            <button id="btn-importance-next" type="button" onclick="navigateImportancePage(1)" class="px-3 py-1 text-xs font-mono font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs" disabled>
+              Next ▶
+            </button>
+          </div>
+        </div>
+
+        <!-- Empty State Banner -->
+        <div id="importance-empty-state" class="p-8 text-center bg-slate-50 border border-dashed border-slate-300 rounded-lg text-slate-500 font-sans text-xs">
+          <div class="text-2xl mb-2">⏳</div>
+          <div class="font-semibold text-slate-700 text-sm mb-1">No Round Checkpoints Available</div>
+          <div>Run training above to generate multi-round parameter vectors</div>
+        </div>
+
+        <!-- Side-by-Side Multi-Round Comparison Table -->
+        <div id="importance-table-wrap" class="table-wrap hidden">
+          <div id="importance-rounds-container" class="flex gap-4 overflow-x-auto pb-2">
+            <!-- Dynamically populated round columns -->
+          </div>
+        </div>
+      </div>
+
       <!-- TOP ABSOLUTE MAGNITUDE PANEL -->
       <div id="cnn-sec-topmagnitude" class="paper-panel">
         <div class="panel-header">
@@ -1939,7 +2011,10 @@
       }
     });
 
-    if (tabId === 'tab-cnn' && !cnnWeightsData) { loadCnnWeights(); }
+    if (tabId === 'tab-cnn') {
+      if (!cnnWeightsData) { loadCnnWeights(); }
+      if (!currentImportanceData) { computeImportanceScores(0); }
+    }
     if (tabId === 'tab-cost' && !$('cost-kpis').innerHTML) { recalcCosts(); }
     if (tabId === 'tab-faq' && !allFaqData.length) { loadFAQ(); }
     if (tabId === 'tab-worked') { initWorkedExample(); }
@@ -2790,8 +2865,9 @@
         `;
       }
 
-      // Automatically reload model parameter inspection slices
+      // Automatically reload model parameter inspection slices & multi-round importance scores
       await loadCnnWeights();
+      await computeImportanceScores(0);
 
     } catch (err) {
       console.error('Training failed:', err);
@@ -2974,23 +3050,184 @@
     }
   }
 
+  let currentImportanceOffset = 0;
+  let currentImportanceData = null;
+
+  async function computeImportanceScores(offset = 0) {
+    const betaInput = $('inp-importance-beta');
+    const sizeSelect = $('sel-importance-page-size');
+    const computeBtn = $('btn-compute-importance');
+    const emptyState = $('importance-empty-state');
+    const tableWrap = $('importance-table-wrap');
+    const roundsContainer = $('importance-rounds-container');
+    const pageInfo = $('importance-page-info');
+    const prevBtn = $('btn-importance-prev');
+    const nextBtn = $('btn-importance-next');
+    const roundsBadge = $('importance-rounds-badge');
+
+    const beta = betaInput ? parseFloat(betaInput.value) || 0.9 : 0.9;
+    const pageSize = sizeSelect ? parseInt(sizeSelect.value, 10) || 20 : 20;
+    currentImportanceOffset = Math.max(0, offset);
+
+    if (computeBtn) {
+      computeBtn.disabled = true;
+      computeBtn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span><span>Computing...</span>`;
+    }
+
+    try {
+      const res = await fetch(`/api/v1/toppaper/round-importance?beta=${beta}&top_k=${pageSize}&offset=${currentImportanceOffset}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      const data = await res.json();
+      currentImportanceData = data;
+
+      if (!data.has_data || !data.rounds_data || data.rounds_data.length === 0) {
+        if (emptyState) emptyState.classList.remove('hidden');
+        if (tableWrap) tableWrap.classList.add('hidden');
+        if (pageInfo) pageInfo.textContent = 'Ranks 1–20';
+        if (prevBtn) prevBtn.disabled = true;
+        if (nextBtn) nextBtn.disabled = true;
+        if (roundsBadge) roundsBadge.textContent = 'No Checkpoints';
+        return;
+      }
+
+      if (emptyState) emptyState.classList.add('hidden');
+      if (tableWrap) tableWrap.classList.remove('hidden');
+      if (roundsBadge) roundsBadge.textContent = `${data.total_rounds} Round${data.total_rounds > 1 ? 's' : ''} (β=${data.beta})`;
+
+      const startRank = currentImportanceOffset + 1;
+      const endRank = Math.min(currentImportanceOffset + pageSize, data.total_parameters);
+      if (pageInfo) {
+        pageInfo.textContent = `Ranks ${startRank.toLocaleString()}–${endRank.toLocaleString()}`;
+      }
+
+      if (prevBtn) prevBtn.disabled = currentImportanceOffset <= 0;
+      if (nextBtn) nextBtn.disabled = (currentImportanceOffset + pageSize) >= data.total_parameters;
+
+      if (roundsContainer) {
+        roundsContainer.innerHTML = data.rounds_data.map(rd => {
+          const rowsHtml = rd.items.map(item => {
+            const style = getLayerStyle(item.layer_name);
+            const isPos = item.value >= 0;
+            let deltaBadge = '';
+            if (rd.round === 1) {
+              deltaBadge = `<span class="px-1.5 py-0.5 rounded text-[9px] font-mono text-slate-400 bg-slate-100 border border-slate-200">base</span>`;
+            } else if (item.rank_delta === null || item.rank_delta === undefined) {
+              deltaBadge = `<span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200">new</span>`;
+            } else if (item.rank_delta > 0) {
+              deltaBadge = `<span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200">↑${item.rank_delta}</span>`;
+            } else if (item.rank_delta < 0) {
+              deltaBadge = `<span class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold text-rose-700 bg-rose-50 border border-rose-200">↓${Math.abs(item.rank_delta)}</span>`;
+            } else {
+              deltaBadge = `<span class="px-1.5 py-0.5 rounded text-[9px] font-mono text-slate-500 bg-slate-100 border border-slate-200">=</span>`;
+            }
+
+            return `
+              <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
+                <td class="py-1.5 px-2.5 font-mono font-bold text-slate-700 whitespace-nowrap">
+                  #${item.rank.toLocaleString()} ${deltaBadge}
+                </td>
+                <td class="py-1.5 px-2 whitespace-nowrap">
+                  <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${style.bg} ${style.text} border ${style.border}">
+                    ${item.layer_name}
+                  </span>
+                </td>
+                <td class="py-1.5 px-2 font-mono text-slate-600 whitespace-nowrap">
+                  #${item.global_index.toLocaleString()}
+                </td>
+                <td class="py-1.5 px-2 text-right font-mono font-bold text-indigo-700 whitespace-nowrap">
+                  ${item.score.toFixed(6)}
+                </td>
+                <td class="py-1.5 px-2 text-right font-mono font-bold ${isPos ? 'text-emerald-700' : 'text-rose-700'} whitespace-nowrap">
+                  ${isPos ? '+' : ''}${item.value.toFixed(6)}
+                </td>
+                <td class="py-1.5 px-2.5 text-right font-mono font-semibold text-slate-900 whitespace-nowrap">
+                  ${item.abs_value.toFixed(6)}
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+          return `
+            <div class="flex-1 min-w-[560px] bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden flex flex-col">
+              <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full ${rd.round === 1 ? 'bg-slate-400' : 'bg-indigo-600'}"></span>
+                  <span class="font-mono font-bold text-xs text-slate-800">Round ${rd.round}</span>
+                  <span class="text-[10px] text-slate-500 font-sans">${rd.round === 1 ? '(Baseline: |w⁽¹⁾|)' : `(EMA: β=${data.beta})`}</span>
+                </div>
+                <span class="tag-paper text-[10px] font-mono">${rd.items.length} items</span>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="border-b border-slate-200 bg-slate-50/60 text-[11px] text-slate-500 font-semibold">
+                      <th class="py-2 px-2.5 text-left">Rank</th>
+                      <th class="py-2 px-2 text-left">Layer</th>
+                      <th class="py-2 px-2 text-left">Global Index</th>
+                      <th class="py-2 px-2 text-right">Score ($s_r$)</th>
+                      <th class="py-2 px-2 text-right">Value ($w_r$)</th>
+                      <th class="py-2 px-2.5 text-right">|w|</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsHtml}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (window.renderMathInElement && $('importance-panel')) {
+        renderMathInElement($('importance-panel'), {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
+          ],
+          throwOnError: false
+        });
+      }
+    } catch (err) {
+      console.error('Failed to compute importance scores:', err);
+    } finally {
+      if (computeBtn) {
+        computeBtn.disabled = false;
+        computeBtn.innerHTML = `<span>⚡</span><span>Compute Importance Scores</span>`;
+      }
+    }
+  }
+
+  function navigateImportancePage(direction) {
+    const sizeSelect = $('sel-importance-page-size');
+    const pageSize = sizeSelect ? parseInt(sizeSelect.value, 10) || 20 : 20;
+    const newOffset = Math.max(0, currentImportanceOffset + direction * pageSize);
+    computeImportanceScores(newOffset);
+  }
+
   function switchCnnView(mode, btn) {
     document.querySelectorAll('#tab-cnn .pill').forEach(el => el.classList.remove('active'));
     if (btn) btn.classList.add('active');
 
     const dualSec = $('cnn-sec-dualslice');
     const topSec = $('cnn-sec-topmagnitude');
+    const importanceSec = $('importance-panel');
     if (!dualSec || !topSec) return;
 
     if (mode === 'all') {
       dualSec.style.display = 'grid';
       topSec.style.display = 'block';
+      if (importanceSec) importanceSec.style.display = 'block';
     } else if (mode === 'head' || mode === 'tail') {
       dualSec.style.display = 'grid';
       topSec.style.display = 'none';
+      if (importanceSec) importanceSec.style.display = 'none';
     } else if (mode === 'top') {
       dualSec.style.display = 'none';
       topSec.style.display = 'block';
+      if (importanceSec) importanceSec.style.display = 'block';
     }
   }
 
