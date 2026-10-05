@@ -6,6 +6,10 @@ from backend.models.fmnist_cnn import (
     FMNIST_CLASSES,
     EXPECTED_FMNIST_PARAMETER_COUNT,
 )
+from backend.models.tiny_imagenet_resnet import (
+    TinyImageNetResNet18,
+    TINY_IMAGENET_NUM_CLASSES,
+)
 from backend.models.flattening import (
     CANONICAL_LAYER_ORDER,
     EXPECTED_PARAMETER_COUNT,
@@ -22,6 +26,8 @@ __all__ = [
     "FMNISTCNN",
     "FMNIST_CLASSES",
     "EXPECTED_FMNIST_PARAMETER_COUNT",
+    "TinyImageNetResNet18",
+    "TINY_IMAGENET_NUM_CLASSES",
     "CANONICAL_LAYER_ORDER",
     "EXPECTED_PARAMETER_COUNT",
     "flatten_parameters",
