@@ -111,3 +111,18 @@ class TestCnnTrainingEndpoint:
         res = client.post("/api/v1/toppaper/train-cnn", json={"learning_rate": -0.05})
         assert res.status_code == 422
 
+        # weight_decay > 0.1
+        res = client.post("/api/v1/toppaper/train-cnn", json={"weight_decay": 0.5})
+        assert res.status_code == 422
+
+    def test_train_cnn_weight_decay_clear_error_message(self, client: TestClient):
+        """Verify that weight_decay > 0.1 returns 422 with a clear client-facing error message."""
+        res = client.post("/api/v1/toppaper/train-cnn", json={"weight_decay": 0.2, "synthetic": True, "synthetic_samples": 64})
+        assert res.status_code == 422, f"Expected 422 for weight_decay=0.2, got {res.status_code}"
+        body = res.json()
+        # The error detail must be present and reference weight_decay
+        detail_str = str(body)
+        assert "weight_decay" in detail_str, (
+            "422 error body must mention 'weight_decay' to help the user identify the problem"
+        )
+

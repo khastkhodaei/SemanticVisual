@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 import torch
 
 from .top_p_lab import run_demo
@@ -35,10 +35,20 @@ class CnnTrainingRequest(BaseModel):
     batch_size: int = Field(64, ge=8, le=512, description="Mini-batch size")
     learning_rate: float = Field(0.01, gt=0.0, le=1.0, description="Learning rate")
     momentum: float = Field(0.9, ge=0.0, le=0.99, description="SGD momentum")
-    weight_decay: float = Field(1e-4, ge=0.0, le=0.1, description="Weight decay")
+    weight_decay: float = Field(1e-4, ge=0.0, le=0.1, description="Weight decay (L2 regularisation). Must be in [0.0, 0.1].")
     seed: int = Field(42, description="Random seed for reproducibility")
     synthetic: bool = Field(False, description="Use synthetic dataset for fast execution")
     synthetic_samples: int = Field(512, ge=64, le=5000, description="Synthetic samples count")
+
+    @field_validator("weight_decay")
+    @classmethod
+    def weight_decay_in_range(cls, v: float) -> float:
+        if v > 0.1:
+            raise ValueError(
+                f"weight_decay={v} is out of range. Must be ≤ 0.1 "
+                "(Paper §5.1 uses 1e-4). Values above 0.1 cause over-regularisation."
+            )
+        return v
 
 
 @router.post("/run")

@@ -116,3 +116,89 @@ class TestTopPCNNTrainingUIPresets:
         assert "function applyTrainingPreset(type)" in html_content
         assert "Paper Default (§5.1)" in html_content
 
+
+
+    def test_paper_preset_exact_values_match_spec(self):
+        """Verify Paper §5.1 preset values match the spec exactly (tracer-bullet contract)."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+
+        # Extract only the applyTrainingPreset function block for targeted assertions
+        fn_start = html_content.find("function applyTrainingPreset(type)")
+        fn_end = html_content.find("async function startCnnTraining", fn_start)
+        assert fn_start != -1, "applyTrainingPreset function not found"
+        fn_body = html_content[fn_start:fn_end]
+
+        # Locate the 'paper' branch
+        paper_start = fn_body.find("type === 'paper'")
+        assert paper_start != -1, "'paper' branch missing in applyTrainingPreset"
+        paper_branch = fn_body[paper_start : fn_body.find("} else", paper_start)]
+
+        # Spec §5.1: rounds=3, epochs=1, batch_size=64, lr=0.01, momentum=0.9,
+        #            weight_decay=0.0001, seed=42, synthetic=false
+        assert ".value = 3" in paper_branch, "Paper preset rounds must be 3 (§5.1)"
+        assert ".value = 1" in paper_branch, "Paper preset epochs must be 1 (§5.1)"
+        assert ".value = 64" in paper_branch, "Paper preset batch_size must be 64 (§5.1)"
+        assert ".value = 0.01" in paper_branch, "Paper preset lr must be 0.01 (§5.1)"
+        assert ".value = 0.9" in paper_branch, "Paper preset momentum must be 0.9 (§5.1)"
+        assert ".value = 0.0001" in paper_branch, "Paper preset weight_decay must be 0.0001 (§5.1)"
+        assert ".value = 42" in paper_branch, "Paper preset seed must be 42 (§5.1)"
+        assert ".value = 'false'" in paper_branch, "Paper preset synthetic must be 'false' (§5.1 uses real CIFAR-10)"
+
+    def test_mock_preset_exact_values(self):
+        """Verify Quick Mock preset sets synthetic=true and rounds=1."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+
+        fn_start = html_content.find("function applyTrainingPreset(type)")
+        fn_end = html_content.find("async function startCnnTraining", fn_start)
+        fn_body = html_content[fn_start:fn_end]
+
+        mock_start = fn_body.find("type === 'mock'")
+        assert mock_start != -1, "'mock' branch missing in applyTrainingPreset"
+        # The mock branch ends at the 'else if' for paper
+        mock_branch = fn_body[mock_start : fn_body.find("} else if", mock_start)]
+
+        assert ".value = 1" in mock_branch, "Mock preset rounds must be 1"
+        assert ".value = 'true'" in mock_branch, "Mock preset synthetic must be 'true' (fast path)"
+
+    def test_form_input_field_attributes(self):
+        """Verify min/max/step/default attributes on every training form field to prevent field-shifting."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+
+        # Each tuple: (field_id, attribute_snippet) that MUST appear in the HTML
+        required_attrs = [
+            ('train-rounds',   'min="1"'),
+            ('train-rounds',   'max="50"'),
+            ('train-rounds',   'value="1"'),
+            ('train-epochs',   'min="1"'),
+            ('train-epochs',   'max="100"'),
+            ('train-batch',    'min="8"'),
+            ('train-batch',    'max="512"'),
+            ('train-batch',    'value="64"'),
+            ('train-lr',       'step="0.005"'),
+            ('train-lr',       'min="0.0001"'),
+            ('train-lr',       'max="1.0"'),
+            ('train-momentum', 'step="0.05"'),
+            ('train-momentum', 'min="0.0"'),
+            ('train-momentum', 'max="0.99"'),
+            ('train-decay',    'step="0.0001"'),
+            ('train-decay',    'min="0.0"'),
+            ('train-decay',    'max="0.1"'),
+            ('train-seed',     'value="42"'),
+        ]
+
+        for field_id, attr in required_attrs:
+            # Find the specific input element by ID and check that attribute is present nearby
+            id_pos = html_content.find(f'id="{field_id}"')
+            assert id_pos != -1, f'id="{field_id}" not found in HTML'
+            # Check within a 300-char window around the ID declaration
+            snippet = html_content[max(0, id_pos - 50) : id_pos + 300]
+            assert attr in snippet, (
+                f'Field id="{field_id}" missing attribute {attr!r}. '
+                f'Snippet: {snippet!r}'
+            )
