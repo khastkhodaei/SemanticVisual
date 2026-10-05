@@ -468,7 +468,10 @@
       <div id="importance-panel" class="paper-panel">
         <div class="panel-header">
           <span class="panel-title text-indigo-900"><span>⚡</span><span>Step 1: Multi-Round Importance Scores &amp; Coordinate Ranking (EMA Smoothing)</span></span>
-          <span class="tag-paper bg-indigo-50 text-indigo-700 border-indigo-200" id="importance-rounds-badge">Multi-Round EMA</span>
+          <div class="flex items-center gap-2">
+            <span class="tag-paper bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-mono" id="importance-source-pill">⚡ Cached (β=0.9)</span>
+            <span class="tag-paper bg-indigo-50 text-indigo-700 border-indigo-200" id="importance-rounds-badge">Multi-Round EMA</span>
+          </div>
         </div>
 
         <!-- Math & Formula Card -->
@@ -489,21 +492,25 @@
 
         <!-- Controls Bar -->
         <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div class="flex items-center gap-3.5 flex-wrap">
+          <div class="flex items-center gap-3 flex-wrap">
             <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
               <span>EMA Factor ($\beta$):</span>
               <input id="inp-importance-beta" type="number" step="0.05" min="0.0" max="0.99" value="0.9" class="w-20 px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500 shadow-2xs" />
             </label>
             <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
               <span>Page Size:</span>
-              <select id="sel-importance-page-size" onchange="computeImportanceScores(0)" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500 shadow-2xs">
+              <select id="sel-importance-page-size" onchange="loadImportanceScores(0)" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500 shadow-2xs">
                 <option value="20" selected>20 items</option>
                 <option value="50">50 items</option>
                 <option value="100">100 items</option>
               </select>
             </label>
-            <button id="btn-compute-importance" type="button" onclick="computeImportanceScores(0)" class="btn-primary px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shadow-sm">
-              <span>⚡</span><span>Compute Importance Scores</span>
+            <!-- Dual Action Controls: Load from Cache vs Dynamic Recompute -->
+            <button id="btn-load-importance" type="button" onclick="loadImportanceScores(0)" class="btn-primary px-3.5 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shadow-sm">
+              <span>⚡</span><span>Load Importance Scores (β = 0.9)</span>
+            </button>
+            <button id="btn-compute-importance" type="button" onclick="computeImportanceScores(0)" class="px-3 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer border border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-800 shadow-2xs">
+              <span>🔄</span><span>Recompute with Custom β</span>
             </button>
           </div>
 
@@ -2013,7 +2020,7 @@
 
     if (tabId === 'tab-cnn') {
       if (!cnnWeightsData) { loadCnnWeights(); }
-      if (!currentImportanceData) { computeImportanceScores(0); }
+      if (!currentImportanceData) { loadImportanceScores(0); }
     }
     if (tabId === 'tab-cost' && !$('cost-kpis').innerHTML) { recalcCosts(); }
     if (tabId === 'tab-faq' && !allFaqData.length) { loadFAQ(); }
@@ -2867,7 +2874,7 @@
 
       // Automatically reload model parameter inspection slices & multi-round importance scores
       await loadCnnWeights();
-      await computeImportanceScores(0);
+      await loadImportanceScores(0);
 
     } catch (err) {
       console.error('Training failed:', err);
@@ -3052,10 +3059,25 @@
 
   let currentImportanceOffset = 0;
   let currentImportanceData = null;
+  let currentImportanceForceRecompute = false;
+
+  async function loadImportanceScores(offset = 0) {
+    currentImportanceForceRecompute = false;
+    const betaInput = $('inp-importance-beta');
+    if (betaInput) betaInput.value = '0.9';
+    return await fetchAndRenderImportance(0.9, offset, false);
+  }
 
   async function computeImportanceScores(offset = 0) {
+    currentImportanceForceRecompute = true;
     const betaInput = $('inp-importance-beta');
+    const beta = betaInput ? parseFloat(betaInput.value) || 0.9 : 0.9;
+    return await fetchAndRenderImportance(beta, offset, true);
+  }
+
+  async function fetchAndRenderImportance(beta = 0.9, offset = 0, forceRecompute = false) {
     const sizeSelect = $('sel-importance-page-size');
+    const loadBtn = $('btn-load-importance');
     const computeBtn = $('btn-compute-importance');
     const emptyState = $('importance-empty-state');
     const tableWrap = $('importance-table-wrap');
@@ -3064,18 +3086,25 @@
     const prevBtn = $('btn-importance-prev');
     const nextBtn = $('btn-importance-next');
     const roundsBadge = $('importance-rounds-badge');
+    const sourcePill = $('importance-source-pill');
 
-    const beta = betaInput ? parseFloat(betaInput.value) || 0.9 : 0.9;
     const pageSize = sizeSelect ? parseInt(sizeSelect.value, 10) || 20 : 20;
     currentImportanceOffset = Math.max(0, offset);
 
-    if (computeBtn) {
-      computeBtn.disabled = true;
-      computeBtn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span><span>Computing...</span>`;
+    if (forceRecompute) {
+      if (computeBtn) {
+        computeBtn.disabled = true;
+        computeBtn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span><span>Recomputing...</span>`;
+      }
+    } else {
+      if (loadBtn) {
+        loadBtn.disabled = true;
+        loadBtn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span><span>Loading...</span>`;
+      }
     }
 
     try {
-      const res = await fetch(`/api/v1/toppaper/round-importance?beta=${beta}&top_k=${pageSize}&offset=${currentImportanceOffset}`);
+      const res = await fetch(`/api/v1/toppaper/round-importance?beta=${beta}&top_k=${pageSize}&offset=${currentImportanceOffset}&force_recompute=${forceRecompute}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       const data = await res.json();
       currentImportanceData = data;
@@ -3087,12 +3116,26 @@
         if (prevBtn) prevBtn.disabled = true;
         if (nextBtn) nextBtn.disabled = true;
         if (roundsBadge) roundsBadge.textContent = 'No Checkpoints';
+        if (sourcePill) {
+          sourcePill.textContent = 'No Checkpoints';
+          sourcePill.className = 'tag-paper bg-slate-100 text-slate-500 border-slate-200 text-[10px] font-mono';
+        }
         return;
       }
 
       if (emptyState) emptyState.classList.add('hidden');
       if (tableWrap) tableWrap.classList.remove('hidden');
       if (roundsBadge) roundsBadge.textContent = `${data.total_rounds} Round${data.total_rounds > 1 ? 's' : ''} (β=${data.beta})`;
+
+      if (sourcePill) {
+        if (data.source === 'cached_beta_0.9') {
+          sourcePill.textContent = '⚡ Cached (β=0.9)';
+          sourcePill.className = 'tag-paper bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-mono';
+        } else {
+          sourcePill.textContent = `🔄 Custom Computed (β=${data.beta})`;
+          sourcePill.className = 'tag-paper bg-purple-50 text-purple-700 border-purple-200 text-[10px] font-mono';
+        }
+      }
 
       const startRank = currentImportanceOffset + 1;
       const endRank = Math.min(currentImportanceOffset + pageSize, data.total_parameters);
@@ -3191,11 +3234,15 @@
         });
       }
     } catch (err) {
-      console.error('Failed to compute importance scores:', err);
+      console.error('Failed to compute/load importance scores:', err);
     } finally {
+      if (loadBtn) {
+        loadBtn.disabled = false;
+        loadBtn.innerHTML = `<span>⚡</span><span>Load Importance Scores (β = 0.9)</span>`;
+      }
       if (computeBtn) {
         computeBtn.disabled = false;
-        computeBtn.innerHTML = `<span>⚡</span><span>Compute Importance Scores</span>`;
+        computeBtn.innerHTML = `<span>🔄</span><span>Recompute with Custom β</span>`;
       }
     }
   }
@@ -3204,7 +3251,9 @@
     const sizeSelect = $('sel-importance-page-size');
     const pageSize = sizeSelect ? parseInt(sizeSelect.value, 10) || 20 : 20;
     const newOffset = Math.max(0, currentImportanceOffset + direction * pageSize);
-    computeImportanceScores(newOffset);
+    const betaInput = $('inp-importance-beta');
+    const beta = currentImportanceForceRecompute && betaInput ? parseFloat(betaInput.value) || 0.9 : 0.9;
+    fetchAndRenderImportance(beta, newOffset, currentImportanceForceRecompute);
   }
 
   function switchCnnView(mode, btn) {

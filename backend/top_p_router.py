@@ -221,6 +221,7 @@ def get_round_importance(
     beta: float = Query(0.9, ge=0.0, le=0.99, description="EMA smoothing factor β ∈ [0, 0.99]"),
     top_k: int = Query(20, ge=5, le=500, description="Items per page (rank slice size)"),
     offset: int = Query(0, ge=0, description="Pagination offset — rank start (0-indexed)"),
+    force_recompute: bool = Query(False, description="Bypass cache and force on-demand recalculation"),
 ) -> Dict[str, Any]:
     """Compute multi-round EMA importance scores and return side-by-side comparison data.
 
@@ -228,10 +229,9 @@ def get_round_importance(
         s^(1) = |w^(1)|
         s^(t) = β · s^(t-1) + (1 - β) · |w^(t)|   for t > 1
 
-    Items within each round are sorted descending by score; ties are broken by
-    ascending global index (deterministic). The rank_delta field tracks movement
-    relative to the previous round (positive = moved up, negative = moved down,
-    None for round 1 which has no predecessor).
+    Fast Path (< 10ms):
+        When force_recompute=False and beta=0.9, attempts to load from the precomputed
+        cache file `cifar10_importance_cache_beta09.pt` if present.
     """
     import backend.top_p_router as _self_module  # resolve monkeypatched ROUNDS_DIR at call time
     rounds_dir: Path = _self_module.ROUNDS_DIR
@@ -257,7 +257,39 @@ def get_round_importance(
             "total_parameters": 0,
             "rounds": [],
             "rounds_data": [],
+            "source": "dynamic_recomputed",
         }
+
+    # ── 2b. Fast-Path: Pre-Computed Cache (beta = 0.9) ──────────────────────
+    if not force_recompute and abs(beta - 0.9) < 1e-6:
+        cache_path = rounds_dir / "cifar10_importance_cache_beta09.pt"
+        if cache_path.exists():
+            try:
+                cached_data = torch.load(cache_path, weights_only=False)
+                cached_rounds = cached_data.get("rounds_data", cached_data.get("rounds", []))
+                cached_top_k = cached_data.get("cached_top_k", len(cached_rounds[0]["items"]) if cached_rounds else 0)
+                if (
+                    cached_rounds
+                    and len(cached_rounds) == len(round_files)
+                    and (offset + top_k) <= cached_top_k
+                ):
+                    sliced_rounds = []
+                    for rd in cached_rounds:
+                        sliced_items = rd["items"][offset : offset + top_k]
+                        sliced_rounds.append({"round": rd["round"], "items": sliced_items})
+                    return {
+                        "has_data": True,
+                        "total_rounds": cached_data.get("total_rounds", len(round_files)),
+                        "beta": 0.9,
+                        "offset": offset,
+                        "top_k": top_k,
+                        "total_parameters": cached_data.get("total_parameters", 0),
+                        "rounds": sliced_rounds,
+                        "rounds_data": sliced_rounds,
+                        "source": "cached_beta_0.9",
+                    }
+            except Exception:
+                pass  # Fall back to dynamic calculation
 
     # ── 3. Load all round tensors & metadata once ───────────────────────────
     round_tensors: List[torch.Tensor] = []
@@ -341,4 +373,5 @@ def get_round_importance(
         "total_parameters": total_params,
         "rounds": rounds_data,
         "rounds_data": rounds_data,
+        "source": "dynamic_recomputed",
     }

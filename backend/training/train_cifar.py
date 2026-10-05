@@ -28,7 +28,11 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 
 from backend.models.cifar_cnn import CIFAR10CNN, CIFAR10_CLASSES
-from backend.models.flattening import flatten_parameters, save_flat_parameters_artifact
+from backend.models.flattening import (
+    flatten_parameters,
+    load_flat_parameters_artifact,
+    save_flat_parameters_artifact,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -277,6 +281,118 @@ def evaluate_model(
     return avg_loss, accuracy
 
 
+def compute_and_save_importance_cache(
+    rounds_dir: Path,
+    beta: float = 0.9,
+    top_k: int = 1000,
+) -> Optional[Path]:
+    """Compute and persist the multi-round importance score cache for beta=0.9."""
+    import re
+    round_files: List[Tuple[int, Path]] = []
+    if rounds_dir.exists():
+        for f in rounds_dir.iterdir():
+            m = re.match(r"cifar10_flat_round_(\d+)\.pt$", f.name)
+            if m:
+                round_files.append((int(m.group(1)), f))
+    round_files.sort(key=lambda x: x[0])
+    if not round_files:
+        return None
+
+    round_tensors: List[torch.Tensor] = []
+    all_layer_slices: Dict[str, Any] = {}
+    for _, fpath in round_files:
+        ft, meta = load_flat_parameters_artifact(fpath)
+        round_tensors.append(ft.float())
+        if not all_layer_slices:
+            all_layer_slices = meta.get("layer_slices", {})
+
+    total_params = int(round_tensors[0].numel())
+
+    # Chain EMA scores: s^(1) = |w^(1)|, s^(t) = beta*s^(t-1) + (1-beta)*|w^(t)|
+    ema_scores: List[torch.Tensor] = []
+    prev_score: Optional[torch.Tensor] = None
+    for wt in round_tensors:
+        abs_wt = torch.abs(wt)
+        if prev_score is None:
+            st = abs_wt.clone()
+        else:
+            st = beta * prev_score + (1.0 - beta) * abs_wt
+        ema_scores.append(st)
+        prev_score = st
+
+    # Rank each round with deterministic index tie-break (stable descending argsort)
+    round_ranks: List[torch.Tensor] = []
+    round_rank_of_index: List[Dict[int, int]] = []
+    for st in ema_scores:
+        sorted_indices = torch.argsort(-st, stable=True)
+        round_ranks.append(sorted_indices)
+        rank_of_idx = {int(sorted_indices[r].item()): r + 1 for r in range(total_params)}
+        round_rank_of_index.append(rank_of_idx)
+
+    rounds_data: List[Dict[str, Any]] = []
+    effective_top_k = min(top_k, total_params)
+    for t_idx, (round_num, _) in enumerate(round_files):
+        sorted_indices = round_ranks[t_idx][:effective_top_k]
+        st = ema_scores[t_idx]
+        wt = round_tensors[t_idx]
+
+        items: List[Dict[str, Any]] = []
+        for rank_pos, g_idx_t in enumerate(sorted_indices):
+            global_idx = int(g_idx_t.item())
+            rank = rank_pos + 1
+            if t_idx == 0:
+                rank_delta = None
+            else:
+                prev_rank = round_rank_of_index[t_idx - 1].get(global_idx)
+                rank_delta = None if prev_rank is None else (prev_rank - rank)
+
+            raw_val = float(wt[global_idx].item())
+            score_val = float(st[global_idx].item())
+            layer_name = "unknown"
+            for lname, linfo in all_layer_slices.items():
+                if linfo["start_idx"] <= global_idx < linfo["end_idx"]:
+                    layer_name = lname
+                    break
+
+            items.append({
+                "rank": rank,
+                "rank_delta": rank_delta,
+                "global_index": global_idx,
+                "layer_name": layer_name,
+                "score": round(score_val, 6),
+                "value": round(raw_val, 6),
+                "abs_value": round(abs(raw_val), 6),
+            })
+        rounds_data.append({"round": round_num, "items": items})
+
+    cache_payload = {
+        "has_data": True,
+        "total_rounds": len(round_files),
+        "beta": beta,
+        "offset": 0,
+        "top_k": effective_top_k,
+        "total_parameters": total_params,
+        "cached_top_k": effective_top_k,
+        "rounds": rounds_data,
+        "rounds_data": rounds_data,
+        "source": "cached_beta_0.9",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    cache_path = rounds_dir / "cifar10_importance_cache_beta09.pt"
+    torch.save(cache_payload, cache_path)
+
+    json_path = rounds_dir / "cifar10_importance_cache_beta09.json"
+    try:
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(cache_payload, f, indent=2)
+    except Exception as e:
+        logger.warning("Could not write json cache: %s", e)
+
+    logger.info("Persisted importance score cache (beta=%.2f, top_%d) to %s", beta, effective_top_k, cache_path.name)
+    return cache_path
+
+
 def train_cifar_model(config: Optional[TrainingConfig] = None) -> Tuple[CIFAR10CNN, TrainingResult]:
     """Train CIFAR-10 CNN and persist model weights + metadata artifact bundle.
 
@@ -406,6 +522,12 @@ def train_cifar_model(config: Optional[TrainingConfig] = None) -> Tuple[CIFAR10C
             round_ckpt_path.name,
             round_flat_path.name,
         )
+
+        # Compute and persist EMA importance cache (beta=0.9, top 1000 coordinates)
+        try:
+            compute_and_save_importance_cache(rounds_dir=rounds_dir, beta=0.9, top_k=1000)
+        except Exception as cache_err:
+            logger.warning("Could not persist round importance cache: %s", cache_err)
 
     end_time = datetime.now(timezone.utc)
     duration = (end_time - start_time).total_seconds()

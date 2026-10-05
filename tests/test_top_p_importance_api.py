@@ -268,3 +268,144 @@ class TestRoundImportanceSchema:
         assert "function computeImportanceScores" in html, (
             "Missing JS function computeImportanceScores in top_p_lab.html"
         )
+
+
+# ---------------------------------------------------------------------------
+# Tests: Pre-Computed Importance Cache & Dual Action Controls
+# ---------------------------------------------------------------------------
+
+class TestPrecomputedImportanceCache:
+    """Verify cache generation, cache retrieval fast-path, and dual controls."""
+
+    def test_synthetic_training_generates_importance_cache(self, tmp_path: Path) -> None:
+        """train_cifar_model must persist cifar10_importance_cache_beta09.pt."""
+        from backend.training.train_cifar import TrainingConfig, train_cifar_model
+
+        output_dir = tmp_path / "models"
+        rounds_dir = output_dir / "rounds"
+
+        config = TrainingConfig(
+            rounds=2,
+            epochs=1,
+            batch_size=32,
+            synthetic=True,
+            synthetic_samples=64,
+            output_dir=str(output_dir),
+            checkpoint_dir=str(rounds_dir),
+            seed=42,
+        )
+        train_cifar_model(config)
+
+        cache_path = rounds_dir / "cifar10_importance_cache_beta09.pt"
+        assert cache_path.exists(), f"Expected cache file {cache_path} does not exist"
+
+        cached = torch.load(cache_path, weights_only=False)
+        assert cached.get("beta") == 0.9
+        assert cached.get("total_rounds") == 2
+        assert "rounds_data" in cached
+        assert len(cached["rounds_data"]) == 2
+        assert len(cached["rounds_data"][0]["items"]) > 0
+
+    def test_fast_path_returns_cached_beta_09(
+        self, client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When cache exists and beta=0.9 without force_recompute, return cached payload."""
+        import backend.top_p_router as router_mod
+
+        rounds_dir = tmp_path / "rounds_cache_test"
+        rounds_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(router_mod, "ROUNDS_DIR", rounds_dir)
+
+        # Create synthetic round files
+        _make_flat_artifact(torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0]), rounds_dir / "cifar10_flat_round_1.pt")
+
+        # Create synthetic cache file
+        cache_data = {
+            "total_rounds": 1,
+            "beta": 0.9,
+            "total_parameters": 6,
+            "cached_top_k": 6,
+            "rounds_data": [
+                {
+                    "round": 1,
+                    "items": [
+                        {
+                            "rank": 1,
+                            "rank_delta": None,
+                            "global_index": 5,
+                            "layer_name": "conv1.weight",
+                            "score": 6.0,
+                            "value": 6.0,
+                            "abs_value": 6.0,
+                        }
+                    ]
+                }
+            ],
+        }
+        torch.save(cache_data, rounds_dir / "cifar10_importance_cache_beta09.pt")
+
+        res = client.get("/api/v1/toppaper/round-importance?beta=0.9&force_recompute=false&top_k=5&offset=0")
+        assert res.status_code == 200
+        data = res.json()
+        assert data.get("source") == "cached_beta_0.9"
+        assert data.get("total_rounds") == 1
+        assert len(data["rounds_data"][0]["items"]) == 1
+        assert data["rounds_data"][0]["items"][0]["global_index"] == 5
+
+    def test_force_recompute_triggers_dynamic(
+        self, client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When force_recompute=true, dynamic recomputation is triggered."""
+        import backend.top_p_router as router_mod
+
+        rounds_dir = tmp_path / "rounds_force_test"
+        rounds_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(router_mod, "ROUNDS_DIR", rounds_dir)
+
+        _make_flat_artifact(torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0]), rounds_dir / "cifar10_flat_round_1.pt")
+
+        # Even with cache file present:
+        dummy_cache = {
+            "total_rounds": 1,
+            "beta": 0.9,
+            "total_parameters": 6,
+            "rounds_data": [{"round": 1, "items": []}],
+        }
+        torch.save(dummy_cache, rounds_dir / "cifar10_importance_cache_beta09.pt")
+
+        res = client.get("/api/v1/toppaper/round-importance?beta=0.9&force_recompute=true&top_k=5&offset=0")
+        assert res.status_code == 200
+        data = res.json()
+        assert data.get("source") == "dynamic_recomputed"
+
+    def test_custom_beta_triggers_dynamic(
+        self, client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Custom beta (e.g. 0.5) must trigger dynamic recomputation even if force_recompute=false."""
+        import backend.top_p_router as router_mod
+
+        rounds_dir = tmp_path / "rounds_custom_beta_test"
+        rounds_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(router_mod, "ROUNDS_DIR", rounds_dir)
+
+        _make_flat_artifact(torch.tensor([1.0, 2.0, 3.0, 4.0, 5.0, 6.0]), rounds_dir / "cifar10_flat_round_1.pt")
+        dummy_cache = {"total_rounds": 1, "beta": 0.9, "total_parameters": 6, "rounds_data": []}
+        torch.save(dummy_cache, rounds_dir / "cifar10_importance_cache_beta09.pt")
+
+        res = client.get("/api/v1/toppaper/round-importance?beta=0.5&force_recompute=false&top_k=5&offset=0")
+        assert res.status_code == 200
+        data = res.json()
+        assert data.get("source") == "dynamic_recomputed"
+        assert abs(data.get("beta") - 0.5) < 1e-6
+
+    def test_html_contains_dual_action_controls(self) -> None:
+        """HTML must contain #btn-load-importance, #btn-compute-importance, and loadImportanceScores JS function."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+
+        assert 'id="btn-load-importance"' in html
+        assert 'id="btn-compute-importance"' in html
+        assert 'id="importance-source-pill"' in html
+        assert "function loadImportanceScores" in html
+
