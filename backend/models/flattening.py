@@ -45,6 +45,7 @@ CANONICAL_LAYER_ORDER: List[str] = [
 ]
 
 EXPECTED_PARAMETER_COUNT: int = 2156490
+EXPECTED_FMNIST_PARAMETER_COUNT: int = 1663370
 
 
 def flatten_parameters(model: nn.Module) -> Tuple[torch.Tensor, Dict[str, Any]]:
@@ -55,12 +56,12 @@ def flatten_parameters(model: nn.Module) -> Tuple[torch.Tensor, Dict[str, Any]]:
     `fc1.weight`, `fc1.bias`, `fc2.weight`, `fc2.bias`.
 
     Args:
-        model: PyTorch model instance (e.g. CIFAR10CNN).
+        model: PyTorch model instance (e.g. CIFAR10CNN, FMNISTCNN).
 
     Returns:
         Tuple containing:
             - 1D Tensor of shape (num_parameters,), e.g. (2156490,), dtype=torch.float32.
-            - Metadata dictionary with layer_slices, l2_norm, num_parameters, and canonical_layers.
+            - Metadata dictionary with layer_slices, l2_norm, num_parameters, model_name, and canonical_layers.
     """
     param_dict = dict(model.named_parameters())
     flat_tensors: List[torch.Tensor] = []
@@ -98,6 +99,7 @@ def flatten_parameters(model: nn.Module) -> Tuple[torch.Tensor, Dict[str, Any]]:
         "l2_norm": l2_norm,
         "layer_slices": layer_slices,
         "canonical_layers": keys_to_process,
+        "model_name": model.__class__.__name__,
     }
 
     return flat_tensor, metadata
@@ -154,6 +156,7 @@ def save_flat_parameters_artifact(
     metadata: Dict[str, Any],
     output_path: Union[str, Path],
     source_checkpoint: Optional[str] = None,
+    model_name: Optional[str] = None,
 ) -> Path:
     """Save the flattened parameter vector and metadata bundle to disk.
 
@@ -162,6 +165,7 @@ def save_flat_parameters_artifact(
         metadata: Metadata dictionary from flatten_parameters.
         output_path: Target .pt file path (e.g. output/models/cifar10_flat_parameters.pt).
         source_checkpoint: Optional reference to source checkpoint filename.
+        model_name: Optional explicit model architecture name (e.g. 'CIFAR10CNN', 'FMNISTCNN').
 
     Returns:
         Path to saved artifact.
@@ -169,14 +173,21 @@ def save_flat_parameters_artifact(
     out_file = Path(output_path).resolve()
     out_file.parent.mkdir(parents=True, exist_ok=True)
 
+    resolved_model_name = model_name or metadata.get("model_name", "CIFAR10CNN")
+    default_source_ckpt = (
+        "output/models/fmnist_cnn_checkpoint.pt"
+        if resolved_model_name == "FMNISTCNN"
+        else "output/models/cifar10_cnn_checkpoint.pt"
+    )
+
     payload = {
         "flat_parameters": flat_tensor,
         "layer_slices": metadata.get("layer_slices", {}),
         "l2_norm": metadata.get("l2_norm", 0.0),
         "num_parameters": int(flat_tensor.numel()),
         "metadata": {
-            "model_name": "CIFAR10CNN",
-            "source_checkpoint": source_checkpoint or "output/models/cifar10_cnn_checkpoint.pt",
+            "model_name": resolved_model_name,
+            "source_checkpoint": source_checkpoint or default_source_ckpt,
             "dtype": str(flat_tensor.dtype),
             "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         },

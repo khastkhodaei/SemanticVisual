@@ -1,6 +1,11 @@
 """Model architecture and parameter serialization modules for SemanticDFL."""
 
 from backend.models.cifar_cnn import CIFAR10CNN, CIFAR10_CLASSES
+from backend.models.fmnist_cnn import (
+    FMNISTCNN,
+    FMNIST_CLASSES,
+    EXPECTED_FMNIST_PARAMETER_COUNT,
+)
 from backend.models.flattening import (
     CANONICAL_LAYER_ORDER,
     EXPECTED_PARAMETER_COUNT,
@@ -14,6 +19,9 @@ from backend.models.flattening import (
 __all__ = [
     "CIFAR10CNN",
     "CIFAR10_CLASSES",
+    "FMNISTCNN",
+    "FMNIST_CLASSES",
+    "EXPECTED_FMNIST_PARAMETER_COUNT",
     "CANONICAL_LAYER_ORDER",
     "EXPECTED_PARAMETER_COUNT",
     "flatten_parameters",
