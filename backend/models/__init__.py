@@ -16,6 +16,12 @@ from backend.models.speech_resnet import (
     SPEECH_COMMANDS_CLASSES,
     EXPECTED_SPEECH_PARAMETER_COUNT,
 )
+from backend.models.news_albert import (
+    NewsAlbertTokenizer,
+    NewsAlbertForSequenceClassification,
+    NEWSGROUP_20_CLASSES,
+    EXPECTED_ALBERT_PARAMETER_COUNT,
+)
 from backend.models.flattening import (
     CANONICAL_LAYER_ORDER,
     EXPECTED_PARAMETER_COUNT,
@@ -38,6 +44,10 @@ __all__ = [
     "SPEECH_COMMANDS_CLASSES",
     "AudioToLogMelSpectrogram",
     "EXPECTED_SPEECH_PARAMETER_COUNT",
+    "NewsAlbertTokenizer",
+    "NewsAlbertForSequenceClassification",
+    "NEWSGROUP_20_CLASSES",
+    "EXPECTED_ALBERT_PARAMETER_COUNT",
     "CANONICAL_LAYER_ORDER",
     "EXPECTED_PARAMETER_COUNT",
     "flatten_parameters",
