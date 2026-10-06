@@ -804,14 +804,15 @@ def get_round_importance(
         ema_scores.append(st)
         prev_score = st
 
-    # Rank each round: descending score, ties broken by ascending index
+    # Rank each round: descending score, ties broken by ascending index (vectorized PyTorch ranking)
     round_ranks: List[torch.Tensor] = []
-    round_rank_of_index: List[Dict[int, int]] = []
+    round_inv_ranks: List[torch.Tensor] = []
     for st in ema_scores:
         sorted_indices = torch.argsort(-st, stable=True)
         round_ranks.append(sorted_indices)
-        rank_of_idx = {int(sorted_indices[r].item()): r + 1 for r in range(total_params)}
-        round_rank_of_index.append(rank_of_idx)
+        inv_ranks = torch.empty(total_params, dtype=torch.int32)
+        inv_ranks[sorted_indices] = torch.arange(1, total_params + 1, dtype=torch.int32)
+        round_inv_ranks.append(inv_ranks)
 
     # Build paginated per-round items
     rounds_data: List[Dict[str, Any]] = []
@@ -832,8 +833,8 @@ def get_round_importance(
             if t_idx == 0:
                 rank_delta = None
             else:
-                prev_rank = round_rank_of_index[t_idx - 1].get(global_idx)
-                rank_delta = None if prev_rank is None else (prev_rank - rank)
+                prev_rank = int(round_inv_ranks[t_idx - 1][global_idx].item())
+                rank_delta = prev_rank - rank
 
             raw_val = float(wt[global_idx].item())
             score_val = float(st[global_idx].item())

@@ -360,7 +360,7 @@
             <button id="btn-train-cnn" type="button" onclick="startCnnTraining()" class="btn-primary px-4 py-1.5 rounded-lg text-xs font-bold font-mono flex items-center gap-1.5 cursor-pointer shadow-sm">
               <span>▶</span><span>Start Model Training</span>
             </button>
-            <button onclick="loadCnnWeights()" class="px-3 py-1.5 text-xs font-mono font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 flex items-center gap-1 shadow-2xs">
+            <button id="btn-reload-weights" onclick="reloadAllBenchmarkData()" class="px-3 py-1.5 text-xs font-mono font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 flex items-center gap-1 shadow-2xs cursor-pointer">
               <span>⚡</span><span>Reload Weights</span>
             </button>
           </div>
@@ -777,7 +777,7 @@
             <!-- Round Selector -->
             <div class="flex items-center gap-1.5">
               <label for="sel-pmin-round" class="text-xs font-bold text-slate-700 font-sans">Round:</label>
-              <select id="sel-pmin-round" class="px-2 py-1 text-xs font-mono font-semibold bg-white border border-slate-300 rounded shadow-2xs focus:outline-hidden focus:border-indigo-500">
+              <select id="sel-pmin-round" onchange="runPminBinarySearch()" class="px-2 py-1 text-xs font-mono font-semibold bg-white border border-slate-300 rounded shadow-2xs focus:outline-hidden focus:border-indigo-500 cursor-pointer">
                 <option value="1">Round 1</option>
               </select>
             </div>
@@ -3287,10 +3287,30 @@
     }
 
     // Refresh downstream inspector, importance scores, energy curve, and P_min binary search
-    await loadCnnWeights();
-    await loadImportanceScores(0);
-    await loadEnergyDistribution(false);
-    await runPminBinarySearch();
+    await reloadAllBenchmarkData();
+  }
+
+  async function reloadAllBenchmarkData() {
+    const reloadBtn = $('btn-reload-weights');
+    if (reloadBtn) {
+      reloadBtn.disabled = true;
+      reloadBtn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span><span>Reloading Data...</span>`;
+    }
+    try {
+      await Promise.allSettled([
+        loadCnnWeights(),
+        loadImportanceScores(0),
+        loadEnergyDistribution(false),
+        runPminBinarySearch(),
+      ]);
+    } catch (err) {
+      console.error('Failed to reload all benchmark data:', err);
+    } finally {
+      if (reloadBtn) {
+        reloadBtn.disabled = false;
+        reloadBtn.innerHTML = `<span>⚡</span><span>Reload Weights</span>`;
+      }
+    }
   }
 
   function applyTrainingPreset(type) {
@@ -3425,9 +3445,8 @@
         `;
       }
 
-      // Automatically reload model parameter inspection slices & multi-round importance scores
-      await loadCnnWeights();
-      await loadImportanceScores(0);
+      // Automatically reload all benchmark data across Step 1, Step 2, and Step 3
+      await reloadAllBenchmarkData();
 
     } catch (err) {
       console.error('Training failed:', err);
@@ -4172,13 +4191,17 @@
         statusPill.className = 'text-[11px] font-mono px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded font-semibold';
       }
 
-      // Update Round Selector options if available_rounds is present
+      // Update Round Selector options dynamically from data.available_rounds (1 to 100)
       if (roundSel && data.available_rounds && data.available_rounds.length > 0) {
-        const currentVal = roundSel.value;
+        const prevSelected = parseInt(roundSel.value, 10);
         const optsHtml = data.available_rounds.map(r => `<option value="${r}">Round ${r}</option>`).join('');
         if (roundSel.innerHTML !== optsHtml) {
           roundSel.innerHTML = optsHtml;
-          roundSel.value = currentVal || data.round_num;
+        }
+        if (data.available_rounds.includes(prevSelected)) {
+          roundSel.value = String(prevSelected);
+        } else {
+          roundSel.value = String(data.round_num || data.available_rounds[0]);
         }
       }
 
