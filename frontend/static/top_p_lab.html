@@ -2180,6 +2180,12 @@
   let activeCategory = 'All';
   let windowSimCurve = null;
   let currentSimZoom = 100;
+  let currentBenchmark = 'cifar10';
+  let benchmarksCatalog = null;
+  let cnnWeightsData = null;
+  let currentImportanceData = null;
+  let currentEnergyData = null;
+  let currentPminData = null;
 
   function updateSimInspector(p) {
     if (!windowSimCurve) return;
@@ -2343,11 +2349,15 @@
     });
 
     if (tabId === 'tab-cnn') {
-      if (!benchmarksCatalog) { initBenchmarks(); }
-      if (!cnnWeightsData) { loadCnnWeights(); }
-      if (!currentImportanceData) { loadImportanceScores(0); }
-      if (!currentEnergyData) { loadEnergyDistribution(false); }
-      if (!currentPminData) { runPminBinarySearch(); }
+      try {
+        if (!benchmarksCatalog) { initBenchmarks(); }
+        if (!cnnWeightsData) { loadCnnWeights(); }
+        if (!currentImportanceData) { loadImportanceScores(0); }
+        if (!currentEnergyData) { loadEnergyDistribution(false); }
+        if (!currentPminData) { runPminBinarySearch(); }
+      } catch (err) {
+        console.warn('Tab 2 lazy loading error:', err);
+      }
     }
     if (tabId === 'tab-cost' && !$('cost-kpis').innerHTML) { recalcCosts(); }
     if (tabId === 'tab-faq' && !allFaqData.length) { loadFAQ(); }
@@ -3092,9 +3102,6 @@
   }
 
   /* --- TAB 2: TOP-P CNN & 5-BENCHMARK INSPECTOR --- */
-  let currentBenchmark = 'cifar10';
-  let benchmarksCatalog = null;
-  let cnnWeightsData = null;
 
   const LOCAL_BENCHMARKS = {
     cifar10: {
@@ -3597,7 +3604,6 @@
   }
 
   let currentImportanceOffset = 0;
-  let currentImportanceData = null;
   let currentImportanceForceRecompute = false;
 
   async function loadImportanceScores(offset = 0) {
@@ -3828,7 +3834,6 @@
   }
 
   /* --- STEP 2: ENERGY DISTRIBUTION & PREFIX SUMS ($c_P$) --- */
-  let currentEnergyData = null;
   let currentEnergyRound = 1;
   let energyChartInstance = null;
 
@@ -4083,7 +4088,6 @@
   }
 
   /* --- STEP 3: MINIMAL SIGNATURE BUDGET SEARCH ($P_{\min}$) --- */
-  let currentPminData = null;
 
   function setPminThetaPreset(val) {
     const inp = $('inp-pmin-theta');
