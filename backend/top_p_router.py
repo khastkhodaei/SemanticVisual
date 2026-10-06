@@ -276,6 +276,7 @@ BENCHMARK_FILE_PATTERNS: Dict[str, Dict[str, Any]] = {
         "checkpoint": "cifar10_cnn_checkpoint.pt",
         "importance_cache": "cifar10_importance_cache_beta09.pt",
         "energy_cache": "cifar10_energy_cache_beta09.pt",
+        "pmin_cache": "cifar10_pmin_cache_beta09.pt",
         "model_cls": CIFAR10CNN,
         "model_name": "CIFAR10CNN",
         "dataset_name": "CIFAR-10",
@@ -287,6 +288,7 @@ BENCHMARK_FILE_PATTERNS: Dict[str, Dict[str, Any]] = {
         "checkpoint": "fmnist_cnn_checkpoint.pt",
         "importance_cache": "fmnist_importance_cache_beta09.pt",
         "energy_cache": "fmnist_energy_cache_beta09.pt",
+        "pmin_cache": "fmnist_pmin_cache_beta09.pt",
         "model_cls": FMNISTCNN,
         "model_name": "FMNISTCNN",
         "dataset_name": "Fashion-MNIST",
@@ -298,6 +300,7 @@ BENCHMARK_FILE_PATTERNS: Dict[str, Dict[str, Any]] = {
         "checkpoint": "tiny_imagenet_resnet18.pt",
         "importance_cache": "tiny_imagenet_importance_cache_beta09.pt",
         "energy_cache": "tiny_imagenet_energy_cache_beta09.pt",
+        "pmin_cache": "tiny_imagenet_pmin_cache_beta09.pt",
         "model_cls": TinyImageNetResNet18,
         "model_name": "TinyImageNetResNet18",
         "dataset_name": "Tiny-ImageNet",
@@ -309,6 +312,7 @@ BENCHMARK_FILE_PATTERNS: Dict[str, Dict[str, Any]] = {
         "checkpoint": "speech_resnet18.pt",
         "importance_cache": "speech_importance_cache_beta09.pt",
         "energy_cache": "speech_energy_cache_beta09.pt",
+        "pmin_cache": "speech_pmin_cache_beta09.pt",
         "model_cls": SpeechResNet18,
         "model_name": "SpeechResNet18",
         "dataset_name": "Google Speech Commands",
@@ -320,6 +324,7 @@ BENCHMARK_FILE_PATTERNS: Dict[str, Dict[str, Any]] = {
         "checkpoint": "news_albert.pt",
         "importance_cache": "albert_importance_cache_beta09.pt",
         "energy_cache": "albert_energy_cache_beta09.pt",
+        "pmin_cache": "albert_pmin_cache_beta09.pt",
         "model_cls": NewsAlbertForSequenceClassification,
         "model_name": "NewsAlbertForSequenceClassification",
         "dataset_name": "20 Newsgroups",
@@ -360,6 +365,26 @@ def find_cache_file(target_dir: Path, base_dir: Path, cache_name: str) -> Option
     if p2.exists():
         return p2
     return None
+
+
+_RAM_CACHE: Dict[str, Dict[str, Any]] = {}
+
+
+def _load_cached_file(path: Path) -> Any:
+    """Load a torch checkpoint/cache artifact with high-performance RAM caching keyed by path and mtime."""
+    key = str(path.resolve())
+    mtime = path.stat().st_mtime
+    cached_entry = _RAM_CACHE.get(key)
+    if cached_entry is not None and cached_entry.get("mtime") == mtime:
+        return cached_entry["data"]
+    data = torch.load(path, weights_only=False)
+    _RAM_CACHE[key] = {"mtime": mtime, "data": data}
+    return data
+
+
+def clear_ram_cache() -> None:
+    """Explicitly clear the in-memory RAM cache."""
+    _RAM_CACHE.clear()
 
 
 class TopPRequest(BaseModel):
@@ -754,7 +779,7 @@ def get_round_importance(
         cache_path = find_cache_file(target_dir, rounds_dir, cache_name)
         if cache_path and cache_path.exists():
             try:
-                cached_data = torch.load(cache_path, weights_only=False)
+                cached_data = _load_cached_file(cache_path)
                 cached_rounds = cached_data.get("rounds_data", cached_data.get("rounds", []))
                 cached_top_k = cached_data.get("cached_top_k", len(cached_rounds[0]["items"]) if cached_rounds else 0)
                 if (
@@ -897,7 +922,7 @@ def get_energy_distribution(
         cache_path = find_cache_file(target_dir, rounds_dir, cache_name)
         if cache_path and cache_path.exists():
             try:
-                cached_data = torch.load(cache_path, weights_only=False)
+                cached_data = _load_cached_file(cache_path)
                 cached_rounds = cached_data.get("rounds", [])
                 if cached_rounds and len(cached_rounds) == len(round_files):
                     return {
@@ -1070,7 +1095,32 @@ def get_binary_search_pmin(
     if round_files:
         effective_idx = min(len(round_files) - 1, max(0, round_num - 1))
         target_round = round_files[effective_idx][0]
+    else:
+        effective_idx = 0
+        target_round = 1
 
+    # Fast-Path: Pre-Computed P_min Cache (beta = 0.9, tolerance = 1)
+    if not force_recompute and abs(beta - 0.9) < 1e-6 and tolerance == 1:
+        meta = BENCHMARK_FILE_PATTERNS.get(bench, BENCHMARK_FILE_PATTERNS["cifar10"])
+        cache_name = meta.get("pmin_cache")
+        if cache_name:
+            cache_path = find_cache_file(target_dir, rounds_dir, cache_name)
+            if cache_path and cache_path.exists():
+                try:
+                    cached_data = _load_cached_file(cache_path)
+                    rounds_dict = cached_data.get("rounds", {})
+                    round_entry = rounds_dict.get(str(target_round), rounds_dict.get(target_round))
+                    if round_entry:
+                        theta_key = f"{theta:.2f}"
+                        if theta_key in round_entry:
+                            res = dict(round_entry[theta_key])
+                            res["source"] = "cached_beta_0.9"
+                            res["available_rounds"] = available_rounds
+                            return res
+                except Exception:
+                    pass
+
+    if round_files:
         ema_score: Optional[torch.Tensor] = None
         target_w: Optional[torch.Tensor] = None
         for i in range(effective_idx + 1):

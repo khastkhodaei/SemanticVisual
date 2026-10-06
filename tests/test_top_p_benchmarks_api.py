@@ -360,3 +360,71 @@ class TestBenchmarkSwitcherUIIntegration:
         assert "benchmark: currentBenchmark" in content
         assert "benchmark=${encodeURIComponent(currentBenchmark)}" in content
 
+
+class TestBenchmarkCachingAndPminFastPath:
+    """Tests for RAM in-memory cache and P_min cache fast-path."""
+
+    def test_ram_cache_and_pmin_fast_path(self, client: TestClient, tmp_path: Path, monkeypatch):
+        """Verify pmin_cache artifact provides instant fast-path and populates RAM cache."""
+        router_mod.clear_ram_cache()
+
+        mock_rounds_dir = tmp_path / "rounds"
+        mock_rounds_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setattr(router_mod, "ROUNDS_DIR", mock_rounds_dir)
+
+        # Create dummy flat file for round 1
+        _make_mock_round_artifact(torch.ones(100), mock_rounds_dir / "cifar10_flat_round_1.pt")
+
+        # Create dummy pmin_cache
+        dummy_pmin_cache = {
+            "has_data": True,
+            "benchmark": "cifar10",
+            "beta": 0.9,
+            "total_parameters": 100,
+            "available_rounds": [1],
+            "rounds": {
+                "1": {
+                    "0.80": {
+                        "has_data": True,
+                        "benchmark": "cifar10",
+                        "total_parameters": 100,
+                        "theta": 0.8,
+                        "beta": 0.9,
+                        "round_num": 1,
+                        "p_min": 64,
+                        "achieved_cosine": 0.8,
+                        "sparsity_percentage": 36.0,
+                        "retained_percentage": 64.0,
+                        "nu_sq": 100.0,
+                        "nu": 10.0,
+                        "c_pmin": 64.0,
+                        "total_checks": 7,
+                        "trace": [{"step": 1, "low": 1, "high": 100, "mid": 50, "mid_cosine": 0.7, "condition_met": False, "action": "expand_low"}],
+                        "available_rounds": [1],
+                        "source": "cached_beta_0.9",
+                    }
+                }
+            }
+        }
+        cache_path = mock_rounds_dir / "cifar10_pmin_cache_beta09.pt"
+        torch.save(dummy_pmin_cache, cache_path)
+
+        # First request should hit pmin cache fast path
+        res = client.get("/api/v1/toppaper/binary-search-pmin?benchmark=cifar10&theta=0.8&beta=0.9&round_num=1")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["source"] == "cached_beta_0.9"
+        assert data["p_min"] == 64
+
+        # Verify RAM cache was populated
+        assert str(cache_path.resolve()) in router_mod._RAM_CACHE
+
+        # Second request should also succeed instantly from RAM cache
+        res2 = client.get("/api/v1/toppaper/binary-search-pmin?benchmark=cifar10&theta=0.8&beta=0.9&round_num=1")
+        assert res2.status_code == 200
+        assert res2.json()["source"] == "cached_beta_0.9"
+
+        # Clear RAM cache
+        router_mod.clear_ram_cache()
+        assert len(router_mod._RAM_CACHE) == 0
+
