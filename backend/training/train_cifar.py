@@ -118,7 +118,7 @@ def get_dataloaders(config: TrainingConfig) -> Tuple[DataLoader, DataLoader]:
         if config.distribution == "pathological_20":
             target_classes = list(config.target_classes) if (config.target_classes is not None and len(config.target_classes) > 0) else [0, 1]
             config.target_classes = target_classes
-            logger.info("Applying 20% Pathological Label Skew with classes: %s", target_classes)
+            logger.info("Applying 20%% Pathological Label Skew with classes: %s", target_classes)
             target_tensor = torch.tensor(target_classes, dtype=torch.long)
             train_idx = torch.randint(0, len(target_classes), (config.synthetic_samples,), generator=gen)
             train_y = target_tensor[train_idx]
@@ -694,17 +694,17 @@ def train_cifar_model(config: Optional[TrainingConfig] = None) -> Tuple[CIFAR10C
             round_flat_path.name,
         )
 
-        # Compute and persist EMA importance cache (beta=0.9, top 1000 coordinates)
-        try:
-            compute_and_save_importance_cache(rounds_dir=rounds_dir, beta=0.9, top_k=1000)
-        except Exception as cache_err:
-            logger.warning("Could not persist round importance cache: %s", cache_err)
+    # Compute and persist EMA importance cache (beta=0.9, top 1000 coordinates)
+    try:
+        compute_and_save_importance_cache(rounds_dir=rounds_dir, beta=0.9, top_k=1000)
+    except Exception as cache_err:
+        logger.warning("Could not persist round importance cache: %s", cache_err)
 
-        # Compute and persist energy distribution cache (beta=0.9)
-        try:
-            compute_and_save_energy_cache(rounds_dir=rounds_dir, beta=0.9)
-        except Exception as cache_err:
-            logger.warning("Could not persist round energy cache: %s", cache_err)
+    # Compute and persist energy distribution cache (beta=0.9)
+    try:
+        compute_and_save_energy_cache(rounds_dir=rounds_dir, beta=0.9)
+    except Exception as cache_err:
+        logger.warning("Could not persist round energy cache: %s", cache_err)
 
     end_time = datetime.now(timezone.utc)
     duration = (end_time - start_time).total_seconds()
