@@ -168,59 +168,59 @@ def precompute_caches_for_benchmark(
     total_rounds = len(round_files)
     logger.info("Processing benchmark '%s': %d round files found in %s", bench, total_rounds, target_dir)
 
-    # 1. Load round tensors and layer slices
-    round_tensors: List[torch.Tensor] = []
-    all_layer_slices: Dict[str, Any] = {}
-    for r_num, fpath in round_files:
-        ft, fmeta = load_flat_parameters_artifact(fpath)
-        round_tensors.append(ft.float())
-        if not all_layer_slices:
-            all_layer_slices = fmeta.get("layer_slices", {})
-
-    total_params = int(round_tensors[0].numel())
+    # Inspect first round to determine total parameters and layer slices
+    first_tensor, first_meta = load_flat_parameters_artifact(round_files[0][1])
+    total_params = int(first_tensor.numel())
+    all_layer_slices = first_meta.get("layer_slices", {})
     available_rounds = [r[0] for r in round_files]
+    effective_top_k = min(top_k, total_params)
 
-    # 2. Chain EMA scores across rounds
-    logger.info("[%s] Computing EMA score chains across %d rounds (beta=%.2f)...", bench, total_rounds, beta)
-    ema_scores: List[torch.Tensor] = []
+    del first_tensor, first_meta
+
+    # Candidate P indices for Step 2
+    candidate_p = [1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, total_params]
+    sampled_p = sorted(list({p for p in candidate_p if 1 <= p <= total_params} | {1, total_params}))
+
+    if total_params <= 60:
+        curve_p_indices = list(range(1, total_params + 1))
+    else:
+        raw_p = np.unique(np.geomspace(1, total_params, num=min(60, total_params)).astype(int))
+        curve_p_indices = sorted(list({int(p) for p in raw_p if 1 <= p <= total_params} | {1, total_params}))
+
+    p_1pct = max(1, int(round(0.01 * total_params)))
+
+    importance_rounds_data: List[Dict[str, Any]] = []
+    energy_rounds_data: List[Dict[str, Any]] = []
+    pmin_rounds_data: Dict[str, Dict[str, Any]] = {}
+
     prev_score: Optional[torch.Tensor] = None
-    for wt in round_tensors:
+    prev_inv_ranks: Optional[torch.Tensor] = None
+
+    logger.info("[%s] Streaming across %d rounds (total_params=%d, beta=%.2f)...", bench, total_rounds, total_params, beta)
+
+    for t_idx, (round_num, fpath) in enumerate(round_files):
+        wt, _ = load_flat_parameters_artifact(fpath)
+        wt = wt.float()
+
         abs_wt = torch.abs(wt)
         if prev_score is None:
-            st = abs_wt.clone()
+            st = abs_wt
         else:
             st = beta * prev_score + (1.0 - beta) * abs_wt
-        ema_scores.append(st)
-        prev_score = st
 
-    # 3. Sort coordinates per round and compute vectorized ranking
-    logger.info("[%s] Sorting coordinates and computing rank permutations...", bench)
-    round_ranks: List[torch.Tensor] = []
-    round_inv_ranks: List[torch.Tensor] = []
-    for st in ema_scores:
+        # Sort coordinates descending by EMA score
         sorted_indices = torch.argsort(-st, stable=True)
-        round_ranks.append(sorted_indices)
-        inv_ranks = torch.empty(total_params, dtype=torch.int32)
-        inv_ranks[sorted_indices] = torch.arange(1, total_params + 1, dtype=torch.int32)
-        round_inv_ranks.append(inv_ranks)
 
-    # 4. Step 1: Build Importance Cache
-    logger.info("[%s] Assembling Step 1 Importance Cache (top_%d)...", bench, top_k)
-    effective_top_k = min(top_k, total_params)
-    importance_rounds_data: List[Dict[str, Any]] = []
-    for t_idx, (round_num, _) in enumerate(round_files):
-        sorted_indices = round_ranks[t_idx][:effective_top_k]
-        st = ema_scores[t_idx]
-        wt = round_tensors[t_idx]
-
+        # Build Step 1 Importance items for top_k
+        top_indices = sorted_indices[:effective_top_k]
         items: List[Dict[str, Any]] = []
-        for rank_pos, g_idx_t in enumerate(sorted_indices):
+        for rank_pos, g_idx_t in enumerate(top_indices):
             global_idx = int(g_idx_t.item())
             rank = rank_pos + 1
-            if t_idx == 0:
+            if prev_inv_ranks is None:
                 rank_delta = None
             else:
-                prev_rank = int(round_inv_ranks[t_idx - 1][global_idx].item())
+                prev_rank = int(prev_inv_ranks[global_idx].item())
                 rank_delta = prev_rank - rank
 
             raw_val = float(wt[global_idx].item())
@@ -238,40 +238,7 @@ def precompute_caches_for_benchmark(
             })
         importance_rounds_data.append({"round": round_num, "items": items})
 
-    importance_payload = {
-        "has_data": True,
-        "benchmark": bench,
-        "total_rounds": total_rounds,
-        "beta": beta,
-        "offset": 0,
-        "top_k": effective_top_k,
-        "total_parameters": total_params,
-        "cached_top_k": effective_top_k,
-        "rounds": importance_rounds_data,
-        "rounds_data": importance_rounds_data,
-        "source": "cached_beta_0.9",
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
-
-    # 5. Step 2: Build Energy Distribution Cache & Step 3: P_min Cache
-    logger.info("[%s] Assembling Step 2 Energy Distribution & Step 3 P_min Caches...", bench)
-    candidate_p = [1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, total_params]
-    sampled_p = sorted(list({p for p in candidate_p if 1 <= p <= total_params} | {1, total_params}))
-
-    if total_params <= 60:
-        curve_p_indices = list(range(1, total_params + 1))
-    else:
-        raw_p = np.unique(np.geomspace(1, total_params, num=min(60, total_params)).astype(int))
-        curve_p_indices = sorted(list({int(p) for p in raw_p if 1 <= p <= total_params} | {1, total_params}))
-
-    p_1pct = max(1, int(round(0.01 * total_params)))
-    energy_rounds_data: List[Dict[str, Any]] = []
-    pmin_rounds_data: Dict[str, Dict[str, Any]] = {}
-
-    for t_idx, (round_num, _) in enumerate(round_files):
-        wt = round_tensors[t_idx]
-        sorted_indices = round_ranks[t_idx]
-
+        # Build Step 2 Energy & Step 3 P_min
         w_sorted_sq = (wt[sorted_indices]) ** 2
         c_prefix = torch.cumsum(w_sorted_sq, dim=0)
         nu_sq = float(c_prefix[-1].item())
@@ -328,7 +295,7 @@ def precompute_caches_for_benchmark(
             "curve_data": curve_points,
         })
 
-        # Algorithm 1 minimum coordinate budget for canonical thetas
+        # Algorithm 1 binary search for canonical thetas
         round_pmin_thetas: Dict[str, Any] = {}
         for th in thetas:
             th_key = f"{th:.2f}"
@@ -344,6 +311,29 @@ def precompute_caches_for_benchmark(
                 available_rounds=available_rounds,
             )
         pmin_rounds_data[str(round_num)] = round_pmin_thetas
+
+        # Update inverse rank tensor for next round's rank_delta
+        current_inv_ranks = torch.empty(total_params, dtype=torch.int32)
+        current_inv_ranks[sorted_indices] = torch.arange(1, total_params + 1, dtype=torch.int32)
+        prev_inv_ranks = current_inv_ranks
+        prev_score = st
+
+        del wt, abs_wt, sorted_indices, top_indices, w_sorted_sq, c_prefix
+
+    importance_payload = {
+        "has_data": True,
+        "benchmark": bench,
+        "total_rounds": total_rounds,
+        "beta": beta,
+        "offset": 0,
+        "top_k": effective_top_k,
+        "total_parameters": total_params,
+        "cached_top_k": effective_top_k,
+        "rounds": importance_rounds_data,
+        "rounds_data": importance_rounds_data,
+        "source": "cached_beta_0.9",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
 
     energy_payload = {
         "has_data": True,

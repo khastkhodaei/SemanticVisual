@@ -595,6 +595,14 @@ def train_cnn(req: CnnTrainingRequest) -> Dict[str, Any]:
                     except Exception:
                         pass
 
+    # Automatically precompute downstream caches for instant UI responsiveness
+    try:
+        from backend.training.precompute_caches import precompute_caches_for_benchmark
+        precompute_caches_for_benchmark(benchmark=bench, rounds_dir=Path("output/models/rounds"))
+        clear_ram_cache()
+    except Exception as cache_exc:
+        logger.warning("Could not auto-generate precomputed caches for %s: %s", bench, cache_exc)
+
     return {
         "benchmark": bench,
         "final_train_loss": result.final_train_loss,
