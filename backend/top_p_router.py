@@ -1156,6 +1156,40 @@ def get_binary_search_pmin(
                             res = dict(round_entry[theta_key])
                             res["source"] = "cached_beta_0.9"
                             res["available_rounds"] = available_rounds
+
+                            # Normalize trace items for consistent frontend compatibility
+                            raw_trace = res.get("trace", [])
+                            normalized_trace = []
+                            for t in raw_trace:
+                                lo_val = t.get("lo", t.get("low", 1))
+                                hi_val = t.get("hi", t.get("high", 1))
+                                mid_val = t.get("mid", (lo_val + hi_val) // 2)
+                                cos_val = float(t.get("cos_mid", t.get("mid_cosine", t.get("cos", 0.0))))
+                                is_feasible = bool(t.get("feasible", t.get("condition_met", cos_val >= theta)))
+                                c_mid_val = t.get("c_mid", round(cos_val ** 2, 6))
+                                act = t.get("action", "")
+                                if not act or act in ("shrink_high", "expand_low"):
+                                    act = (
+                                        f"Feasible (cos={cos_val:.7f} ≥ {theta:.2f}): tighten upper bound hi = {mid_val}"
+                                        if is_feasible
+                                        else f"Below θ (cos={cos_val:.7f} < {theta:.2f}): advance lower bound lo = {mid_val + 1}"
+                                    )
+                                normalized_trace.append({
+                                    "step": t.get("step", len(normalized_trace) + 1),
+                                    "lo": lo_val,
+                                    "hi": hi_val,
+                                    "low": lo_val,
+                                    "high": hi_val,
+                                    "mid": mid_val,
+                                    "c_mid": c_mid_val,
+                                    "cos_mid": cos_val,
+                                    "cos": cos_val,
+                                    "mid_cosine": cos_val,
+                                    "feasible": is_feasible,
+                                    "condition_met": is_feasible,
+                                    "action": act,
+                                })
+                            res["trace"] = normalized_trace
                             return res
                 except Exception:
                     pass

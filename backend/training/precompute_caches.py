@@ -102,9 +102,15 @@ def run_binary_search_pmin_on_prefix(
             "step": step_num,
             "low": lo,
             "high": hi,
+            "lo": lo,
+            "hi": hi,
             "mid": mid,
+            "c_mid": round(c_mid, 6),
             "mid_cosine": round(mid_cos, 7),
+            "cos_mid": round(mid_cos, 7),
+            "cos": round(mid_cos, 7),
             "condition_met": cond_met,
+            "feasible": cond_met,
             "action": action,
         })
 

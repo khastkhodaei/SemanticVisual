@@ -4273,29 +4273,35 @@
         const trace = data.trace || [];
         tbody.innerHTML = trace.map((t, idx) => {
           const isFinal = (idx === trace.length - 1);
-          const badgeClass = t.feasible
+          const isFeasible = (t.feasible !== undefined ? Boolean(t.feasible) : Boolean(t.condition_met));
+          const badgeClass = isFeasible
             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
             : 'bg-amber-50 text-amber-700 border-amber-200';
-          const badgeText = t.feasible ? '✓ Feasible' : '✗ Below θ';
+          const badgeText = isFeasible ? '✓ Feasible' : '✗ Below θ';
           const rowBg = isFinal ? 'bg-indigo-50/50 font-medium' : 'hover:bg-slate-50';
-          const cosVal = (t.cos_mid !== undefined ? t.cos_mid : t.cos);
+          const cosVal = Number(t.cos_mid !== undefined ? t.cos_mid : (t.mid_cosine !== undefined ? t.mid_cosine : (t.cos !== undefined ? t.cos : 0)));
+          const loVal = Number(t.lo !== undefined ? t.lo : (t.low !== undefined ? t.low : 1));
+          const hiVal = Number(t.hi !== undefined ? t.hi : (t.high !== undefined ? t.high : 1));
+          const midVal = Number(t.mid !== undefined ? t.mid : 0);
+          const cMidVal = (t.c_mid !== undefined && t.c_mid !== null) ? Number(t.c_mid).toFixed(4) : (cosVal * cosVal).toFixed(4);
+          const actionText = t.action || (isFeasible ? `Feasible: tighten upper bound hi = ${midVal}` : `Below θ: advance lower bound lo = ${midVal + 1}`);
 
           return `
             <tr class="border-b border-slate-100 transition-colors ${rowBg}">
               <td class="py-2.5 px-3 font-mono font-bold text-slate-800 whitespace-nowrap min-w-[70px] w-[70px]">
-                #${t.step}
+                #${t.step || (idx + 1)}
                 ${isFinal ? '<span class="ml-1 text-[9px] font-bold px-1.5 py-0.2 rounded bg-indigo-600 text-white">FINAL</span>' : ''}
               </td>
               <td class="py-2.5 px-3 font-mono text-slate-600 whitespace-nowrap min-w-[170px] w-[170px]">
-                [${t.lo.toLocaleString()} .. ${t.hi.toLocaleString()}]
+                [${loVal.toLocaleString()} .. ${hiVal.toLocaleString()}]
               </td>
               <td class="py-2.5 px-3 text-right font-mono font-bold whitespace-nowrap min-w-[120px] w-[120px] ${isFinal ? 'text-indigo-700 text-sm' : 'text-slate-900'}">
-                ${t.mid.toLocaleString()}
+                ${midVal.toLocaleString()}
               </td>
               <td class="py-2.5 px-3 text-right font-mono text-slate-600 whitespace-nowrap min-w-[150px] w-[150px]">
-                ${t.c_mid.toFixed(4)}
+                ${cMidVal}
               </td>
-              <td class="py-2.5 px-3 text-right font-mono font-bold whitespace-nowrap min-w-[130px] w-[130px] ${t.feasible ? 'text-emerald-700' : 'text-rose-700'}">
+              <td class="py-2.5 px-3 text-right font-mono font-bold whitespace-nowrap min-w-[130px] w-[130px] ${isFeasible ? 'text-emerald-700' : 'text-rose-700'}">
                 ${cosVal.toFixed(7)}
               </td>
               <td class="py-2.5 px-3 text-center whitespace-nowrap min-w-[110px] w-[110px]">
@@ -4303,8 +4309,8 @@
                   ${badgeText}
                 </span>
               </td>
-              <td class="py-2.5 px-3 font-sans text-slate-700 text-xs whitespace-nowrap min-w-[360px]" title="${t.action}">
-                ${t.action}
+              <td class="py-2.5 px-3 font-sans text-slate-700 text-xs whitespace-nowrap min-w-[360px]" title="${actionText}">
+                ${actionText}
               </td>
             </tr>
           `;
