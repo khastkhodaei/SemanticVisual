@@ -444,11 +444,17 @@
           <div class="flex items-center gap-1.5 flex-wrap">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">Display Mode:</span>
             <button id="cnn-filter-all" type="button" class="pill active" onclick="switchCnnView('all', this)">🌐 All Slices (Head + Tail + Top-K)</button>
-            <button id="cnn-filter-head" type="button" class="pill" onclick="switchCnnView('head', this)">◀ First 15 (Head / Conv1)</button>
-            <button id="cnn-filter-tail" type="button" class="pill" onclick="switchCnnView('tail', this)">▶ Last 15 (Tail / FC2)</button>
+            <button id="cnn-filter-head" type="button" class="pill" onclick="switchCnnView('head', this)">◀ First 15 (<span id="cnn-filter-head-label">Head</span>)</button>
+            <button id="cnn-filter-tail" type="button" class="pill" onclick="switchCnnView('tail', this)">▶ Last 15 (<span id="cnn-filter-tail-label">Tail</span>)</button>
             <button id="cnn-filter-top" type="button" class="pill" onclick="switchCnnView('top', this)">⭐ Top 20 Magnitude</button>
           </div>
           <div class="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-md border border-slate-200 text-xs">
+            <label class="flex items-center gap-1.5 border-r border-slate-300 pr-2 mr-1">
+              <span class="text-slate-700 font-sans font-bold text-[11px]">Round:</span>
+              <select id="sel-weights-round" onchange="loadCnnWeights()" class="px-2 py-0.5 text-xs font-mono font-semibold bg-white border border-slate-300 rounded shadow-2xs focus:outline-hidden focus:border-indigo-500 cursor-pointer">
+                <option value="latest">Latest Trained</option>
+              </select>
+            </label>
             <label class="flex items-center gap-1">
               <span class="text-slate-600 font-mono text-[11px]">Head:</span>
               <input id="cnn-inp-head" type="number" min="5" max="100" value="15" class="w-12 px-1 py-0.5 text-xs font-mono text-center bg-white border border-slate-300 rounded" onchange="loadCnnWeights()" />
@@ -471,11 +477,11 @@
         <!-- Head Panel (First Parameters) -->
         <div class="paper-panel">
           <div class="panel-header">
-            <span class="panel-title text-blue-900"><span>◀</span><span>First Parameters (Head Slice — Conv1)</span></span>
+            <span class="panel-title text-blue-900"><span>◀</span><span id="cnn-head-title">First Parameters (Head Slice)</span></span>
             <span class="tag-paper bg-blue-50 text-blue-700 border-blue-200" id="cnn-head-badge">Indices #0 to #14</span>
           </div>
-          <p class="text-[11px] text-slate-500 mb-2.5">
-            Initial convolutional filters capturing low-level spatial edges and color contrasts in the CIFAR-10 input image.
+          <p id="cnn-head-desc" class="text-[11px] text-slate-500 mb-2.5">
+            Initial convolutional filters capturing low-level spatial edges and color contrasts in the input image.
           </p>
           <div id="cnn-head-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <!-- Dynamically populated tiles -->
@@ -485,11 +491,11 @@
         <!-- Tail Panel (Last Parameters) -->
         <div class="paper-panel">
           <div class="panel-header">
-            <span class="panel-title text-purple-900"><span>▶</span><span>Last Parameters (Tail Slice — FC2)</span></span>
-            <span class="tag-paper bg-purple-50 text-purple-700 border-purple-200" id="cnn-tail-badge">Indices #2156475 to #2156489</span>
+            <span class="panel-title text-purple-900"><span>▶</span><span id="cnn-tail-title">Last Parameters (Tail Slice)</span></span>
+            <span class="tag-paper bg-purple-50 text-purple-700 border-purple-200" id="cnn-tail-badge">Indices</span>
           </div>
-          <p class="text-[11px] text-slate-500 mb-2.5">
-            Final linear classification head and bias coordinates mapping dense representations to the 10 CIFAR-10 class logits.
+          <p id="cnn-tail-desc" class="text-[11px] text-slate-500 mb-2.5">
+            Final linear classification head and bias coordinates mapping dense representations to class logits.
           </p>
           <div id="cnn-tail-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <!-- Dynamically populated tiles -->
@@ -3286,6 +3292,9 @@
       });
     }
 
+    // Reset parameter inspector round to latest trained
+    if ($('sel-weights-round')) $('sel-weights-round').value = 'latest';
+
     // Refresh downstream inspector, importance scores, energy curve, and P_min binary search
     await reloadAllBenchmarkData();
   }
@@ -3496,9 +3505,14 @@
     const head = parseInt($('cnn-inp-head')?.value || '15', 10);
     const tail = parseInt($('cnn-inp-tail')?.value || '15', 10);
     const top_k = parseInt($('cnn-inp-topk')?.value || '20', 10);
+    const roundVal = $('sel-weights-round')?.value;
+    let roundParam = '';
+    if (roundVal && roundVal !== 'latest') {
+      roundParam = `&round_num=${encodeURIComponent(roundVal)}`;
+    }
 
     try {
-      const res = await fetch(`/api/v1/toppaper/cnn-weights?benchmark=${encodeURIComponent(currentBenchmark)}&head=${head}&tail=${tail}&top_k=${top_k}`);
+      const res = await fetch(`/api/v1/toppaper/cnn-weights?benchmark=${encodeURIComponent(currentBenchmark)}&head=${head}&tail=${tail}&top_k=${top_k}${roundParam}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       const data = await res.json();
       cnnWeightsData = data;
@@ -3511,11 +3525,48 @@
   function renderCnnInspector(data) {
     if (!data) return;
 
+    // 0. Update Round Selector options dynamically
+    const roundSel = $('sel-weights-round');
+    if (roundSel && data.available_rounds && data.available_rounds.length > 0) {
+      const currentVal = roundSel.value;
+      const latestR = data.available_rounds[data.available_rounds.length - 1];
+      const opts = [
+        `<option value="latest">Latest Trained (Round ${latestR})</option>`,
+        ...data.available_rounds.map(r => `<option value="${r}">Round ${r}</option>`)
+      ].join('');
+      if (roundSel.innerHTML !== opts) {
+        roundSel.innerHTML = opts;
+      }
+      if (currentVal && (currentVal === 'latest' || data.available_rounds.includes(parseInt(currentVal, 10)))) {
+        roundSel.value = currentVal;
+      } else {
+        roundSel.value = 'latest';
+      }
+    }
+
+    // Dynamic Head & Tail Layer Names and Descriptions
+    const headLayer = data.head_layer || (data.slices.head[0]?.layer) || 'Head';
+    const tailLayer = data.tail_layer || (data.slices.tail[data.slices.tail.length - 1]?.layer) || 'Tail';
+    const roundPrefix = data.round_num ? `Round ${data.round_num} • ` : '';
+
+    if ($('cnn-head-title')) $('cnn-head-title').textContent = `First Parameters (Head Slice — ${headLayer})`;
+    if ($('cnn-head-badge')) $('cnn-head-badge').textContent = `${roundPrefix}Indices #0 to #${data.slices.head.length - 1}`;
+    if ($('cnn-head-desc')) {
+      $('cnn-head-desc').textContent = `Initial ${headLayer} coordinates capturing low-level early representations in the ${data.dataset_name || 'input'} modality.`;
+    }
+
+    if ($('cnn-tail-title')) $('cnn-tail-title').textContent = `Last Parameters (Tail Slice — ${tailLayer})`;
+    if ($('cnn-tail-badge')) $('cnn-tail-badge').textContent = `${roundPrefix}Indices #${(data.total_parameters - data.slices.tail.length).toLocaleString()} to #${(data.total_parameters - 1).toLocaleString()}`;
+    if ($('cnn-tail-desc')) {
+      $('cnn-tail-desc').textContent = `Final ${tailLayer} classification head and bias coordinates mapping dense representations to the ${data.num_classes || 10} ${data.dataset_name || ''} class logits.`;
+    }
+
+    if ($('cnn-filter-head-label')) $('cnn-filter-head-label').textContent = headLayer.split('.')[0] || 'Head';
+    if ($('cnn-filter-tail-label')) $('cnn-filter-tail-label').textContent = tailLayer.split('.')[0] || 'Tail';
+
     // 1. Update KPIs
     if ($('cnn-kpi-total')) $('cnn-kpi-total').textContent = data.total_parameters.toLocaleString();
     if ($('cnn-kpi-norm')) $('cnn-kpi-norm').textContent = data.l2_norm.toFixed(4);
-    if ($('cnn-head-badge')) $('cnn-head-badge').textContent = `Indices #0 to #${data.slices.head.length - 1}`;
-    if ($('cnn-tail-badge')) $('cnn-tail-badge').textContent = `Indices #${data.total_parameters - data.slices.tail.length} to #${data.total_parameters - 1}`;
     if ($('cnn-top-badge')) $('cnn-top-badge').textContent = `Top ${data.slices.top_magnitude.length} Magnitude Coordinates`;
 
     // 2. Render Layer Progress Bar & Table

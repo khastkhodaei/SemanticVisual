@@ -595,13 +595,14 @@ def train_cnn(req: CnnTrainingRequest) -> Dict[str, Any]:
                     except Exception:
                         pass
 
-    # Automatically precompute downstream caches for instant UI responsiveness
-    try:
-        from backend.training.precompute_caches import precompute_caches_for_benchmark
-        precompute_caches_for_benchmark(benchmark=bench, rounds_dir=Path("output/models/rounds"))
-        clear_ram_cache()
-    except Exception as cache_exc:
-        logger.warning("Could not auto-generate precomputed caches for %s: %s", bench, cache_exc)
+    # Automatically precompute downstream caches for instant UI responsiveness on real training
+    if not req.synthetic:
+        try:
+            from backend.training.precompute_caches import precompute_caches_for_benchmark
+            precompute_caches_for_benchmark(benchmark=bench, rounds_dir=Path("output/models/rounds"))
+            clear_ram_cache()
+        except Exception as cache_exc:
+            logger.warning("Could not auto-generate precomputed caches for %s: %s", bench, cache_exc)
 
     return {
         "benchmark": bench,
@@ -633,36 +634,53 @@ def get_cnn_weights(
     head: int = Query(15, ge=1, le=500, description="Number of starting parameters to inspect"),
     tail: int = Query(15, ge=1, le=500, description="Number of ending parameters to inspect"),
     top_k: int = Query(20, ge=1, le=500, description="Number of highest absolute magnitude weights"),
+    round_num: Optional[int] = Query(None, ge=1, description="Round number to inspect (defaults to latest available round)"),
 ) -> Dict[str, Any]:
     """Inspect true flattened weights from the selected benchmark model."""
     bench = benchmark.lower()
     meta = BENCHMARK_FILE_PATTERNS.get(bench, BENCHMARK_FILE_PATTERNS["cifar10"])
-    canonical_flat_name = meta["canonical_flat"]
-    checkpoint_name = meta["checkpoint"]
+    rounds_dir = Path("output/models/rounds")
+    round_files, target_dir = find_round_files_for_benchmark(rounds_dir, bench)
+    available_rounds = [r[0] for r in round_files] if round_files else []
 
-    flat_path = Path(f"output/models/{canonical_flat_name}")
-    ckpt_path = Path(f"output/models/{checkpoint_name}")
-    sub_flat_path = Path(f"output/models/rounds/{bench}/{canonical_flat_name}")
-
+    selected_round: Optional[int] = None
     flat_tensor: Optional[torch.Tensor] = None
     metadata: Dict[str, Any] = {}
 
-    if sub_flat_path.exists():
-        flat_tensor, metadata = load_flat_parameters_artifact(sub_flat_path)
-    elif flat_path.exists():
-        flat_tensor, metadata = load_flat_parameters_artifact(flat_path)
-    elif ckpt_path.exists():
-        model_cls = meta["model_cls"]
-        if hasattr(model_cls, "load_checkpoint"):
-            model, _ = model_cls.load_checkpoint(ckpt_path)
+    if round_files:
+        if round_num is not None:
+            match = [f for r, f in round_files if r == round_num]
+            if match:
+                selected_round = round_num
+                flat_tensor, metadata = load_flat_parameters_artifact(match[0])
+            else:
+                selected_round = round_files[-1][0]
+                flat_tensor, metadata = load_flat_parameters_artifact(round_files[-1][1])
         else:
-            model = model_cls()
-            model.load_state_dict(torch.load(ckpt_path, weights_only=True))
-        flat_tensor, metadata = flatten_parameters(model)
+            selected_round = round_files[-1][0]
+            flat_tensor, metadata = load_flat_parameters_artifact(round_files[-1][1])
     else:
-        # Fallback to fresh architecture instance
-        model = meta["model_cls"]()
-        flat_tensor, metadata = flatten_parameters(model)
+        canonical_flat_name = meta["canonical_flat"]
+        checkpoint_name = meta["checkpoint"]
+        sub_flat_path = Path(f"output/models/rounds/{bench}/{canonical_flat_name}")
+        flat_path = Path(f"output/models/{canonical_flat_name}")
+        ckpt_path = Path(f"output/models/{checkpoint_name}")
+
+        if sub_flat_path.exists():
+            flat_tensor, metadata = load_flat_parameters_artifact(sub_flat_path)
+        elif flat_path.exists():
+            flat_tensor, metadata = load_flat_parameters_artifact(flat_path)
+        elif ckpt_path.exists():
+            model_cls = meta["model_cls"]
+            if hasattr(model_cls, "load_checkpoint"):
+                model, _ = model_cls.load_checkpoint(ckpt_path)
+            else:
+                model = model_cls()
+                model.load_state_dict(torch.load(ckpt_path, weights_only=True))
+            flat_tensor, metadata = flatten_parameters(model)
+        else:
+            model = meta["model_cls"]()
+            flat_tensor, metadata = flatten_parameters(model)
 
     total_params = int(flat_tensor.numel())
     l2_norm = round(float(torch.linalg.norm(flat_tensor).item()), 4)
@@ -724,10 +742,23 @@ def get_cnn_weights(
                 "percentage": round(100.0 * info["numel"] / total_params, 2),
             })
 
+    head_layer = head_items[0]["layer"] if head_items else "Head"
+    tail_layer = tail_items[-1]["layer"] if tail_items else "Tail"
+    catalog_info = BENCHMARKS_CATALOG.get(bench, {})
+
     return {
         "benchmark": bench,
+        "round_num": selected_round,
+        "available_rounds": available_rounds,
+        "is_latest_round": (selected_round == available_rounds[-1]) if (selected_round and available_rounds) else False,
         "total_parameters": total_params,
         "l2_norm": l2_norm,
+        "head_layer": head_layer,
+        "tail_layer": tail_layer,
+        "model_name": meta["model_name"],
+        "dataset_name": meta["dataset_name"],
+        "num_classes": catalog_info.get("num_classes", 10),
+        "modality": catalog_info.get("modality", ""),
         "slices": {
             "head": head_items,
             "tail": tail_items,
@@ -738,8 +769,9 @@ def get_cnn_weights(
             "model_name": meta["model_name"],
             "dataset": meta["dataset_name"],
             "benchmark": bench,
-            "checkpoint_exists": ckpt_path.exists(),
-            "flat_artifact_exists": flat_path.exists(),
+            "round_num": selected_round,
+            "checkpoint_exists": True,
+            "flat_artifact_exists": True,
         },
     }
 
