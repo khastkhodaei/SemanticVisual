@@ -173,7 +173,7 @@ class TestTopPCNNTrainingUIPresets:
         # Each tuple: (field_id, attribute_snippet) that MUST appear in the HTML
         required_attrs = [
             ('train-rounds',   'min="1"'),
-            ('train-rounds',   'max="50"'),
+            ('train-rounds',   'max="200"'),
             ('train-rounds',   'value="1"'),
             ('train-epochs',   'min="1"'),
             ('train-epochs',   'max="100"'),

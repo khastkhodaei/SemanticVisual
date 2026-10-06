@@ -99,8 +99,8 @@ class TestCnnTrainingEndpoint:
         res = client.post("/api/v1/toppaper/train-cnn", json={"rounds": 0})
         assert res.status_code == 422
 
-        # rounds > 50
-        res = client.post("/api/v1/toppaper/train-cnn", json={"rounds": 100})
+        # rounds > 200
+        res = client.post("/api/v1/toppaper/train-cnn", json={"rounds": 250})
         assert res.status_code == 422
 
         # batch_size > 512

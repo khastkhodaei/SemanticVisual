@@ -375,7 +375,7 @@ class TopPRequest(BaseModel):
 
 class CnnTrainingRequest(BaseModel):
     benchmark: str = Field("cifar10", description="Benchmark identifier: cifar10, fmnist, tiny_imagenet, speech, 20news")
-    rounds: int = Field(1, ge=1, le=50, description="Number of sequential training rounds")
+    rounds: int = Field(1, ge=1, le=200, description="Number of sequential training rounds")
     epochs: int = Field(5, ge=1, le=100, description="Local epochs per round")
     batch_size: int = Field(64, ge=8, le=512, description="Mini-batch size")
     learning_rate: float = Field(0.01, gt=0.0, le=1.0, description="Learning rate")

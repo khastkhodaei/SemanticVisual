@@ -313,7 +313,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mt-3 text-xs">
           <label class="flex flex-col gap-1">
             <span class="text-[11px] font-medium text-slate-600" title="Number of sequential training rounds">Rounds (r):</span>
-            <input id="train-rounds" type="number" min="1" max="50" value="1" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" />
+            <input id="train-rounds" type="number" min="1" max="200" value="1" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" />
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-[11px] font-medium text-slate-600" title="Local epochs per round">Epochs (E):</span>
@@ -3396,9 +3396,10 @@
       btn.disabled = true;
       btn.innerHTML = `<span class="inline-block animate-spin mr-1">⏳</span><span>Training (${rounds}r × ${epochs}e)...</span>`;
     }
-    const distText = distribution === 'pathological_20' ? 'Pathological 20% Non-IID' : 'Full IID';
+    const benchObj = (benchmarksCatalog && benchmarksCatalog.benchmarks && benchmarksCatalog.benchmarks[currentBenchmark]) || LOCAL_BENCHMARKS[currentBenchmark];
+    const benchDisplayName = benchObj ? benchObj.name : currentBenchmark;
     if (statusBanner) {
-      statusBanner.innerHTML = `<span class="text-blue-600 font-bold animate-pulse">⚡ Training in progress (${rounds} round${rounds > 1 ? 's' : ''}, ${epochs} epochs/round) [${distText}] on ${synthetic ? 'synthetic dataset' : 'CIFAR-10'}...</span>`;
+      statusBanner.innerHTML = `<span class="text-blue-600 font-bold animate-pulse">⚡ Training in progress (${rounds} round${rounds > 1 ? 's' : ''}, ${epochs} epochs/round) [${distText}] on ${synthetic ? 'synthetic dataset' : benchDisplayName}...</span>`;
     }
 
     try {
