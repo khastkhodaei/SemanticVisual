@@ -250,16 +250,43 @@
     <!-- TAB 2: TOP-P CNN PARAMETER INSPECTOR -->
     <div id="tab-cnn" class="tab-content space-y-4">
       
-      <!-- Narrative Title Card -->
-      <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
+      <!-- Benchmark Model & Dataset Switcher Pill Bar (Paper §5.1) -->
+      <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white space-y-3">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2.5 pb-2.5 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <span class="text-sm">🎛️</span>
+            <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-600">Benchmark Model &amp; Dataset (Paper §5.1):</span>
+          </div>
+          <!-- 5 Benchmark Pills -->
+          <div class="flex items-center gap-1.5 flex-wrap" id="benchmark-switcher-pills">
+            <button type="button" id="benchmark-pill-cifar10" data-benchmark="cifar10" onclick="switchBenchmark('cifar10')" class="benchmark-pill active px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all shadow-xs bg-blue-600 text-white border border-blue-600 cursor-pointer">
+              <span>🖼️</span> <span>CIFAR-10 (CNN, 2.15M)</span>
+            </button>
+            <button type="button" id="benchmark-pill-fmnist" data-benchmark="fmnist" onclick="switchBenchmark('fmnist')" class="benchmark-pill px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all shadow-2xs bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 cursor-pointer">
+              <span>👕</span> <span>Fashion-MNIST (CNN, 1.65M)</span>
+            </button>
+            <button type="button" id="benchmark-pill-tiny_imagenet" data-benchmark="tiny_imagenet" onclick="switchBenchmark('tiny_imagenet')" class="benchmark-pill px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all shadow-2xs bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 cursor-pointer">
+              <span>🖼️</span> <span>Tiny-ImageNet (ResNet-18, 11.27M)</span>
+            </button>
+            <button type="button" id="benchmark-pill-speech" data-benchmark="speech" onclick="switchBenchmark('speech')" class="benchmark-pill px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all shadow-2xs bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 cursor-pointer">
+              <span>🎙️</span> <span>Google Speech (ResNet-18, 11.17M)</span>
+            </button>
+            <button type="button" id="benchmark-pill-20news" data-benchmark="20news" onclick="switchBenchmark('20news')" class="benchmark-pill px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all shadow-2xs bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 cursor-pointer">
+              <span>📰</span> <span>20Newsgroup (ALBERT, 11.68M)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Dynamic Active Benchmark HUD Description -->
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div class="flex-1">
             <div class="flex items-center gap-2 flex-wrap">
-              <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-emerald-100 text-emerald-800">REAL CIFAR-10 MODEL INSPECTOR</span>
+              <span id="benchmark-badge-modality" class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-emerald-100 text-emerald-800">Vision (3x32x32 RGB)</span>
               <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-100 text-blue-800">PAPER §5.1 BENCHMARK</span>
-              <h2 class="text-sm font-bold text-slate-900">Top-P CNN — Real-World Flattened Parameter Vector Inspector</h2>
+              <span id="benchmark-badge-optimal-p" class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-indigo-100 text-indigo-800">Optimal P* = 12.3% (265,248)</span>
+              <h2 class="text-sm font-bold text-slate-900"><span id="benchmark-active-name">CIFAR-10</span> — <span id="benchmark-active-model">CIFAR10CNN</span> Parameter Inspector</h2>
             </div>
-            <p class="text-xs text-slate-600 font-sans mt-1">
+            <p id="benchmark-active-desc" class="text-xs text-slate-600 font-sans mt-1">
               Directly introspects and slices the authentic flattened parameter vector ($M = 2,156,490$ parameters) from <code class="font-mono text-blue-700 font-bold">output/models/cifar10_flat_parameters.pt</code>. Maps every individual weight coordinate to its canonical origin layer (<code class="font-mono">conv1</code>, <code class="font-mono">conv2</code>, <code class="font-mono">fc1</code>, <code class="font-mono">fc2</code>) with zero approximation.
             </p>
           </div>
@@ -271,8 +298,8 @@
         <div class="panel-header border-b border-blue-100 pb-2">
           <div class="flex items-center gap-2">
             <span class="text-base">🚀</span>
-            <span class="panel-title text-blue-950">CIFAR-10 CNN Training Controller</span>
-            <span class="tag-paper bg-blue-100 text-blue-800 border-blue-300">PyTorch SGD</span>
+            <span class="panel-title text-blue-950" id="train-controller-title">CIFAR-10 CNN Training Controller</span>
+            <span class="tag-paper bg-blue-100 text-blue-800 border-blue-300" id="train-controller-algo">PyTorch SGD</span>
           </div>
           <!-- Quick Presets -->
           <div class="flex items-center gap-1.5 flex-wrap">
@@ -315,7 +342,7 @@
           <label class="flex flex-col gap-1">
             <span class="text-[11px] font-medium text-slate-600">Data Source:</span>
             <select id="train-synthetic" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500">
-              <option value="false">CIFAR-10 (Full)</option>
+              <option value="false" id="opt-train-real">CIFAR-10 (Full)</option>
               <option value="true" selected>Synthetic (~1s)</option>
             </select>
           </label>
@@ -351,7 +378,7 @@
             <span class="kpi-val text-blue-700" id="cnn-kpi-total">2,156,490</span>
             <span class="tag-paper">Paper §5.1</span>
           </div>
-          <span class="kpi-lbl">Total Flattened Parameters ($M = 2.15\text{ M}$ FP32 ~8.63 MB)</span>
+          <span class="kpi-lbl" id="cnn-kpi-total-lbl">Total Flattened Parameters ($M = 2.15\text{ M}$ FP32 ~8.63 MB)</span>
         </div>
 
         <div class="kpi-card border-emerald-200 bg-emerald-50/20">
@@ -364,18 +391,18 @@
 
         <div class="kpi-card border-purple-200 bg-purple-50/20">
           <div class="flex items-center justify-between">
-            <span class="kpi-val text-purple-700">2-Conv + 2-FC</span>
-            <span class="tag-paper">CIFAR-10</span>
+            <span class="kpi-val text-purple-700" id="cnn-kpi-topology-title">2-Conv + 2-FC</span>
+            <span class="tag-paper" id="cnn-kpi-topology-badge">CIFAR-10</span>
           </div>
-          <span class="kpi-lbl">Topology: $3\text{ch} \to 32\text{ch} \to 64\text{ch} \to 512\text{fc} \to 10\text{logits}$</span>
+          <span class="kpi-lbl" id="cnn-kpi-topology-desc">Topology: $3\text{ch} \to 32\text{ch} \to 64\text{ch} \to 512\text{fc} \to 10\text{logits}$</span>
         </div>
 
         <div class="kpi-card border-amber-200 bg-amber-50/20">
           <div class="flex items-center justify-between">
             <span class="kpi-val text-amber-700 text-xs font-mono truncate" id="cnn-kpi-artifact">cifar10_flat_parameters.pt</span>
-            <span class="tag-paper bg-emerald-50 text-emerald-700 border-emerald-200">Loaded</span>
+            <span class="tag-paper bg-indigo-50 text-indigo-700 border-indigo-200" id="cnn-kpi-optimal-p">P* = 12.3% (265K)</span>
           </div>
-          <span class="kpi-lbl">Artifact State: Canonical Order Slices Verified</span>
+          <span class="kpi-lbl" id="cnn-kpi-artifact-lbl">Paper Target $P^* = 12.3\%$ coordinates</span>
         </div>
       </div>
 
@@ -383,7 +410,7 @@
       <div class="paper-panel">
         <div class="panel-header">
           <span class="panel-title"><span>🗺️</span><span>Layer Distribution &amp; 1D Parameter Slice Map</span></span>
-          <span class="text-[11px] font-mono text-slate-500">Continuous Slices $[0, 2156490)$</span>
+          <span class="text-[11px] font-mono text-slate-500" id="cnn-slice-map-title">Continuous Slices $[0, 2156490)$</span>
         </div>
         <p class="text-xs text-slate-600 font-sans mb-3">
           Every parameter in the 1D flat tensor is indexed consecutively according to the canonical layer sequence from the paper's mathematical formulation:
@@ -2316,6 +2343,7 @@
     });
 
     if (tabId === 'tab-cnn') {
+      if (!benchmarksCatalog) { initBenchmarks(); }
       if (!cnnWeightsData) { loadCnnWeights(); }
       if (!currentImportanceData) { loadImportanceScores(0); }
       if (!currentEnergyData) { loadEnergyDistribution(false); }
@@ -3063,8 +3091,178 @@
     }
   }
 
-  /* --- TAB 2: TOP-P CNN PARAMETER INSPECTOR --- */
+  /* --- TAB 2: TOP-P CNN & 5-BENCHMARK INSPECTOR --- */
+  let currentBenchmark = 'cifar10';
+  let benchmarksCatalog = null;
   let cnnWeightsData = null;
+
+  const LOCAL_BENCHMARKS = {
+    cifar10: {
+      id: 'cifar10',
+      name: 'CIFAR-10',
+      model_name: 'CIFAR10CNN',
+      dataset_name: 'CIFAR-10',
+      total_parameters: 2156490,
+      m_formatted: '2.15M',
+      modality: 'Vision (3x32x32 RGB)',
+      paper_optimal_p_percent: 12.3,
+      paper_optimal_p: 265248,
+      topology_title: '2-Conv + 2-FC',
+      topology_desc: 'Topology: 3ch → 32ch → 64ch → 512fc → 10logits',
+      artifact_file: 'cifar10_flat_parameters.pt',
+      algorithm: 'PyTorch SGD',
+      lr: 0.01,
+      batch: 64,
+    },
+    fmnist: {
+      id: 'fmnist',
+      name: 'Fashion-MNIST',
+      model_name: 'FMNISTCNN',
+      dataset_name: 'Fashion-MNIST',
+      total_parameters: 1663370,
+      m_formatted: '1.65M',
+      modality: 'Vision (1x28x28 Grayscale)',
+      paper_optimal_p_percent: 12.3,
+      paper_optimal_p: 204595,
+      topology_title: '2-Conv + 2-FC',
+      topology_desc: 'Topology: 1ch → 32ch → 64ch → 512fc → 10logits',
+      artifact_file: 'fmnist_flat_parameters.pt',
+      algorithm: 'PyTorch SGD',
+      lr: 0.01,
+      batch: 64,
+    },
+    tiny_imagenet: {
+      id: 'tiny_imagenet',
+      name: 'Tiny-ImageNet',
+      model_name: 'TinyImageNetResNet18',
+      dataset_name: 'Tiny-ImageNet',
+      total_parameters: 11271432,
+      m_formatted: '11.27M',
+      modality: 'Vision (3x64x64 RGB)',
+      paper_optimal_p_percent: 9.6,
+      paper_optimal_p: 1082057,
+      topology_title: 'ResNet-18 (200 Classes)',
+      topology_desc: 'Topology: 4 residual stages [2,2,2,2], avgpool, 200 logits',
+      artifact_file: 'tiny_imagenet_flat_parameters.pt',
+      algorithm: 'PyTorch SGD',
+      lr: 0.05,
+      batch: 64,
+    },
+    speech: {
+      id: 'speech',
+      name: 'Google Speech Commands',
+      model_name: 'SpeechResNet18',
+      dataset_name: 'Google Speech Commands',
+      total_parameters: 11172810,
+      m_formatted: '11.17M',
+      modality: 'Audio (1x32x32 Log-Mel Spectrograms)',
+      paper_optimal_p_percent: 11.2,
+      paper_optimal_p: 1251355,
+      topology_title: 'Speech ResNet-18 (35 Classes)',
+      topology_desc: 'Topology: 1ch MFCC → 4 residual stages → 35 speech classes',
+      artifact_file: 'speech_flat_parameters.pt',
+      algorithm: 'PyTorch SGD',
+      lr: 0.05,
+      batch: 64,
+    },
+    20news: {
+      id: '20news',
+      name: '20 Newsgroups',
+      model_name: 'NewsAlbert',
+      dataset_name: '20 Newsgroups',
+      total_parameters: 11698964,
+      m_formatted: '11.68M',
+      modality: 'Text (Tokenized Sequences, max len 128)',
+      paper_optimal_p_percent: 12.8,
+      paper_optimal_p: 1497467,
+      topology_title: 'ALBERT-base-v2 (20 Classes)',
+      topology_desc: 'Topology: 12 transformer layers, 768 hidden, 128 emb, 20 classes',
+      artifact_file: 'albert_flat_round_1.pt',
+      algorithm: 'PyTorch AdamW',
+      lr: 0.00002,
+      batch: 16,
+    }
+  };
+
+  async function initBenchmarks() {
+    try {
+      const res = await fetch('/api/v1/toppaper/benchmarks');
+      if (res.ok) {
+        benchmarksCatalog = await res.json();
+      }
+    } catch (e) {
+      console.warn('Could not fetch benchmarks catalog, using local defaults', e);
+    }
+  }
+
+  async function switchBenchmark(benchmarkId) {
+    if (!benchmarkId) return;
+    currentBenchmark = benchmarkId;
+
+    // Update active pill styling
+    document.querySelectorAll('.benchmark-pill').forEach(btn => {
+      if (btn.getAttribute('data-benchmark') === benchmarkId) {
+        btn.className = 'benchmark-pill active px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all shadow-xs bg-blue-600 text-white border border-blue-600 cursor-pointer';
+      } else {
+        btn.className = 'benchmark-pill px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all shadow-2xs bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 cursor-pointer';
+      }
+    });
+
+    const b = (benchmarksCatalog && benchmarksCatalog.benchmarks && benchmarksCatalog.benchmarks[benchmarkId]) || LOCAL_BENCHMARKS[benchmarkId];
+    if (b) {
+      // Update Narrative / Header Card
+      if ($('benchmark-active-name')) $('benchmark-active-name').textContent = b.name;
+      if ($('benchmark-active-model')) $('benchmark-active-model').textContent = b.model_name || b.name;
+      if ($('benchmark-badge-modality')) $('benchmark-badge-modality').textContent = b.modality;
+      const optPct = b.paper_optimal_p_percent || (b.paper_optimal_p_ratio * 100);
+      const optCount = b.paper_optimal_p || Math.round(b.total_parameters * (b.paper_optimal_p_ratio || 0.123));
+      if ($('benchmark-badge-optimal-p')) $('benchmark-badge-optimal-p').textContent = `Optimal P* = ${optPct.toFixed(1)}% (${optCount.toLocaleString()})`;
+      if ($('benchmark-active-desc')) {
+        $('benchmark-active-desc').innerHTML = `Directly introspects and slices the authentic flattened parameter vector ($M = ${b.total_parameters.toLocaleString()}$ parameters) for <strong>${b.name}</strong> (${b.model_name}). Maps every individual weight coordinate to its canonical origin layer with zero approximation.`;
+      }
+
+      // Update Controller Title & Algorithm tag
+      if ($('train-controller-title')) $('train-controller-title').textContent = `${b.name} (${b.model_name}) Training Controller`;
+      if ($('train-controller-algo')) $('train-controller-algo').textContent = b.id === '20news' ? 'PyTorch AdamW' : 'PyTorch SGD';
+      if ($('opt-train-real')) $('opt-train-real').textContent = `${b.name} (Full)`;
+
+      // Update Telemetry KPIs
+      if ($('cnn-kpi-total')) $('cnn-kpi-total').textContent = b.total_parameters.toLocaleString();
+      if ($('cnn-kpi-total-lbl')) $('cnn-kpi-total-lbl').innerHTML = `Total Flattened Parameters ($M = ${b.m_formatted || (b.total_parameters / 1e6).toFixed(2) + 'M'}$ FP32 ~${((b.total_parameters * 4) / (1024*1024)).toFixed(2)} MB)`;
+      if ($('cnn-kpi-topology-title')) $('cnn-kpi-topology-title').textContent = b.topology_title || b.model_name;
+      if ($('cnn-kpi-topology-badge')) $('cnn-kpi-topology-badge').textContent = b.name;
+      if ($('cnn-kpi-topology-desc')) $('cnn-kpi-topology-desc').innerHTML = b.topology_desc || b.topology || '';
+      if ($('cnn-kpi-artifact')) $('cnn-kpi-artifact').textContent = b.flat_artifact_file || b.artifact_file || `${b.id}_flat_parameters.pt`;
+      if ($('cnn-kpi-optimal-p')) $('cnn-kpi-optimal-p').textContent = `P* = ${optPct.toFixed(1)}% (${optCount.toLocaleString()})`;
+      if ($('cnn-kpi-artifact-lbl')) $('cnn-kpi-artifact-lbl').innerHTML = `Paper Target $P^* = ${optPct.toFixed(1)}\\%$ ($${optCount.toLocaleString()}$ coordinates)`;
+      if ($('cnn-slice-map-title')) $('cnn-slice-map-title').textContent = `Continuous Slices [0, ${b.total_parameters.toLocaleString()})`;
+
+      if ($('train-status-banner')) {
+        $('train-status-banner').innerHTML = `<span class="text-blue-600 font-medium">Switched to <strong>${b.name}</strong> benchmark. Presets and downstream views refreshed.</span>`;
+      }
+    }
+
+    // Adapt hyperparameter preset to active benchmark paper defaults
+    applyTrainingPreset('paper');
+
+    if (window.renderMathInElement && $('tab-cnn')) {
+      renderMathInElement($('tab-cnn'), {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false},
+          {left: '\\(', right: '\\)', display: false},
+          {left: '\\[', right: '\\]', display: true}
+        ],
+        throwOnError: false
+      });
+    }
+
+    // Refresh downstream inspector, importance scores, energy curve, and P_min binary search
+    await loadCnnWeights();
+    await loadImportanceScores(0);
+    await loadEnergyDistribution(false);
+    await runPminBinarySearch();
+  }
 
   function applyTrainingPreset(type) {
     let presetName = '';
@@ -3078,6 +3276,10 @@
       if ($('train-seed')) $('train-seed').value = 42;
       if ($('train-synthetic')) $('train-synthetic').value = 'true';
       if ($('train-distribution')) $('train-distribution').value = 'pathological_20';
+      if (currentBenchmark === '20news') {
+        if ($('train-lr')) $('train-lr').value = 0.00002;
+        if ($('train-batch')) $('train-batch').value = 16;
+      }
       presetName = '⚡ Quick Mock (1s)';
     } else if (type === 'paper') {
       if ($('train-rounds')) $('train-rounds').value = 3;
@@ -3089,6 +3291,14 @@
       if ($('train-seed')) $('train-seed').value = 42;
       if ($('train-synthetic')) $('train-synthetic').value = 'false';
       if ($('train-distribution')) $('train-distribution').value = 'pathological_20';
+      if (currentBenchmark === 'tiny_imagenet' || currentBenchmark === 'speech') {
+        if ($('train-lr')) $('train-lr').value = 0.05;
+      } else if (currentBenchmark === '20news') {
+        if ($('train-lr')) $('train-lr').value = 0.00002;
+        if ($('train-batch')) $('train-batch').value = 16;
+        if ($('train-decay')) $('train-decay').value = 0.01;
+        if ($('train-momentum')) $('train-momentum').value = 0.0;
+      }
       presetName = '🎯 Paper Default (§5.1)';
     } else if (type === 'reset') {
       if ($('train-rounds')) $('train-rounds').value = 1;
@@ -3100,6 +3310,12 @@
       if ($('train-seed')) $('train-seed').value = 42;
       if ($('train-synthetic')) $('train-synthetic').value = 'true';
       if ($('train-distribution')) $('train-distribution').value = 'full';
+      if (currentBenchmark === 'tiny_imagenet' || currentBenchmark === 'speech') {
+        if ($('train-lr')) $('train-lr').value = 0.05;
+      } else if (currentBenchmark === '20news') {
+        if ($('train-lr')) $('train-lr').value = 0.00002;
+        if ($('train-batch')) $('train-batch').value = 16;
+      }
       presetName = '↺ Default Configuration';
     }
 
@@ -3134,6 +3350,7 @@
     const distribution = $('train-distribution')?.value || 'full';
 
     const payload = {
+      benchmark: currentBenchmark,
       rounds,
       epochs,
       batch_size,
@@ -3204,10 +3421,26 @@
     'fc1.bias':     { bg: 'bg-fuchsia-50', text: 'text-fuchsia-800', border: 'border-fuchsia-300', hex: '#d946ef' },
     'fc2.weight':   { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-300', hex: '#f59e0b' },
     'fc2.bias':     { bg: 'bg-rose-50', text: 'text-rose-800', border: 'border-rose-300', hex: '#f43f5e' },
+    'fc.weight':    { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-300', hex: '#f59e0b' },
+    'fc.bias':      { bg: 'bg-rose-50', text: 'text-rose-800', border: 'border-rose-300', hex: '#f43f5e' },
   };
 
+  const PALETTE_CYCLE = [
+    { bg: 'bg-sky-50', text: 'text-sky-800', border: 'border-sky-300', hex: '#0284c7' },
+    { bg: 'bg-indigo-50', text: 'text-indigo-800', border: 'border-indigo-300', hex: '#6366f1' },
+    { bg: 'bg-purple-50', text: 'text-purple-800', border: 'border-purple-300', hex: '#a855f7' },
+    { bg: 'bg-teal-50', text: 'text-teal-800', border: 'border-teal-300', hex: '#0d9488' },
+    { bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-300', hex: '#059669' },
+    { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-300', hex: '#d97706' },
+    { bg: 'bg-rose-50', text: 'text-rose-800', border: 'border-rose-300', hex: '#e11d48' },
+    { bg: 'bg-blue-50', text: 'text-blue-800', border: 'border-blue-300', hex: '#2563eb' },
+  ];
+
   function getLayerStyle(layer) {
-    return LAYER_COLOR_MAP[layer] || { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-300', hex: '#64748b' };
+    if (LAYER_COLOR_MAP[layer]) return LAYER_COLOR_MAP[layer];
+    let hash = 0;
+    for (let i = 0; i < (layer || '').length; i++) hash = (hash * 31 + layer.charCodeAt(i)) >>> 0;
+    return PALETTE_CYCLE[hash % PALETTE_CYCLE.length];
   }
 
   async function loadCnnWeights() {
@@ -3216,7 +3449,7 @@
     const top_k = parseInt($('cnn-inp-topk')?.value || '20', 10);
 
     try {
-      const res = await fetch(`/api/v1/toppaper/cnn-weights?head=${head}&tail=${tail}&top_k=${top_k}`);
+      const res = await fetch(`/api/v1/toppaper/cnn-weights?benchmark=${encodeURIComponent(currentBenchmark)}&head=${head}&tail=${tail}&top_k=${top_k}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       const data = await res.json();
       cnnWeightsData = data;
@@ -3410,7 +3643,7 @@
     }
 
     try {
-      const res = await fetch(`/api/v1/toppaper/round-importance?beta=${beta}&top_k=${pageSize}&offset=${currentImportanceOffset}&force_recompute=${forceRecompute}`);
+      const res = await fetch(`/api/v1/toppaper/round-importance?benchmark=${encodeURIComponent(currentBenchmark)}&beta=${beta}&top_k=${pageSize}&offset=${currentImportanceOffset}&force_recompute=${forceRecompute}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       const data = await res.json();
       currentImportanceData = data;
@@ -3622,7 +3855,7 @@
     if (btnRecompute) btnRecompute.disabled = true;
 
     try {
-      const url = `/api/v1/toppaper/energy-distribution?beta=${encodeURIComponent(beta)}&force_recompute=${forceRecompute}`;
+      const url = `/api/v1/toppaper/energy-distribution?benchmark=${encodeURIComponent(currentBenchmark)}&beta=${encodeURIComponent(beta)}&force_recompute=${forceRecompute}`;
       const res = await fetch(url);
       if (!res.ok) {
         throw new Error(`Server returned HTTP ${res.status}`);
@@ -3883,7 +4116,7 @@
     }
 
     try {
-      const url = `/api/v1/toppaper/binary-search-pmin?theta=${encodeURIComponent(theta)}&beta=${encodeURIComponent(beta)}&round_num=${encodeURIComponent(roundNum)}&tolerance=1`;
+      const url = `/api/v1/toppaper/binary-search-pmin?benchmark=${encodeURIComponent(currentBenchmark)}&theta=${encodeURIComponent(theta)}&beta=${encodeURIComponent(beta)}&round_num=${encodeURIComponent(roundNum)}&tolerance=1`;
       const res = await fetch(url);
       if (!res.ok) {
         throw new Error(`Server returned HTTP ${res.status}`);

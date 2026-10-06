@@ -434,39 +434,72 @@ def run_training_pipeline(config: TrainingConfig) -> TrainingResult:
     model = NewsAlbertForSequenceClassification(num_classes=20)
     train_loader, test_loader = get_dataloaders(config)
 
-    epoch_history = []
-    for epoch in range(1, config.epochs + 1):
-        train_metrics = train_one_epoch(
-            model=model,
-            dataloader=train_loader,
-            lr=config.learning_rate,
-            device=config.device,
-            use_amp=config.use_amp,
-        )
-        test_metrics = evaluate_model(
-            model=model,
-            dataloader=test_loader,
-            device=config.device,
-        )
-        epoch_history.append({
-            "epoch": epoch,
-            "train_loss": train_metrics["loss"],
-            "train_accuracy": train_metrics["accuracy"],
-            "test_loss": test_metrics["loss"],
-            "test_accuracy": test_metrics["accuracy"],
-        })
-        logger.info(
-            "Epoch %d: train_loss=%.4f, train_acc=%.2f%%, test_loss=%.4f, test_acc=%.2f%%",
-            epoch,
-            train_metrics["loss"],
-            train_metrics["accuracy"] * 100,
-            test_metrics["loss"],
-            test_metrics["accuracy"] * 100,
-        )
-
-    # Save checkpoint
-    out_dir = Path(config.output_dir)
+    epoch_history: List[Dict[str, Any]] = []
+    round_history: List[Dict[str, Any]] = []
+    rounds_dir = Path(config.checkpoint_dir).resolve()
+    rounds_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = Path(config.output_dir).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    for round_idx in range(1, config.rounds + 1):
+        for epoch in range(1, config.epochs + 1):
+            global_epoch = (round_idx - 1) * config.epochs + epoch
+            train_metrics = train_one_epoch(
+                model=model,
+                dataloader=train_loader,
+                lr=config.learning_rate,
+                device=config.device,
+                use_amp=config.use_amp,
+            )
+            test_metrics = evaluate_model(
+                model=model,
+                dataloader=test_loader,
+                device=config.device,
+            )
+            epoch_history.append({
+                "round": round_idx,
+                "epoch": epoch,
+                "global_epoch": global_epoch,
+                "train_loss": round(train_metrics["loss"], 4),
+                "train_accuracy": round(train_metrics["accuracy"] * 100, 2),
+                "test_loss": round(test_metrics["loss"], 4),
+                "test_accuracy": round(test_metrics["accuracy"] * 100, 2),
+            })
+            logger.info(
+                "Round [%d/%d] Epoch [%d/%d]: train_loss=%.4f, train_acc=%.2f%%, test_loss=%.4f, test_acc=%.2f%%",
+                round_idx,
+                config.rounds,
+                epoch,
+                config.epochs,
+                train_metrics["loss"],
+                train_metrics["accuracy"] * 100,
+                test_metrics["loss"],
+                test_metrics["accuracy"] * 100,
+            )
+
+        # Save round-specific checkpoint and flat parameters
+        round_ckpt_path = rounds_dir / f"albert_round_{round_idx}.pt"
+        round_flat_path = rounds_dir / f"albert_flat_round_{round_idx}.pt"
+        torch.save(model.state_dict(), round_ckpt_path)
+        flat_tensor_rd, flat_meta_rd = flatten_parameters(model)
+        save_flat_parameters_artifact(
+            flat_tensor=flat_tensor_rd,
+            metadata=flat_meta_rd,
+            output_path=round_flat_path,
+            source_checkpoint=str(round_ckpt_path),
+            model_name="NewsAlbertForSequenceClassification",
+        )
+        round_history.append({
+            "round": round_idx,
+            "train_loss": epoch_history[-1]["train_loss"],
+            "train_accuracy": epoch_history[-1]["train_accuracy"],
+            "test_loss": epoch_history[-1]["test_loss"],
+            "test_accuracy": epoch_history[-1]["test_accuracy"],
+            "checkpoint_path": str(round_ckpt_path),
+            "flat_parameters_path": str(round_flat_path),
+        })
+
+    # Save final checkpoint and artifacts
     ckpt_path = out_dir / config.checkpoint_name
     model.save_checkpoint(ckpt_path)
     meta_path = out_dir / "model_metadata.json"
@@ -478,6 +511,16 @@ def run_training_pipeline(config: TrainingConfig) -> TrainingResult:
         flat_tensor=flat_tensor,
         metadata=flat_meta,
         output_path=flat_path,
+        source_checkpoint=str(ckpt_path),
+        model_name="NewsAlbertForSequenceClassification",
+    )
+    # Also save standard pt extension
+    canonical_flat_path = out_dir / "albert_flat_parameters.pt"
+    save_flat_parameters_artifact(
+        flat_tensor=flat_tensor,
+        metadata=flat_meta,
+        output_path=canonical_flat_path,
+        source_checkpoint=str(ckpt_path),
         model_name="NewsAlbertForSequenceClassification",
     )
 
@@ -491,9 +534,10 @@ def run_training_pipeline(config: TrainingConfig) -> TrainingResult:
         final_test_loss=epoch_history[-1]["test_loss"] if epoch_history else 0.0,
         final_test_accuracy=epoch_history[-1]["test_accuracy"] if epoch_history else 0.0,
         epoch_history=epoch_history,
+        round_history=round_history,
         checkpoint_path=str(ckpt_path),
         metadata_path=str(meta_path),
-        flat_parameters_path=str(flat_path),
+        flat_parameters_path=str(canonical_flat_path),
         duration_seconds=duration,
         top_p_summary=top_p_summary,
     )
