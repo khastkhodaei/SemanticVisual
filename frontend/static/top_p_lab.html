@@ -2337,43 +2337,65 @@
   }
 
   function showTab(tabId, btn) {
+    if (!tabId) return;
+    const targetContent = document.getElementById(tabId);
+    if (!targetContent) {
+      console.warn('Target tab not found:', tabId);
+      return;
+    }
+
+    // Deactivate all tabs and buttons
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    $(tabId).classList.add('active');
-    
-    // Activate all buttons targeting this tabId (desktop + mobile)
+
+    // Activate selected tab content
+    targetContent.classList.add('active');
+
+    // Activate matching buttons
     document.querySelectorAll('.tab-btn').forEach(el => {
-      if (el.getAttribute('onclick') && el.getAttribute('onclick').includes(tabId)) {
+      const onclickAttr = el.getAttribute('onclick') || '';
+      if (onclickAttr.includes(`'${tabId}'`) || onclickAttr.includes(`"${tabId}"`)) {
         el.classList.add('active');
       }
     });
-
-    if (tabId === 'tab-cnn') {
-      try {
-        if (!benchmarksCatalog) { initBenchmarks(); }
-        if (!cnnWeightsData) { loadCnnWeights(); }
-        if (!currentImportanceData) { loadImportanceScores(0); }
-        if (!currentEnergyData) { loadEnergyDistribution(false); }
-        if (!currentPminData) { runPminBinarySearch(); }
-      } catch (err) {
-        console.warn('Tab 2 lazy loading error:', err);
-      }
+    if (btn && btn.classList) {
+      btn.classList.add('active');
     }
-    if (tabId === 'tab-cost' && !$('cost-kpis').innerHTML) { recalcCosts(); }
-    if (tabId === 'tab-faq' && !allFaqData.length) { loadFAQ(); }
-    if (tabId === 'tab-worked') { initWorkedExample(); }
-    
-    // Auto render math on tab switch
-    if (window.renderMathInElement) {
-      renderMathInElement($(tabId), {
-        delimiters: [
-          {left: '$$', right: '$$', display: true},
-          {left: '$', right: '$', display: false},
-          {left: '\\(', right: '\\)', display: false},
-          {left: '\\[', right: '\\]', display: true}
-        ],
-        throwOnError: false
-      });
+
+    // Lazy load tab-specific data safely
+    try {
+      if (tabId === 'tab-cnn') {
+        if (!benchmarksCatalog && typeof initBenchmarks === 'function') initBenchmarks();
+        if (!cnnWeightsData && typeof loadCnnWeights === 'function') loadCnnWeights();
+        if (!currentImportanceData && typeof loadImportanceScores === 'function') loadImportanceScores(0);
+        if (!currentEnergyData && typeof loadEnergyDistribution === 'function') loadEnergyDistribution(false);
+        if (!currentPminData && typeof runPminBinarySearch === 'function') runPminBinarySearch();
+      } else if (tabId === 'tab-scope') {
+        // Tab 3 Paper Models reference
+      } else if (tabId === 'tab-faq') {
+        if (typeof allFaqData !== 'undefined' && !allFaqData.length && typeof loadFAQ === 'function') loadFAQ();
+      } else if (tabId === 'tab-worked') {
+        if (typeof initWorkedExample === 'function') initWorkedExample();
+      }
+    } catch (lazyErr) {
+      console.warn('Tab lazy-load warning:', lazyErr);
+    }
+
+    // Auto render math on tab switch safely
+    try {
+      if (window.renderMathInElement) {
+        renderMathInElement(targetContent, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
+          ],
+          throwOnError: false
+        });
+      }
+    } catch (mathErr) {
+      console.warn('KaTeX render warning:', mathErr);
     }
   }
 
@@ -3089,8 +3111,8 @@
           delimiters: [
             {left: '$$', right: '$$', display: true},
             {left: '$', right: '$', display: false},
-            {left: '\(', right: '\)', display: false},
-            {left: '\[', right: '\]', display: true}
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
           ],
           throwOnError: false
         });
