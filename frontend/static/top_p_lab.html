@@ -4529,10 +4529,9 @@
             borderColor: '#059669',
             borderWidth: 1.6,
             borderDash: [6, 4],
-            pointRadius: [0, 4.5],
-            pointBackgroundColor: '#059669',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 1.5,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            pointHitRadius: 0,
             fill: false,
             order: 4
           },
@@ -4548,7 +4547,9 @@
             borderColor: '#059669',
             borderWidth: 1.6,
             borderDash: [5, 4],
-            pointRadius: [0, 4.5],
+            pointRadius: [0, 5],
+            pointHoverRadius: [0, 7],
+            pointHitRadius: [0, 8],
             pointBackgroundColor: '#059669',
             pointBorderColor: '#ffffff',
             pointBorderWidth: 1.5,
@@ -4567,10 +4568,9 @@
             borderColor: '#2563eb',
             borderWidth: 1.6,
             borderDash: [6, 4],
-            pointRadius: [0, 5],
-            pointBackgroundColor: '#2563eb',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 1.5,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            pointHitRadius: 0,
             fill: false,
             order: 6
           },
@@ -4587,6 +4587,8 @@
             borderWidth: 1.8,
             borderDash: [5, 4],
             pointRadius: [0, 5],
+            pointHoverRadius: [0, 7],
+            pointHitRadius: [0, 8],
             pointBackgroundColor: '#2563eb',
             pointBorderColor: '#ffffff',
             pointBorderWidth: 1.5,
@@ -4605,10 +4607,9 @@
             borderColor: '#d97706',
             borderWidth: 1.6,
             borderDash: [6, 4],
-            pointRadius: [0, 5],
-            pointBackgroundColor: '#d97706',
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 1.5,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            pointHitRadius: 0,
             fill: false,
             order: 8
           },
@@ -4625,6 +4626,8 @@
             borderWidth: 1.8,
             borderDash: [5, 4],
             pointRadius: [0, 5],
+            pointHoverRadius: [0, 7],
+            pointHitRadius: [0, 8],
             pointBackgroundColor: '#d97706',
             pointBorderColor: '#ffffff',
             pointBorderWidth: 1.5,
@@ -4663,18 +4666,22 @@
           tooltip: {
             callbacks: {
               label: function(context) {
+                // If somehow triggered on horizontal guide dataset, suppress it
+                if (context.dataset.label && context.dataset.label.startsWith('Horizontal Guide')) {
+                  return null;
+                }
                 const xPct = (context.parsed.x * 100).toFixed(2);
                 const yCos = context.parsed.y.toFixed(4);
                 if (context.datasetIndex === 0) {
                   return `Sparsification Ratio: ${xPct}% | Cosine Fidelity: ${yCos}`;
                 }
-                if (context.datasetIndex === 1 || context.datasetIndex === 2) {
+                if (context.datasetIndex === 2) {
                   return `Optimal Knee (θ=0.70): Sparsity ${(kneeSparsity70 * 100).toFixed(2)}% | Cosine ${achievedCosine70.toFixed(4)} (P* = ${pMin70.toLocaleString()})`;
                 }
-                if (context.datasetIndex === 3 || context.datasetIndex === 4) {
+                if (context.datasetIndex === 4) {
                   return `Optimal Knee (θ=0.80): Sparsity ${(kneeSparsity80 * 100).toFixed(2)}% | Cosine ${achievedCosine80.toFixed(4)} (P* = ${pMin80.toLocaleString()})`;
                 }
-                if (context.datasetIndex === 5 || context.datasetIndex === 6) {
+                if (context.datasetIndex === 6) {
                   return `Optimal Knee (θ=0.90): Sparsity ${(kneeSparsity90 * 100).toFixed(2)}% | Cosine ${achievedCosine90.toFixed(4)} (P* = ${pMin90.toLocaleString()})`;
                 }
                 return `${context.dataset.label}: (${xPct}%, ${yCos})`;
