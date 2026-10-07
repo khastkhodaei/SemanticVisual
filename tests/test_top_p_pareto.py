@@ -320,29 +320,27 @@ class TestTopPParetoFrontierUI:
         assert "star" in html
         assert "#d97706" in html or "#f59e0b" in html
 
-    def test_pareto_dual_view_layout_structure(self):
-        """Verify dual-panel layout containing Panel A (Paper Fig. 2 replica) and Panel B (interactive deep dive)."""
+    def test_pareto_unified_chart_layout_structure(self):
+        """Verify unified single-chart layout matching Fig. 2 with dual drop lines at 0.8 and 0.9."""
         html_path = "frontend/static/top_p_lab.html"
         with open(html_path, "r", encoding="utf-8") as f:
             html = f.read()
 
-        # Both canvases must be present in DOM
-        assert 'id="chart-pareto-paper-fig2"' in html
+        # Canvas must be present in DOM
         assert 'id="chart-pareto-cifar10"' in html
 
-        # Dual view container and titles
+        # Unified container and titles
         assert 'id="pareto-frontier-card"' in html
         assert "Figure 2" in html or "Fig. 2" in html
-        assert "Interactive Model Deep-Dive" in html or "Model Deep-Dive" in html
 
-        # Telemetry KPI cards for Panel B
+        # Telemetry KPI cards
         assert 'id="pareto-kpi-budget"' in html
         assert 'id="pareto-kpi-reduction"' in html
         assert 'id="pareto-kpi-cosine"' in html
         assert 'id="pareto-kpi-efficiency"' in html
 
     def test_paper_fig2_replica_styling_and_hollow_markers(self):
-        """Verify publication-grade vector styling: hollow markers, no fill, clean lines, and model guide thresholds."""
+        """Verify publication-grade vector styling: hollow markers, no fill, clean lines, and dual drop guides."""
         html_path = "frontend/static/top_p_lab.html"
         with open(html_path, "r", encoding="utf-8") as f:
             html = f.read()
@@ -359,20 +357,23 @@ class TestTopPParetoFrontierUI:
         assert "rectRot" in html
         assert "star" in html
 
+        # Dual drop lines for theta=0.80 and theta=0.90
+        assert "θ=0.80" in html
+        assert "θ=0.90" in html
+
         # X-axis [0, 1] and Y-axis [0, 1.05] invariants
         assert "1.05" in html
         assert "Sparsification Ratio (1 - P / M)" in html
         assert "Cosine Similarity" in html
 
-    def test_pareto_dual_view_dynamic_benchmark_sync(self):
-        """Verify both panels synchronize dynamically upon benchmark switching."""
+    def test_pareto_dynamic_benchmark_sync(self):
+        """Verify unified chart synchronizes dynamically upon benchmark switching."""
         html_path = "frontend/static/top_p_lab.html"
         with open(html_path, "r", encoding="utf-8") as f:
             html = f.read()
 
-        # Both rendering functions or unified synchronizer must be defined
-        assert "renderPaperFig2Chart" in html or "loadAndRenderPaperFig2" in html or "renderDualParetoFrontier" in html
         assert "loadAndRenderParetoFrontier" in html
+        assert "renderParetoFrontierChart" in html
 
 
 
