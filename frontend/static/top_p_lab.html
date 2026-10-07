@@ -4002,22 +4002,13 @@
     const kneeSparsity80 = Math.round((sparsityPct80 / 100.0) * 10000) / 10000;
     const kneeSparsity90 = Math.round((sparsityPct90 / 100.0) * 10000) / 10000;
 
-    // Authentic Fig. 2 Benchmark styling:
+    // Unified Publication-Grade Styling across ALL benchmarks:
+    // Consistent signature aesthetic: Solid Blue Curve (#1d4ed8), circular hollow points, and crisp guidelines
     const isResNet = (benchmark === 'tiny_imagenet' || benchmark === 'speech');
     const isAlbert = (benchmark === '20news');
-    let curveColor = '#1d4ed8'; // CNN Blue
-    let pointShape = 'circle';
-    let pointSize = 4.0;
-
-    if (isResNet) {
-      curveColor = '#0f172a'; // ResNet-18 Black / Dark Slate
-      pointShape = 'rectRot'; // Diamond
-      pointSize = 4.8;
-    } else if (isAlbert) {
-      curveColor = '#ea580c'; // ALBERT Amber / Orange
-      pointShape = 'star';    // Star
-      pointSize = 5.2;
-    }
+    const curveColor = '#1d4ed8'; // Consistent Primary Blue across all benchmarks
+    const pointShape = 'circle';  // Consistent Circular hollow markers across all benchmarks
+    const pointSize = 4.2;
 
     const ctx = canvas.getContext('2d');
     paretoChartInstance = new Chart(ctx, {
