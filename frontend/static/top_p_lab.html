@@ -72,14 +72,14 @@
       <button class="tab-btn active" onclick="showTab('tab-cnn', this)">
         <span>1.</span><span>Top-P Benchmark Inspector</span>
       </button>
+      <button class="tab-btn" onclick="showTab('tab-worked', this)">
+        <span>2.</span><span>Worked Example</span>
+      </button>
       <button class="tab-btn" onclick="showTab('tab-scope', this)">
-        <span>2.</span><span>Paper Models &amp; Savings</span>
+        <span>3.</span><span>Paper Models &amp; Savings</span>
       </button>
       <button class="tab-btn" onclick="showTab('tab-faq', this)">
-        <span>3.</span><span>Q&amp;A &amp; Theory</span>
-      </button>
-      <button class="tab-btn" onclick="showTab('tab-worked', this)">
-        <span>4.</span><span>Worked Example</span>
+        <span>4.</span><span>Q&amp;A &amp; Theory</span>
       </button>
     </nav>
 
@@ -95,9 +95,9 @@
   <!-- Mobile Tab Switcher -->
   <div class="md:hidden px-6 pt-3 pb-1 flex flex-wrap gap-1.5 bg-white border-b border-slate-200">
     <button class="tab-btn active text-xs" onclick="showTab('tab-cnn', this)">1. Top-P Benchmark Inspector</button>
-    <button class="tab-btn text-xs" onclick="showTab('tab-scope', this)">2. Paper Models</button>
-    <button class="tab-btn text-xs" onclick="showTab('tab-faq', this)">3. Q&amp;A</button>
-    <button class="tab-btn text-xs" onclick="showTab('tab-worked', this)">4. Worked Example</button>
+    <button class="tab-btn text-xs" onclick="showTab('tab-worked', this)">2. Worked Example</button>
+    <button class="tab-btn text-xs" onclick="showTab('tab-scope', this)">3. Paper Models</button>
+    <button class="tab-btn text-xs" onclick="showTab('tab-faq', this)">4. Q&amp;A</button>
   </div>
 
   <main class="top-p-container flex-1 space-y-4">
@@ -791,8 +791,331 @@
 
     </div>
 
-    <!-- TAB 2: PAPER MODELS & SAVINGS -->
-    <!-- TAB 2: PAPER MODELS & SAVINGS (COMPREHENSIVE PAPER COST & SAVINGS REFERENCE) -->
+    <!-- TAB 2: WORKED EXAMPLE -->
+    <div id="tab-worked" class="tab-content space-y-4">
+      
+      <!-- Narrative Title Card -->
+      <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <span class="tag-sim">Simulator</span>
+              <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-100 text-blue-800">PAPER §3.2 &amp; APP. B.1</span>
+              <h2 class="text-sm font-bold text-slate-900">Step-by-Step Worked Example: Exact Numerical Walkthrough</h2>
+            </div>
+            <p class="text-xs text-slate-600 font-sans mt-1">
+              Complete deterministic walkthrough of Top-$P$ signature calculation with real numbers plugged into every formula. Fixed parameter setting: $M = 10$, $\theta = 0.9$, $\beta = 0$ ($\text{importance} = |w|$), $w = [0.5, -3.0, 0.2, 2.0, -0.1, 1.5, 0.3, -1.0, 0.4, 0.6]$.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vertical 7-Step Walkthrough Cards (All Displayed by Default) -->
+      <div class="stepper-container space-y-3" id="worked-stepper-cards">
+
+        <!-- Step 1 Card -->
+        <div id="worked-step-card-1" class="stepper-step-card">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">1</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 1 — Importance Scoring &amp; Descending Sort</h3>
+            </div>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              With $\beta = 0$, parameter importance scores are equal to the raw coordinate magnitudes $s_r = |w_r|$. The indices are sorted in descending order of score:
+            </p>
+            <div class="top-p-formula-card">
+              $$s_r = |w_r|, \qquad I = \operatorname{argsort}(-s)$$
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    <th>Rank 1</th><th>Rank 2</th><th>Rank 3</th><th>Rank 4</th><th>Rank 5</th>
+                    <th>Rank 6</th><th>Rank 7</th><th>Rank 8</th><th>Rank 9</th><th>Rank 10</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="font-bold text-left">Sorted |w|</td>
+                    <td><strong>3.0</strong></td><td><strong>2.0</strong></td><td><strong>1.5</strong></td><td><strong>1.0</strong></td><td>0.6</td>
+                    <td>0.5</td><td>0.4</td><td>0.3</td><td>0.2</td><td>0.1</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold text-left">Coordinate</td>
+                    <td>$w_2$</td><td>$w_4$</td><td>$w_6$</td><td>$w_8$</td><td>$w_{10}$</td>
+                    <td>$w_1$</td><td>$w_9$</td><td>$w_7$</td><td>$w_3$</td><td>$w_5$</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold text-left">Original w</td>
+                    <td>−3.0</td><td>2.0</td><td>1.5</td><td>−1.0</td><td>0.6</td>
+                    <td>0.5</td><td>0.4</td><td>0.3</td><td>0.2</td><td>−0.1</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
+              <strong>Sorted order:</strong> 3.0(w2), 2.0(w4), 1.5(w6), 1.0(w8), 0.6(w10), 0.5(w1), 0.4(w9), 0.3(w7), 0.2(w3), 0.1(w5)
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 Card -->
+        <div id="worked-step-card-2" class="stepper-step-card">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">2</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 2 — Cumulative Energy Prefix Sums c_P</h3>
+            </div>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              Cumulative energy $c_P$ is computed as the running prefix sum of squared sorted components. Total vector energy $\|w\|_2^2 = c_{10} = 17.16$:
+            </p>
+            <div class="top-p-formula-card">
+              $$c_P = \sum_{r=1}^P (w_{(r)})^2, \qquad \|w\|_2^2 = c_M = \sum_{r=1}^{10} w_r^2 = 17.16$$
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Budget P</th>
+                    <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="font-bold text-left">Term $w_{(P)}^2$</td>
+                    <td>$3.0^2=9.00$</td><td>$2.0^2=4.00$</td><td>$1.5^2=2.25$</td><td>$1.0^2=1.00$</td><td>$0.6^2=0.36$</td>
+                    <td>$0.5^2=0.25$</td><td>$0.4^2=0.16$</td><td>$0.3^2=0.09$</td><td>$0.2^2=0.04$</td><td>$0.1^2=0.01$</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold text-left">Prefix $c_P$</td>
+                    <td><strong>9.00</strong></td><td><strong>13.00</strong></td><td><strong>15.25</strong></td><td>16.25</td><td>16.61</td>
+                    <td>16.86</td><td>17.02</td><td>17.11</td><td>17.15</td><td><strong>17.16</strong></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
+              <strong>Prefix sums $c_P$:</strong> 9, 13, 15.25, 16.25, 16.61, 16.86, 17.02, 17.11, 17.15, 17.16; ‖w‖² = 17.16
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3 Card -->
+        <div id="worked-step-card-3" class="stepper-step-card">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">3</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 3 — Directional Cosine Calculation cos(P)</h3>
+            </div>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              The directional cosine similarity $\cos(w, w^{[P]})$ retained by keeping the top $P$ coordinates is $\sqrt{c_P} / \|w\|_2$:
+            </p>
+            <div class="top-p-formula-card">
+              $$\cos(P) = \frac{\sqrt{c_P}}{\|w\|_2} = \frac{\sqrt{c_P}}{\sqrt{17.16}}, \qquad \text{e.g., at } P=3: \; \cos(3) = \frac{\sqrt{15.25}}{\sqrt{17.16}} = \frac{3.9051}{4.1425} = 0.943$$
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Budget P</th>
+                    <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="font-bold text-left">$\cos(P)$</td>
+                    <td>0.724</td><td>0.870</td><td><strong>0.943</strong></td><td>0.973</td><td>0.984</td>
+                    <td>0.991</td><td>0.996</td><td>0.999</td><td>1.000</td><td>1.000</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold text-left">Retained %</td>
+                    <td>72.4%</td><td>87.0%</td><td>94.3%</td><td>97.3%</td><td>98.4%</td>
+                    <td>99.1%</td><td>99.6%</td><td>99.9%</td><td>100.0%</td><td>100.0%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
+              <strong>Cosine curve:</strong> cos(P) = [0.724, 0.870, 0.943, 0.973, 0.984, 0.991, 0.996, 0.999, 1.000, 1.000]
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4 Card -->
+        <div id="worked-step-card-4" class="stepper-step-card">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">4</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 4 — Feasibility Test against Target θ = 0.9</h3>
+            </div>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              To satisfy $\cos(w, w^{[P]}) \ge \theta$, we test the algebraic condition $c_P \ge \theta^2 \|w\|_2^2$:
+            </p>
+            <div class="top-p-formula-card">
+              $$c_P \ge \theta^2 \|w\|_2^2 = (0.90)^2 \times 17.16 = 0.81 \times 17.16 = 13.90$$
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="p-2.5 rounded border border-amber-200 bg-amber-50">
+                <span class="font-bold text-amber-900 block text-xs">For P = 2:</span>
+                <span class="text-xs text-amber-800 font-mono">$c_2 = 13.00 < 13.90$ (fails, $\cos(2) = 0.870 < 0.90$)</span>
+              </div>
+              <div class="p-2.5 rounded border border-emerald-200 bg-emerald-50">
+                <span class="font-bold text-emerald-900 block text-xs">For P = 3:</span>
+                <span class="text-xs text-emerald-800 font-mono">$c_3 = 15.25 \ge 13.90$ (passes, $\cos(3) = 0.943 \ge 0.90$) $\to P_{\min} = 3$</span>
+              </div>
+            </div>
+            <p class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
+              💡 <em>Note: with $\theta = 0.8$ the answer would be 2</em> (since $\theta^2 \|w\|^2 = 0.64 \times 17.16 = 10.98$ and $c_2 = 13.00 \ge 10.98$).
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 5 Card -->
+        <div id="worked-step-card-5" class="stepper-step-card">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">5</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 5 — Discrete Binary Search Trace (Algorithm 1)</h3>
+            </div>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              Algorithm 1 finds $P_{\min}$ in $O(\log_2 M)$ checks over the monotonic prefix sums:
+            </p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Check</th><th>lo</th><th>hi</th><th>mid</th><th>$c_{\text{mid}}$</th><th>$\cos(\text{mid})$</th><th>Feasible ($c_{\text{mid}} \ge 13.90$)</th><th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1</td><td>1</td><td>10</td><td><strong>5</strong></td><td>16.61</td><td>0.984</td>
+                    <td><span class="yes">✓ Yes</span></td><td>$\text{hi} = \text{mid} = 5$</td>
+                  </tr>
+                  <tr>
+                    <td>2</td><td>1</td><td>5</td><td><strong>3</strong></td><td>15.25</td><td>0.943</td>
+                    <td><span class="yes">✓ Yes</span></td><td>$\text{hi} = \text{mid} = 3$</td>
+                  </tr>
+                  <tr>
+                    <td>3</td><td>1</td><td>3</td><td><strong>2</strong></td><td>13.00</td><td>0.870</td>
+                    <td><span class="no">✗ No</span></td><td>$\text{lo} = \text{mid} + 1 = 3$</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
+              <strong>Binary search trace:</strong> (lo=1,hi=10,mid=5 yes) → (1,5,mid=3 yes) → (1,3,mid=2 no) → P_min = 3, in 3 checks.
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 6 Card -->
+        <div id="worked-step-card-6" class="stepper-step-card">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">6</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 6 — Super-Peer Shared P Consensus (q = 0.8)</h3>
+            </div>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              When five clients in a zone report their minimal budgets $P_{\min} = [3, 2, 4, 3, 6]$, the Super-Peer sets global shared $P$ using quantile $q = 0.8$:
+            </p>
+            <div class="top-p-formula-card">
+              $$\text{sorted } P_{\min} = [2, 3, 3, 4, 6], \qquad k = \lceil q \cdot n \rceil = \lceil 0.8 \times 5 \rceil = 4 \implies P_{\text{global}} = 4$$
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="p-2.5 rounded border border-emerald-200 bg-emerald-50 text-xs text-emerald-800">
+                <strong>4 of 5 clients (80%) satisfy $\theta = 0.9$:</strong><br>
+                Clients requiring $P_{\min} \in \{2, 3, 4\}$ receive a signature with $P=4 \ge P_{\min}$, exceeding their target fidelity $\theta = 0.90$.
+              </div>
+              <div class="p-2.5 rounded border border-amber-200 bg-amber-50 text-xs text-amber-800">
+                <strong>1 client requiring $P_{\min} = 6$:</strong><br>
+                Achieves $\cos(4) = 0.973$ (slightly below its personal $\theta$ demand, bounded by $(1-q)$ consensus to prevent outlier bloat).
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 7 Card -->
+        <div id="worked-step-card-7" class="stepper-step-card">
+          <div class="stepper-step-header">
+            <div class="flex items-center gap-2.5">
+              <span class="stepper-badge">7</span>
+              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 7 — Signature Wire Sizing Cost &amp; Paper Scale</h3>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="tag-sim">Simulator</span>
+              <span class="tag-derived">Derived</span>
+            </div>
+          </div>
+          <div class="text-xs text-slate-700 font-sans space-y-2">
+            <p>
+              Each signature entry encodes a 4-byte coordinate index and a 2-byte FP16 parameter value:
+            </p>
+            <div class="top-p-formula-card">
+              $$\text{Payload} = P \times (b_{\text{idx}} + b_{\text{val}}) = 4 \times (4\text{ B} + 2\text{ B}) = 24\text{ bytes vs dense } 10 \times 4\text{ B} = 40\text{ bytes}$$
+            </div>
+            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
+              <div class="font-bold text-slate-900">Paper-Scale Deep Learning Regime (ResNet-18):</div>
+              <div>• Parameter dimension: $M = 11.7\text{M}$ coordinates (FP32 dense model $\approx 46.8\text{ MB} \approx 47\text{ MB}$)</div>
+              <div>• Top-$P$ signature budget: $P = 10.8\% \times 11.7\text{M} \approx 1.26\text{M}$ entries</div>
+              <div>• Wire signature size: $1.26\text{M} \times 6\text{ bytes} \approx 7.23\text{ MB}$ <span class="tag-derived">Derived</span></div>
+              <div>• Compression saving: <strong>$6.5\times$ payload reduction</strong> ($47\text{ MB} \to 7.23\text{ MB}$) while preserving $\cos \ge 0.80$ directional accuracy.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Interactive Visual Charts for Worked Example -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Chart 1: Sorted |w| Bar Chart -->
+        <div class="paper-panel mb-0">
+          <div class="panel-header">
+            <span class="panel-title"><span>📊</span><span>Sorted Coordinates |w| ($P_{\min}=3$ Highlighted)</span></span>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="worked_bar_chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Cosine Similarity Curve -->
+        <div class="paper-panel mb-0">
+          <div class="panel-header">
+            <span class="panel-title"><span>📈</span><span>Directional Cosine $\cos(P)$ vs Threshold $\theta = 0.9$</span></span>
+            <span class="tag-sim">Simulator</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="worked_cos_chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+
+
+    </div>
+
+
+    <!-- TAB 3: PAPER MODELS & SAVINGS (COMPREHENSIVE PAPER COST & SAVINGS REFERENCE) -->
     <div id="tab-scope" class="tab-content space-y-4">
       
       <!-- Academic Paper Header & Reference Card -->
@@ -1716,7 +2039,7 @@
 
     </div>
 
-    <!-- TAB 3: Q&A / FAQ -->
+    <!-- TAB 4: Q&A / FAQ -->
     <div id="tab-faq" class="tab-content space-y-4">
       
       <!-- Header Card -->
@@ -1742,328 +2065,6 @@
       <div id="faq-container" class="space-y-2"></div>
     </div>
 
-    <!-- TAB 4: WORKED EXAMPLE -->
-    <div id="tab-worked" class="tab-content space-y-4">
-      
-      <!-- Narrative Title Card -->
-      <div class="paper-card-elevated px-5 py-3.5 border-slate-200 bg-white">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div class="flex-1">
-            <div class="flex items-center gap-2">
-              <span class="tag-sim">Simulator</span>
-              <span class="px-2 py-0.5 text-[10px] font-bold font-mono rounded bg-blue-100 text-blue-800">PAPER §3.2 &amp; APP. B.1</span>
-              <h2 class="text-sm font-bold text-slate-900">Step-by-Step Worked Example: Exact Numerical Walkthrough</h2>
-            </div>
-            <p class="text-xs text-slate-600 font-sans mt-1">
-              Complete deterministic walkthrough of Top-$P$ signature calculation with real numbers plugged into every formula. Fixed parameter setting: $M = 10$, $\theta = 0.9$, $\beta = 0$ ($\text{importance} = |w|$), $w = [0.5, -3.0, 0.2, 2.0, -0.1, 1.5, 0.3, -1.0, 0.4, 0.6]$.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Vertical 7-Step Walkthrough Cards (All Displayed by Default) -->
-      <div class="stepper-container space-y-3" id="worked-stepper-cards">
-
-        <!-- Step 1 Card -->
-        <div id="worked-step-card-1" class="stepper-step-card">
-          <div class="stepper-step-header">
-            <div class="flex items-center gap-2.5">
-              <span class="stepper-badge">1</span>
-              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 1 — Importance Scoring &amp; Descending Sort</h3>
-            </div>
-            <span class="tag-sim">Simulator</span>
-          </div>
-          <div class="text-xs text-slate-700 font-sans space-y-2">
-            <p>
-              With $\beta = 0$, parameter importance scores are equal to the raw coordinate magnitudes $s_r = |w_r|$. The indices are sorted in descending order of score:
-            </p>
-            <div class="top-p-formula-card">
-              $$s_r = |w_r|, \qquad I = \operatorname{argsort}(-s)$$
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Metric</th>
-                    <th>Rank 1</th><th>Rank 2</th><th>Rank 3</th><th>Rank 4</th><th>Rank 5</th>
-                    <th>Rank 6</th><th>Rank 7</th><th>Rank 8</th><th>Rank 9</th><th>Rank 10</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="font-bold text-left">Sorted |w|</td>
-                    <td><strong>3.0</strong></td><td><strong>2.0</strong></td><td><strong>1.5</strong></td><td><strong>1.0</strong></td><td>0.6</td>
-                    <td>0.5</td><td>0.4</td><td>0.3</td><td>0.2</td><td>0.1</td>
-                  </tr>
-                  <tr>
-                    <td class="font-bold text-left">Coordinate</td>
-                    <td>$w_2$</td><td>$w_4$</td><td>$w_6$</td><td>$w_8$</td><td>$w_{10}$</td>
-                    <td>$w_1$</td><td>$w_9$</td><td>$w_7$</td><td>$w_3$</td><td>$w_5$</td>
-                  </tr>
-                  <tr>
-                    <td class="font-bold text-left">Original w</td>
-                    <td>−3.0</td><td>2.0</td><td>1.5</td><td>−1.0</td><td>0.6</td>
-                    <td>0.5</td><td>0.4</td><td>0.3</td><td>0.2</td><td>−0.1</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
-              <strong>Sorted order:</strong> 3.0(w2), 2.0(w4), 1.5(w6), 1.0(w8), 0.6(w10), 0.5(w1), 0.4(w9), 0.3(w7), 0.2(w3), 0.1(w5)
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 2 Card -->
-        <div id="worked-step-card-2" class="stepper-step-card">
-          <div class="stepper-step-header">
-            <div class="flex items-center gap-2.5">
-              <span class="stepper-badge">2</span>
-              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 2 — Cumulative Energy Prefix Sums c_P</h3>
-            </div>
-            <span class="tag-sim">Simulator</span>
-          </div>
-          <div class="text-xs text-slate-700 font-sans space-y-2">
-            <p>
-              Cumulative energy $c_P$ is computed as the running prefix sum of squared sorted components. Total vector energy $\|w\|_2^2 = c_{10} = 17.16$:
-            </p>
-            <div class="top-p-formula-card">
-              $$c_P = \sum_{r=1}^P (w_{(r)})^2, \qquad \|w\|_2^2 = c_M = \sum_{r=1}^{10} w_r^2 = 17.16$$
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Budget P</th>
-                    <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="font-bold text-left">Term $w_{(P)}^2$</td>
-                    <td>$3.0^2=9.00$</td><td>$2.0^2=4.00$</td><td>$1.5^2=2.25$</td><td>$1.0^2=1.00$</td><td>$0.6^2=0.36$</td>
-                    <td>$0.5^2=0.25$</td><td>$0.4^2=0.16$</td><td>$0.3^2=0.09$</td><td>$0.2^2=0.04$</td><td>$0.1^2=0.01$</td>
-                  </tr>
-                  <tr>
-                    <td class="font-bold text-left">Prefix $c_P$</td>
-                    <td><strong>9.00</strong></td><td><strong>13.00</strong></td><td><strong>15.25</strong></td><td>16.25</td><td>16.61</td>
-                    <td>16.86</td><td>17.02</td><td>17.11</td><td>17.15</td><td><strong>17.16</strong></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
-              <strong>Prefix sums $c_P$:</strong> 9, 13, 15.25, 16.25, 16.61, 16.86, 17.02, 17.11, 17.15, 17.16; ‖w‖² = 17.16
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 3 Card -->
-        <div id="worked-step-card-3" class="stepper-step-card">
-          <div class="stepper-step-header">
-            <div class="flex items-center gap-2.5">
-              <span class="stepper-badge">3</span>
-              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 3 — Directional Cosine Calculation cos(P)</h3>
-            </div>
-            <span class="tag-sim">Simulator</span>
-          </div>
-          <div class="text-xs text-slate-700 font-sans space-y-2">
-            <p>
-              The directional cosine similarity $\cos(w, w^{[P]})$ retained by keeping the top $P$ coordinates is $\sqrt{c_P} / \|w\|_2$:
-            </p>
-            <div class="top-p-formula-card">
-              $$\cos(P) = \frac{\sqrt{c_P}}{\|w\|_2} = \frac{\sqrt{c_P}}{\sqrt{17.16}}, \qquad \text{e.g., at } P=3: \; \cos(3) = \frac{\sqrt{15.25}}{\sqrt{17.16}} = \frac{3.9051}{4.1425} = 0.943$$
-            </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Budget P</th>
-                    <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="font-bold text-left">$\cos(P)$</td>
-                    <td>0.724</td><td>0.870</td><td><strong>0.943</strong></td><td>0.973</td><td>0.984</td>
-                    <td>0.991</td><td>0.996</td><td>0.999</td><td>1.000</td><td>1.000</td>
-                  </tr>
-                  <tr>
-                    <td class="font-bold text-left">Retained %</td>
-                    <td>72.4%</td><td>87.0%</td><td>94.3%</td><td>97.3%</td><td>98.4%</td>
-                    <td>99.1%</td><td>99.6%</td><td>99.9%</td><td>100.0%</td><td>100.0%</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
-              <strong>Cosine curve:</strong> cos(P) = [0.724, 0.870, 0.943, 0.973, 0.984, 0.991, 0.996, 0.999, 1.000, 1.000]
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 4 Card -->
-        <div id="worked-step-card-4" class="stepper-step-card">
-          <div class="stepper-step-header">
-            <div class="flex items-center gap-2.5">
-              <span class="stepper-badge">4</span>
-              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 4 — Feasibility Test against Target θ = 0.9</h3>
-            </div>
-            <span class="tag-sim">Simulator</span>
-          </div>
-          <div class="text-xs text-slate-700 font-sans space-y-2">
-            <p>
-              To satisfy $\cos(w, w^{[P]}) \ge \theta$, we test the algebraic condition $c_P \ge \theta^2 \|w\|_2^2$:
-            </p>
-            <div class="top-p-formula-card">
-              $$c_P \ge \theta^2 \|w\|_2^2 = (0.90)^2 \times 17.16 = 0.81 \times 17.16 = 13.90$$
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div class="p-2.5 rounded border border-amber-200 bg-amber-50">
-                <span class="font-bold text-amber-900 block text-xs">For P = 2:</span>
-                <span class="text-xs text-amber-800 font-mono">$c_2 = 13.00 < 13.90$ (fails, $\cos(2) = 0.870 < 0.90$)</span>
-              </div>
-              <div class="p-2.5 rounded border border-emerald-200 bg-emerald-50">
-                <span class="font-bold text-emerald-900 block text-xs">For P = 3:</span>
-                <span class="text-xs text-emerald-800 font-mono">$c_3 = 15.25 \ge 13.90$ (passes, $\cos(3) = 0.943 \ge 0.90$) $\to P_{\min} = 3$</span>
-              </div>
-            </div>
-            <p class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
-              💡 <em>Note: with $\theta = 0.8$ the answer would be 2</em> (since $\theta^2 \|w\|^2 = 0.64 \times 17.16 = 10.98$ and $c_2 = 13.00 \ge 10.98$).
-            </p>
-          </div>
-        </div>
-
-        <!-- Step 5 Card -->
-        <div id="worked-step-card-5" class="stepper-step-card">
-          <div class="stepper-step-header">
-            <div class="flex items-center gap-2.5">
-              <span class="stepper-badge">5</span>
-              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 5 — Discrete Binary Search Trace (Algorithm 1)</h3>
-            </div>
-            <span class="tag-sim">Simulator</span>
-          </div>
-          <div class="text-xs text-slate-700 font-sans space-y-2">
-            <p>
-              Algorithm 1 finds $P_{\min}$ in $O(\log_2 M)$ checks over the monotonic prefix sums:
-            </p>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Check</th><th>lo</th><th>hi</th><th>mid</th><th>$c_{\text{mid}}$</th><th>$\cos(\text{mid})$</th><th>Feasible ($c_{\text{mid}} \ge 13.90$)</th><th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>1</td><td>1</td><td>10</td><td><strong>5</strong></td><td>16.61</td><td>0.984</td>
-                    <td><span class="yes">✓ Yes</span></td><td>$\text{hi} = \text{mid} = 5$</td>
-                  </tr>
-                  <tr>
-                    <td>2</td><td>1</td><td>5</td><td><strong>3</strong></td><td>15.25</td><td>0.943</td>
-                    <td><span class="yes">✓ Yes</span></td><td>$\text{hi} = \text{mid} = 3$</td>
-                  </tr>
-                  <tr>
-                    <td>3</td><td>1</td><td>3</td><td><strong>2</strong></td><td>13.00</td><td>0.870</td>
-                    <td><span class="no">✗ No</span></td><td>$\text{lo} = \text{mid} + 1 = 3$</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="text-[11px] font-mono text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
-              <strong>Binary search trace:</strong> (lo=1,hi=10,mid=5 yes) → (1,5,mid=3 yes) → (1,3,mid=2 no) → P_min = 3, in 3 checks.
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 6 Card -->
-        <div id="worked-step-card-6" class="stepper-step-card">
-          <div class="stepper-step-header">
-            <div class="flex items-center gap-2.5">
-              <span class="stepper-badge">6</span>
-              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 6 — Super-Peer Shared P Consensus (q = 0.8)</h3>
-            </div>
-            <span class="tag-sim">Simulator</span>
-          </div>
-          <div class="text-xs text-slate-700 font-sans space-y-2">
-            <p>
-              When five clients in a zone report their minimal budgets $P_{\min} = [3, 2, 4, 3, 6]$, the Super-Peer sets global shared $P$ using quantile $q = 0.8$:
-            </p>
-            <div class="top-p-formula-card">
-              $$\text{sorted } P_{\min} = [2, 3, 3, 4, 6], \qquad k = \lceil q \cdot n \rceil = \lceil 0.8 \times 5 \rceil = 4 \implies P_{\text{global}} = 4$$
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div class="p-2.5 rounded border border-emerald-200 bg-emerald-50 text-xs text-emerald-800">
-                <strong>4 of 5 clients (80%) satisfy $\theta = 0.9$:</strong><br>
-                Clients requiring $P_{\min} \in \{2, 3, 4\}$ receive a signature with $P=4 \ge P_{\min}$, exceeding their target fidelity $\theta = 0.90$.
-              </div>
-              <div class="p-2.5 rounded border border-amber-200 bg-amber-50 text-xs text-amber-800">
-                <strong>1 client requiring $P_{\min} = 6$:</strong><br>
-                Achieves $\cos(4) = 0.973$ (slightly below its personal $\theta$ demand, bounded by $(1-q)$ consensus to prevent outlier bloat).
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 7 Card -->
-        <div id="worked-step-card-7" class="stepper-step-card">
-          <div class="stepper-step-header">
-            <div class="flex items-center gap-2.5">
-              <span class="stepper-badge">7</span>
-              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Step 7 — Signature Wire Sizing Cost &amp; Paper Scale</h3>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <span class="tag-sim">Simulator</span>
-              <span class="tag-derived">Derived</span>
-            </div>
-          </div>
-          <div class="text-xs text-slate-700 font-sans space-y-2">
-            <p>
-              Each signature entry encodes a 4-byte coordinate index and a 2-byte FP16 parameter value:
-            </p>
-            <div class="top-p-formula-card">
-              $$\text{Payload} = P \times (b_{\text{idx}} + b_{\text{val}}) = 4 \times (4\text{ B} + 2\text{ B}) = 24\text{ bytes vs dense } 10 \times 4\text{ B} = 40\text{ bytes}$$
-            </div>
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
-              <div class="font-bold text-slate-900">Paper-Scale Deep Learning Regime (ResNet-18):</div>
-              <div>• Parameter dimension: $M = 11.7\text{M}$ coordinates (FP32 dense model $\approx 46.8\text{ MB} \approx 47\text{ MB}$)</div>
-              <div>• Top-$P$ signature budget: $P = 10.8\% \times 11.7\text{M} \approx 1.26\text{M}$ entries</div>
-              <div>• Wire signature size: $1.26\text{M} \times 6\text{ bytes} \approx 7.23\text{ MB}$ <span class="tag-derived">Derived</span></div>
-              <div>• Compression saving: <strong>$6.5\times$ payload reduction</strong> ($47\text{ MB} \to 7.23\text{ MB}$) while preserving $\cos \ge 0.80$ directional accuracy.</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Interactive Visual Charts for Worked Example -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <!-- Chart 1: Sorted |w| Bar Chart -->
-        <div class="paper-panel mb-0">
-          <div class="panel-header">
-            <span class="panel-title"><span>📊</span><span>Sorted Coordinates |w| ($P_{\min}=3$ Highlighted)</span></span>
-            <span class="tag-sim">Simulator</span>
-          </div>
-          <div class="h-64 relative">
-            <canvas id="worked_bar_chart"></canvas>
-          </div>
-        </div>
-
-        <!-- Chart 2: Cosine Similarity Curve -->
-        <div class="paper-panel mb-0">
-          <div class="panel-header">
-            <span class="panel-title"><span>📈</span><span>Directional Cosine $\cos(P)$ vs Threshold $\theta = 0.9$</span></span>
-            <span class="tag-sim">Simulator</span>
-          </div>
-          <div class="h-64 relative">
-            <canvas id="worked_cos_chart"></canvas>
-          </div>
-        </div>
-      </div>
-
-
-
-    </div>
 
   </main>
 
