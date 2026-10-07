@@ -3048,6 +3048,20 @@
     return PALETTE_CYCLE[hash % PALETTE_CYCLE.length];
   }
 
+  function formatLayerLabel(name, maxLen = 22) {
+    if (!name) return '—';
+    if (name.length <= maxLen) return name;
+    // For ALBERT / Transformers, condense repetitive prefixes
+    let condensed = name
+      .replace(/^albert\.embeddings\./, 'emb.')
+      .replace(/^albert\.encoder\.albert_layer_groups\.\d+\.albert_layers\.\d+\./, 'enc.')
+      .replace(/^albert\.encoder\./, 'enc.')
+      .replace(/^albert\.pooler\./, 'pool.')
+      .replace(/^classifier\./, 'cls.');
+    if (condensed.length <= maxLen) return condensed;
+    return condensed.slice(0, maxLen - 2) + '..';
+  }
+
   async function loadCnnWeights() {
     const head = parseInt($('cnn-inp-head')?.value || '15', 10);
     const tail = parseInt($('cnn-inp-tail')?.value || '15', 10);
@@ -3161,11 +3175,12 @@
         const isPos = item.value >= 0;
         const pct = Math.min(100, Math.round((item.abs_value / maxValHead) * 100));
         const barColor = isPos ? 'bg-emerald-500' : 'bg-rose-500';
+        const displayLayer = formatLayerLabel(item.layer, 22);
         return `
-          <div class="p-2.5 bg-white border border-slate-200 rounded-lg shadow-2xs space-y-1.5 transition-all hover:border-blue-400">
-            <div class="flex items-center justify-between">
-              <span class="font-mono text-[10px] font-bold text-slate-500">#${String(item.index).padStart(7, '0')}</span>
-              <span class="px-1.5 py-0.2 rounded text-[9px] font-bold font-mono ${style.bg} ${style.text} border ${style.border}">${item.layer}</span>
+          <div class="p-2.5 bg-white border border-slate-200 rounded-lg shadow-2xs space-y-1.5 transition-all hover:border-blue-400 min-w-0 overflow-hidden">
+            <div class="flex items-center justify-between gap-1.5 min-w-0">
+              <span class="font-mono text-[10px] font-bold text-slate-500 flex-shrink-0">#${String(item.index).padStart(7, '0')}</span>
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-bold font-mono ${style.bg} ${style.text} border ${style.border} truncate max-w-[170px]" title="${item.layer}">${displayLayer}</span>
             </div>
             <div class="flex items-baseline justify-between font-mono">
               <span class="text-xs font-extrabold ${isPos ? 'text-emerald-700' : 'text-rose-700'}">
@@ -3189,11 +3204,12 @@
         const isPos = item.value >= 0;
         const pct = Math.min(100, Math.round((item.abs_value / maxValTail) * 100));
         const barColor = isPos ? 'bg-emerald-500' : 'bg-rose-500';
+        const displayLayer = formatLayerLabel(item.layer, 22);
         return `
-          <div class="p-2.5 bg-white border border-slate-200 rounded-lg shadow-2xs space-y-1.5 transition-all hover:border-purple-400">
-            <div class="flex items-center justify-between">
-              <span class="font-mono text-[10px] font-bold text-slate-500">#${item.index.toLocaleString()}</span>
-              <span class="px-1.5 py-0.2 rounded text-[9px] font-bold font-mono ${style.bg} ${style.text} border ${style.border}">${item.layer}</span>
+          <div class="p-2.5 bg-white border border-slate-200 rounded-lg shadow-2xs space-y-1.5 transition-all hover:border-purple-400 min-w-0 overflow-hidden">
+            <div class="flex items-center justify-between gap-1.5 min-w-0">
+              <span class="font-mono text-[10px] font-bold text-slate-500 flex-shrink-0">#${item.index.toLocaleString()}</span>
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-bold font-mono ${style.bg} ${style.text} border ${style.border} truncate max-w-[170px]" title="${item.layer}">${displayLayer}</span>
             </div>
             <div class="flex items-baseline justify-between font-mono">
               <span class="text-xs font-extrabold ${isPos ? 'text-emerald-700' : 'text-rose-700'}">
@@ -3318,26 +3334,27 @@
               deltaBadge = `<span class="px-1.5 py-0.5 rounded text-[9px] font-mono text-slate-500 bg-slate-100 border border-slate-200">=</span>`;
             }
 
+            const displayLayer = formatLayerLabel(item.layer_name, 24);
             return `
               <tr class="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
-                <td class="py-2 px-2.5 font-mono font-bold text-slate-700 whitespace-nowrap min-w-[110px] w-[110px]">
+                <td class="py-2 px-2.5 font-mono font-bold text-slate-700 whitespace-nowrap min-w-[95px] w-[95px]">
                   #${item.rank.toLocaleString()} ${deltaBadge}
                 </td>
-                <td class="py-2 px-2 whitespace-nowrap min-w-[130px] w-[130px]">
-                  <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${style.bg} ${style.text} border ${style.border}">
-                    ${item.layer_name}
+                <td class="py-2 px-2 whitespace-nowrap min-w-[190px] w-[190px]">
+                  <span class="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${style.bg} ${style.text} border ${style.border} truncate max-w-[185px] align-middle" title="${item.layer_name}">
+                    ${displayLayer}
                   </span>
                 </td>
-                <td class="py-2 px-2 font-mono text-slate-600 whitespace-nowrap min-w-[95px] w-[95px]">
+                <td class="py-2 px-2 font-mono text-slate-600 whitespace-nowrap min-w-[110px] w-[110px]">
                   #${item.global_index.toLocaleString()}
                 </td>
-                <td class="py-2 px-2 text-right font-mono font-bold text-indigo-700 whitespace-nowrap min-w-[100px] w-[100px]">
+                <td class="py-2 px-2 text-right font-mono font-bold text-indigo-700 whitespace-nowrap min-w-[105px] w-[105px]">
                   ${item.score.toFixed(6)}
                 </td>
-                <td class="py-2 px-2 text-right font-mono font-bold ${isPos ? 'text-emerald-700' : 'text-rose-700'} whitespace-nowrap min-w-[100px] w-[100px]">
+                <td class="py-2 px-2 text-right font-mono font-bold ${isPos ? 'text-emerald-700' : 'text-rose-700'} whitespace-nowrap min-w-[110px] w-[110px]">
                   ${isPos ? '+' : ''}${item.value.toFixed(6)}
                 </td>
-                <td class="py-2 px-2.5 text-right font-mono font-semibold text-slate-900 whitespace-nowrap min-w-[95px] w-[95px]">
+                <td class="py-2 px-2.5 text-right font-mono font-semibold text-slate-900 whitespace-nowrap min-w-[100px] w-[100px]">
                   ${item.abs_value.toFixed(6)}
                 </td>
               </tr>
@@ -3345,7 +3362,7 @@
           }).join('');
 
           return `
-            <div class="flex-shrink-0 w-[630px] bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden flex flex-col">
+            <div class="flex-shrink-0 w-[720px] bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden flex flex-col">
               <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full ${rd.round === 1 ? 'bg-slate-400' : 'bg-indigo-600'}"></span>
@@ -3358,12 +3375,12 @@
                 <table class="w-full text-left text-xs table-fixed">
                   <thead>
                     <tr class="border-b border-slate-200 bg-slate-50/60 text-[11px] text-slate-500 font-semibold">
-                      <th class="py-2 px-2.5 text-left min-w-[110px] w-[110px]">Rank</th>
-                      <th class="py-2 px-2 text-left min-w-[130px] w-[130px]">Layer</th>
-                      <th class="py-2 px-2 text-left min-w-[95px] w-[95px]">Global Index</th>
-                      <th class="py-2 px-2 text-right min-w-[100px] w-[100px]">Score ($s_r$)</th>
-                      <th class="py-2 px-2 text-right min-w-[100px] w-[100px]">Value ($w_r$)</th>
-                      <th class="py-2 px-2.5 text-right min-w-[95px] w-[95px]">|w|</th>
+                      <th class="py-2 px-2.5 text-left min-w-[95px] w-[95px]">Rank</th>
+                      <th class="py-2 px-2 text-left min-w-[190px] w-[190px]">Layer</th>
+                      <th class="py-2 px-2 text-left min-w-[110px] w-[110px]">Global Index</th>
+                      <th class="py-2 px-2 text-right min-w-[105px] w-[105px]">Score ($s_r$)</th>
+                      <th class="py-2 px-2 text-right min-w-[110px] w-[110px]">Value ($w_r$)</th>
+                      <th class="py-2 px-2.5 text-right min-w-[100px] w-[100px]">|w|</th>
                     </tr>
                   </thead>
                   <tbody>
