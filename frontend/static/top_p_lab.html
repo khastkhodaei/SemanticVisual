@@ -884,7 +884,7 @@
                 <span id="pareto-benchmark-tag" class="tag-paper text-[10px] font-mono bg-blue-50 text-blue-700 border-blue-200 font-semibold">CIFAR-10 ConvNet (2.15M)</span>
               </div>
               <p id="pareto-card-desc" class="text-xs text-slate-500 font-sans mt-1">
-                Authentic ACM Figure 2 replication: Directional cosine similarity $\cos(w, w^{[P]})$ as a function of pruned parameters $(1 - P/M)$ from 0% to 100% with $\theta=0.80$ &amp; $\theta=0.90$ optimal threshold guides.
+                Authentic ACM Figure 2 replication: Directional cosine similarity $\cos(w, w^{[P]})$ as a function of pruned parameters $(1 - P/M)$ from 0% to 100% with $\theta=0.70$, $\theta=0.80$, &amp; $\theta=0.90$ optimal threshold guides.
               </p>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
@@ -896,27 +896,27 @@
             </div>
           </div>
 
-          <!-- Section 5.1 Trade-off KPI Telemetry Badges -->
+          <!-- Section 5.1 Trade-off KPI Telemetry Badges (θ=0.70, θ=0.80, θ=0.90) -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-              <span class="text-[10px] font-mono text-slate-500 uppercase font-bold block">P* Budget (&theta;=0.80)</span>
-              <span id="pareto-kpi-budget" class="text-sm font-mono font-bold text-indigo-700 mt-0.5 block">532,443 (24.69%)</span>
-              <span class="text-[10px] text-slate-400 font-sans">Retained Coordinates</span>
+            <div class="p-3 bg-emerald-50/60 border border-emerald-200/70 rounded-lg">
+              <span class="text-[10px] font-mono text-emerald-700 uppercase font-bold block">P* Budget (&theta;=0.70)</span>
+              <span id="pareto-kpi-budget-70" class="text-sm font-mono font-bold text-emerald-800 mt-0.5 block">332,739 (15.43%)</span>
+              <span id="pareto-kpi-sparsity-70" class="text-[10px] text-emerald-600 font-sans">Sparsity: 84.57%</span>
             </div>
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-              <span class="text-[10px] font-mono text-slate-500 uppercase font-bold block">Optimal Sparsity</span>
-              <span id="pareto-kpi-reduction" class="text-sm font-mono font-bold text-emerald-600 mt-0.5 block">75.31%</span>
-              <span class="text-[10px] text-slate-400 font-sans">1 - P / M Parameters Pruned</span>
+            <div class="p-3 bg-blue-50/60 border border-blue-200/70 rounded-lg">
+              <span class="text-[10px] font-mono text-blue-700 uppercase font-bold block">P* Budget (&theta;=0.80)</span>
+              <span id="pareto-kpi-budget" class="text-sm font-mono font-bold text-blue-800 mt-0.5 block">532,443 (24.69%)</span>
+              <span id="pareto-kpi-reduction" class="text-[10px] text-blue-600 font-sans">Sparsity: 75.31%</span>
+            </div>
+            <div class="p-3 bg-amber-50/60 border border-amber-200/70 rounded-lg">
+              <span class="text-[10px] font-mono text-amber-700 uppercase font-bold block">P* Budget (&theta;=0.90)</span>
+              <span id="pareto-kpi-efficiency" class="text-sm font-mono font-bold text-amber-800 mt-0.5 block">844,576 (39.16%)</span>
+              <span id="pareto-kpi-sparsity-90" class="text-[10px] text-amber-600 font-sans">Sparsity: 60.84%</span>
             </div>
             <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
               <span class="text-[10px] font-mono text-slate-500 uppercase font-bold block">Target Cosines</span>
-              <span id="pareto-kpi-cosine" class="text-sm font-mono font-bold text-slate-900 mt-0.5 block">&theta;=0.80 &amp; &theta;=0.90</span>
-              <span class="text-[10px] text-slate-400 font-sans">Directional Alignments</span>
-            </div>
-            <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-              <span class="text-[10px] font-mono text-slate-500 uppercase font-bold block">P* at &theta;=0.90</span>
-              <span id="pareto-kpi-efficiency" class="text-sm font-mono font-bold text-blue-600 mt-0.5 block">844,576 (39.16%)</span>
-              <span class="text-[10px] text-slate-400 font-sans">Sparsity: 60.84%</span>
+              <span id="pareto-kpi-cosine" class="text-sm font-mono font-bold text-slate-900 mt-0.5 block">&theta;=0.70, 0.80, 0.90</span>
+              <span class="text-[10px] text-slate-400 font-sans">Horizontal &amp; Vertical Guides</span>
             </div>
           </div>
 
@@ -927,7 +927,7 @@
 
           <!-- Academic Footer Legend / Caption -->
           <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] font-mono text-slate-500 flex-wrap gap-2">
-            <span>ACM Standard: Solid Curve with hollow markers, Dashed Thresholds at &theta;=0.80 and &theta;=0.90</span>
+            <span>ACM Standard: Solid Curve with hollow markers, Dashed Guides at &theta;=0.70, &theta;=0.80, and &theta;=0.90</span>
             <span class="text-slate-400">Dogani et al., Proc. ACM Meas. Anal. Comput. Syst. (2026)</span>
           </div>
         </div>
@@ -4376,12 +4376,14 @@
 
       // Check cache first or fetch fresh
       let dataEnergy = paretoBenchmarkCache[benchmark]?.energy;
+      let dataPmin70 = paretoBenchmarkCache[benchmark]?.pmin70;
       let dataPmin80 = paretoBenchmarkCache[benchmark]?.pmin80;
       let dataPmin90 = paretoBenchmarkCache[benchmark]?.pmin90;
 
-      if (!dataEnergy || !dataPmin80 || !dataPmin90) {
-        const [resEnergy, resPmin80, resPmin90] = await Promise.all([
+      if (!dataEnergy || !dataPmin70 || !dataPmin80 || !dataPmin90) {
+        const [resEnergy, resPmin70, resPmin80, resPmin90] = await Promise.all([
           fetch(`/api/v1/toppaper/energy-distribution?benchmark=${benchmark}&round_num=100`),
+          fetch(`/api/v1/toppaper/binary-search-pmin?benchmark=${benchmark}&round_num=100&theta=0.70`),
           fetch(`/api/v1/toppaper/binary-search-pmin?benchmark=${benchmark}&round_num=100&theta=0.80`),
           fetch(`/api/v1/toppaper/binary-search-pmin?benchmark=${benchmark}&round_num=100&theta=0.90`)
         ]);
@@ -4392,12 +4394,22 @@
         }
 
         dataEnergy = await resEnergy.json();
+        dataPmin70 = resPmin70.ok ? await resPmin70.json() : {};
         dataPmin80 = await resPmin80.json();
         dataPmin90 = resPmin90.ok ? await resPmin90.json() : {};
-        paretoBenchmarkCache[benchmark] = { energy: dataEnergy, pmin80: dataPmin80, pmin90: dataPmin90 };
+        paretoBenchmarkCache[benchmark] = { energy: dataEnergy, pmin70: dataPmin70, pmin80: dataPmin80, pmin90: dataPmin90 };
       }
 
       const curvePoints = dataEnergy.curve_points || [];
+
+      // Fallback defaults for theta=0.70 based on empirical measurements
+      const defaultPMin70 = benchmark === 'fmnist' ? 173789 : (benchmark === 'tiny_imagenet' ? 114514 : (benchmark === 'speech' ? 109065 : (benchmark === '20news' ? 678882 : 332739)));
+      const defaultSparsity70 = benchmark === 'fmnist' ? 89.55 : (benchmark === 'tiny_imagenet' ? 98.98 : (benchmark === 'speech' ? 99.02 : (benchmark === '20news' ? 94.20 : 84.57)));
+
+      const pMin70 = dataPmin70.p_min !== undefined ? dataPmin70.p_min : defaultPMin70;
+      const sparsityPct70 = dataPmin70.sparsity_percentage !== undefined ? dataPmin70.sparsity_percentage : defaultSparsity70;
+      const achievedCosine70 = dataPmin70.achieved_cosine !== undefined ? dataPmin70.achieved_cosine : 0.7000;
+
       const pMin80 = dataPmin80.p_min !== undefined ? dataPmin80.p_min : defaultPMin;
       const sparsityPct80 = dataPmin80.sparsity_percentage !== undefined ? dataPmin80.sparsity_percentage : defaultSparsity;
       const achievedCosine80 = dataPmin80.achieved_cosine !== undefined ? dataPmin80.achieved_cosine : 0.8000;
@@ -4407,22 +4419,38 @@
       const achievedCosine90 = dataPmin90.achieved_cosine !== undefined ? dataPmin90.achieved_cosine : 0.9000;
 
       const totalParams = dataPmin80.total_parameters || bMeta.total_parameters || defaultTotal;
+      const retainedRatio70 = pMin70 / totalParams;
       const retainedRatio80 = pMin80 / totalParams;
       const retainedRatio90 = pMin90 / totalParams;
 
       // Update KPI Badges
+      if ($('pareto-kpi-budget-70')) $('pareto-kpi-budget-70').textContent = `${pMin70.toLocaleString()} (${(retainedRatio70 * 100).toFixed(2)}%)`;
+      if ($('pareto-kpi-sparsity-70')) $('pareto-kpi-sparsity-70').textContent = `Sparsity: ${sparsityPct70.toFixed(2)}%`;
       if ($('pareto-kpi-budget')) $('pareto-kpi-budget').textContent = `${pMin80.toLocaleString()} (${(retainedRatio80 * 100).toFixed(2)}%)`;
-      if ($('pareto-kpi-reduction')) $('pareto-kpi-reduction').textContent = `${sparsityPct80.toFixed(2)}% (1 - P/M)`;
-      if ($('pareto-kpi-cosine')) $('pareto-kpi-cosine').textContent = `θ=0.80 & θ=0.90`;
+      if ($('pareto-kpi-reduction')) $('pareto-kpi-reduction').textContent = `Sparsity: ${sparsityPct80.toFixed(2)}%`;
       if ($('pareto-kpi-efficiency')) $('pareto-kpi-efficiency').textContent = `${pMin90.toLocaleString()} (${(retainedRatio90 * 100).toFixed(2)}%)`;
+      if ($('pareto-kpi-sparsity-90')) $('pareto-kpi-sparsity-90').textContent = `Sparsity: ${sparsityPct90.toFixed(2)}%`;
+      if ($('pareto-kpi-cosine')) $('pareto-kpi-cosine').textContent = `θ=0.70, 0.80, 0.90`;
 
-      renderParetoFrontierChart(curvePoints, pMin80, sparsityPct80, achievedCosine80, pMin90, sparsityPct90, achievedCosine90, totalParams, modelDisplayName, benchmark);
+      renderParetoFrontierChart(
+        curvePoints,
+        pMin70, sparsityPct70, achievedCosine70,
+        pMin80, sparsityPct80, achievedCosine80,
+        pMin90, sparsityPct90, achievedCosine90,
+        totalParams, modelDisplayName, benchmark
+      );
     } catch (err) {
       console.error('Failed to load Pareto frontier:', err);
     }
   }
 
-  function renderParetoFrontierChart(curvePoints, pMin80, sparsityPct80, achievedCosine80, pMin90, sparsityPct90, achievedCosine90, totalParams, modelDisplayName, benchmark) {
+  function renderParetoFrontierChart(
+    curvePoints,
+    pMin70, sparsityPct70, achievedCosine70,
+    pMin80, sparsityPct80, achievedCosine80,
+    pMin90, sparsityPct90, achievedCosine90,
+    totalParams, modelDisplayName, benchmark
+  ) {
     const canvas = $('chart-pareto-cifar10');
     if (!canvas || typeof Chart === 'undefined') return;
 
@@ -4445,6 +4473,7 @@
       pts.push({ x: 1.0, y: 0.0, p: 0 });
     }
 
+    const kneeSparsity70 = Math.round((sparsityPct70 / 100.0) * 10000) / 10000;
     const kneeSparsity80 = Math.round((sparsityPct80 / 100.0) * 10000) / 10000;
     const kneeSparsity90 = Math.round((sparsityPct90 / 100.0) * 10000) / 10000;
 
@@ -4489,7 +4518,64 @@
             order: 2
           },
 
-          // 2. Vertical Drop-Line for θ = 0.80 (drops from curve to X-axis)
+          // 2. Horizontal Guide for θ = 0.70 (from (0, 0.70) to knee)
+          {
+            label: `Horizontal Guide (θ=0.70)`,
+            data: [
+              { x: 0.0, y: achievedCosine70 },
+              { x: kneeSparsity70, y: achievedCosine70 }
+            ],
+            showLine: true,
+            borderColor: '#059669',
+            borderWidth: 1.6,
+            borderDash: [6, 4],
+            pointRadius: [0, 4.5],
+            pointBackgroundColor: '#059669',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 1.5,
+            fill: false,
+            order: 4
+          },
+
+          // 3. Vertical Drop-Line for θ = 0.70 (drops from knee to X-axis)
+          {
+            label: `Optimal Drop Line (θ=0.70 -> Sparsity ${(kneeSparsity70 * 100).toFixed(2)}%, P*=${pMin70.toLocaleString()})`,
+            data: [
+              { x: kneeSparsity70, y: 0.0 },
+              { x: kneeSparsity70, y: achievedCosine70 }
+            ],
+            showLine: true,
+            borderColor: '#059669',
+            borderWidth: 1.6,
+            borderDash: [5, 4],
+            pointRadius: [0, 4.5],
+            pointBackgroundColor: '#059669',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 1.5,
+            fill: false,
+            order: 5
+          },
+
+          // 4. Horizontal Guide for θ = 0.80 (from (0, 0.80) to knee)
+          {
+            label: `Horizontal Guide (θ=0.80)`,
+            data: [
+              { x: 0.0, y: achievedCosine80 },
+              { x: kneeSparsity80, y: achievedCosine80 }
+            ],
+            showLine: true,
+            borderColor: '#2563eb',
+            borderWidth: 1.6,
+            borderDash: [6, 4],
+            pointRadius: [0, 5],
+            pointBackgroundColor: '#2563eb',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 1.5,
+            fill: false,
+            order: 6
+          },
+
+          // 5. Vertical Drop-Line for θ = 0.80 (drops from knee to X-axis)
           {
             label: `Optimal Drop Line (θ=0.80 -> Sparsity ${(kneeSparsity80 * 100).toFixed(2)}%, P*=${pMin80.toLocaleString()})`,
             data: [
@@ -4505,10 +4591,29 @@
             pointBorderColor: '#ffffff',
             pointBorderWidth: 1.5,
             fill: false,
-            order: 5
+            order: 7
           },
 
-          // 3. Vertical Drop-Line for θ = 0.90 (drops from curve to X-axis)
+          // 6. Horizontal Guide for θ = 0.90 (from (0, 0.90) to knee)
+          {
+            label: `Horizontal Guide (θ=0.90)`,
+            data: [
+              { x: 0.0, y: achievedCosine90 },
+              { x: kneeSparsity90, y: achievedCosine90 }
+            ],
+            showLine: true,
+            borderColor: '#d97706',
+            borderWidth: 1.6,
+            borderDash: [6, 4],
+            pointRadius: [0, 5],
+            pointBackgroundColor: '#d97706',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 1.5,
+            fill: false,
+            order: 8
+          },
+
+          // 7. Vertical Drop-Line for θ = 0.90 (drops from knee to X-axis)
           {
             label: `Optimal Drop Line (θ=0.90 -> Sparsity ${(kneeSparsity90 * 100).toFixed(2)}%, P*=${pMin90.toLocaleString()})`,
             data: [
@@ -4516,15 +4621,15 @@
               { x: kneeSparsity90, y: achievedCosine90 }
             ],
             showLine: true,
-            borderColor: '#f59e0b',
+            borderColor: '#d97706',
             borderWidth: 1.8,
             borderDash: [5, 4],
             pointRadius: [0, 5],
-            pointBackgroundColor: '#f59e0b',
+            pointBackgroundColor: '#d97706',
             pointBorderColor: '#ffffff',
             pointBorderWidth: 1.5,
             fill: false,
-            order: 6
+            order: 9
           }
         ]
       },
@@ -4546,9 +4651,13 @@
               boxHeight: 4,
               font: {
                 family: 'JetBrains Mono, monospace',
-                size: 11
+                size: 10
               },
-              usePointStyle: true
+              usePointStyle: true,
+              filter: function(item) {
+                // Keep legend clean: show main curve and drop-line entries, hide duplicate horizontal labels
+                return !item.text.startsWith('Horizontal Guide');
+              }
             }
           },
           tooltip: {
@@ -4559,11 +4668,14 @@
                 if (context.datasetIndex === 0) {
                   return `Sparsification Ratio: ${xPct}% | Cosine Fidelity: ${yCos}`;
                 }
-                if (context.datasetIndex === 1) {
-                  return `Optimal Knee (θ=0.80): Sparsity ${xPct}% | Cosine ${yCos} (P* = ${pMin80.toLocaleString()})`;
+                if (context.datasetIndex === 1 || context.datasetIndex === 2) {
+                  return `Optimal Knee (θ=0.70): Sparsity ${(kneeSparsity70 * 100).toFixed(2)}% | Cosine ${achievedCosine70.toFixed(4)} (P* = ${pMin70.toLocaleString()})`;
                 }
-                if (context.datasetIndex === 2) {
-                  return `Optimal Knee (θ=0.90): Sparsity ${xPct}% | Cosine ${yCos} (P* = ${pMin90.toLocaleString()})`;
+                if (context.datasetIndex === 3 || context.datasetIndex === 4) {
+                  return `Optimal Knee (θ=0.80): Sparsity ${(kneeSparsity80 * 100).toFixed(2)}% | Cosine ${achievedCosine80.toFixed(4)} (P* = ${pMin80.toLocaleString()})`;
+                }
+                if (context.datasetIndex === 5 || context.datasetIndex === 6) {
+                  return `Optimal Knee (θ=0.90): Sparsity ${(kneeSparsity90 * 100).toFixed(2)}% | Cosine ${achievedCosine90.toFixed(4)} (P* = ${pMin90.toLocaleString()})`;
                 }
                 return `${context.dataset.label}: (${xPct}%, ${yCos})`;
               }

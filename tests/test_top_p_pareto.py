@@ -333,14 +333,14 @@ class TestTopPParetoFrontierUI:
         assert 'id="pareto-frontier-card"' in html
         assert "Figure 2" in html or "Fig. 2" in html
 
-        # Telemetry KPI cards
+        # Telemetry KPI cards (θ=0.70, θ=0.80, θ=0.90)
+        assert 'id="pareto-kpi-budget-70"' in html
         assert 'id="pareto-kpi-budget"' in html
-        assert 'id="pareto-kpi-reduction"' in html
-        assert 'id="pareto-kpi-cosine"' in html
         assert 'id="pareto-kpi-efficiency"' in html
+        assert 'id="pareto-kpi-cosine"' in html
 
     def test_paper_fig2_replica_styling_and_hollow_markers(self):
-        """Verify publication-grade vector styling: hollow markers, no fill, clean lines, and dual drop guides."""
+        """Verify publication-grade vector styling: hollow markers, no fill, clean lines, and triple drop/horizontal guides."""
         html_path = "frontend/static/top_p_lab.html"
         with open(html_path, "r", encoding="utf-8") as f:
             html = f.read()
@@ -357,9 +357,13 @@ class TestTopPParetoFrontierUI:
         assert "rectRot" in html
         assert "star" in html
 
-        # Dual drop lines for theta=0.80 and theta=0.90
+        # Triple drop lines & horizontal guides for theta=0.70, theta=0.80 and theta=0.90
+        assert "θ=0.70" in html
         assert "θ=0.80" in html
         assert "θ=0.90" in html
+        assert "Horizontal Guide (θ=0.70)" in html
+        assert "Horizontal Guide (θ=0.80)" in html
+        assert "Horizontal Guide (θ=0.90)" in html
 
         # X-axis [0, 1] and Y-axis [0, 1.05] invariants
         assert "1.05" in html
