@@ -931,10 +931,57 @@ def get_round_importance(
     }
 
 
+def _enrich_energy_payload(
+    payload: Dict[str, Any],
+    requested_round: Optional[int],
+    total_params: int,
+) -> Dict[str, Any]:
+    if requested_round is None:
+        return payload
+
+    rounds = payload.get("rounds", [])
+    if not rounds:
+        payload["round_num"] = requested_round
+        payload["curve_points"] = []
+        return payload
+
+    target_round_data = None
+    for r in rounds:
+        if r.get("round") == requested_round:
+            target_round_data = r
+            break
+    if target_round_data is None:
+        target_round_data = rounds[-1]
+
+    eff_round = target_round_data.get("round", requested_round)
+    raw_curve = target_round_data.get("curve_data") or target_round_data.get("curve") or []
+    M = total_params if total_params > 0 else (target_round_data.get("milestones", [{}])[-1].get("p", 1))
+
+    enriched_curve = []
+    for pt in raw_curve:
+        p_val = pt.get("p", 1)
+        s_ratio = max(0.0, min(1.0, 1.0 - (p_val / float(M)))) if M > 0 else 0.0
+        enriched_curve.append({
+            "p": p_val,
+            "c_p": pt.get("c_p", 0.0),
+            "energy_pct": pt.get("energy_pct", 0.0),
+            "cosine": pt.get("cosine", 0.0),
+            "sparsity_ratio": round(s_ratio, 6),
+            "sparsity_pct": round(s_ratio * 100.0, 2),
+            "retained_pct": round((p_val / float(M)) * 100.0, 2) if M > 0 else 0.0,
+        })
+
+    payload["round_num"] = eff_round
+    payload["curve_points"] = enriched_curve
+    payload["selected_round_data"] = target_round_data
+    return payload
+
+
 @router.get("/energy-distribution")
 def get_energy_distribution(
     benchmark: str = Query("cifar10", description="Benchmark model identifier"),
     beta: float = Query(0.9, ge=0.0, le=0.99, description="EMA smoothing factor"),
+    round_num: Optional[int] = Query(None, ge=1, description="Optional target round to inspect and extract curve points"),
     force_recompute: bool = Query(False, description="Force dynamic recalculation"),
 ) -> Dict[str, Any]:
     """Calculate or retrieve the cumulative energy distribution and prefix sums c_P across rounds."""
@@ -945,7 +992,7 @@ def get_energy_distribution(
     round_files, target_dir = find_round_files_for_benchmark(rounds_dir, bench)
 
     if not round_files:
-        return {
+        empty_payload = {
             "has_data": False,
             "benchmark": bench,
             "total_rounds": 0,
@@ -954,6 +1001,7 @@ def get_energy_distribution(
             "rounds": [],
             "source": "dynamic_recomputed",
         }
+        return _enrich_energy_payload(empty_payload, round_num, 0)
 
     # Fast Path: Pre-Computed Cache (beta = 0.9)
     if not force_recompute and abs(beta - 0.9) < 1e-6:
@@ -965,15 +1013,19 @@ def get_energy_distribution(
                 cached_data = _load_cached_file(cache_path)
                 cached_rounds = cached_data.get("rounds", [])
                 if cached_rounds and len(cached_rounds) == len(round_files):
-                    return {
+                    tot_params = cached_data.get("total_parameters", 0)
+                    if tot_params <= 0:
+                        tot_params = BENCHMARKS_CATALOG.get(bench, {}).get("total_parameters", 2156490)
+                    cached_payload = {
                         "has_data": True,
                         "benchmark": bench,
                         "total_rounds": cached_data.get("total_rounds", len(round_files)),
                         "beta": 0.9,
-                        "total_parameters": cached_data.get("total_parameters", 0),
+                        "total_parameters": tot_params,
                         "rounds": cached_rounds,
                         "source": "cached_beta_0.9",
                     }
+                    return _enrich_energy_payload(cached_payload, round_num, tot_params)
             except Exception:
                 pass
 
@@ -1069,7 +1121,7 @@ def get_energy_distribution(
             "curve_data": curve_points,
         })
 
-    return {
+    computed_payload = {
         "has_data": True,
         "benchmark": bench,
         "total_rounds": len(round_files),
@@ -1078,6 +1130,7 @@ def get_energy_distribution(
         "rounds": rounds_data,
         "source": "dynamic_recomputed",
     }
+    return _enrich_energy_payload(computed_payload, round_num, total_params)
 
 
 @router.get("/binary-search-pmin")
