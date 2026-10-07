@@ -880,7 +880,7 @@
                 <h3 class="text-xs font-bold text-slate-900 font-sans">
                   Pareto Frontier: Model Directional Fidelity vs. Sparsification Ratio (Paper Fig. 2 — Round 100)
                 </h3>
-                <span class="tag-paper text-[10px] font-mono bg-blue-50 text-blue-700 border-blue-200">CIFAR-10 ConvNet (2.15M)</span>
+                <span id="pareto-benchmark-tag" class="tag-paper text-[10px] font-mono bg-blue-50 text-blue-700 border-blue-200">CIFAR-10 ConvNet (2.15M)</span>
               </div>
               <p class="text-[11px] text-slate-500 font-sans mt-0.5">
                 Optimal trade-off envelope: Directional cosine similarity $\cos(w, w^{[P]})$ as a function of pruned parameters $(1 - P/M)$ at Round 100.
@@ -2398,7 +2398,7 @@
         if (!currentImportanceData && typeof loadImportanceScores === 'function') loadImportanceScores(0);
         if (!currentEnergyData && typeof loadEnergyDistribution === 'function') loadEnergyDistribution(false);
         if (!currentPminData && typeof runPminBinarySearch === 'function') runPminBinarySearch();
-        if (typeof loadAndRenderParetoFrontier === 'function') loadAndRenderParetoFrontier();
+        if (typeof loadAndRenderParetoFrontier === 'function') loadAndRenderParetoFrontier(currentBenchmark);
       } else if (tabId === 'tab-scope') {
         // Tab 3 Paper Models reference
       } else if (tabId === 'tab-faq') {
@@ -3334,6 +3334,7 @@
         loadImportanceScores(0),
         loadEnergyDistribution(false),
         runPminBinarySearch(),
+        loadAndRenderParetoFrontier(currentBenchmark),
       ]);
     } catch (err) {
       console.error('Failed to reload all benchmark data:', err);
@@ -4328,15 +4329,27 @@
   /* --- STEP 4: PARETO FRONTIER VISUALIZATION (PAPER FIG. 2 - ROUND 100) --- */
   let paretoChartInstance = null;
 
-  async function loadAndRenderParetoFrontier() {
+  async function loadAndRenderParetoFrontier(benchmarkId = currentBenchmark || 'cifar10') {
     try {
+      const benchmark = benchmarkId || 'cifar10';
+      const bMeta = (typeof benchmarksCatalog !== 'undefined' && benchmarksCatalog && benchmarksCatalog.benchmarks && benchmarksCatalog.benchmarks[benchmark]) || (typeof LOCAL_BENCHMARKS !== 'undefined' && LOCAL_BENCHMARKS[benchmark]) || {};
+      
+      const defaultPMin = benchmark === 'fmnist' ? 334168 : 532443;
+      const defaultSparsity = benchmark === 'fmnist' ? 79.91 : 75.31;
+      const defaultTotal = benchmark === 'fmnist' ? 1663370 : 2156490;
+      const modelDisplayName = bMeta.name ? `${bMeta.name} (${bMeta.model_name || 'CNN'}, ${bMeta.m_formatted || (bMeta.total_parameters ? (bMeta.total_parameters/1e6).toFixed(2)+'M' : '')})` : (benchmark === 'fmnist' ? 'Fashion-MNIST (FMNISTCNN, 1.65M)' : 'CIFAR-10 ConvNet (2.15M)');
+
+      if ($('pareto-benchmark-tag')) {
+        $('pareto-benchmark-tag').textContent = modelDisplayName;
+      }
+
       const [resEnergy, resPmin] = await Promise.all([
-        fetch('/api/v1/toppaper/energy-distribution?benchmark=cifar10&round_num=100'),
-        fetch('/api/v1/toppaper/binary-search-pmin?benchmark=cifar10&round_num=100&theta=0.80')
+        fetch(`/api/v1/toppaper/energy-distribution?benchmark=${benchmark}&round_num=100`),
+        fetch(`/api/v1/toppaper/binary-search-pmin?benchmark=${benchmark}&round_num=100&theta=0.80`)
       ]);
 
       if (!resEnergy.ok || !resPmin.ok) {
-        console.warn('Could not load Pareto frontier data');
+        console.warn('Could not load Pareto frontier data for', benchmark);
         return;
       }
 
@@ -4344,12 +4357,12 @@
       const dataPmin = await resPmin.json();
 
       const curvePoints = dataEnergy.curve_points || [];
-      const pMin = dataPmin.p_min || 532443;
-      const sparsityPct = dataPmin.sparsity_percentage || 75.31;
-      const achievedCosine = dataPmin.achieved_cosine || 0.8000;
-      const totalParams = dataPmin.total_parameters || 2156490;
+      const pMin = dataPmin.p_min !== undefined ? dataPmin.p_min : defaultPMin;
+      const sparsityPct = dataPmin.sparsity_percentage !== undefined ? dataPmin.sparsity_percentage : defaultSparsity;
+      const achievedCosine = dataPmin.achieved_cosine !== undefined ? dataPmin.achieved_cosine : 0.8000;
+      const totalParams = dataPmin.total_parameters || bMeta.total_parameters || defaultTotal;
       const retainedRatio = pMin / totalParams;
-      const tradeOffEfficiency = (achievedCosine / (retainedRatio || 0.2469)).toFixed(2);
+      const tradeOffEfficiency = (achievedCosine / (retainedRatio || 0.20)).toFixed(2);
 
       // Update KPI Badges
       if ($('pareto-kpi-budget')) $('pareto-kpi-budget').textContent = `${pMin.toLocaleString()} (${(retainedRatio * 100).toFixed(2)}%)`;
@@ -4357,13 +4370,13 @@
       if ($('pareto-kpi-cosine')) $('pareto-kpi-cosine').textContent = achievedCosine.toFixed(4);
       if ($('pareto-kpi-efficiency')) $('pareto-kpi-efficiency').textContent = `${tradeOffEfficiency}×`;
 
-      renderParetoFrontierChart(curvePoints, pMin, sparsityPct, achievedCosine, totalParams);
+      renderParetoFrontierChart(curvePoints, pMin, sparsityPct, achievedCosine, totalParams, modelDisplayName);
     } catch (err) {
       console.error('Failed to load Pareto frontier:', err);
     }
   }
 
-  function renderParetoFrontierChart(curvePoints, pMin = 532443, sparsityPct = 75.31, achievedCosine = 0.8000, totalParams = 2156490) {
+  function renderParetoFrontierChart(curvePoints, pMin = 532443, sparsityPct = 75.31, achievedCosine = 0.8000, totalParams = 2156490, modelDisplayName = 'CIFAR-10 ConvNet (2.15M)') {
     const canvas = $('chart-pareto-cifar10');
     if (!canvas || typeof Chart === 'undefined') return;
 
@@ -4391,7 +4404,7 @@
       data: {
         datasets: [
           {
-            label: 'CIFAR-10 ConvNet (Round 100)',
+            label: `${modelDisplayName} (Round 100)`,
             data: pts.map(pt => ({ x: Math.round(pt.x * 10000) / 10000, y: pt.y })),
             showLine: true,
             borderColor: '#2563eb', // brand blue matching Fig. 2
@@ -4464,6 +4477,9 @@
                 if (context.datasetIndex === 0) {
                   return `Sparsification Ratio: ${xPct}% | Directional Cosine: ${yCos}`;
                 }
+                if (context.datasetIndex === 2) {
+                  return `Optimal Knee: Sparsification ${xPct}% | Cosine: ${yCos} (P* = ${pMin.toLocaleString()})`;
+                }
                 return `${context.dataset.label}: (${xPct}%, ${yCos})`;
               }
             }
@@ -4531,7 +4547,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         if (typeof loadAndRenderParetoFrontier === 'function') {
-          loadAndRenderParetoFrontier();
+          loadAndRenderParetoFrontier(currentBenchmark);
         }
       }, 300);
     });

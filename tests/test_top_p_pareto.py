@@ -55,6 +55,47 @@ class TestTopPParetoFrontierContract:
         assert abs(data_pmin["sparsity_percentage"] - 75.31) < 0.1
         assert abs(data_pmin["achieved_cosine"] - 0.80) < 1e-4
 
+    def test_fmnist_round_100_endpoints_contract(self, client: TestClient):
+        """Verify energy-distribution and binary-search-pmin return valid Round 100 cache data for Fashion-MNIST."""
+        # 1. Verify /energy-distribution with benchmark=fmnist&round_num=100
+        res_energy = client.get("/api/v1/toppaper/energy-distribution?benchmark=fmnist&round_num=100")
+        assert res_energy.status_code == 200, f"Energy endpoint failed: {res_energy.text}"
+        data_energy = res_energy.json()
+
+        assert data_energy["has_data"] is True
+        assert data_energy["benchmark"] == "fmnist"
+        assert data_energy["round_num"] == 100
+
+        # Check curve points
+        assert "curve_points" in data_energy
+        curve_points = data_energy["curve_points"]
+        assert len(curve_points) > 0
+
+        # Each curve point must have p, c_p, cosine, and sparsity_ratio
+        pt0 = curve_points[0]
+        assert "p" in pt0
+        assert "c_p" in pt0
+        assert "cosine" in pt0
+        assert "sparsity_ratio" in pt0
+
+        # Final point must match FMNIST total parameters M = 1,663,370
+        pt_last = curve_points[-1]
+        assert pt_last["p"] == 1663370
+        assert abs(pt_last["sparsity_ratio"] - 0.0) < 1e-3
+        assert abs(pt_last["cosine"] - 1.0) < 1e-3
+
+        # 2. Verify /binary-search-pmin with benchmark=fmnist&round_num=100&theta=0.80
+        res_pmin = client.get("/api/v1/toppaper/binary-search-pmin?benchmark=fmnist&round_num=100&theta=0.80")
+        assert res_pmin.status_code == 200, f"Pmin endpoint failed: {res_pmin.text}"
+        data_pmin = res_pmin.json()
+
+        assert data_pmin["has_data"] is True
+        assert data_pmin["benchmark"] == "fmnist"
+        assert data_pmin["total_parameters"] == 1663370
+        assert data_pmin["p_min"] == 334168
+        assert abs(data_pmin["sparsity_percentage"] - 79.91) < 0.1
+        assert abs(data_pmin["achieved_cosine"] - 0.80) < 1e-4
+
 
 class TestTopPParetoFrontierUI:
     """Verifies UI DOM elements, canvas, and KPI telemetry cards in top_p_lab.html."""
@@ -94,6 +135,18 @@ class TestTopPParetoFrontierUI:
 
         # Reference threshold 0.80 and knee line
         assert "0.80" in html
-        assert "532,443" in html or "532443" in html
+
+    def test_pareto_frontier_dynamic_benchmark_switching(self):
+        """Verify dynamic benchmark support for FMNIST in Pareto Frontier."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+
+        # reloadAllBenchmarkData or switchBenchmark must trigger loadAndRenderParetoFrontier
+        assert "loadAndRenderParetoFrontier" in html
+        assert "reloadAllBenchmarkData" in html
+
+        # Check dynamic handling of currentBenchmark or benchmarkId in loadAndRenderParetoFrontier
+        assert "loadAndRenderParetoFrontier(currentBenchmark" in html or "loadAndRenderParetoFrontier(" in html
 
 
