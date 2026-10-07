@@ -4334,10 +4334,10 @@
       const benchmark = benchmarkId || 'cifar10';
       const bMeta = (typeof benchmarksCatalog !== 'undefined' && benchmarksCatalog && benchmarksCatalog.benchmarks && benchmarksCatalog.benchmarks[benchmark]) || (typeof LOCAL_BENCHMARKS !== 'undefined' && LOCAL_BENCHMARKS[benchmark]) || {};
       
-      const defaultPMin = benchmark === 'fmnist' ? 334168 : 532443;
-      const defaultSparsity = benchmark === 'fmnist' ? 79.91 : 75.31;
-      const defaultTotal = benchmark === 'fmnist' ? 1663370 : 2156490;
-      const modelDisplayName = bMeta.name ? `${bMeta.name} (${bMeta.model_name || 'CNN'}, ${bMeta.m_formatted || (bMeta.total_parameters ? (bMeta.total_parameters/1e6).toFixed(2)+'M' : '')})` : (benchmark === 'fmnist' ? 'Fashion-MNIST (FMNISTCNN, 1.65M)' : 'CIFAR-10 ConvNet (2.15M)');
+      const defaultPMin = benchmark === 'fmnist' ? 334168 : (benchmark === 'tiny_imagenet' ? 648206 : 532443);
+      const defaultSparsity = benchmark === 'fmnist' ? 79.91 : (benchmark === 'tiny_imagenet' ? 94.25 : 75.31);
+      const defaultTotal = benchmark === 'fmnist' ? 1663370 : (benchmark === 'tiny_imagenet' ? 11271432 : 2156490);
+      const modelDisplayName = bMeta.name ? `${bMeta.name} (${bMeta.model_name || 'CNN'}, ${bMeta.m_formatted || (bMeta.total_parameters ? (bMeta.total_parameters/1e6).toFixed(2)+'M' : '')})` : (benchmark === 'tiny_imagenet' ? 'Tiny-ImageNet (ResNet-18, 11.27M)' : (benchmark === 'fmnist' ? 'Fashion-MNIST (FMNISTCNN, 1.65M)' : 'CIFAR-10 ConvNet (2.15M)'));
 
       if ($('pareto-benchmark-tag')) {
         $('pareto-benchmark-tag').textContent = modelDisplayName;
@@ -4362,7 +4362,7 @@
       const achievedCosine = dataPmin.achieved_cosine !== undefined ? dataPmin.achieved_cosine : 0.8000;
       const totalParams = dataPmin.total_parameters || bMeta.total_parameters || defaultTotal;
       const retainedRatio = pMin / totalParams;
-      const tradeOffEfficiency = (achievedCosine / (retainedRatio || 0.20)).toFixed(2);
+      const tradeOffEfficiency = (achievedCosine / (retainedRatio || 0.0575)).toFixed(2);
 
       // Update KPI Badges
       if ($('pareto-kpi-budget')) $('pareto-kpi-budget').textContent = `${pMin.toLocaleString()} (${(retainedRatio * 100).toFixed(2)}%)`;
@@ -4370,13 +4370,13 @@
       if ($('pareto-kpi-cosine')) $('pareto-kpi-cosine').textContent = achievedCosine.toFixed(4);
       if ($('pareto-kpi-efficiency')) $('pareto-kpi-efficiency').textContent = `${tradeOffEfficiency}×`;
 
-      renderParetoFrontierChart(curvePoints, pMin, sparsityPct, achievedCosine, totalParams, modelDisplayName);
+      renderParetoFrontierChart(curvePoints, pMin, sparsityPct, achievedCosine, totalParams, modelDisplayName, benchmark);
     } catch (err) {
       console.error('Failed to load Pareto frontier:', err);
     }
   }
 
-  function renderParetoFrontierChart(curvePoints, pMin = 532443, sparsityPct = 75.31, achievedCosine = 0.8000, totalParams = 2156490, modelDisplayName = 'CIFAR-10 ConvNet (2.15M)') {
+  function renderParetoFrontierChart(curvePoints, pMin = 532443, sparsityPct = 75.31, achievedCosine = 0.8000, totalParams = 2156490, modelDisplayName = 'CIFAR-10 ConvNet (2.15M)', benchmark = 'cifar10') {
     const canvas = $('chart-pareto-cifar10');
     if (!canvas || typeof Chart === 'undefined') return;
 
@@ -4398,6 +4398,14 @@
 
     const kneeSparsity = Math.round((sparsityPct / 100.0) * 10000) / 10000;
 
+    // ResNet-18 specific styling (black solid line with diamond / rectRot markers matching Paper Fig. 2)
+    const isResNet = benchmark === 'tiny_imagenet';
+    const curveColor = isResNet ? '#0f172a' : '#2563eb';
+    const curveBgColor = isResNet ? 'rgba(15, 23, 42, 0.08)' : 'rgba(37, 99, 235, 0.08)';
+    const pointShape = isResNet ? 'rectRot' : 'circle';
+    const pointSize = isResNet ? 4.5 : 3.5;
+    const pointHoverSize = isResNet ? 7 : 6;
+
     const ctx = canvas.getContext('2d');
     paretoChartInstance = new Chart(ctx, {
       type: 'scatter',
@@ -4407,13 +4415,14 @@
             label: `${modelDisplayName} (Round 100)`,
             data: pts.map(pt => ({ x: Math.round(pt.x * 10000) / 10000, y: pt.y })),
             showLine: true,
-            borderColor: '#2563eb', // brand blue matching Fig. 2
-            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+            borderColor: curveColor,
+            backgroundColor: curveBgColor,
             fill: true,
             borderWidth: 2.5,
-            pointRadius: 3.5,
-            pointHoverRadius: 6,
-            pointBackgroundColor: '#2563eb',
+            pointRadius: pointSize,
+            pointHoverRadius: pointHoverSize,
+            pointStyle: pointShape,
+            pointBackgroundColor: curveColor,
             pointBorderColor: '#ffffff',
             pointBorderWidth: 1.5,
             tension: 0.15,

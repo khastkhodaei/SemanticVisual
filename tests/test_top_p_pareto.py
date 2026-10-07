@@ -96,6 +96,50 @@ class TestTopPParetoFrontierContract:
         assert abs(data_pmin["sparsity_percentage"] - 79.91) < 0.1
         assert abs(data_pmin["achieved_cosine"] - 0.80) < 1e-4
 
+    def test_tiny_imagenet_round_100_endpoints_contract(self, client: TestClient):
+        """Verify energy-distribution and binary-search-pmin return valid Round 100 cache data for Tiny-ImageNet (ResNet-18, 11.27M)."""
+        # 1. Verify /energy-distribution with benchmark=tiny_imagenet&round_num=100
+        res_energy = client.get("/api/v1/toppaper/energy-distribution?benchmark=tiny_imagenet&round_num=100")
+        assert res_energy.status_code == 200, f"Energy endpoint failed: {res_energy.text}"
+        data_energy = res_energy.json()
+
+        assert data_energy["has_data"] is True
+        assert data_energy["benchmark"] == "tiny_imagenet"
+        assert data_energy["round_num"] == 100
+
+        # Check curve points
+        assert "curve_points" in data_energy
+        curve_points = data_energy["curve_points"]
+        assert len(curve_points) > 0
+
+        # Each curve point must have p, c_p, cosine, and sparsity_ratio
+        pt0 = curve_points[0]
+        assert "p" in pt0
+        assert "c_p" in pt0
+        assert "cosine" in pt0
+        assert "sparsity_ratio" in pt0
+
+        # Final point must match Tiny-ImageNet ResNet-18 total parameters M = 11,271,432
+        pt_last = curve_points[-1]
+        assert pt_last["p"] == 11271432
+        assert abs(pt_last["sparsity_ratio"] - 0.0) < 1e-3
+        assert abs(pt_last["cosine"] - 1.0) < 1e-3
+
+        # 2. Verify /binary-search-pmin with benchmark=tiny_imagenet&round_num=100&theta=0.80
+        res_pmin = client.get("/api/v1/toppaper/binary-search-pmin?benchmark=tiny_imagenet&round_num=100&theta=0.80")
+        assert res_pmin.status_code == 200, f"Pmin endpoint failed: {res_pmin.text}"
+        data_pmin = res_pmin.json()
+
+        assert data_pmin["has_data"] is True
+        assert data_pmin["benchmark"] == "tiny_imagenet"
+        assert data_pmin["total_parameters"] == 11271432
+        assert data_pmin["p_min"] == 648206
+        # Sparsification ratio must be ~94.25% (5.75% retained parameters)
+        assert abs(data_pmin["sparsity_percentage"] - 94.25) < 0.1
+        retained_pct = (data_pmin["p_min"] / data_pmin["total_parameters"]) * 100.0
+        assert abs(retained_pct - 5.75) < 0.1
+        assert abs(data_pmin["achieved_cosine"] - 0.80) < 1e-4
+
 
 class TestTopPParetoFrontierUI:
     """Verifies UI DOM elements, canvas, and KPI telemetry cards in top_p_lab.html."""
@@ -137,7 +181,7 @@ class TestTopPParetoFrontierUI:
         assert "0.80" in html
 
     def test_pareto_frontier_dynamic_benchmark_switching(self):
-        """Verify dynamic benchmark support for FMNIST in Pareto Frontier."""
+        """Verify dynamic benchmark support for FMNIST and Tiny-ImageNet in Pareto Frontier."""
         html_path = "frontend/static/top_p_lab.html"
         with open(html_path, "r", encoding="utf-8") as f:
             html = f.read()
@@ -148,5 +192,15 @@ class TestTopPParetoFrontierUI:
 
         # Check dynamic handling of currentBenchmark or benchmarkId in loadAndRenderParetoFrontier
         assert "loadAndRenderParetoFrontier(currentBenchmark" in html or "loadAndRenderParetoFrontier(" in html
+
+    def test_tiny_imagenet_pareto_styling_diamond_markers(self):
+        """Verify ResNet-18 specific styling (black solid line with diamond / rectRot markers matching paper Fig. 2)."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+
+        # ResNet-18 diamond marker (rectRot in Chart.js) and black/dark styling
+        assert "rectRot" in html or "diamond" in html
+        assert "#0f172a" in html or "#000000" in html or "#1e293b" in html
 
 
