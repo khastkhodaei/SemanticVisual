@@ -202,3 +202,17 @@ class TestTopPCNNTrainingUIPresets:
                 f'Field id="{field_id}" missing attribute {attr!r}. '
                 f'Snippet: {snippet!r}'
             )
+
+    def test_top_magnitude_panel_redundancy_cleanup(self):
+        """Verify the redundant static top magnitude panel, badge, tbody, and button are removed from Tab 2."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html_content = f.read()
+
+        assert 'id="cnn-sec-topmagnitude"' not in html_content
+        assert 'id="cnn-filter-top"' not in html_content
+        assert 'id="cnn-top-tbody"' not in html_content
+        assert 'id="cnn-top-badge"' not in html_content
+        assert "All Slices (Head + Tail)" in html_content
+        assert "All Slices (Head + Tail + Top-K)" not in html_content
+

@@ -443,10 +443,9 @@
         <div class="flex items-center justify-between flex-wrap gap-2.5">
           <div class="flex items-center gap-1.5 flex-wrap">
             <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1">Display Mode:</span>
-            <button id="cnn-filter-all" type="button" class="pill active" onclick="switchCnnView('all', this)">🌐 All Slices (Head + Tail + Top-K)</button>
+            <button id="cnn-filter-all" type="button" class="pill active" onclick="switchCnnView('all', this)">🌐 All Slices (Head + Tail)</button>
             <button id="cnn-filter-head" type="button" class="pill" onclick="switchCnnView('head', this)">◀ First 15 (<span id="cnn-filter-head-label">Head</span>)</button>
             <button id="cnn-filter-tail" type="button" class="pill" onclick="switchCnnView('tail', this)">▶ Last 15 (<span id="cnn-filter-tail-label">Tail</span>)</button>
-            <button id="cnn-filter-top" type="button" class="pill" onclick="switchCnnView('top', this)">⭐ Top 20 Magnitude</button>
           </div>
           <div class="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-md border border-slate-200 text-xs">
             <label class="flex items-center gap-1.5 border-r border-slate-300 pr-2 mr-1">
@@ -873,33 +872,6 @@
         </div>
       </div>
 
-      <!-- TOP ABSOLUTE MAGNITUDE PANEL -->
-      <div id="cnn-sec-topmagnitude" class="paper-panel">
-        <div class="panel-header">
-          <span class="panel-title text-amber-900"><span>⭐</span><span>Top Absolute Magnitude Parameters (Highest Importance)</span></span>
-          <span class="tag-paper bg-amber-50 text-amber-800 border-amber-200" id="cnn-top-badge">Top 20 Coordinates</span>
-        </div>
-        <p class="text-xs text-slate-600 font-sans mb-3">
-          These coordinates possess the highest absolute numerical values in the network and are the prime candidates selected by the Top-$P$ signature algorithm ($I = \operatorname{argtop}_P(s)$):
-        </p>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th class="sticky-col text-left">Rank</th>
-                <th class="text-left">Global Flat Index</th>
-                <th class="text-left">Origin Layer</th>
-                <th class="text-right">Float32 Value</th>
-                <th class="text-right">Absolute Magnitude $|w_i|$</th>
-                <th class="text-center">Relative Strength</th>
-              </tr>
-            </thead>
-            <tbody id="cnn-top-tbody">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
-        </div>
-      </div>
 
     </div>
 
@@ -3567,7 +3539,6 @@
     // 1. Update KPIs
     if ($('cnn-kpi-total')) $('cnn-kpi-total').textContent = data.total_parameters.toLocaleString();
     if ($('cnn-kpi-norm')) $('cnn-kpi-norm').textContent = data.l2_norm.toFixed(4);
-    if ($('cnn-top-badge')) $('cnn-top-badge').textContent = `Top ${data.slices.top_magnitude.length} Magnitude Coordinates`;
 
     // 2. Render Layer Progress Bar & Table
     const layerBar = $('cnn-layer-bar');
@@ -3606,7 +3577,6 @@
     // Find max absolute value for normalization of magnitude bars
     const maxValHead = Math.max(...data.slices.head.map(x => x.abs_value), 0.001);
     const maxValTail = Math.max(...data.slices.tail.map(x => x.abs_value), 0.001);
-    const maxValTop = Math.max(...data.slices.top_magnitude.map(x => x.abs_value), 0.001);
 
     // 3. Render Head Tiles
     const headGrid = $('cnn-head-grid');
@@ -3664,36 +3634,7 @@
       }).join('');
     }
 
-    // 5. Render Top Magnitude Table
-    const topTbody = $('cnn-top-tbody');
-    if (topTbody) {
-      topTbody.innerHTML = data.slices.top_magnitude.map((item, idx) => {
-        const style = getLayerStyle(item.layer);
-        const isPos = item.value >= 0;
-        const pct = Math.min(100, Math.round((item.abs_value / maxValTop) * 100));
-        const barColor = isPos ? 'bg-emerald-500' : 'bg-rose-500';
-        return `
-          <tr>
-            <td class="sticky-col font-mono font-bold text-slate-700">#${idx + 1}</td>
-            <td class="text-left font-mono font-semibold text-blue-800">#${item.index.toLocaleString()}</td>
-            <td class="text-left">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono ${style.bg} ${style.text} border ${style.border}">
-                ${item.layer}
-              </span>
-            </td>
-            <td class="text-right font-mono font-extrabold ${isPos ? 'text-emerald-700' : 'text-rose-700'}">
-              ${item.value >= 0 ? '+' : ''}${item.value.toFixed(6)}
-            </td>
-            <td class="text-right font-mono font-bold text-slate-900">${item.abs_value.toFixed(6)}</td>
-            <td class="text-center">
-              <div class="w-24 mx-auto bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                <div class="${barColor} h-1.5 rounded-full" style="width: ${pct}%"></div>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
+
   }
 
   let currentImportanceOffset = 0;
@@ -3899,30 +3840,21 @@
     if (btn) btn.classList.add('active');
 
     const dualSec = $('cnn-sec-dualslice');
-    const topSec = $('cnn-sec-topmagnitude');
     const importanceSec = $('importance-panel');
     const energySec = $('energy-panel');
     const pminSec = $('pmin-panel');
-    if (!dualSec || !topSec) return;
+    if (!dualSec) return;
 
     if (mode === 'all') {
       dualSec.style.display = 'grid';
-      topSec.style.display = 'block';
       if (importanceSec) importanceSec.style.display = 'block';
       if (energySec) energySec.style.display = 'block';
       if (pminSec) pminSec.style.display = 'block';
     } else if (mode === 'head' || mode === 'tail') {
       dualSec.style.display = 'grid';
-      topSec.style.display = 'none';
       if (importanceSec) importanceSec.style.display = 'none';
       if (energySec) energySec.style.display = 'none';
       if (pminSec) pminSec.style.display = 'none';
-    } else if (mode === 'top') {
-      dualSec.style.display = 'none';
-      topSec.style.display = 'block';
-      if (importanceSec) importanceSec.style.display = 'block';
-      if (energySec) energySec.style.display = 'block';
-      if (pminSec) pminSec.style.display = 'block';
     }
   }
 
