@@ -886,7 +886,11 @@
                 Optimal trade-off envelope: Directional cosine similarity $\cos(w, w^{[P]})$ as a function of pruned parameters $(1 - P/M)$ at Round 100.
               </p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
+              <button type="button" id="btn-pareto-overlay" onclick="toggleParetoOverlayMode()" class="px-2.5 py-1 text-xs font-mono font-semibold rounded-md border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs">
+                <span>📊</span>
+                <span id="btn-pareto-overlay-text">Overlay All 5 Benchmarks (Paper Fig. 2 Replica)</span>
+              </button>
               <span class="tag-paper text-[10px] font-mono bg-emerald-50 text-emerald-700 border-emerald-200" id="pareto-status-pill">Round 100 Verified</span>
             </div>
           </div>
@@ -3256,6 +3260,10 @@
   async function switchBenchmark(benchmarkId) {
     if (!benchmarkId) return;
     currentBenchmark = benchmarkId;
+    paretoOverlayMode = false;
+    const overlayBtn = $('btn-pareto-overlay');
+    if (overlayBtn) overlayBtn.className = 'px-2.5 py-1 text-xs font-mono font-semibold rounded-md border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs';
+    if ($('btn-pareto-overlay-text')) $('btn-pareto-overlay-text').textContent = 'Overlay All 5 Benchmarks (Paper Fig. 2 Replica)';
 
     // Update active pill styling
     document.querySelectorAll('.benchmark-pill').forEach(btn => {
@@ -4334,16 +4342,16 @@
       const benchmark = benchmarkId || 'cifar10';
       const bMeta = (typeof benchmarksCatalog !== 'undefined' && benchmarksCatalog && benchmarksCatalog.benchmarks && benchmarksCatalog.benchmarks[benchmark]) || (typeof LOCAL_BENCHMARKS !== 'undefined' && LOCAL_BENCHMARKS[benchmark]) || {};
       
-      const defaultPMin = benchmark === 'fmnist' ? 334168 : (benchmark === 'tiny_imagenet' ? 648206 : (benchmark === 'speech' ? 629734 : 532443));
-      const defaultSparsity = benchmark === 'fmnist' ? 79.91 : (benchmark === 'tiny_imagenet' ? 94.25 : (benchmark === 'speech' ? 94.36 : 75.31));
-      const defaultTotal = benchmark === 'fmnist' ? 1663370 : (benchmark === 'tiny_imagenet' ? 11271432 : (benchmark === 'speech' ? 11172810 : 2156490));
-      const modelDisplayName = bMeta.name ? `${bMeta.name} (${bMeta.model_name || 'CNN'}, ${bMeta.m_formatted || (bMeta.total_parameters ? (bMeta.total_parameters/1e6).toFixed(2)+'M' : '')})` : (benchmark === 'tiny_imagenet' ? 'Tiny-ImageNet (ResNet-18, 11.27M)' : (benchmark === 'speech' ? 'Google Speech (ResNet-18, 11.17M)' : (benchmark === 'fmnist' ? 'Fashion-MNIST (FMNISTCNN, 1.65M)' : 'CIFAR-10 ConvNet (2.15M)')));
+      const defaultPMin = benchmark === 'fmnist' ? 334168 : (benchmark === 'tiny_imagenet' ? 648206 : (benchmark === 'speech' ? 629734 : (benchmark === '20news' ? 1511150 : 532443)));
+      const defaultSparsity = benchmark === 'fmnist' ? 79.91 : (benchmark === 'tiny_imagenet' ? 94.25 : (benchmark === 'speech' ? 94.36 : (benchmark === '20news' ? 87.08 : 75.31)));
+      const defaultTotal = benchmark === 'fmnist' ? 1663370 : (benchmark === 'tiny_imagenet' ? 11271432 : (benchmark === 'speech' ? 11172810 : (benchmark === '20news' ? 11698964 : 2156490)));
+      const modelDisplayName = bMeta.name ? `${bMeta.name} (${bMeta.model_name || 'CNN'}, ${bMeta.m_formatted || (bMeta.total_parameters ? (bMeta.total_parameters/1e6).toFixed(2)+'M' : '')})` : (benchmark === '20news' ? '20Newsgroups (ALBERT, 11.68M)' : (benchmark === 'tiny_imagenet' ? 'Tiny-ImageNet (ResNet-18, 11.27M)' : (benchmark === 'speech' ? 'Google Speech (ResNet-18, 11.17M)' : (benchmark === 'fmnist' ? 'Fashion-MNIST (FMNISTCNN, 1.65M)' : 'CIFAR-10 ConvNet (2.15M)'))));
 
       if ($('pareto-benchmark-tag')) {
         $('pareto-benchmark-tag').textContent = modelDisplayName;
       }
       if ($('pareto-card-desc')) {
-        const mod = bMeta.modality ? ` [${bMeta.modality}]` : (benchmark === 'speech' ? ' [Audio]' : '');
+        const mod = bMeta.modality ? ` [${bMeta.modality}]` : (benchmark === 'speech' ? ' [Audio]' : (benchmark === '20news' ? ' [NLP]' : ''));
         $('pareto-card-desc').innerHTML = `Optimal trade-off envelope: Directional cosine similarity $\\cos(w, w^{[P]})$ as a function of pruned parameters $(1 - P/M)$ for <strong>${bMeta.name || modelDisplayName}</strong>${mod} at Round 100.`;
         if (window.renderMathInElement) {
           renderMathInElement($('pareto-card-desc'), {
@@ -4416,6 +4424,7 @@
     // Benchmark specific styling matching Paper Fig. 2 convention:
     const isTiny = benchmark === 'tiny_imagenet';
     const isSpeech = benchmark === 'speech';
+    const is20News = benchmark === '20news';
     let curveColor = '#2563eb';
     let curveBgColor = 'rgba(37, 99, 235, 0.08)';
     let pointShape = 'circle';
@@ -4436,6 +4445,13 @@
       pointShape = 'triangle';
       pointSize = 4.5;
       pointHoverSize = 7;
+    } else if (is20News) {
+      // 20Newsgroups ALBERT NLP: amber/gold line with star markers
+      curveColor = '#d97706';
+      curveBgColor = 'rgba(217, 119, 6, 0.08)';
+      pointShape = 'star';
+      pointSize = 5;
+      pointHoverSize = 7.5;
     }
 
     const ctx = canvas.getContext('2d');
@@ -4582,6 +4598,200 @@
         }
       }
     });
+  }
+
+  /* --- PAPER FIG. 2 COMBINED 5-MODEL OVERLAY MODE --- */
+  let paretoOverlayMode = false;
+
+  function toggleParetoOverlayMode() {
+    paretoOverlayMode = !paretoOverlayMode;
+    const btn = $('btn-pareto-overlay');
+    const btnText = $('btn-pareto-overlay-text');
+    if (paretoOverlayMode) {
+      if (btn) btn.className = 'px-2.5 py-1 text-xs font-mono font-bold rounded-md border border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700 transition-all cursor-pointer flex items-center gap-1.5 shadow-xs';
+      if (btnText) btnText.textContent = 'Active: 5-Model Overlay (Click to Reset)';
+      loadAndRenderAllParetoFrontiersOverlay();
+    } else {
+      if (btn) btn.className = 'px-2.5 py-1 text-xs font-mono font-semibold rounded-md border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs';
+      if (btnText) btnText.textContent = 'Overlay All 5 Benchmarks (Paper Fig. 2 Replica)';
+      loadAndRenderParetoFrontier(currentBenchmark);
+    }
+  }
+
+  async function loadAndRenderAllParetoFrontiersOverlay() {
+    const canvas = $('chart-pareto-cifar10');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    if ($('pareto-benchmark-tag')) {
+      $('pareto-benchmark-tag').textContent = 'Paper Fig. 2 — All 5 Benchmarks Overlay';
+    }
+    if ($('pareto-card-desc')) {
+      $('pareto-card-desc').innerHTML = `Direct replica of <strong>Paper Fig. 2</strong>: Model directional fidelity $\\cos(w, w^{[P]})$ as a function of pruned parameters $(1 - P/M)$ across all 5 benchmark modalities (Vision, Audio, NLP) at Round 100.`;
+      if (window.renderMathInElement) {
+        renderMathInElement($('pareto-card-desc'), {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
+          ],
+          throwOnError: false
+        });
+      }
+    }
+
+    const benchmarkConfigs = [
+      { id: 'cifar10', label: 'CIFAR-10 (CNN, 2.15M)', color: '#2563eb', shape: 'circle', size: 3.5, total: 2156490 },
+      { id: 'fmnist', label: 'Fashion-MNIST (CNN, 1.65M)', color: '#0284c7', shape: 'circle', size: 3.5, total: 1663370 },
+      { id: 'tiny_imagenet', label: 'Tiny-ImageNet (ResNet-18, 11.27M)', color: '#0f172a', shape: 'rectRot', size: 4.5, total: 11271432 },
+      { id: 'speech', label: 'Google Speech (ResNet-18, 11.17M)', color: '#7c3aed', shape: 'triangle', size: 4.5, total: 11172810 },
+      { id: '20news', label: '20Newsgroup (ALBERT, 11.68M)', color: '#d97706', shape: 'star', size: 5, total: 11698964 }
+    ];
+
+    try {
+      const results = await Promise.all(
+        benchmarkConfigs.map(cfg =>
+          Promise.all([
+            fetch(`/api/v1/toppaper/energy-distribution?benchmark=${cfg.id}&round_num=100`).then(r => r.json()),
+            fetch(`/api/v1/toppaper/binary-search-pmin?benchmark=${cfg.id}&round_num=100&theta=0.80`).then(r => r.json())
+          ]).catch(err => {
+            console.warn('Failed loading overlay data for', cfg.id, err);
+            return [null, null];
+          })
+        )
+      );
+
+      if (paretoChartInstance) {
+        paretoChartInstance.destroy();
+      }
+
+      const datasets = [];
+
+      // 1. Reference Threshold line tau_min = 0.80
+      datasets.push({
+        label: 'Reference Threshold (τ_min = 0.80)',
+        data: [{ x: 0.0, y: 0.80 }, { x: 1.0, y: 0.80 }],
+        showLine: true,
+        borderColor: '#dc2626',
+        borderWidth: 1.8,
+        borderDash: [6, 4],
+        pointRadius: 0,
+        fill: false,
+        order: 1
+      });
+
+      // 2. Add each of the 5 curves
+      results.forEach((pair, idx) => {
+        const [dataEnergy, dataPmin] = pair;
+        const cfg = benchmarkConfigs[idx];
+        if (!dataEnergy || !dataEnergy.curve_points) return;
+
+        const totalParams = (dataPmin && dataPmin.total_parameters) || cfg.total;
+        let pts = dataEnergy.curve_points.map(pt => ({
+          x: pt.sparsity_ratio !== undefined ? pt.sparsity_ratio : (1.0 - (pt.p / totalParams)),
+          y: pt.cosine,
+          p: pt.p
+        })).sort((a, b) => a.x - b.x);
+
+        if (pts.length === 0 || pts[0].x > 0.01) {
+          pts.unshift({ x: 0.0, y: 1.0, p: totalParams });
+        }
+
+        datasets.push({
+          label: cfg.label,
+          data: pts.map(pt => ({ x: Math.round(pt.x * 10000) / 10000, y: pt.y })),
+          showLine: true,
+          borderColor: cfg.color,
+          backgroundColor: 'transparent',
+          borderWidth: 2.2,
+          pointRadius: cfg.size,
+          pointHoverRadius: cfg.size + 2.5,
+          pointStyle: cfg.shape,
+          pointBackgroundColor: cfg.color,
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 1.2,
+          tension: 0.15,
+          order: 2 + idx
+        });
+      });
+
+      // Update KPI Badges for Overlay Mode
+      if ($('pareto-kpi-budget')) $('pareto-kpi-budget').textContent = '5 Architectures';
+      if ($('pareto-kpi-reduction')) $('pareto-kpi-reduction').textContent = '75.3% – 94.4%';
+      if ($('pareto-kpi-cosine')) $('pareto-kpi-cosine').textContent = '≥ 0.8000';
+      if ($('pareto-kpi-efficiency')) $('pareto-kpi-efficiency').textContent = '3.2× – 14.2×';
+
+      const ctx = canvas.getContext('2d');
+      paretoChartInstance = new Chart(ctx, {
+        type: 'scatter',
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 400 },
+          interaction: { mode: 'nearest', intersect: false },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                boxWidth: 12,
+                boxHeight: 3,
+                font: { family: 'JetBrains Mono, monospace', size: 10 },
+                usePointStyle: true
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const xPct = (context.parsed.x * 100).toFixed(2);
+                  const yCos = context.parsed.y.toFixed(4);
+                  if (context.dataset.label && context.dataset.label.includes('Threshold')) {
+                    return `Reference Threshold: τ_min = ${yCos}`;
+                  }
+                  return `${context.dataset.label}: Sparsity ${xPct}% | Cosine ${yCos}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              min: 0.0,
+              max: 1.0,
+              title: {
+                display: true,
+                text: 'Sparsification Ratio (1 - P / M)',
+                font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' },
+                color: '#334155'
+              },
+              ticks: {
+                callback: function(val) { return (val * 100).toFixed(0) + '%'; },
+                font: { family: 'JetBrains Mono, monospace', size: 10 },
+                stepSize: 0.1
+              },
+              grid: { color: '#f1f5f9' }
+            },
+            y: {
+              min: 0.0,
+              max: 1.05,
+              title: {
+                display: true,
+                text: 'Cosine Similarity (cos(w, w^[P]))',
+                font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' },
+                color: '#334155'
+              },
+              ticks: {
+                font: { family: 'JetBrains Mono, monospace', size: 10 },
+                stepSize: 0.1
+              },
+              grid: { color: '#f1f5f9' }
+            }
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Failed to render 5-model Pareto overlay:', err);
+    }
   }
 
   if (typeof window !== 'undefined') {

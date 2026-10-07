@@ -184,6 +184,50 @@ class TestTopPParetoFrontierContract:
         assert abs(retained_pct - 5.64) < 0.1
         assert abs(data_pmin["achieved_cosine"] - 0.80) < 1e-4
 
+    def test_20news_round_100_endpoints_contract(self, client: TestClient):
+        """Verify energy-distribution and binary-search-pmin return valid Round 100 cache data for 20Newsgroup (ALBERT-base-v2, 11.68M)."""
+        # 1. Verify /energy-distribution with benchmark=20news&round_num=100
+        res_energy = client.get("/api/v1/toppaper/energy-distribution?benchmark=20news&round_num=100")
+        assert res_energy.status_code == 200, f"Energy endpoint failed: {res_energy.text}"
+        data_energy = res_energy.json()
+
+        assert data_energy["has_data"] is True
+        assert data_energy["benchmark"] == "20news"
+        assert data_energy["round_num"] == 100
+
+        # Check curve points
+        assert "curve_points" in data_energy
+        curve_points = data_energy["curve_points"]
+        assert len(curve_points) > 0
+
+        # Each curve point must have p, c_p, cosine, and sparsity_ratio
+        pt0 = curve_points[0]
+        assert "p" in pt0
+        assert "c_p" in pt0
+        assert "cosine" in pt0
+        assert "sparsity_ratio" in pt0
+
+        # Final point must match 20News ALBERT total parameters M = 11,698,964
+        pt_last = curve_points[-1]
+        assert pt_last["p"] == 11698964
+        assert abs(pt_last["sparsity_ratio"] - 0.0) < 1e-3
+        assert abs(pt_last["cosine"] - 1.0) < 1e-3
+
+        # 2. Verify /binary-search-pmin with benchmark=20news&round_num=100&theta=0.80
+        res_pmin = client.get("/api/v1/toppaper/binary-search-pmin?benchmark=20news&round_num=100&theta=0.80")
+        assert res_pmin.status_code == 200, f"Pmin endpoint failed: {res_pmin.text}"
+        data_pmin = res_pmin.json()
+
+        assert data_pmin["has_data"] is True
+        assert data_pmin["benchmark"] == "20news"
+        assert data_pmin["total_parameters"] == 11698964
+        assert data_pmin["p_min"] == 1511150
+        # Sparsification ratio must be ~87.08% (12.92% retained parameters)
+        assert abs(data_pmin["sparsity_percentage"] - 87.08) < 0.1
+        retained_pct = (data_pmin["p_min"] / data_pmin["total_parameters"]) * 100.0
+        assert abs(retained_pct - 12.92) < 0.1
+        assert abs(data_pmin["achieved_cosine"] - 0.80) < 1e-4
+
 
 class TestTopPParetoFrontierUI:
     """Verifies UI DOM elements, canvas, and KPI telemetry cards in top_p_lab.html."""
@@ -257,6 +301,25 @@ class TestTopPParetoFrontierUI:
         assert "speech" in html
         assert "629734" in html or "629,734" in html
         assert "94.36" in html
+
+    def test_pareto_overlay_mode_paper_fig_2(self):
+        """Verify Combined Overlay Mode button, star markers for ALBERT, and 5-model simultaneous rendering."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+
+        # Overlay Button
+        assert 'id="btn-pareto-overlay"' in html
+        assert "Overlay All 5 Benchmarks (Paper Fig. 2 Replica)" in html
+        assert "toggleParetoOverlayMode" in html
+
+        # 20Newsgroup / ALBERT support and star marker / amber styling
+        assert "20news" in html
+        assert "1511150" in html or "1,511,150" in html
+        assert "87.08" in html
+        assert "star" in html
+        assert "#d97706" in html or "#f59e0b" in html
+
 
 
 
