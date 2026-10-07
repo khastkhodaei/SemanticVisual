@@ -140,6 +140,50 @@ class TestTopPParetoFrontierContract:
         assert abs(retained_pct - 5.75) < 0.1
         assert abs(data_pmin["achieved_cosine"] - 0.80) < 1e-4
 
+    def test_speech_round_100_endpoints_contract(self, client: TestClient):
+        """Verify energy-distribution and binary-search-pmin return valid Round 100 cache data for Google Speech Commands (1D Audio ResNet-18, 11.17M)."""
+        # 1. Verify /energy-distribution with benchmark=speech&round_num=100
+        res_energy = client.get("/api/v1/toppaper/energy-distribution?benchmark=speech&round_num=100")
+        assert res_energy.status_code == 200, f"Energy endpoint failed: {res_energy.text}"
+        data_energy = res_energy.json()
+
+        assert data_energy["has_data"] is True
+        assert data_energy["benchmark"] == "speech"
+        assert data_energy["round_num"] == 100
+
+        # Check curve points
+        assert "curve_points" in data_energy
+        curve_points = data_energy["curve_points"]
+        assert len(curve_points) > 0
+
+        # Each curve point must have p, c_p, cosine, and sparsity_ratio
+        pt0 = curve_points[0]
+        assert "p" in pt0
+        assert "c_p" in pt0
+        assert "cosine" in pt0
+        assert "sparsity_ratio" in pt0
+
+        # Final point must match Google Speech Commands total parameters M = 11,172,810
+        pt_last = curve_points[-1]
+        assert pt_last["p"] == 11172810
+        assert abs(pt_last["sparsity_ratio"] - 0.0) < 1e-3
+        assert abs(pt_last["cosine"] - 1.0) < 1e-3
+
+        # 2. Verify /binary-search-pmin with benchmark=speech&round_num=100&theta=0.80
+        res_pmin = client.get("/api/v1/toppaper/binary-search-pmin?benchmark=speech&round_num=100&theta=0.80")
+        assert res_pmin.status_code == 200, f"Pmin endpoint failed: {res_pmin.text}"
+        data_pmin = res_pmin.json()
+
+        assert data_pmin["has_data"] is True
+        assert data_pmin["benchmark"] == "speech"
+        assert data_pmin["total_parameters"] == 11172810
+        assert data_pmin["p_min"] == 629734
+        # Sparsification ratio must be ~94.36% (5.64% retained parameters)
+        assert abs(data_pmin["sparsity_percentage"] - 94.36) < 0.1
+        retained_pct = (data_pmin["p_min"] / data_pmin["total_parameters"]) * 100.0
+        assert abs(retained_pct - 5.64) < 0.1
+        assert abs(data_pmin["achieved_cosine"] - 0.80) < 1e-4
+
 
 class TestTopPParetoFrontierUI:
     """Verifies UI DOM elements, canvas, and KPI telemetry cards in top_p_lab.html."""
@@ -202,5 +246,17 @@ class TestTopPParetoFrontierUI:
         # ResNet-18 diamond marker (rectRot in Chart.js) and black/dark styling
         assert "rectRot" in html or "diamond" in html
         assert "#0f172a" in html or "#000000" in html or "#1e293b" in html
+
+    def test_speech_pareto_ui_audio_modality_support(self):
+        """Verify Google Speech Commands support, audio modality defaults, and dynamic styling."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+
+        # Check speech benchmark integration in Pareto Frontier logic
+        assert "speech" in html
+        assert "629734" in html or "629,734" in html
+        assert "94.36" in html
+
 
 

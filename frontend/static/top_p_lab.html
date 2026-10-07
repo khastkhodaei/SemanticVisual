@@ -882,7 +882,7 @@
                 </h3>
                 <span id="pareto-benchmark-tag" class="tag-paper text-[10px] font-mono bg-blue-50 text-blue-700 border-blue-200">CIFAR-10 ConvNet (2.15M)</span>
               </div>
-              <p class="text-[11px] text-slate-500 font-sans mt-0.5">
+              <p id="pareto-card-desc" class="text-[11px] text-slate-500 font-sans mt-0.5">
                 Optimal trade-off envelope: Directional cosine similarity $\cos(w, w^{[P]})$ as a function of pruned parameters $(1 - P/M)$ at Round 100.
               </p>
             </div>
@@ -4334,13 +4334,28 @@
       const benchmark = benchmarkId || 'cifar10';
       const bMeta = (typeof benchmarksCatalog !== 'undefined' && benchmarksCatalog && benchmarksCatalog.benchmarks && benchmarksCatalog.benchmarks[benchmark]) || (typeof LOCAL_BENCHMARKS !== 'undefined' && LOCAL_BENCHMARKS[benchmark]) || {};
       
-      const defaultPMin = benchmark === 'fmnist' ? 334168 : (benchmark === 'tiny_imagenet' ? 648206 : 532443);
-      const defaultSparsity = benchmark === 'fmnist' ? 79.91 : (benchmark === 'tiny_imagenet' ? 94.25 : 75.31);
-      const defaultTotal = benchmark === 'fmnist' ? 1663370 : (benchmark === 'tiny_imagenet' ? 11271432 : 2156490);
-      const modelDisplayName = bMeta.name ? `${bMeta.name} (${bMeta.model_name || 'CNN'}, ${bMeta.m_formatted || (bMeta.total_parameters ? (bMeta.total_parameters/1e6).toFixed(2)+'M' : '')})` : (benchmark === 'tiny_imagenet' ? 'Tiny-ImageNet (ResNet-18, 11.27M)' : (benchmark === 'fmnist' ? 'Fashion-MNIST (FMNISTCNN, 1.65M)' : 'CIFAR-10 ConvNet (2.15M)'));
+      const defaultPMin = benchmark === 'fmnist' ? 334168 : (benchmark === 'tiny_imagenet' ? 648206 : (benchmark === 'speech' ? 629734 : 532443));
+      const defaultSparsity = benchmark === 'fmnist' ? 79.91 : (benchmark === 'tiny_imagenet' ? 94.25 : (benchmark === 'speech' ? 94.36 : 75.31));
+      const defaultTotal = benchmark === 'fmnist' ? 1663370 : (benchmark === 'tiny_imagenet' ? 11271432 : (benchmark === 'speech' ? 11172810 : 2156490));
+      const modelDisplayName = bMeta.name ? `${bMeta.name} (${bMeta.model_name || 'CNN'}, ${bMeta.m_formatted || (bMeta.total_parameters ? (bMeta.total_parameters/1e6).toFixed(2)+'M' : '')})` : (benchmark === 'tiny_imagenet' ? 'Tiny-ImageNet (ResNet-18, 11.27M)' : (benchmark === 'speech' ? 'Google Speech (ResNet-18, 11.17M)' : (benchmark === 'fmnist' ? 'Fashion-MNIST (FMNISTCNN, 1.65M)' : 'CIFAR-10 ConvNet (2.15M)')));
 
       if ($('pareto-benchmark-tag')) {
         $('pareto-benchmark-tag').textContent = modelDisplayName;
+      }
+      if ($('pareto-card-desc')) {
+        const mod = bMeta.modality ? ` [${bMeta.modality}]` : (benchmark === 'speech' ? ' [Audio]' : '');
+        $('pareto-card-desc').innerHTML = `Optimal trade-off envelope: Directional cosine similarity $\\cos(w, w^{[P]})$ as a function of pruned parameters $(1 - P/M)$ for <strong>${bMeta.name || modelDisplayName}</strong>${mod} at Round 100.`;
+        if (window.renderMathInElement) {
+          renderMathInElement($('pareto-card-desc'), {
+            delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '\\[', right: '\\]', display: true}
+            ],
+            throwOnError: false
+          });
+        }
       }
 
       const [resEnergy, resPmin] = await Promise.all([
@@ -4362,7 +4377,7 @@
       const achievedCosine = dataPmin.achieved_cosine !== undefined ? dataPmin.achieved_cosine : 0.8000;
       const totalParams = dataPmin.total_parameters || bMeta.total_parameters || defaultTotal;
       const retainedRatio = pMin / totalParams;
-      const tradeOffEfficiency = (achievedCosine / (retainedRatio || 0.0575)).toFixed(2);
+      const tradeOffEfficiency = (achievedCosine / (retainedRatio || 0.0564)).toFixed(2);
 
       // Update KPI Badges
       if ($('pareto-kpi-budget')) $('pareto-kpi-budget').textContent = `${pMin.toLocaleString()} (${(retainedRatio * 100).toFixed(2)}%)`;
@@ -4398,13 +4413,30 @@
 
     const kneeSparsity = Math.round((sparsityPct / 100.0) * 10000) / 10000;
 
-    // ResNet-18 specific styling (black solid line with diamond / rectRot markers matching Paper Fig. 2)
-    const isResNet = benchmark === 'tiny_imagenet';
-    const curveColor = isResNet ? '#0f172a' : '#2563eb';
-    const curveBgColor = isResNet ? 'rgba(15, 23, 42, 0.08)' : 'rgba(37, 99, 235, 0.08)';
-    const pointShape = isResNet ? 'rectRot' : 'circle';
-    const pointSize = isResNet ? 4.5 : 3.5;
-    const pointHoverSize = isResNet ? 7 : 6;
+    // Benchmark specific styling matching Paper Fig. 2 convention:
+    const isTiny = benchmark === 'tiny_imagenet';
+    const isSpeech = benchmark === 'speech';
+    let curveColor = '#2563eb';
+    let curveBgColor = 'rgba(37, 99, 235, 0.08)';
+    let pointShape = 'circle';
+    let pointSize = 3.5;
+    let pointHoverSize = 6;
+
+    if (isTiny) {
+      // Tiny-ImageNet ResNet-18: solid black line with diamond markers
+      curveColor = '#0f172a';
+      curveBgColor = 'rgba(15, 23, 42, 0.08)';
+      pointShape = 'rectRot';
+      pointSize = 4.5;
+      pointHoverSize = 7;
+    } else if (isSpeech) {
+      // Google Speech Commands Audio ResNet-18: audio purple with triangle markers
+      curveColor = '#7c3aed';
+      curveBgColor = 'rgba(124, 58, 237, 0.08)';
+      pointShape = 'triangle';
+      pointSize = 4.5;
+      pointHoverSize = 7;
+    }
 
     const ctx = canvas.getContext('2d');
     paretoChartInstance = new Chart(ctx, {
