@@ -379,6 +379,85 @@ class TestTopPParetoFrontierUI:
         assert "loadAndRenderParetoFrontier" in html
         assert "renderParetoFrontierChart" in html
 
+    def test_utopia_pareto_square_chart_dom_and_kpis(self):
+        """Verify DOM elements, square aspect container, and KPI telemetry cards for Tab 3 Utopia chart."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+
+        # Canvas and card
+        assert 'id="chart-utopia-pareto-square"' in html
+        assert 'id="utopia-pareto-card"' in html
+        assert "aspect-square" in html
+
+        # KPI telemetry badges for all 4 models
+        assert 'id="utopia-kpi-fmnist"' in html
+        assert 'id="utopia-dist-fmnist"' in html
+        assert 'id="utopia-kpi-tiny"' in html
+        assert 'id="utopia-dist-tiny"' in html
+        assert 'id="utopia-kpi-speech"' in html
+        assert 'id="utopia-dist-speech"' in html
+        assert 'id="utopia-kpi-20news"' in html
+        assert 'id="utopia-dist-20news"' in html
+        assert 'id="utopia-status-pill"' in html
+
+    def test_utopia_pareto_square_chart_script_and_geometry(self):
+        """Verify JS implementation, aspect ratio 1:1, 8-line palette pairing, and tab hook."""
+        html_path = "frontend/static/top_p_lab.html"
+        with open(html_path, "r", encoding="utf-8") as f:
+            html = f.read()
+
+        assert "loadAndRenderUtopiaParetoChart" in html
+        assert "window.loadAndRenderUtopiaParetoChart" in html
+        assert "aspectRatio: 1" in html
+
+        # 4 models solid + dashed color pairing
+        assert "#0284c7" in html and "#38bdf8" in html  # FMNIST
+        assert "#059669" in html and "#34d399" in html  # Tiny-ImageNet
+        assert "#7c3aed" in html and "#a78bfa" in html  # Speech
+        assert "#d97706" in html and "#fbbf24" in html  # 20News ALBERT
+
+        # Utopia Reference point
+        assert "Utopia Reference Point" in html
+
+        # Tab switch hook
+        assert "tabId === 'tab-scope'" in html
+
+    def test_utopia_compromise_knee_math_invariants(self, client: TestClient):
+        """Verify empirical Round 100 Utopia Knee Point calculation minimizes Euclidean distance to (1.0, 1.0)."""
+        import math
+
+        expected = {
+            "fmnist": {"min_p": 304022, "sparsity": 0.8172, "cosine": 0.7840, "dist": 0.2830},
+            "tiny_imagenet": {"min_p": 1246747, "sparsity": 0.8894, "cosine": 0.8542, "dist": 0.1830},
+            "speech": {"min_p": 1237312, "sparsity": 0.8893, "cosine": 0.8556, "dist": 0.1820},
+            "20news": {"min_p": 1696499, "sparsity": 0.8550, "cosine": 0.8160, "dist": 0.2343},
+        }
+
+        for bench, exp in expected.items():
+            res = client.get(f"/api/v1/toppaper/energy-distribution?benchmark={bench}&round_num=100")
+            assert res.status_code == 200
+            data = res.json()
+            pts = data["curve_points"]
+            total = data["total_parameters"]
+
+            best_pt = None
+            min_dist = float("inf")
+            for pt in pts:
+                s = pt.get("sparsity_ratio", 1.0 - pt["p"] / total)
+                c = pt["cosine"]
+                d = math.hypot(1.0 - s, 1.0 - c)
+                if d < min_dist:
+                    min_dist = d
+                    best_pt = (pt["p"], s, c, d)
+
+            assert best_pt is not None
+            assert best_pt[0] == exp["min_p"]
+            assert abs(best_pt[1] - exp["sparsity"]) < 1e-3
+            assert abs(best_pt[2] - exp["cosine"]) < 1e-3
+            assert abs(best_pt[3] - exp["dist"]) < 1e-3
+
+
 
 
 

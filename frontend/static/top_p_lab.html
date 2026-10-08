@@ -1361,6 +1361,93 @@
               </div>
             </div>
 
+            <!-- UNIFIED SQUARE MULTI-BENCHMARK PARETO FRONTIER & IDEAL UTOPIA POINT PLOT (ROUND 100) -->
+            <div id="utopia-pareto-card" class="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 mt-4">
+              <!-- Card Header & Metadata -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="w-3 h-3 rounded-full bg-indigo-600 shadow-xs"></span>
+                    <h3 class="text-sm font-bold text-slate-900 font-sans tracking-tight">
+                      Round 100 Multi-Benchmark Pareto Front &amp; Utopia Compromise Projection (Square Aspect Ratio)
+                    </h3>
+                    <span class="tag-paper text-[10px] font-mono bg-indigo-50 text-indigo-700 border-indigo-200 font-semibold">4 Benchmarks Unified</span>
+                  </div>
+                  <p class="text-xs text-slate-500 font-sans mt-1">
+                    Multi-objective trade-off between Sparsification Ratio $(1 - P/M)$ and Directional Cosine Fidelity $\cos(\mathbf{w}, \mathbf{w}^{[P]})$ at Round 100. For each model, the optimal compromise knee $P^*$ is projected onto both axes by minimizing Euclidean distance to the Utopia Point $\text{Utopia} = (1.0, 1.0)$:
+                    <span class="font-mono text-indigo-900 font-semibold">$P^* = \arg\min_P \sqrt{(1 - \text{Sparsity}(P))^2 + (1 - \text{CosineSim}(P))^2}$</span>.
+                  </p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <button type="button" onclick="loadAndRenderUtopiaParetoChart(true)" class="px-2.5 py-1 text-xs font-mono font-semibold rounded-md border border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs">
+                    <span>🔄</span>
+                    <span>Refresh Plot</span>
+                  </button>
+                  <span class="tag-paper text-[10px] font-mono bg-emerald-50 text-emerald-700 border-emerald-200" id="utopia-status-pill">Round 100 Empirical</span>
+                </div>
+              </div>
+
+              <!-- 4-Benchmark Compromise Knee Summary Badges -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="p-3 bg-sky-50/70 border border-sky-200 rounded-lg">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-mono text-sky-800 uppercase font-bold">👕 Fashion-MNIST (1.65M)</span>
+                    <span class="w-2 h-2 rounded-full bg-sky-600"></span>
+                  </div>
+                  <div id="utopia-kpi-fmnist" class="text-xs font-mono font-bold text-sky-950 mt-1">
+                    Knee: 81.72% | Cos: 0.7840
+                  </div>
+                  <span id="utopia-dist-fmnist" class="text-[10px] text-sky-700 font-mono block mt-0.5">Dist to (1,1): 0.2830 (P* = 304K)</span>
+                </div>
+
+                <div class="p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-mono text-emerald-800 uppercase font-bold">🖼️ Tiny-ImageNet (11.27M)</span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                  </div>
+                  <div id="utopia-kpi-tiny" class="text-xs font-mono font-bold text-emerald-950 mt-1">
+                    Knee: 88.94% | Cos: 0.8542
+                  </div>
+                  <span id="utopia-dist-tiny" class="text-[10px] text-emerald-700 font-mono block mt-0.5">Dist to (1,1): 0.1830 (P* = 1.25M)</span>
+                </div>
+
+                <div class="p-3 bg-purple-50/70 border border-purple-200 rounded-lg">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-mono text-purple-800 uppercase font-bold">🎙️ Google Speech (11.17M)</span>
+                    <span class="w-2 h-2 rounded-full bg-purple-600"></span>
+                  </div>
+                  <div id="utopia-kpi-speech" class="text-xs font-mono font-bold text-purple-950 mt-1">
+                    Knee: 88.93% | Cos: 0.8556
+                  </div>
+                  <span id="utopia-dist-speech" class="text-[10px] text-purple-700 font-mono block mt-0.5">Dist to (1,1): 0.1820 (P* = 1.24M)</span>
+                </div>
+
+                <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-lg">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-mono text-amber-800 uppercase font-bold">📰 20News ALBERT (11.68M)</span>
+                    <span class="w-2 h-2 rounded-full bg-amber-600"></span>
+                  </div>
+                  <div id="utopia-kpi-20news" class="text-xs font-mono font-bold text-amber-950 mt-1">
+                    Knee: 85.50% | Cos: 0.8160
+                  </div>
+                  <span id="utopia-dist-20news" class="text-[10px] text-amber-700 font-mono block mt-0.5">Dist to (1,1): 0.2343 (P* = 1.70M)</span>
+                </div>
+              </div>
+
+              <!-- Square Aspect Ratio Canvas Container (1:1 Aspect Ratio) -->
+              <div class="flex justify-center items-center py-2 bg-slate-50/40 rounded-xl border border-slate-100">
+                <div class="chart-wrap bg-white rounded-lg border border-slate-200 p-3 shadow-2xs w-full max-w-[560px] aspect-square relative" style="height: auto; max-height: 560px;">
+                  <canvas id="chart-utopia-pareto-square"></canvas>
+                </div>
+              </div>
+
+              <!-- Academic Footer Legend / Caption -->
+              <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] font-mono text-slate-500 flex-wrap gap-2">
+                <span>8 Lines Total: 4 Solid Pareto Fronts + 4 Dashed Ideal Projections to Utopia (1.0, 1.0)</span>
+                <span class="text-slate-400">Dogani et al., Proc. ACM Meas. Anal. Comput. Syst. (2026)</span>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -2125,7 +2212,7 @@
         if (!currentPminData && typeof runPminBinarySearch === 'function') runPminBinarySearch();
         if (typeof loadAndRenderParetoFrontier === 'function') loadAndRenderParetoFrontier(currentBenchmark);
       } else if (tabId === 'tab-scope') {
-        // Tab 2 Paper Models reference
+        if (typeof loadAndRenderUtopiaParetoChart === 'function') loadAndRenderUtopiaParetoChart();
       } else if (tabId === 'tab-faq') {
         if (typeof allFaqData !== 'undefined' && !allFaqData.length && typeof loadFAQ === 'function') loadFAQ();
       } else if (tabId === 'tab-worked') {
@@ -4456,6 +4543,273 @@
     } catch (err) {
       console.error('Failed to render 5-model Pareto overlay:', err);
     }
+  }
+
+  /* --- TAB 3: SQUARE MULTI-BENCHMARK PARETO FRONTIER & UTOPIA POINT (ROUND 100) --- */
+  let utopiaParetoChartInstance = null;
+  const utopiaParetoCache = {};
+
+  async function loadAndRenderUtopiaParetoChart(force = false) {
+    const canvas = $('chart-utopia-pareto-square');
+    if (!canvas || typeof Chart === 'undefined') return;
+
+    const statusPill = $('utopia-status-pill');
+    if (statusPill) statusPill.textContent = 'Computing Utopia Points...';
+
+    const models = [
+      {
+        id: 'fmnist',
+        name: 'Fashion-MNIST',
+        label: '👕 Fashion-MNIST (CNN, 1.65M)',
+        solidColor: '#0284c7',       // Sky 600
+        dashedColor: '#38bdf8',      // Sky 400
+        kpiId: 'utopia-kpi-fmnist',
+        distId: 'utopia-dist-fmnist',
+        defaultTotal: 1663370
+      },
+      {
+        id: 'tiny_imagenet',
+        name: 'Tiny-ImageNet',
+        label: '🖼️ Tiny-ImageNet (ResNet-18, 11.27M)',
+        solidColor: '#059669',       // Emerald 600
+        dashedColor: '#34d399',      // Emerald 400
+        kpiId: 'utopia-kpi-tiny',
+        distId: 'utopia-dist-tiny',
+        defaultTotal: 11271432
+      },
+      {
+        id: 'speech',
+        name: 'Google Speech',
+        label: '🎙️ Google Speech (ResNet-18, 11.17M)',
+        solidColor: '#7c3aed',       // Purple 600
+        dashedColor: '#a78bfa',      // Purple 400
+        kpiId: 'utopia-kpi-speech',
+        distId: 'utopia-dist-speech',
+        defaultTotal: 11172810
+      },
+      {
+        id: '20news',
+        name: '20Newsgroup',
+        label: '📰 20Newsgroup (ALBERT, 11.68M)',
+        solidColor: '#d97706',       // Amber 600
+        dashedColor: '#fbbf24',      // Amber 400
+        kpiId: 'utopia-kpi-20news',
+        distId: 'utopia-dist-20news',
+        defaultTotal: 11698964
+      }
+    ];
+
+    try {
+      const dataPromises = models.map(async (m) => {
+        if (!force && utopiaParetoCache[m.id]) {
+          return utopiaParetoCache[m.id];
+        }
+        const res = await fetch(`/api/v1/toppaper/energy-distribution?benchmark=${m.id}&round_num=100`);
+        if (!res.ok) throw new Error(`HTTP ${res.status} for ${m.id}`);
+        const json = await res.json();
+        utopiaParetoCache[m.id] = json;
+        return json;
+      });
+
+      const results = await Promise.all(dataPromises);
+
+      if (utopiaParetoChartInstance) {
+        utopiaParetoChartInstance.destroy();
+        utopiaParetoChartInstance = null;
+      }
+
+      const datasets = [];
+
+      results.forEach((data, idx) => {
+        const m = models[idx];
+        const totalParams = data.total_parameters || m.defaultTotal;
+        const curvePoints = (data.curve_points || []).map(pt => ({
+          x: pt.sparsity_ratio !== undefined ? pt.sparsity_ratio : (1.0 - (pt.p / totalParams)),
+          y: pt.cosine,
+          p: pt.p
+        })).sort((a, b) => a.x - b.x);
+
+        if (curvePoints.length === 0) return;
+        if (curvePoints[0].x > 0.01) {
+          curvePoints.unshift({ x: 0.0, y: 1.0, p: totalParams });
+        }
+
+        // Compute Utopia Knee Point: argmin_P sqrt((1 - Sparsity)^2 + (1 - CosineSim)^2)
+        let kneePt = curvePoints[0];
+        let minDistance = Infinity;
+
+        for (const pt of curvePoints) {
+          const dist = Math.hypot(1.0 - pt.x, 1.0 - pt.y);
+          if (dist < minDistance) {
+            minDistance = dist;
+            kneePt = { ...pt, distance: dist };
+          }
+        }
+
+        // Update KPI telemetry badge
+        const kpiEl = $(m.kpiId);
+        if (kpiEl) {
+          kpiEl.textContent = `Knee: ${(kneePt.x * 100).toFixed(2)}% | Cos: ${kneePt.y.toFixed(4)}`;
+        }
+        const distEl = $(m.distId);
+        if (distEl) {
+          const pStr = kneePt.p >= 1e6 ? `${(kneePt.p / 1e6).toFixed(2)}M` : `${Math.round(kneePt.p / 1e3)}K`;
+          distEl.textContent = `Dist to (1,1): ${minDistance.toFixed(4)} (P* = ${pStr})`;
+        }
+
+        // 1. Solid Pareto Front Curve Dataset (Line)
+        datasets.push({
+          label: `${m.label} — (S*: ${(kneePt.x * 100).toFixed(1)}%, cos*: ${kneePt.y.toFixed(3)})`,
+          data: curvePoints.map(pt => ({ x: Math.round(pt.x * 10000) / 10000, y: pt.y, p: pt.p })),
+          showLine: true,
+          borderColor: m.solidColor,
+          backgroundColor: 'transparent',
+          borderWidth: 2.2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          pointHitRadius: 6,
+          tension: 0.15,
+          order: 2 + idx * 2
+        });
+
+        // 2. Dashed Ideal Point Projection Dataset (Horizontal (0, cos*) -> (s*, cos*) -> Vertical down to (s*, 0))
+        datasets.push({
+          label: `↳ ${m.name} Utopia Projection (d = ${minDistance.toFixed(4)})`,
+          data: [
+            { x: 0.0, y: kneePt.y, p: kneePt.p, dist: minDistance, isCorner: false },
+            { x: kneePt.x, y: kneePt.y, p: kneePt.p, dist: minDistance, isCorner: true },
+            { x: kneePt.x, y: 0.0, p: kneePt.p, dist: minDistance, isCorner: false }
+          ],
+          showLine: true,
+          borderColor: m.dashedColor,
+          backgroundColor: 'transparent',
+          borderWidth: 1.8,
+          borderDash: [5, 4],
+          pointRadius: [0, 5.5, 0],
+          pointHoverRadius: [0, 8, 0],
+          pointHitRadius: [0, 9, 0],
+          pointBackgroundColor: m.solidColor,
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          fill: false,
+          order: 1 + idx * 2
+        });
+      });
+
+      // Utopia Reference Star Marker at (1.0, 1.0)
+      datasets.push({
+        label: '⭐ Utopia Reference Point (1.0, 1.0)',
+        data: [{ x: 1.0, y: 1.0 }],
+        showLine: false,
+        pointStyle: 'star',
+        pointRadius: 8,
+        pointHoverRadius: 10,
+        pointBackgroundColor: '#eab308',
+        pointBorderColor: '#ca8a04',
+        pointBorderWidth: 1.5,
+        order: 0
+      });
+
+      const ctx = canvas.getContext('2d');
+      utopiaParetoChartInstance = new Chart(ctx, {
+        type: 'scatter',
+        data: { datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 1,
+          animation: { duration: 400 },
+          interaction: { mode: 'nearest', intersect: false },
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 14,
+                boxHeight: 3,
+                font: { family: 'JetBrains Mono, monospace', size: 10 },
+                color: '#334155',
+                padding: 10,
+                usePointStyle: false
+              }
+            },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              titleFont: { family: 'Inter, sans-serif', size: 11, weight: 'bold' },
+              bodyFont: { family: 'JetBrains Mono, monospace', size: 10.5 },
+              padding: 10,
+              cornerRadius: 6,
+              callbacks: {
+                label: function(context) {
+                  const xPct = (context.parsed.x * 100).toFixed(2);
+                  const yCos = context.parsed.y.toFixed(4);
+                  const ds = context.dataset;
+                  const raw = context.raw || {};
+                  if (ds.label && ds.label.includes('Utopia Reference Point')) {
+                    return `Utopia Point: (1.00, 1.00) [Ideal Objective]`;
+                  }
+                  if (ds.label && ds.label.includes('Projection')) {
+                    const pVal = raw.p ? (raw.p >= 1e6 ? `${(raw.p / 1e6).toFixed(2)}M` : raw.p.toLocaleString()) : '';
+                    const dVal = raw.dist !== undefined ? raw.dist.toFixed(4) : '';
+                    return [
+                      `${ds.label}`,
+                      `Compromise Knee: Sparsity ${xPct}%, Cosine ${yCos}`,
+                      raw.p ? `Retained Budget P*: ${pVal} params` : '',
+                      raw.dist !== undefined ? `Euclidean Distance to (1,1): ${dVal}` : ''
+                    ].filter(Boolean);
+                  }
+                  return `${ds.label.split('—')[0]}: Sparsity ${xPct}% | Cosine ${yCos}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              min: 0.0,
+              max: 1.0,
+              title: {
+                display: true,
+                text: 'Sparsification Ratio (1 - P / M)',
+                font: { family: 'Inter, sans-serif', size: 11.5, weight: 'bold' },
+                color: '#1e293b'
+              },
+              ticks: {
+                callback: function(val) { return (val * 100).toFixed(0) + '%'; },
+                font: { family: 'JetBrains Mono, monospace', size: 10 },
+                stepSize: 0.1
+              },
+              grid: { color: '#f1f5f9' }
+            },
+            y: {
+              type: 'linear',
+              min: 0.0,
+              max: 1.0,
+              title: {
+                display: true,
+                text: 'Directional Cosine Similarity (cos(w, w^[P]))',
+                font: { family: 'Inter, sans-serif', size: 11.5, weight: 'bold' },
+                color: '#1e293b'
+              },
+              ticks: {
+                font: { family: 'JetBrains Mono, monospace', size: 10 },
+                stepSize: 0.1
+              },
+              grid: { color: '#f1f5f9' }
+            }
+          }
+        }
+      });
+
+      if (statusPill) statusPill.textContent = 'Round 100 Empirical (4 Benchmarks)';
+    } catch (err) {
+      console.error('Failed to load Utopia Pareto chart:', err);
+      if (statusPill) statusPill.textContent = 'Error Loading Data';
+    }
+  }
+
+  // Export to global scope
+  if (typeof window !== 'undefined') {
+    window.loadAndRenderUtopiaParetoChart = loadAndRenderUtopiaParetoChart;
   }
 
   if (typeof window !== 'undefined') {
