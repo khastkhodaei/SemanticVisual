@@ -1,6 +1,6 @@
 # SemanticDFL — Paper Cost & Savings Reference (stage by stage)
 
-> **Source:** Dogani, Khastkhodaei, Khunjush, Laoutaris. *SemanticDFL: Similarity-Aware Pull-based Personalized Decentralized Federated Learning.* Proc. ACM Meas. Anal. Comput. Syst. 10(2), Art. 51, June 2026.
+> **Source:** Javad Dogani, Mostafa Khastkhodaei, Farshad Khunjush, Nikolaos Laoutaris. *SemanticDFL: Similarity-Aware Pull-based Personalized Decentralized Federated Learning.* Proc. ACM Meas. Anal. Comput. Syst. 10(2), Art. 51, June 2026.
 > **Purpose:** single source of truth for every cost (bytes, messages, compute, memory, latency) and every improvement reported or derivable from the paper, organised to follow the simulator's protocol phases.
 > **Audience:** humans browsing the "4. Paper Models & Savings" tab **and** a coding agent that must read this file and wire numbers into the simulator.
 

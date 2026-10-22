@@ -10,7 +10,7 @@
 > **SemanticVisual** is a research-grade, full-stack visualizer and distributed systems simulator built to demonstrate, benchmark, and interactively explore the **SemanticDFL** protocol from the research paper:
 > 
 > 📄 **"SemanticDFL: Similarity-Aware Pull-based Personalized Decentralized Federated Learning"**  
-> *Dogani, Khastkhodaei, Khunjush, Laoutaris*  
+> *Javad Dogani, Mostafa Khastkhodaei, Farshad Khunjush, Nikolaos Laoutaris*  
 > **Proceedings of the ACM on Measurement and Analysis of Computing Systems (POMACS) / ACM SIGMETRICS 2026**, Vol. 10, No. 2, Article 51.  
 > 🔗 Local Paper Copy: [`SemanticFL-Final-Version.pdf`](./SemanticFL-Final-Version.pdf)
 
@@ -284,7 +284,7 @@ If you use **SemanticVisual** or reference the **SemanticDFL** protocol in your 
 
 ```bibtex
 @article{semanticdfl2026,
-  author    = {Dogani, Mostafa and Khastkhodaei, Sanaz and Khunjush, Farshad and Laoutaris, Nikolaos},
+  author    = {Dogani, Javad and Khastkhodaei, Mostafa and Khunjush, Farshad and Laoutaris, Nikolaos},
   title     = {{SemanticDFL}: Similarity-Aware Pull-based Personalized Decentralized Federated Learning},
   journal   = {Proceedings of the ACM on Measurement and Analysis of Computing Systems (POMACS)},
   volume    = {10},
