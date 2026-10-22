@@ -325,7 +325,7 @@ pytest tests/test_dual_layout_switcher.py
 
 1. **Clone and enter repository:**
    ```bash
-   cd d:\Dev\SemanticVisual
+   cd SemanticVisual
    ```
 
 2. **Create and activate a virtual environment (optional but recommended):**
