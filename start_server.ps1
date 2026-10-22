@@ -11,33 +11,33 @@ Write-Host "   SemanticDFL - Visualizer & Top-P Deep-Dive Lab (ACM 2026)" -Foreg
 Write-Host "=====================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Check virtual environment
-if (Test-Path ".\.venv\Scripts\Activate.ps1") {
-    Write-Host "[*] Activating virtual environment (.venv)..." -ForegroundColor Yellow
-    & ".\.venv\Scripts\Activate.ps1"
-} elseif (Test-Path ".\venv\Scripts\Activate.ps1") {
-    Write-Host "[*] Activating virtual environment (venv)..." -ForegroundColor Yellow
-    & ".\venv\Scripts\Activate.ps1"
+$pythonCmd = $null
+
+if (Test-Path ".\.venv\Scripts\python.exe") {
+    $pythonCmd = ".\.venv\Scripts\python.exe"
+    Write-Host "[*] Virtualenv detected: .venv" -ForegroundColor Yellow
+} elseif (Test-Path ".\venv\Scripts\python.exe") {
+    $pythonCmd = ".\venv\Scripts\python.exe"
+    Write-Host "[*] Virtualenv detected: venv" -ForegroundColor Yellow
+} else {
+    $cmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($cmd) {
+        $pythonCmd = "python"
+    } else {
+        $cmdPy = Get-Command py -ErrorAction SilentlyContinue
+        if ($cmdPy) {
+            $pythonCmd = "py -3"
+        }
+    }
 }
 
-# Check Python command
-try {
-    $pythonVer = python --version 2>&1
-    Write-Host "[*] Using: $pythonVer" -ForegroundColor Gray
-} catch {
-    Write-Error "[ERROR] Python was not found in your PATH."
+if (-not $pythonCmd) {
+    Write-Error "[ERROR] Python 3.10+ was not found on your system."
+    Read-Host "Press Enter to exit..."
     exit 1
 }
 
-Write-Host "[*] Launching server on http://127.0.0.1:8000 ..." -ForegroundColor Green
-Write-Host "[*] Top-P Lab:   http://127.0.0.1:8000/static/top_p_lab.html" -ForegroundColor Green
-Write-Host "[*] Storyboard:  http://127.0.0.1:8000/static/index.html" -ForegroundColor Green
-Write-Host "`nPress Ctrl+C to stop the server.`n" -ForegroundColor DarkGray
+Write-Host "[*] Using Python: $pythonCmd" -ForegroundColor Green
+Write-Host "[*] Starting application... Your browser will open automatically once ready.`n" -ForegroundColor Green
 
-# Open browser in a separate thread/job
-Start-Job -ScriptBlock {
-    Start-Sleep -Seconds 2
-    Start-Process "http://127.0.0.1:8000/static/top_p_lab.html"
-} | Out-Null
-
-python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+& $pythonCmd run.py

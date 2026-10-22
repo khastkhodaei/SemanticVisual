@@ -1,38 +1,73 @@
 @echo off
-title SemanticDFL Visualization and Top-P Lab Server
+rem =====================================================================
+rem    SemanticDFL - Visualizer and Top-P Deep-Dive Lab
+rem =====================================================================
+
 cd /d "%~dp0"
+title SemanticDFL Server
 
 echo =====================================================================
-echo    SemanticDFL - Visualizer and Top-P Deep-Dive Lab [ACM 2026]
+echo    SemanticDFL - Visualizer and Top-P Deep-Dive Lab
 echo =====================================================================
 echo.
 
-if exist ".venv\Scripts\activate.bat" (
-    echo [*] Activating virtual environment: .venv
-    call .venv\Scripts\activate.bat
-)
-if exist "venv\Scripts\activate.bat" (
-    echo [*] Activating virtual environment: venv
-    call venv\Scripts\activate.bat
+rem 1. Check local virtual environment (.venv)
+if exist ".venv\Scripts\python.exe" (
+    echo [*] Found virtual environment: .venv
+    ".venv\Scripts\python.exe" run.py
+    goto end
 )
 
-python --version >nul 2>&1
-if errorlevel 1 (
-    echo [ERROR] Python was not found in your PATH.
-    echo Please install Python 3.10+ and add it to PATH.
-    pause
-    exit /b 1
+rem 2. Check local virtual environment (venv)
+if exist "venv\Scripts\python.exe" (
+    echo [*] Found virtual environment: venv
+    "venv\Scripts\python.exe" run.py
+    goto end
 )
 
-echo [*] Starting FastAPI Uvicorn Server on http://127.0.0.1:8000
-echo [*] Top-P Lab URL: http://127.0.0.1:8000/static/top_p_lab.html
-echo [*] Storyboard URL: http://127.0.0.1:8000/static/index.html
+rem 3. Check system Python
+where python >nul 2>&1
+if %errorlevel% equ 0 (
+    echo [*] Found system Python
+    python run.py
+    goto end
+)
+
+rem 4. Check Windows Python Launcher (py)
+where py >nul 2>&1
+if %errorlevel% equ 0 (
+    echo [*] Found Windows Python Launcher
+    py -3 run.py
+    goto end
+)
+
+rem 5. Check Local AppData Python
+if exist "%LocalAppData%\Programs\Python\Python313\python.exe" (
+    "%LocalAppData%\Programs\Python\Python313\python.exe" run.py
+    goto end
+)
+if exist "%LocalAppData%\Programs\Python\Python312\python.exe" (
+    "%LocalAppData%\Programs\Python\Python312\python.exe" run.py
+    goto end
+)
+if exist "%LocalAppData%\Programs\Python\Python311\python.exe" (
+    "%LocalAppData%\Programs\Python\Python311\python.exe" run.py
+    goto end
+)
+if exist "%LocalAppData%\Programs\Python\Python310\python.exe" (
+    "%LocalAppData%\Programs\Python\Python310\python.exe" run.py
+    goto end
+)
+
+echo [ERROR] Python 3.10+ was not found on your system.
+echo Please install Python from https://www.python.org/
+echo Make sure to check "Add Python to PATH" during installation.
 echo.
-echo Press Ctrl+C in this window to stop the server.
+
+:end
+if %errorlevel% neq 0 (
+    echo.
+    echo [ERROR] Execution failed or server stopped with error code %errorlevel%.
+)
 echo.
-
-start "" powershell -NoProfile -Command "Start-Sleep -Seconds 2; Start-Process 'http://127.0.0.1:8000/static/top_p_lab.html'"
-
-python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
-
 pause

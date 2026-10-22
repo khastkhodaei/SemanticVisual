@@ -1,24 +1,26 @@
 #!/usr/bin/env bash
-# ===================================================
-#   SemanticDFL / Top-P Lab - Local Server Runner (Linux / macOS)
-# ===================================================
+# =====================================================================
+#   SemanticDFL - Visualizer & Top-P Deep-Dive Lab (ACM 2026)
+#   Linux / macOS Server Runner
+# =====================================================================
 
-echo "==================================================="
-echo "  SemanticDFL / Top-P Lab - Local Server Runner"
-echo "==================================================="
-echo ""
-echo "Starting FastAPI Uvicorn Server at http://127.0.0.1:8000 ..."
-echo "Top-P Lab URL: http://127.0.0.1:8000/static/top_p_lab.html"
-echo "Storyboard URL: http://127.0.0.1:8000"
-echo ""
-echo "Press Ctrl+C to stop the server."
-echo ""
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+cd "$DIR"
 
-# Prefer python3 if available, otherwise python
-if command -v python3 &>/dev/null; then
-    PYTHON_CMD="python3"
+if [ -f "./start_server.sh" ]; then
+    exec ./start_server.sh "$@"
 else
-    PYTHON_CMD="python"
-fi
+    if [ -f ".venv/bin/activate" ]; then
+        source .venv/bin/activate
+    elif [ -f "venv/bin/activate" ]; then
+        source venv/bin/activate
+    fi
 
-$PYTHON_CMD -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+    if command -v python3 &>/dev/null; then
+        PYTHON_CMD="python3"
+    else
+        PYTHON_CMD="python"
+    fi
+
+    exec $PYTHON_CMD run.py
+fi
