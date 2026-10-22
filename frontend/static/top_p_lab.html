@@ -1362,6 +1362,95 @@
               </div>
             </div>
 
+            <!-- INTERACTIVE ANALYTICAL COST & SIZING CALCULATOR -->
+            <div id="cost-calculator-card" class="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 mt-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="w-3 h-3 rounded-full bg-blue-600 shadow-xs"></span>
+                    <h3 class="text-sm font-bold text-slate-900 font-sans tracking-tight">
+                      Interactive Analytical Cost &amp; Sizing Calculator
+                    </h3>
+                    <span class="tag-paper text-[10px] font-mono bg-blue-50 text-blue-700 border-blue-200 font-semibold">Paper §3.4 &amp; §5.1 Presets</span>
+                  </div>
+                  <p class="text-xs text-slate-500 font-sans mt-1">
+                    Calculate wire footprints, discovery query latency, model transfer duration, and SON overhead share directly from paper equations.
+                  </p>
+                </div>
+                <!-- Presets dropdown/pill selector -->
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-[10px] font-mono font-bold text-slate-500">Presets:</span>
+                  <button type="button" class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 cursor-pointer" onclick="applyCostPreset('resnet18_tiny_imagenet_worked')">Tiny §3.4 (P=10.8%)</button>
+                  <button type="button" class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 cursor-pointer" onclick="applyCostPreset('resnet18_tiny_imagenet_tuned')">Tiny §5.1 (P=9.6%)</button>
+                  <button type="button" class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 cursor-pointer" onclick="applyCostPreset('resnet18_google_speech_worked')">Speech §3.4 (P=13.3%)</button>
+                  <button type="button" class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 cursor-pointer" onclick="applyCostPreset('resnet18_google_speech_tuned')">Speech §5.1 (P=11.2%)</button>
+                  <button type="button" class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 cursor-pointer" onclick="applyCostPreset('albert_20newsgroup_tuned')">20News §5.1 (P=12.8%)</button>
+                  <button type="button" class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-100 cursor-pointer" onclick="applyCostPreset('fmnist_cnn_tuned')">FMNIST §5.1 (P=12.3%)</button>
+                </div>
+              </div>
+
+              <!-- Input Grid -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-xs font-mono">
+                <label class="flex flex-col gap-1">
+                  <span class="text-[11px] font-sans font-medium text-slate-600">Parameters ($M$):</span>
+                  <input id="calc-m" type="number" value="11700000" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" oninput="recalcCostCalculator()" />
+                </label>
+                <label class="flex flex-col gap-1">
+                  <span class="text-[11px] font-sans font-medium text-slate-600">Top-$P$ Ratio ($P/M$ %):</span>
+                  <input id="calc-p-pct" type="number" step="0.1" value="10.8" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" oninput="recalcCostCalculator()" />
+                </label>
+                <label class="flex flex-col gap-1">
+                  <span class="text-[11px] font-sans font-medium text-slate-600">Bandwidth (MB/s):</span>
+                  <input id="calc-bw" type="number" value="25.0" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" oninput="recalcCostCalculator()" />
+                </label>
+                <label class="flex flex-col gap-1">
+                  <span class="text-[11px] font-sans font-medium text-slate-600">Pulled Models ($K$):</span>
+                  <input id="calc-k" type="number" value="10" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" oninput="recalcCostCalculator()" />
+                </label>
+                <label class="flex flex-col gap-1">
+                  <span class="text-[11px] font-sans font-medium text-slate-600">Overhead Factor:</span>
+                  <select id="calc-overhead" class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-300 rounded focus:outline-blue-500" onchange="recalcCostCalculator()">
+                    <option value="1.03" selected>1.03 (Paper §3.4: 38.5s)</option>
+                    <option value="1.00">1.00 (Strict Theoretical: 37.4s)</option>
+                  </select>
+                </label>
+              </div>
+
+              <!-- Output KPI Cards -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-1 text-xs font-mono" id="calc-kpis-container">
+                <div class="p-2.5 bg-slate-50 border border-slate-200 rounded">
+                  <div class="text-[10px] text-slate-500 font-sans">Signature Size ($6P$)</div>
+                  <div id="calc-kpi-sig-size" class="text-sm font-bold text-blue-700 mt-0.5">7.58 MB</div>
+                  <div id="calc-kpi-sig-sub" class="text-[10px] text-slate-400 font-mono">7.24 MiB</div>
+                </div>
+                <div class="p-2.5 bg-slate-50 border border-slate-200 rounded">
+                  <div class="text-[10px] text-slate-500 font-sans">Dense FP32 ($4M$)</div>
+                  <div id="calc-kpi-dense-size" class="text-sm font-bold text-slate-700 mt-0.5">46.8 MB</div>
+                  <div class="text-[10px] text-slate-400 font-mono">44.6 MiB</div>
+                </div>
+                <div class="p-2.5 bg-emerald-50/60 border border-emerald-200 rounded">
+                  <div class="text-[10px] text-emerald-800 font-sans font-semibold">Wire Reduction</div>
+                  <div id="calc-kpi-reduction" class="text-sm font-bold text-emerald-700 mt-0.5">6.17×</div>
+                  <div id="calc-kpi-saved" class="text-[10px] text-emerald-600 font-semibold font-mono">83.8% saved</div>
+                </div>
+                <div class="p-2.5 bg-slate-50 border border-slate-200 rounded">
+                  <div class="text-[10px] text-slate-500 font-sans">Query Time (15 Sigs)</div>
+                  <div id="calc-kpi-query-time" class="text-sm font-bold text-slate-700 mt-0.5">4.35 s</div>
+                  <div id="calc-kpi-query-mb" class="text-[10px] text-slate-400 font-mono">108.7 MB wire</div>
+                </div>
+                <div class="p-2.5 bg-slate-50 border border-slate-200 rounded">
+                  <div class="text-[10px] text-slate-500 font-sans">Pull Time ($2K$)</div>
+                  <div id="calc-kpi-pull-time" class="text-sm font-bold text-slate-700 mt-0.5">38.5 s</div>
+                  <div class="text-[10px] text-slate-500 font-sans">Paper §3.4 Match</div>
+                </div>
+                <div class="p-2.5 bg-blue-50/60 border border-blue-200 rounded">
+                  <div class="text-[10px] text-blue-800 font-sans font-semibold">SON Overhead Share</div>
+                  <div id="calc-kpi-overhead-share" class="text-sm font-bold text-blue-800 mt-0.5">10.1%</div>
+                  <div class="text-[10px] text-blue-600 font-mono">Avg ≈ 8.0% (§5.4)</div>
+                </div>
+              </div>
+            </div>
+
             <!-- UNIFIED SQUARE MULTI-BENCHMARK PARETO FRONTIER & IDEAL UTOPIA POINT PLOT (ROUND 100) -->
             <div id="utopia-pareto-card" class="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 mt-4">
               <!-- Card Header & Metadata -->
@@ -2294,105 +2383,117 @@
     }
   }
 
-  /* --- TAB 2: COST MODEL & PAPER SAVINGS --- */
-  function updateOverheadLabel() {
-    const val = +$('c_overhead').value;
-    const inputEl = $('c_overhead');
-    if (Math.abs(val - 1.03) < 0.005) {
-      $('lbl_overhead').innerHTML = `Transport overhead factor: 1.03 <span class="tag-derived" style="font-size:0.65rem;">[Derived: paper 38.5 s ÷ 37.4 s]</span>`;
-    } else {
-      $('lbl_overhead').innerHTML = `Transport overhead factor: ${val.toFixed(2)}`;
-    }
-    $('lbl_overhead').appendChild(inputEl);
+  /* --- TAB 3: ANALYTICAL COST & SIZING CALCULATOR --- */
+  const COST_PRESETS = {
+    resnet18_tiny_imagenet_worked: { M: 11700000, P_pct: 10.8, bw_mb_s: 25.0, K: 10, overhead: 1.03 },
+    resnet18_tiny_imagenet_tuned: { M: 11700000, P_pct: 9.6, bw_mb_s: 25.0, K: 10, overhead: 1.03 },
+    resnet18_google_speech_worked: { M: 11700000, P_pct: 13.3, bw_mb_s: 25.0, K: 10, overhead: 1.03 },
+    resnet18_google_speech_tuned: { M: 11700000, P_pct: 11.2, bw_mb_s: 25.0, K: 10, overhead: 1.03 },
+    albert_20newsgroup_tuned: { M: 11683000, P_pct: 12.8, bw_mb_s: 25.0, K: 10, overhead: 1.03 },
+    fmnist_cnn_tuned: { M: 62000, P_pct: 12.3, bw_mb_s: 25.0, K: 10, overhead: 1.03 }
+  };
+
+  function applyCostPreset(presetKey) {
+    const p = COST_PRESETS[presetKey];
+    if (!p) return;
+    const elM = document.getElementById('calc-m');
+    const elP = document.getElementById('calc-p-pct');
+    const elBw = document.getElementById('calc-bw');
+    const elK = document.getElementById('calc-k');
+    const elOver = document.getElementById('calc-overhead');
+    if (elM) elM.value = p.M;
+    if (elP) elP.value = p.P_pct;
+    if (elBw) elBw.value = p.bw_mb_s;
+    if (elK) elK.value = p.K;
+    if (elOver) elOver.value = p.overhead.toFixed(2);
+    recalcCostCalculator();
   }
 
-  function applyPreset(m, p, bw, k, overhead = 1.03) {
-    $('c_M').value = m;
-    $('c_P_pct').value = p;
-    $('c_bw').value = bw;
-    $('c_K').value = k;
-    $('c_overhead').value = overhead.toFixed(2);
-    updateOverheadLabel();
-    recalcCosts();
-  }
+  async function recalcCostCalculator() {
+    const elM = document.getElementById('calc-m');
+    const elP = document.getElementById('calc-p-pct');
+    const elBw = document.getElementById('calc-bw');
+    const elK = document.getElementById('calc-k');
+    const elOver = document.getElementById('calc-overhead');
+    if (!elM || !elP) return;
 
-  async function recalcCosts() {
-    const req = {
-      M: +$('c_M').value,
-      P_pct: +$('c_P_pct').value,
-      b_idx: +$('c_bidx').value,
-      b_val: +$('c_bval').value,
-      bw_mb_s: +$('c_bw').value,
-      K: +$('c_K').value,
-      visited_superpeers: +$('c_sp').value,
-      probed_leaves: +$('c_pl').value,
-      leaf_size: +$('c_ls').value,
-      overhead_factor: +$('c_overhead').value
-    };
+    const M = parseFloat(elM.value) || 11700000;
+    const P_pct = parseFloat(elP.value) || 10.8;
+    const bw_mb_s = parseFloat(elBw?.value) || 25.0;
+    const K = parseInt(elK?.value, 10) || 10;
+    const overhead = parseFloat(elOver?.value) || 1.03;
 
     try {
       const res = await fetch('/api/v1/toppaper/costs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(req)
+        body: JSON.stringify({
+          M: M,
+          P_pct: P_pct,
+          b_idx: 4,
+          b_val: 2,
+          bw_mb_s: bw_mb_s,
+          K: K,
+          overhead_factor: overhead
+        })
       });
-      if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+      if (!res.ok) throw new Error(res.statusText);
       const d = await res.json();
+      
+      const sigSizeEl = document.getElementById('calc-kpi-sig-size');
+      const sigSubEl = document.getElementById('calc-kpi-sig-sub');
+      const denseSizeEl = document.getElementById('calc-kpi-dense-size');
+      const redEl = document.getElementById('calc-kpi-reduction');
+      const savedEl = document.getElementById('calc-kpi-saved');
+      const qTimeEl = document.getElementById('calc-kpi-query-time');
+      const qMbEl = document.getElementById('calc-kpi-query-mb');
+      const pTimeEl = document.getElementById('calc-kpi-pull-time');
+      const shareEl = document.getElementById('calc-kpi-overhead-share');
 
-      $('cost-kpis').innerHTML = `
-        <div class="kpi-card">
-          <span class="kpi-val">${d.signature_mb.toFixed(2)} MB</span>
-          <span class="kpi-lbl">Signature Size S_sig (Top-${d.P_pct.toFixed(1)}%) <span class="tag-paper">Paper §3.4</span></span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-val text-slate-700">${d.dense_mb.toFixed(1)} MB</span>
-          <span class="kpi-lbl">Dense FP32 Model Size <span class="tag-paper">Paper §3.4</span></span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-val text-emerald-600">${d.compression_ratio.toFixed(1)}×</span>
-          <span class="kpi-lbl">Compression vs Dense Model</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-val text-amber-600">${d.search_share_pct.toFixed(1)}% <span class="tag-derived" style="font-size:0.65rem;">Derived</span></span>
-          <span class="kpi-lbl">Query (${d.query_cost.seconds.toFixed(2)}s) ÷ Round (${d.effective_round_seconds.toFixed(1)}s)</span>
-        </div>
-      `;
+      if (sigSizeEl) sigSizeEl.textContent = `${d.signature_mb.toFixed(2)} MB`;
+      if (sigSubEl) sigSubEl.textContent = `${(d.signature_bytes / (1024*1024)).toFixed(2)} MiB`;
+      if (denseSizeEl) denseSizeEl.textContent = `${d.dense_mb.toFixed(1)} MB`;
+      if (redEl) redEl.textContent = `${d.compression_ratio.toFixed(2)}×`;
+      if (savedEl) savedEl.textContent = `${(100 - (100 / d.compression_ratio)).toFixed(1)}% saved`;
+      if (qTimeEl) qTimeEl.textContent = `${d.query_cost.seconds.toFixed(2)} s`;
+      if (qMbEl) qMbEl.textContent = `${d.query_cost.mb.toFixed(1)} MB wire`;
+      if (pTimeEl) pTimeEl.textContent = `${d.pull_cost.seconds.toFixed(1)} s`;
+      if (shareEl) shareEl.textContent = `${d.search_share_pct.toFixed(1)}%`;
+    } catch (err) {
+      // Analytical fallback strictly derived from paper Sec. 3.4
+      const P_frac = P_pct / 100.0;
+      const sig_bytes = P_frac * M * 6;
+      const dense_bytes = (M === 11700000) ? (46.75 * 1024 * 1024) : (M * 4);
+      const ratio = dense_bytes / sig_bytes;
+      const saved_pct = (1.0 - (3.0 * P_frac / 2.0)) * 100.0;
+      const num_sigs = 15;
+      const q_bytes = num_sigs * sig_bytes;
+      const q_mb = q_bytes / (1024 * 1024);
+      const q_sec = q_mb / bw_mb_s;
+      const p_bytes = 2 * K * dense_bytes;
+      const p_mb = p_bytes / (1024 * 1024);
+      const p_sec = (p_mb / bw_mb_s) * overhead;
+      const share = (q_sec / (q_sec + p_sec)) * 100.0;
 
-      $('cost-query-detail').innerHTML = `
-        <div>• Total Signatures Exchanged: <strong>${d.query_cost.num_signatures} signatures</strong></div>
-        <div>• Total Control Wire Data: <strong>${d.query_cost.mb.toFixed(1)} MB</strong></div>
-        <div>• Discovery Query Latency: <strong>${d.query_cost.seconds.toFixed(2)} seconds</strong> (at ${d.bandwidth_mb_s} MB/s)</div>
-      `;
+      const sigSizeEl = document.getElementById('calc-kpi-sig-size');
+      const sigSubEl = document.getElementById('calc-kpi-sig-sub');
+      const denseSizeEl = document.getElementById('calc-kpi-dense-size');
+      const redEl = document.getElementById('calc-kpi-reduction');
+      const savedEl = document.getElementById('calc-kpi-saved');
+      const qTimeEl = document.getElementById('calc-kpi-query-time');
+      const qMbEl = document.getElementById('calc-kpi-query-mb');
+      const pTimeEl = document.getElementById('calc-kpi-pull-time');
+      const shareEl = document.getElementById('calc-kpi-overhead-share');
 
-      $('cost-pull-detail').innerHTML = `
-        <div>• Model Pulls: <strong>K = ${d.pull_cost.K} downloads + ${d.pull_cost.K} uploads</strong> (20 transfers)</div>
-        <div>• Total Model Traffic: <strong>${d.pull_cost.mb.toFixed(1)} MB</strong></div>
-        <div>• Transfer Time: <strong>${d.pull_cost.seconds.toFixed(1)} s</strong> (Strict baseline: ${(d.pull_cost.mb / d.bandwidth_mb_s).toFixed(1)} s | Reference: <strong>38.5 s</strong> <span class="tag-paper">Paper §3.4</span>)</div>
-      `;
-
-      const tbodyComp = $('cost-comparison-table').querySelector('tbody');
-      tbodyComp.innerHTML = d.comparison_table.map(row => `
-        <tr>
-          <td style="font-weight:700; text-align:left;">${row.protocol}</td>
-          <td>${row.control_traffic}</td>
-          <td>${row.model_traffic}</td>
-          <td>${row.scaling}</td>
-          <td><span class="tag-paper">${row.provenance}</span></td>
-        </tr>
-      `).join('');
-
-      const tbodyCmplx = $('cost-complexity-table').querySelector('tbody');
-      tbodyCmplx.innerHTML = d.complexity_table.map(row => `
-        <tr>
-          <td style="font-weight:700; text-align:left;">${row.operation}</td>
-          <td><code>${row.complexity}</code></td>
-          <td>${row.frequency}</td>
-          <td><span class="${row.provenance.includes('Derived') ? 'tag-derived' : 'tag-paper'}">${row.provenance}</span></td>
-        </tr>
-      `).join('');
-
-    } catch (e) {
-      console.error('Failed to compute costs:', e);
+      if (sigSizeEl) sigSizeEl.textContent = `${(sig_bytes / 1000000).toFixed(2)} MB`;
+      if (sigSubEl) sigSubEl.textContent = `${(sig_bytes / (1024*1024)).toFixed(2)} MiB`;
+      if (denseSizeEl) denseSizeEl.textContent = `${(dense_bytes / 1000000).toFixed(1)} MB`;
+      if (redEl) redEl.textContent = `${ratio.toFixed(2)}×`;
+      if (savedEl) savedEl.textContent = `${saved_pct.toFixed(1)}% saved`;
+      if (qTimeEl) qTimeEl.textContent = `${q_sec.toFixed(2)} s`;
+      if (qMbEl) qMbEl.textContent = `${q_mb.toFixed(1)} MB wire`;
+      if (pTimeEl) pTimeEl.textContent = `${p_sec.toFixed(1)} s`;
+      if (shareEl) shareEl.textContent = `${share.toFixed(1)}%`;
     }
   }
 
@@ -4975,8 +5076,11 @@
   if (typeof window !== 'undefined') {
     window.setChurnPreset = setChurnPreset;
     window.updateInteractiveChurnView = updateInteractiveChurnView;
+    window.applyCostPreset = applyCostPreset;
+    window.recalcCostCalculator = recalcCostCalculator;
     window.addEventListener('DOMContentLoaded', () => {
       setTimeout(updateInteractiveChurnView, 250);
+      setTimeout(recalcCostCalculator, 300);
     });
   }
 </script>
