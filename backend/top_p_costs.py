@@ -184,8 +184,12 @@ def compute_cost_model(req: CostModelRequest) -> Dict[str, Any]:
         "comparison_table": comparison_table,
         "complexity_table": complexity_table,
         "presets": {
-            "resnet18_tiny_imagenet": {"M": 11_700_000, "P_pct": 10.8, "bw_mb_s": 25.0, "K": 10, "overhead_factor": 1.03, "label": "ResNet-18 (Tiny-ImageNet) [Paper §3.4]"},
-            "resnet18_google_speech": {"M": 11_700_000, "P_pct": 13.3, "bw_mb_s": 25.0, "K": 10, "overhead_factor": 1.03, "label": "ResNet-18 (Google-Speech) [Paper §3.4]"},
+            "resnet18_tiny_imagenet_worked": {"M": 11_700_000, "P_pct": 10.8, "bw_mb_s": 25.0, "K": 10, "overhead_factor": 1.03, "label": "ResNet-18 (Tiny-ImageNet Worked Example) [Paper §3.4]"},
+            "resnet18_tiny_imagenet_tuned": {"M": 11_700_000, "P_pct": 9.6, "bw_mb_s": 25.0, "K": 10, "overhead_factor": 1.03, "label": "ResNet-18 (Tiny-ImageNet Tuned Optimum) [Paper §5.1, App E.1]"},
+            "resnet18_google_speech_worked": {"M": 11_700_000, "P_pct": 13.3, "bw_mb_s": 25.0, "K": 10, "overhead_factor": 1.03, "label": "ResNet-18 (Google-Speech Worked Example) [Paper §3.4]"},
+            "resnet18_google_speech_tuned": {"M": 11_700_000, "P_pct": 11.2, "bw_mb_s": 25.0, "K": 10, "overhead_factor": 1.03, "label": "ResNet-18 (Google-Speech Tuned Optimum) [Paper §5.1, App E.1]"},
+            "albert_20newsgroup_tuned": {"M": 11_683_000, "P_pct": 12.8, "bw_mb_s": 25.0, "K": 10, "overhead_factor": 1.03, "label": "ALBERT-Base (20Newsgroup Tuned Optimum) [Paper §5.1, App E.1]"},
+            "fmnist_cnn_tuned": {"M": 62_000, "P_pct": 12.3, "bw_mb_s": 25.0, "K": 10, "overhead_factor": 1.03, "label": "2-Layer CNN (FMNIST Tuned Optimum) [Paper §5.1, App E.1]"},
             "resnet18_baseline_10pct": {"M": 11_700_000, "P_pct": 10.0, "bw_mb_s": 25.0, "K": 10, "overhead_factor": 1.03, "label": "ResNet-18 (P=10% baseline) [Paper §3.4]"},
         },
     }

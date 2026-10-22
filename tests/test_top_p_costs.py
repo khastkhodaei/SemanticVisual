@@ -94,6 +94,14 @@ def test_costs_endpoint_default_and_presets():
     assert "search_share_pct" in data
     assert "comparison_table" in data
 
+    # Verify all preset keys are populated
+    assert "resnet18_tiny_imagenet_worked" in data["presets"]
+    assert "resnet18_tiny_imagenet_tuned" in data["presets"]
+    assert "resnet18_google_speech_worked" in data["presets"]
+    assert "resnet18_google_speech_tuned" in data["presets"]
+    assert "albert_20newsgroup_tuned" in data["presets"]
+    assert "fmnist_cnn_tuned" in data["presets"]
+
     # Tiny-ImageNet preset with paper overhead factor 1.03
     resp_tiny = client.post("/api/v1/toppaper/costs", json={
         "M": 11_700_000,
